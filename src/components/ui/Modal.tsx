@@ -1,0 +1,41 @@
+"use client";
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="absolute inset-0 bg-navy/50 flex items-end z-40"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-white w-full rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
+        <div className="font-display font-extrabold text-lg text-navy mb-3">{title}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="absolute right-4.5 bottom-4.5 w-12 h-12 rounded-full bg-green text-white flex items-center justify-center text-2xl font-bold shadow-[0_10px_20px_-6px_rgba(62,132,98,0.55)] z-10"
+    >
+      +
+    </button>
+  );
+}
