@@ -28,7 +28,7 @@ export default function NotesPage() {
   useEffect(() => {
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("players").select("*");
+      const { data } = await supabase.from("players").select("*").neq("status", "OB・OG");
       const list = sortPlayers(data ?? []);
       setPlayers(list);
       setSelectedId((prev) => prev || list[0]?.id || "");
