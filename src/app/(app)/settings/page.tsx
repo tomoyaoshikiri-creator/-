@@ -90,6 +90,10 @@ export default function SettingsPage() {
 
   async function handleLogoChange(file: File | undefined) {
     if (!file) return;
+    if (/\.(heic|heif)$/i.test(file.name)) {
+      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      return;
+    }
     setUploading(true);
     const supabase = createClient();
     const path = `${teamId}/logo-${Date.now()}-${file.name}`;
@@ -152,7 +156,7 @@ export default function SettingsPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
                 className="hidden"
                 onChange={(e) => handleLogoChange(e.target.files?.[0])}
               />
