@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { inputClass } from "@/components/ui/SegButton";
-import { gradeLabel, playerFullName } from "@/lib/format";
+import { gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
 import type { Player, PlayerNote, PlayerStatus } from "@/lib/database.types";
 
 const STATUS_OPTIONS: PlayerStatus[] = ["在籍", "休部", "退団", "OB・OG"];
@@ -73,7 +73,13 @@ export default function PlayerDetailPage() {
 
   return (
     <PageShell
-      header={<AppHeader title={player ? playerFullName(player) : "選手"} variant="detail" backHref="/players" />}
+      header={
+        <AppHeader
+          title={player ? playerFullName(player) : "選手"}
+          variant="detail"
+          backHref={player?.status === "OB・OG" ? "/players/obog" : "/players"}
+        />
+      }
     >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
@@ -88,7 +94,8 @@ export default function PlayerDetailPage() {
               {player.mei_kana ?? ""}
             </div>
             <div className="text-xs text-ink-soft mt-1">
-              背番号 {player.number ?? "-"} / {gradeLabel(player.grade)}
+              背番号 {player.number ?? "-"} /{" "}
+              {player.status === "OB・OG" ? obogCohortLabel(player.grade) : gradeLabel(player.grade)}
             </div>
             <div className="text-xs text-ink-soft mt-1">
               {player.positions.length > 0 ? player.positions.join("・") : "ポジション未設定"}

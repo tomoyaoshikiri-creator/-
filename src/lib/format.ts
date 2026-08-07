@@ -34,6 +34,13 @@ export function gradeLabel(grade: string | null): string {
   return `${grade}年生`;
 }
 
+export function obogCohortLabel(grade: string | null): string {
+  const g = grade !== null ? parseInt(grade, 10) : NaN;
+  if (isNaN(g) || g < 6) return "卒団年次不明";
+  const years = g - 6;
+  return years === 0 ? "卒団したて" : `卒団${years}年目`;
+}
+
 export function sortPlayers<T extends { grade: string | null; number: string | null }>(
   list: T[],
 ): T[] {

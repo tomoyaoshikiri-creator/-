@@ -120,17 +120,15 @@ export default function PlayersPage() {
         )}
       </Card>
 
-      {obogList.length > 0 && (
-        <>
-          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">
-            OB・OG
-          </div>
-          <Card>
-            {obogList.map((p) => (
-              <PlayerRow key={p.id} player={p} noteCount={noteCounts[p.id] ?? 0} />
-            ))}
+      {!loading && obogList.length > 0 && (
+        <Link href="/players/obog">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-[13.5px]">OB・OG({obogList.length}名)</div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            </div>
           </Card>
-        </>
+        </Link>
       )}
 
       <Fab onClick={() => setModalOpen(true)} />

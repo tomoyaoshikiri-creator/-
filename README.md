@@ -14,6 +14,7 @@
    - `0002_team_theme.sql`: チームごとの配色カスタマイズ用の列とRLS更新
    - `0003_team_logo.sql`: チームロゴアップロード用の列とStorageバケット・RLS
    - `0004_default_team_logo_rpc.sql`: ホーム画面アイコン用に、ログイン前でもチームロゴを取得できるRPC
+   - `0005_obog_year_tracking.sql`: OB・OGの卒団からの経過年数を追跡できるようgradeの制約とadvance_academic_yearを更新
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -92,6 +93,11 @@ src/
     database.types.ts               Supabaseスキーマに対応する型定義
     teamLogo.ts                     チームロゴの公開URLを組み立てるヘルパー
 ```
+
+## 選手の学年・OB・OG
+
+- `players.grade` は在籍中は"0"(未就学)〜"6"だが、6年生が年度更新でOB・OGになった後も、年度更新のたびに増え続ける("卒団時の学年(6) + 卒団してからの年度更新回数")。画面上は「7年生」のようには出さず、`obogCohortLabel()`(`src/lib/format.ts`)で「卒団1年目」のような経過年数表示に変換する
+- 「選手」タブの一覧にはOB・OGを表示せず、件数だけのリンクから `/players/obog` に遷移する専用画面(卒団年次ごとにセクション分け)で確認する仕組みにしている(卒団者が増えても一覧が際限なく伸びないようにするため)
 
 ## 既知の制約・今後の課題
 

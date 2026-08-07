@@ -8,6 +8,8 @@ export type AttendanceStatus = "出席" | "欠席";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
 export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
+// 選手登録時に選べる学年(在籍中の選手のみ)。OB・OGは年度更新のたびに
+// 卒団からの経過年数として6より先の値(文字列)まで内部的に伸びていく。
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
@@ -206,7 +208,8 @@ export interface Database {
           mei: string;
           sei_kana: string | null;
           mei_kana: string | null;
-          grade: Grade | null;
+          // OB・OGは年度更新のたびに増え続けるため "6" を超える値もあり得る
+          grade: string | null;
           number: string | null;
           positions: Position[];
           status: PlayerStatus;
