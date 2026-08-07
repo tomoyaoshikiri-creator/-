@@ -24,7 +24,7 @@ export function InviteForm({ token, roleLabel }: { token: string; roleLabel: str
         {roleLabel}としてチームに参加します。氏名とログイン情報を入力してください。
       </div>
       <FieldLabel>氏名</FieldLabel>
-      <input name="name" className={inputClass()} placeholder="例:碧衣ママ" required />
+      <input name="name" className={inputClass()} placeholder="例:鈴木太郎" required />
 
       <div className="mt-3">
         <FieldLabel>メールアドレス</FieldLabel>
