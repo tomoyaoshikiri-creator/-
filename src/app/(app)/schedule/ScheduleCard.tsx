@@ -34,6 +34,7 @@ export function ScheduleCard({
   const [seats, setSeats] = useState(attendance?.seats?.toString() ?? "");
   const [note, setNote] = useState(attendance?.note ?? "");
   const [saving, setSaving] = useState(false);
+  const [registered, setRegistered] = useState(Boolean(attendance?.status));
 
   const isGame = schedule.type === "game";
   const pillTone = status === "出席" ? "ok" : "pending";
@@ -64,6 +65,7 @@ export function ScheduleCard({
       return;
     }
     toast("登録しました");
+    setRegistered(true);
     onSaved();
   }
 
@@ -99,10 +101,22 @@ export function ScheduleCard({
       <div className="mt-3">
         <FieldLabel>選手の出欠</FieldLabel>
         <div className="flex gap-2">
-          <SegButton active={status === "出席"} onClick={() => setStatus("出席")}>
+          <SegButton
+            active={status === "出席"}
+            onClick={() => {
+              setStatus("出席");
+              setRegistered(false);
+            }}
+          >
             出席
           </SegButton>
-          <SegButton active={status === "欠席"} onClick={() => setStatus("欠席")}>
+          <SegButton
+            active={status === "欠席"}
+            onClick={() => {
+              setStatus("欠席");
+              setRegistered(false);
+            }}
+          >
             欠席
           </SegButton>
         </div>
@@ -113,10 +127,24 @@ export function ScheduleCard({
           <div className="mt-3">
             <FieldLabel>保護者の帯同</FieldLabel>
             <div className="flex gap-2">
-              <SegButton variant="small" active={accompany === "あり"} onClick={() => setAccompany("あり")}>
+              <SegButton
+                variant="small"
+                active={accompany === "あり"}
+                onClick={() => {
+                  setAccompany("あり");
+                  setRegistered(false);
+                }}
+              >
                 あり
               </SegButton>
-              <SegButton variant="small" active={accompany === "なし"} onClick={() => setAccompany("なし")}>
+              <SegButton
+                variant="small"
+                active={accompany === "なし"}
+                onClick={() => {
+                  setAccompany("なし");
+                  setRegistered(false);
+                }}
+              >
                 なし
               </SegButton>
             </div>
@@ -129,7 +157,10 @@ export function ScheduleCard({
                 min={1}
                 className={inputClass()}
                 value={accompanyCount}
-                onChange={(e) => setAccompanyCount(e.target.value)}
+                onChange={(e) => {
+                  setAccompanyCount(e.target.value);
+                  setRegistered(false);
+                }}
                 placeholder="例:2"
               />
             </div>
@@ -138,10 +169,24 @@ export function ScheduleCard({
           <div className="mt-3">
             <FieldLabel>車出し</FieldLabel>
             <div className="flex gap-2">
-              <SegButton variant="small" active={car === "可"} onClick={() => setCar("可")}>
+              <SegButton
+                variant="small"
+                active={car === "可"}
+                onClick={() => {
+                  setCar("可");
+                  setRegistered(false);
+                }}
+              >
                 可
               </SegButton>
-              <SegButton variant="small" active={car === "不可"} onClick={() => setCar("不可")}>
+              <SegButton
+                variant="small"
+                active={car === "不可"}
+                onClick={() => {
+                  setCar("不可");
+                  setRegistered(false);
+                }}
+              >
                 不可
               </SegButton>
             </div>
@@ -154,7 +199,10 @@ export function ScheduleCard({
                 min={0}
                 className={inputClass()}
                 value={seats}
-                onChange={(e) => setSeats(e.target.value)}
+                onChange={(e) => {
+                  setSeats(e.target.value);
+                  setRegistered(false);
+                }}
                 placeholder="例:3"
               />
               <div className="mt-2">
@@ -163,7 +211,10 @@ export function ScheduleCard({
                   rows={2}
                   className={inputClass()}
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={(e) => {
+                    setNote(e.target.value);
+                    setRegistered(false);
+                  }}
                   placeholder="集合場所や注意点など"
                 />
               </div>
@@ -172,8 +223,8 @@ export function ScheduleCard({
         </>
       )}
 
-      <SubmitButton onClick={handleSubmit} disabled={saving}>
-        {saving ? "登録中…" : "この内容で登録する"}
+      <SubmitButton onClick={handleSubmit} disabled={saving} className={registered ? "opacity-45" : ""}>
+        {saving ? "登録中…" : registered ? "登録済み(この内容で更新する)" : "この内容で登録する"}
       </SubmitButton>
     </Card>
   );
