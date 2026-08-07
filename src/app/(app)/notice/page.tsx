@@ -70,7 +70,6 @@ export default function NoticePage() {
                 {n.sender_id && profiles[n.sender_id] ? `${profiles[n.sender_id]} · ` : ""}
                 {formatDateLabel(n.created_at.slice(0, 10))}配信
               </div>
-              {n.body && <div className="text-xs text-ink-soft mt-1.5 line-clamp-2">{n.body}</div>}
               {attachmentsByNotice[n.id]?.length ? (
                 <div className="mt-2 flex gap-1.5 flex-wrap">
                   {attachmentsByNotice[n.id].map((a) => (
