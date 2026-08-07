@@ -25,9 +25,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", profile.team_id)
     .single();
 
+  // 「基調色」はヘッダー・タブなど画面全体で使われる --orange、
+  // 「アクセントカラー」は詳細画面ヘッダーやボタンで使われる --navy に対応させる。
   const themeStyle: Record<string, string> = {};
-  if (team?.theme_primary) themeStyle["--navy"] = team.theme_primary;
-  if (team?.theme_accent) themeStyle["--orange"] = team.theme_accent;
+  if (team?.theme_primary) themeStyle["--orange"] = team.theme_primary;
+  if (team?.theme_accent) themeStyle["--navy"] = team.theme_accent;
 
   return (
     <div className="app-shell" style={themeStyle as React.CSSProperties}>

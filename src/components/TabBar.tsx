@@ -29,7 +29,7 @@ export function TabBar({ role }: { role: Role }) {
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white overflow-x-auto">
+    <nav className="flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = TAB_PATHS[tab];
@@ -38,7 +38,7 @@ export function TabBar({ role }: { role: Role }) {
           <Link
             key={tab}
             href={href}
-            className={`text-center text-[9px] font-medium flex flex-col items-center gap-0.5 w-[54px] flex-shrink-0 ${
+            className={`flex-1 min-w-0 text-center text-[9px] font-medium flex flex-col items-center gap-0.5 ${
               isActive ? "text-orange font-bold" : "text-ink-soft"
             }`}
           >

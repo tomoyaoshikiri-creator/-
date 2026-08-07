@@ -11,8 +11,8 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { canManageUsers } from "@/lib/permissions";
 
-const DEFAULT_PRIMARY = "#22201c";
-const DEFAULT_ACCENT = "#9c8355";
+const DEFAULT_PRIMARY = "#9c8355";
+const DEFAULT_ACCENT = "#22201c";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -96,7 +96,7 @@ export default function SettingsPage() {
               : "現在はアプリ標準の配色です。チームのブランドカラーに変更できます。"}
           </div>
 
-          <FieldLabel>基調色(ヘッダー・強調に使用)</FieldLabel>
+          <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
           <div className="flex items-center gap-3">
             <input
               type="color"
@@ -113,7 +113,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="mt-4">
-            <FieldLabel>アクセントカラー(ボタン・選択状態に使用)</FieldLabel>
+            <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
             <div className="flex items-center gap-3">
               <input
                 type="color"
