@@ -42,6 +42,16 @@ body {
   min-height: 100vh;
 }
 
+/*
+  iOS Safariは入力欄の文字が16px未満だとフォーカス時に自動でズームし、
+  戻らなくなることがあるため、フォーム要素は常に16px以上にする。
+*/
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
 .app-shell {
   max-width: 480px;
   margin: 0 auto;
