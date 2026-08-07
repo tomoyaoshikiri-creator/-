@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestOrigin } from "@/lib/origin";
 
 export interface FormState {
   error?: string;
@@ -21,8 +22,17 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
     return { error: "パスワードは8文字以上で入力してください" };
   }
 
+  const origin = await getRequestOrigin();
+  const completeParams = new URLSearchParams({ kind: "team", teamName, adminName });
+  const next = `/auth/complete?${completeParams.toString()}`;
+  const emailRedirectTo = `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
+
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo },
+  });
   if (error) return { error: error.message };
   if (!data.user) return { error: "アカウントの作成に失敗しました" };
 

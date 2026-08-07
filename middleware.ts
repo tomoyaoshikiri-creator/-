@@ -29,7 +29,10 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isAuthRoute =
-    path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/invite");
+    path.startsWith("/login") ||
+    path.startsWith("/signup") ||
+    path.startsWith("/invite") ||
+    path.startsWith("/auth");
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
