@@ -24,11 +24,11 @@ export function SignupForm() {
         新しくチームを立ち上げます。登録した方が最初の管理者になります。
       </div>
       <FieldLabel>チーム名</FieldLabel>
-      <input name="teamName" className={inputClass()} placeholder="例:都賀ビクトリーズ" required />
+      <input name="teamName" className={inputClass()} placeholder="例:〇〇クラブ" required />
 
       <div className="mt-3">
         <FieldLabel>あなたの氏名</FieldLabel>
-        <input name="adminName" className={inputClass()} placeholder="例:トモヤ(HC)" required />
+        <input name="adminName" className={inputClass()} placeholder="例:鈴木太郎" required />
       </div>
 
       <div className="mt-3">
