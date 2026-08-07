@@ -29,9 +29,9 @@ export function LoginForm() {
       <div className="text-center text-[12px] text-ink-soft mt-4">
         はじめての方は{" "}
         <Link href="/signup" className="text-orange font-bold">
-          チームを作成
+          こちらから
         </Link>
-        、招待リンクをお持ちの方はそちらから登録してください。
+        チームを作成してください。招待リンクをお持ちの方はそちらから登録してください。
       </div>
     </form>
   );
