@@ -12,6 +12,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { teamLogoUrl } from "@/lib/teamLogo";
+import { safeExt } from "@/lib/storagePath";
 
 const DEFAULT_PRIMARY = "#9c8355";
 const DEFAULT_ACCENT = "#22201c";
@@ -96,7 +97,7 @@ export default function SettingsPage() {
     }
     setUploading(true);
     const supabase = createClient();
-    const path = `${teamId}/logo-${Date.now()}-${file.name}`;
+    const path = `${teamId}/logo-${Date.now()}.${safeExt(file.name)}`;
     const { error: uploadError } = await supabase.storage.from("team-logos").upload(path, file);
     if (uploadError) {
       setUploading(false);
