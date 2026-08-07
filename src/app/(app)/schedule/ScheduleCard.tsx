@@ -9,7 +9,9 @@ import { Pill } from "@/components/ui/Pill";
 import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { scheduleMeta } from "@/lib/format";
+import { canWriteSchedule } from "@/lib/permissions";
 import type { Attendance, AttendanceStatus, CarStatus, Schedule, YesNo } from "@/lib/database.types";
+import { AttendanceRosterModal } from "./AttendanceRosterModal";
 
 export function ScheduleCard({
   schedule,
@@ -21,8 +23,9 @@ export function ScheduleCard({
   onSaved: () => void;
 }) {
   const supabase = createClient();
-  const { userId } = useSession();
+  const { userId, role } = useSession();
   const toast = useToast();
+  const [rosterOpen, setRosterOpen] = useState(false);
 
   const [status, setStatus] = useState<AttendanceStatus | null>(attendance?.status ?? null);
   const [accompany, setAccompany] = useState<YesNo | null>(attendance?.accompany ?? null);
@@ -79,6 +82,19 @@ export function ScheduleCard({
         </div>
         <Pill tone={pillTone}>{pillLabel}</Pill>
       </div>
+
+      {canWriteSchedule(role) && (
+        <>
+          <button
+            type="button"
+            onClick={() => setRosterOpen(true)}
+            className="mt-2 text-[11px] font-bold text-orange"
+          >
+            出欠一覧を見る
+          </button>
+          <AttendanceRosterModal schedule={schedule} open={rosterOpen} onClose={() => setRosterOpen(false)} />
+        </>
+      )}
 
       <div className="mt-3">
         <FieldLabel>選手の出欠</FieldLabel>
