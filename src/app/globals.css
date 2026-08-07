@@ -26,8 +26,12 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
 
-  --font-display: var(--font-display-serif);
-  --font-sans: var(--font-noto-sans-jp);
+  /*
+    MeiryoはWindows標準搭載フォントでWeb配信はできないため、
+    「入っている端末では優先的に使い、無ければNoto Sans JPにフォールバック」という指定にしている。
+  */
+  --font-display: var(--font-display-serif), Meiryo, "メイリオ", var(--font-noto-sans-jp);
+  --font-sans: Meiryo, "メイリオ", var(--font-noto-sans-jp);
   --font-mono: var(--font-jetbrains-mono);
 }
 
