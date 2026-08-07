@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SessionProvider } from "@/lib/session-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { TabBar } from "@/components/TabBar";
+import { teamLogoUrl } from "@/lib/teamLogo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -21,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: team } = await supabase
     .from("teams")
-    .select("name, theme_primary, theme_accent")
+    .select("name, theme_primary, theme_accent, logo_path")
     .eq("id", profile.team_id)
     .single();
 
@@ -38,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           userId: profile.id,
           teamId: profile.team_id,
           teamName: team?.name ?? "",
+          teamLogoUrl: teamLogoUrl(supabase, team?.logo_path),
           name: profile.name,
           role: profile.role,
         }}

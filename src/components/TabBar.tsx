@@ -11,6 +11,7 @@ import {
   PlayersIcon,
   ReportIcon,
   ScheduleIcon,
+  SettingsIcon,
   UsersIcon,
 } from "@/components/icons";
 
@@ -22,6 +23,7 @@ const TAB_ICONS: Record<TabKey, (props: { className?: string }) => React.ReactEl
   notes: NotesIcon,
   game: GameIcon,
   users: UsersIcon,
+  settings: SettingsIcon,
 };
 
 export function TabBar({ role }: { role: Role }) {

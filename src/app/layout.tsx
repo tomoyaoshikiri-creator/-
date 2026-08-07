@@ -23,6 +23,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "ClubLink",
   description: "ClubLink — チーム運営アプリ",
+  appleWebApp: {
+    capable: true,
+    title: "ClubLink",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

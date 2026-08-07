@@ -7,6 +7,7 @@ export interface SessionInfo {
   userId: string;
   teamId: string;
   teamName: string;
+  teamLogoUrl: string | null;
   name: string;
   role: Role;
 }

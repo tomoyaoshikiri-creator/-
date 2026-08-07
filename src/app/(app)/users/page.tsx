@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -113,18 +112,6 @@ export default function UsersPage() {
 
   return (
     <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
-      <Link href="/settings">
-        <Card className="cursor-pointer">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-[13.5px]">アプリの設定</div>
-              <div className="text-xs text-ink-soft mt-0.5">チームの配色をカスタマイズできます</div>
-            </div>
-            <span className="text-ink-soft">›</span>
-          </div>
-        </Card>
-      </Link>
-
       <SectionLabel>招待リンクを発行</SectionLabel>
       <Card>
         <div className="flex gap-2">

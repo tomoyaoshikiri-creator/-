@@ -21,6 +21,7 @@ export interface Database {
           name: string;
           theme_primary: string | null;
           theme_accent: string | null;
+          logo_path: string | null;
           created_at: string;
         };
         Insert: {
@@ -28,12 +29,14 @@ export interface Database {
           name: string;
           theme_primary?: string | null;
           theme_accent?: string | null;
+          logo_path?: string | null;
           created_at?: string;
         };
         Update: Partial<{
           name: string;
           theme_primary: string | null;
           theme_accent: string | null;
+          logo_path: string | null;
         }>;
         Relationships: [];
       };

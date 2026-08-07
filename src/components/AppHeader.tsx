@@ -17,7 +17,7 @@ export function AppHeader({
   rightSlot?: React.ReactNode;
   searchPlaceholder?: string;
 }) {
-  const { teamName } = useSession();
+  const { teamName, teamLogoUrl } = useSession();
   const bg = variant === "detail" ? "bg-navy" : "bg-orange";
   return (
     <div className={`${bg} text-white px-4.5 pt-4 pb-4.5`}>
@@ -27,8 +27,14 @@ export function AppHeader({
             <BackIcon className="w-5 h-5" />
           </Link>
         ) : (
-          <span className="font-mono text-[10.5px] tracking-widest uppercase opacity-80">
-            {teamName}
+          <span className="flex items-center gap-1.5">
+            {teamLogoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={teamLogoUrl} alt="" className="w-4 h-4 rounded object-contain bg-white/20" />
+            )}
+            <span className="font-mono text-[10.5px] tracking-widest uppercase opacity-80">
+              {teamName}
+            </span>
           </span>
         )}
         {rightSlot}

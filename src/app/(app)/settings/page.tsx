@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
+import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
-import { canManageUsers } from "@/lib/permissions";
+import { canManageSettings } from "@/lib/permissions";
+import { teamLogoUrl } from "@/lib/teamLogo";
 
 const DEFAULT_PRIMARY = "#9c8355";
 const DEFAULT_ACCENT = "#22201c";
@@ -18,14 +20,18 @@ export default function SettingsPage() {
   const router = useRouter();
   const { role, teamId } = useSession();
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [primary, setPrimary] = useState(DEFAULT_PRIMARY);
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
   const [customized, setCustomized] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (!canManageUsers(role)) {
+    if (!canManageSettings(role)) {
       router.replace("/schedule");
     }
   }, [role, router]);
@@ -35,7 +41,7 @@ export default function SettingsPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from("teams")
-        .select("theme_primary, theme_accent")
+        .select("theme_primary, theme_accent, logo_path")
         .eq("id", teamId)
         .single();
       if (data?.theme_primary || data?.theme_accent) {
@@ -43,6 +49,7 @@ export default function SettingsPage() {
         setPrimary(data.theme_primary ?? DEFAULT_PRIMARY);
         setAccent(data.theme_accent ?? DEFAULT_ACCENT);
       }
+      setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
       setLoading(false);
     })();
   }, [teamId]);
@@ -81,10 +88,92 @@ export default function SettingsPage() {
     toast("デフォルトの配色に戻しました。反映には再読み込みが必要です。");
   }
 
-  if (!canManageUsers(role)) return null;
+  async function handleLogoChange(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    const supabase = createClient();
+    const path = `${teamId}/logo-${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from("team-logos").upload(path, file);
+    if (uploadError) {
+      setUploading(false);
+      toast(`アップロードに失敗しました: ${uploadError.message}`);
+      return;
+    }
+    const { error } = await supabase.from("teams").update({ logo_path: path }).eq("id", teamId);
+    setUploading(false);
+    if (error) {
+      toast(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    setLogoUrl(teamLogoUrl(supabase, path));
+    toast("ロゴを更新しました。反映には再読み込みが必要です。");
+  }
+
+  async function handleLogoRemove() {
+    setUploading(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("teams").update({ logo_path: null }).eq("id", teamId);
+    setUploading(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    setLogoUrl(null);
+    toast("ロゴを削除しました。反映には再読み込みが必要です。");
+  }
+
+  if (!canManageSettings(role)) return null;
 
   return (
-    <PageShell header={<AppHeader title="アプリの設定" backHref="/users" variant="detail" />}>
+    <PageShell header={<AppHeader title="チーム設定" rightSlot={<CurrentUserBadge />} />}>
+      <SectionLabel>ロゴ</SectionLabel>
+      {loading ? (
+        <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
+      ) : (
+        <Card>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-xl border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="チームロゴ" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-[10px] text-ink-soft text-center">未設定</span>
+              )}
+            </div>
+            <div className="flex-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+              >
+                {uploading ? "処理中…" : "画像を選ぶ"}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleLogoChange(e.target.files?.[0])}
+              />
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={handleLogoRemove}
+                  disabled={uploading}
+                  className="ml-2 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white text-ink-soft"
+                >
+                  削除
+                </button>
+              )}
+              <div className="text-xs text-ink-soft mt-2">
+                ヘッダーなどアプリ内にこのチームのロゴとして表示されます(ホーム画面に追加した際のアイコンは共通のClubLinkアイコンのままです)。
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <SectionLabel>配色</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
