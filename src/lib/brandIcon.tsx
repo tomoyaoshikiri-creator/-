@@ -34,11 +34,13 @@ export async function renderAppIcon(size: number): Promise<Response> {
     if (logoPath) {
       const url = teamLogoUrl(supabase, logoPath);
       if (url) {
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: "no-store" });
         if (res.ok) {
           const buffer = await res.arrayBuffer();
           const contentType = res.headers.get("content-type") ?? "image/png";
-          return new Response(buffer, { headers: { "content-type": contentType } });
+          return new Response(buffer, {
+            headers: { "content-type": contentType, "cache-control": "no-store" },
+          });
         }
       }
     }
@@ -46,5 +48,9 @@ export async function renderAppIcon(size: number): Promise<Response> {
     // 取得に失敗した場合は下のフォールバックを使う
   }
 
-  return new ImageResponse(<BrandIconMark size={size} />, { width: size, height: size });
+  const fallback = new ImageResponse(<BrandIconMark size={size} />, { width: size, height: size });
+  const body = await fallback.arrayBuffer();
+  return new Response(body, {
+    headers: { "content-type": "image/png", "cache-control": "no-store" },
+  });
 }
