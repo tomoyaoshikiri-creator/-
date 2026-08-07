@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import type { ScheduleType } from "@/lib/database.types";
+import type { Schedule, ScheduleType } from "@/lib/database.types";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = ["00", "15", "30", "45"];
@@ -15,14 +15,17 @@ export function NewScheduleModal({
   open,
   onClose,
   onCreated,
+  editSchedule,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
+  editSchedule?: Schedule;
 }) {
   const supabase = createClient();
   const { userId, teamId } = useSession();
   const toast = useToast();
+  const isEdit = Boolean(editSchedule);
 
   const [type, setType] = useState<ScheduleType>("practice");
   const [title, setTitle] = useState("");
@@ -47,6 +50,25 @@ export function NewScheduleModal({
     setToban("");
   }
 
+  useEffect(() => {
+    if (!open) return;
+    if (editSchedule) {
+      setType(editSchedule.type);
+      setTitle(editSchedule.title);
+      setDate(editSchedule.date);
+      const [sh, sm] = (editSchedule.start_time ?? "").split(":");
+      setStartHour(sh ?? "");
+      setStartMin(sm ?? "");
+      const [eh, em] = (editSchedule.end_time ?? "").split(":");
+      setEndHour(eh ?? "");
+      setEndMin(em ?? "");
+      setPlace(editSchedule.place ?? "");
+      setToban(editSchedule.toban ?? "");
+    } else {
+      reset();
+    }
+  }, [open, editSchedule]);
+
   async function handleSubmit() {
     if (!title.trim()) {
       toast("タイトルを入力してください");
@@ -57,8 +79,7 @@ export function NewScheduleModal({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("schedules").insert({
-      team_id: teamId,
+    const payload = {
       type,
       title: title.trim(),
       date,
@@ -66,19 +87,21 @@ export function NewScheduleModal({
       end_time: endHour && endMin ? `${endHour}:${endMin}` : null,
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
-      created_by: userId,
-    });
+    };
+    const { error } = editSchedule
+      ? await supabase.from("schedules").update(payload).eq("id", editSchedule.id)
+      : await supabase.from("schedules").insert({ ...payload, team_id: teamId, created_by: userId });
     setSaving(false);
     if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+      toast(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
       return;
     }
-    reset();
+    if (!isEdit) reset();
     onCreated();
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="予定を登録">
+    <Modal open={open} onClose={onClose} title={isEdit ? "予定を編集" : "予定を登録"}>
       <FieldLabel>種別</FieldLabel>
       <div className="flex gap-2">
         <SegButton active={type === "practice"} onClick={() => setType("practice")}>
@@ -173,7 +196,7 @@ export function NewScheduleModal({
       )}
 
       <SubmitButton onClick={handleSubmit} disabled={saving}>
-        {saving ? "登録中…" : "この内容で登録する"}
+        {saving ? "処理中…" : isEdit ? "この内容で更新する" : "この内容で登録する"}
       </SubmitButton>
     </Modal>
   );

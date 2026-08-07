@@ -159,7 +159,10 @@ export interface Database {
           body?: string | null;
           sender_id?: string | null;
         };
-        Update: Record<string, never>;
+        Update: Partial<{
+          title: string;
+          body: string | null;
+        }>;
         Relationships: [];
       };
       notice_attachments: {

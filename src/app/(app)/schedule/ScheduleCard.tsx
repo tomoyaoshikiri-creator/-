@@ -12,6 +12,7 @@ import { scheduleMeta } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
 import type { Attendance, AttendanceStatus, CarStatus, Schedule, YesNo } from "@/lib/database.types";
 import { AttendanceRosterModal } from "./AttendanceRosterModal";
+import { NewScheduleModal } from "./NewScheduleModal";
 
 export function ScheduleCard({
   schedule,
@@ -26,6 +27,7 @@ export function ScheduleCard({
   const { userId, role } = useSession();
   const toast = useToast();
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const [status, setStatus] = useState<AttendanceStatus | null>(attendance?.status ?? null);
   const [accompany, setAccompany] = useState<YesNo | null>(attendance?.accompany ?? null);
@@ -87,14 +89,32 @@ export function ScheduleCard({
 
       {canWriteSchedule(role) && (
         <>
-          <button
-            type="button"
-            onClick={() => setRosterOpen(true)}
-            className="mt-2 text-[11px] font-bold text-orange"
-          >
-            出欠一覧を見る
-          </button>
+          <div className="flex gap-3 mt-2">
+            <button
+              type="button"
+              onClick={() => setRosterOpen(true)}
+              className="text-[11px] font-bold text-orange"
+            >
+              出欠一覧を見る
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="text-[11px] font-bold text-ink-soft"
+            >
+              編集
+            </button>
+          </div>
           <AttendanceRosterModal schedule={schedule} open={rosterOpen} onClose={() => setRosterOpen(false)} />
+          <NewScheduleModal
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            editSchedule={schedule}
+            onCreated={() => {
+              setEditOpen(false);
+              onSaved();
+            }}
+          />
         </>
       )}
 

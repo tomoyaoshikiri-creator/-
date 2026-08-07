@@ -15,6 +15,7 @@
    - `0003_team_logo.sql`: チームロゴアップロード用の列とStorageバケット・RLS
    - `0004_default_team_logo_rpc.sql`: ホーム画面アイコン用に、ログイン前でもチームロゴを取得できるRPC
    - `0005_obog_year_tracking.sql`: OB・OGの卒団からの経過年数を追跡できるようgradeの制約とadvance_academic_yearを更新
+   - `0006_general_can_write_schedule_notice.sql`: 予定・お知らせの登録・編集を一般権限にも解放
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -53,9 +54,10 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | タブ | 一般 | 役員 | 指導者 | 管理者 |
 |---|---|---|---|---|
 | 予定・出欠(閲覧・出欠登録) | ○ | ○ | ○ | ○ |
-| 予定・出欠(登録) | – | ○ | ○ | ○ |
+| 予定(登録・編集) | ○ | ○ | ○ | ○ |
+| 予定の出欠一覧・帯同/車出し状況を見る | – | ○ | ○ | ○ |
 | お知らせ(閲覧) | ○ | ○ | ○ | ○ |
-| お知らせ(登録) | – | ○ | ○ | ○ |
+| お知らせ(登録・編集) | ○ | ○ | ○ | ○ |
 | 練習日報(登録・閲覧、チーム全体で共有) | ○ | ○ | ○ | ○ |
 | 選手 / 選手メモ / 試合記録 | – | – | ○ | ○ |
 | ユーザー管理・招待リンク発行 | – | – | – | ○ |

@@ -60,11 +60,11 @@ export function canAccessTab(role: Role, tab: TabKey): boolean {
 }
 
 export function canWriteSchedule(role: Role): boolean {
-  return role === "役員" || role === "指導者" || role === "管理者";
+  return role === "一般" || role === "役員" || role === "指導者" || role === "管理者";
 }
 
 export function canWriteNotice(role: Role): boolean {
-  return role === "役員" || role === "指導者" || role === "管理者";
+  return role === "一般" || role === "役員" || role === "指導者" || role === "管理者";
 }
 
 export function canManagePlayers(role: Role): boolean {
