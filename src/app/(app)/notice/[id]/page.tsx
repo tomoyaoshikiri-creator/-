@@ -12,13 +12,20 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
-import type { Notice, NoticeAttachment } from "@/lib/database.types";
+import { safeExt } from "@/lib/storagePath";
+import type { AttachmentKind, Notice, NoticeAttachment } from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null };
 
+const KINDS: { kind: AttachmentKind; emoji: string }[] = [
+  { kind: "対戦表", emoji: "📋" },
+  { kind: "配車表", emoji: "🚗" },
+  { kind: "その他", emoji: "📎" },
+];
+
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
-  const { role } = useSession();
+  const { teamId, role } = useSession();
   const toast = useToast();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
@@ -27,7 +34,9 @@ export default function NoticeDetailPage() {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [newFiles, setNewFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
   const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -61,7 +70,31 @@ export default function NoticeDetailPage() {
     if (!notice) return;
     setTitle(notice.title);
     setBody(notice.body ?? "");
+    setNewFiles({});
     setEditing(true);
+  }
+
+  function pickFile(kind: AttachmentKind, file: File | undefined) {
+    setNewFiles((prev) => {
+      const next = { ...prev };
+      if (file) next[kind] = file;
+      else delete next[kind];
+      return next;
+    });
+  }
+
+  async function handleRemoveAttachment(attachment: AttachmentWithUrl) {
+    setRemovingId(attachment.id);
+    const supabase = createClient();
+    await supabase.storage.from("notice-attachments").remove([attachment.storage_path]);
+    const { error } = await supabase.from("notice_attachments").delete().eq("id", attachment.id);
+    setRemovingId(null);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
+    toast("添付資料を削除しました");
   }
 
   async function handleSave() {
@@ -76,13 +109,32 @@ export default function NoticeDetailPage() {
       .from("notices")
       .update({ title: title.trim(), body: body.trim() || null })
       .eq("id", notice.id);
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast(`更新に失敗しました: ${error.message}`);
       return;
     }
+
+    const entries = Object.entries(newFiles) as [AttachmentKind, File][];
+    for (const [kind, file] of entries) {
+      const path = `${teamId}/${notice.id}/${kind}-${Date.now()}.${safeExt(file.name)}`;
+      const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, file);
+      if (uploadError) {
+        toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
+        continue;
+      }
+      await supabase.from("notice_attachments").insert({
+        notice_id: notice.id,
+        kind,
+        storage_path: path,
+        file_name: file.name,
+      });
+    }
+
+    setSaving(false);
     toast("お知らせを更新しました");
     setEditing(false);
+    setNewFiles({});
     load();
   }
 
@@ -107,9 +159,60 @@ export default function NoticeDetailPage() {
                 onChange={(e) => setBody(e.target.value)}
               />
             </div>
-            <div className="text-xs text-ink-soft mt-2">
-              ※添付資料はこの編集画面からは変更できません。
+
+            <div className="mt-3">
+              <FieldLabel>現在の添付資料</FieldLabel>
+              {attachments.length === 0 ? (
+                <div className="text-xs text-ink-soft">添付資料はありません</div>
+              ) : (
+                attachments.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between py-1.5 border-b border-line last:border-b-0">
+                    <div className="text-xs text-ink-soft">
+                      📎 {a.kind}:{a.file_name}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(a)}
+                      disabled={removingId === a.id}
+                      className="text-[11px] font-bold"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {removingId === a.id ? "削除中…" : "削除"}
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
+
+            <div className="mt-3">
+              <FieldLabel>資料を追加</FieldLabel>
+              <div className="flex gap-1.5 flex-wrap">
+                {KINDS.map(({ kind, emoji }) => (
+                  <label
+                    key={kind}
+                    className={`flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
+                      newFiles[kind] ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
+                    }`}
+                  >
+                    {emoji} {kind}
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                      onChange={(e) => pickFile(kind, e.target.files?.[0])}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="mt-1.5">
+                {Object.entries(newFiles).map(([kind, file]) => (
+                  <div key={kind} className="text-xs text-ink-soft">
+                    {kind}: {file.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <SubmitButton onClick={handleSave} disabled={saving}>
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>

@@ -89,18 +89,18 @@ export function ScheduleCard({
 
       {canWriteSchedule(role) && (
         <>
-          <div className="flex gap-3 mt-2">
+          <div className="flex gap-2 mt-2.5">
             <button
               type="button"
               onClick={() => setRosterOpen(true)}
-              className="text-[11px] font-bold text-orange"
+              className="px-3 py-1.5 rounded-[8px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
             >
               出欠一覧を見る
             </button>
             <button
               type="button"
               onClick={() => setEditOpen(true)}
-              className="text-[11px] font-bold text-ink-soft"
+              className="px-3 py-1.5 rounded-[8px] border border-line text-[11px] font-bold text-ink-soft bg-paper"
             >
               編集
             </button>
