@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -25,6 +25,7 @@ const KINDS: { kind: AttachmentKind; emoji: string }[] = [
 
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { teamId, role } = useSession();
   const toast = useToast();
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -37,6 +38,8 @@ export default function NoticeDetailPage() {
   const [newFiles, setNewFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -141,6 +144,28 @@ export default function NoticeDetailPage() {
     load();
   }
 
+  async function handleDeleteNotice() {
+    if (!notice) return;
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      setTimeout(() => setDeleteConfirm(false), 3000);
+      return;
+    }
+    setDeleting(true);
+    const supabase = createClient();
+    if (attachments.length > 0) {
+      await supabase.storage.from("notice-attachments").remove(attachments.map((a) => a.storage_path));
+    }
+    const { error } = await supabase.from("notices").delete().eq("id", notice.id);
+    setDeleting(false);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("お知らせを削除しました");
+    router.push("/notice");
+  }
+
   return (
     <PageShell header={<AppHeader title={notice?.title ?? "お知らせ"} variant="detail" backHref="/notice" />}>
       {loading ? (
@@ -226,6 +251,19 @@ export default function NoticeDetailPage() {
               className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
             >
               キャンセル
+            </button>
+          </Card>
+
+          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
+          <Card>
+            <button
+              type="button"
+              onClick={handleDeleteNotice}
+              disabled={deleting}
+              className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+            >
+              {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このお知らせを削除する"}
             </button>
           </Card>
         </>

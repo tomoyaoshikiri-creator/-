@@ -18,6 +18,7 @@
    - `0006_general_can_write_schedule_notice.sql`: 予定・お知らせの登録・編集を一般権限にも解放
    - `0007_notice_attachment_delete.sql`: お知らせ添付資料の削除用ポリシー(編集画面からの削除に必要)
    - `0008_notice_attachment_insert_any_writer.sql`: 添付資料の登録を発信者本人だけでなく書き込み権限のある全員に解放
+   - `0009_notice_delete.sql`: お知らせ削除用のポリシー(編集画面からの削除に必要)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
