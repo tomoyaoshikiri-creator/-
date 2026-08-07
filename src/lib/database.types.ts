@@ -288,6 +288,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: void;
       };
+      get_default_team_logo_path: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
     };
   };
 }

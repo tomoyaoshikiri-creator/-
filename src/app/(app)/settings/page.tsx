@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 </button>
               )}
               <div className="text-xs text-ink-soft mt-2">
-                ヘッダーなどアプリ内にこのチームのロゴとして表示されます(ホーム画面に追加した際のアイコンは共通のClubLinkアイコンのままです)。
+                アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
               </div>
             </div>
           </div>

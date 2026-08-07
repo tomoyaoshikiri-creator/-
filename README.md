@@ -13,6 +13,7 @@
    - `0001_init.sql`: テーブル・RLSポリシー・トリガー・RPC関数・お知らせ添付用のStorageバケット
    - `0002_team_theme.sql`: チームごとの配色カスタマイズ用の列とRLS更新
    - `0003_team_logo.sql`: チームロゴアップロード用の列とStorageバケット・RLS
+   - `0004_default_team_logo_rpc.sql`: ホーム画面アイコン用に、ログイン前でもチームロゴを取得できるRPC
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -66,7 +67,7 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 - ログイン前(`/login` `/signup` `/invite/[token]`)は製品名「ClubLink」の共通ブランディングのみを表示し、特定チームの名称・配色は出さない
 - ログイン後はチーム名(+ロゴ)をヘッダーに表示し、配色・ロゴはチームごとにカスタマイズ可能(`teams.theme_primary` / `theme_accent` / `logo_path`。管理者が「設定」タブから変更できる。未設定時はアプリ標準の落ち着いた配色を使う)
 - 見出しフォントはCormorant(セリフ体)、本文はNoto Sans JP(Windows環境ではMeiryoを優先)、ラベル類はJetBrains Monoで、FAITH CREATIONのブランドトーンに合わせたシックな雰囲気を意図している
-- ホーム画面に追加した際のアイコン(PWAアイコン・favicon・apple-touch-icon)はClubLink共通のもの。このアプリは1ドメインを複数チームで共有するマルチテナント構成のため、ホーム画面アイコン自体をチームごとに出し分けることはしていない(チームロゴはアプリ内のヘッダー等にのみ反映される)
+- ホーム画面に追加した際のアイコン(PWAアイコン・favicon・apple-touch-icon)は、`get_default_team_logo_path()` RPCで取得した「最初に作られたチーム」のロゴがあればそれを、無ければClubLink共通の「CL」マークを使う(`src/lib/brandIcon.tsx`)。このアプリは本来チームIDで分離するマルチテナント構成だが、**現状は都賀ビクトリーズ1チームのみの運用と割り切っている**ため、この仕組みで問題ない。複数チームが本格的に混在する段階になったら、ホーム画面アイコンをチームごとに安全に出し分ける方式(サブドメイン分離など)へ見直す必要がある
 
 ## ディレクトリ構成
 
