@@ -77,12 +77,15 @@ export function NewNoticeModal({
         toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
         continue;
       }
-      await supabase.from("notice_attachments").insert({
+      const { error: attachError } = await supabase.from("notice_attachments").insert({
         notice_id: notice.id,
         kind,
         storage_path: path,
         file_name: file.name,
       });
+      if (attachError) {
+        toast(`${kind}の登録に失敗しました: ${attachError.message}`);
+      }
     }
 
     setSaving(false);
