@@ -1,13 +1,18 @@
 @import "tailwindcss";
 
+/*
+  デフォルトは簡素で落ち着いた配色(FAITH CREATIONのブランドに寄せたシックなトーン)。
+  --navy(基調色)・--orange(アクセントカラー)という変数名は歴史的なものだが、
+  値自体はチームごとに設定画面から上書きできる(teams.theme_primary / theme_accent)。
+*/
 :root {
-  --navy: #16233f;
-  --orange: #e8622c;
-  --paper: #f7f4ec;
+  --navy: #22201c;
+  --orange: #9c8355;
+  --paper: #faf8f3;
   --ink: #1a1a1a;
-  --ink-soft: #5b5f6b;
+  --ink-soft: #6b6660;
   --green: #3e8462;
-  --line: rgba(22, 35, 63, 0.12);
+  --line: rgba(34, 32, 28, 0.12);
   --danger: #c0392b;
 }
 
@@ -21,13 +26,13 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
 
-  --font-display: var(--font-barlow-condensed);
+  --font-display: var(--font-display-serif);
   --font-sans: var(--font-noto-sans-jp);
   --font-mono: var(--font-jetbrains-mono);
 }
 
 body {
-  background: linear-gradient(180deg, #ede6d6 0%, #e4dac2 100%);
+  background: linear-gradient(180deg, #f3efe4 0%, #ece5d4 100%);
   color: var(--ink);
   font-family: var(--font-sans);
   min-height: 100vh;

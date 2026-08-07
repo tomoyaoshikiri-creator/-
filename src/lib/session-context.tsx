@@ -6,6 +6,7 @@ import type { Role } from "@/lib/database.types";
 export interface SessionInfo {
   userId: string;
   teamId: string;
+  teamName: string;
   name: string;
   role: Role;
 }

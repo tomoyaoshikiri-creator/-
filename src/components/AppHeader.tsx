@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { BackIcon } from "@/components/icons";
+import { useSession } from "@/lib/session-context";
 
 export function AppHeader({
   title,
@@ -14,6 +17,7 @@ export function AppHeader({
   rightSlot?: React.ReactNode;
   searchPlaceholder?: string;
 }) {
+  const { teamName } = useSession();
   const bg = variant === "detail" ? "bg-navy" : "bg-orange";
   return (
     <div className={`${bg} text-white px-4.5 pt-4 pb-4.5`}>
@@ -23,11 +27,13 @@ export function AppHeader({
             <BackIcon className="w-5 h-5" />
           </Link>
         ) : (
-          <span className="text-xl leading-none opacity-95">☰</span>
+          <span className="font-mono text-[10.5px] tracking-widest uppercase opacity-80">
+            {teamName}
+          </span>
         )}
         {rightSlot}
       </div>
-      <h1 className="font-display font-extrabold text-[22px] mt-2.5 mb-3 leading-tight break-words">
+      <h1 className="font-display font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
         {title}
       </h1>
       {searchPlaceholder && (

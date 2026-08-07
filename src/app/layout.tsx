@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
+import { Cormorant, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const barlowCondensed = Barlow_Condensed({
-  variable: "--font-barlow-condensed",
+const cormorant = Cormorant({
+  variable: "--font-display-serif",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700"],
 });
 
 const notoSansJP = Noto_Sans_JP({
@@ -21,15 +21,15 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "都賀ビクトリーズ",
-  description: "都賀ビクトリーズ チーム運営アプリ",
+  title: "ClubLink",
+  description: "ClubLink — チーム運営アプリ",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
-      className={`${barlowCondensed.variable} ${notoSansJP.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${notoSansJP.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

@@ -16,9 +16,25 @@ export interface Database {
   public: {
     Tables: {
       teams: {
-        Row: { id: string; name: string; created_at: string };
-        Insert: { id?: string; name: string; created_at?: string };
-        Update: { id?: string; name?: string; created_at?: string };
+        Row: {
+          id: string;
+          name: string;
+          theme_primary: string | null;
+          theme_accent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          theme_primary?: string | null;
+          theme_accent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          name: string;
+          theme_primary: string | null;
+          theme_accent: string | null;
+        }>;
         Relationships: [];
       };
       profiles: {

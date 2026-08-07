@@ -19,12 +19,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (!profile) redirect("/signup");
 
+  const { data: team } = await supabase
+    .from("teams")
+    .select("name, theme_primary, theme_accent")
+    .eq("id", profile.team_id)
+    .single();
+
+  const themeStyle: Record<string, string> = {};
+  if (team?.theme_primary) themeStyle["--navy"] = team.theme_primary;
+  if (team?.theme_accent) themeStyle["--orange"] = team.theme_accent;
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={themeStyle as React.CSSProperties}>
       <SessionProvider
         value={{
           userId: profile.id,
           teamId: profile.team_id,
+          teamName: team?.name ?? "",
           name: profile.name,
           role: profile.role,
         }}
