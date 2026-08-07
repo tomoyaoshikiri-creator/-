@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .eq("id", user.id)
     .single();
 
-  if (!profile) redirect("/signup");
+  if (!profile) redirect("/setup");
 
   const { data: team } = await supabase
     .from("teams")
