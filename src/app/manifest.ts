@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ClubLink",
-    short_name: "ClubLink",
+    name: "TsugaVic",
+    short_name: "TsugaVic",
     description: "ClubLink — チーム運営アプリ",
     start_url: "/",
     display: "standalone",

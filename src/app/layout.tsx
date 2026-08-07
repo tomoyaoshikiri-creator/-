@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   description: "ClubLink — チーム運営アプリ",
   appleWebApp: {
     capable: true,
-    title: "ClubLink",
+    title: "TsugaVic",
     statusBarStyle: "black-translucent",
   },
 };
