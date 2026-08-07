@@ -6,19 +6,8 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { GRADES, POSITIONS } from "@/lib/playerOptions";
 import type { Grade, Position } from "@/lib/database.types";
-
-const GRADES: { value: Grade; label: string }[] = [
-  { value: "0", label: "未就学" },
-  { value: "1", label: "1年" },
-  { value: "2", label: "2年" },
-  { value: "3", label: "3年" },
-  { value: "4", label: "4年" },
-  { value: "5", label: "5年" },
-  { value: "6", label: "6年" },
-];
-
-const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
 
 export function NewPlayerModal({
   open,

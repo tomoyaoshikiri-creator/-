@@ -227,7 +227,9 @@ export interface Database {
           positions?: Position[];
           status?: PlayerStatus;
         };
-        Update: Partial<Database["public"]["Tables"]["players"]["Insert"]> & {
+        Update: Partial<Omit<Database["public"]["Tables"]["players"]["Insert"], "grade">> & {
+          // 編集画面からOB・OGの経過年数(6超)を直接入力できるようUpdateだけ広げる
+          grade?: string | null;
           status?: PlayerStatus;
         };
         Relationships: [];

@@ -7,11 +7,10 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
-import type { Player, PlayerNote, PlayerStatus } from "@/lib/database.types";
-
-const STATUS_OPTIONS: PlayerStatus[] = ["在籍", "休部", "退団", "OB・OG"];
+import type { Grade, Player, PlayerNote, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
@@ -20,7 +19,18 @@ export default function PlayerDetailPage() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [notes, setNotes] = useState<PlayerNote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [sei, setSei] = useState("");
+  const [mei, setMei] = useState("");
+  const [seiKana, setSeiKana] = useState("");
+  const [meiKana, setMeiKana] = useState("");
+  const [grade, setGrade] = useState("");
+  const [number, setNumber] = useState("");
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [status, setStatus] = useState<PlayerStatus>("在籍");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -42,15 +52,52 @@ export default function PlayerDetailPage() {
     load();
   }, [load]);
 
-  async function handleStatusChange(status: PlayerStatus) {
+  function startEdit() {
     if (!player) return;
+    setSei(player.sei);
+    setMei(player.mei);
+    setSeiKana(player.sei_kana ?? "");
+    setMeiKana(player.mei_kana ?? "");
+    setGrade(player.grade ?? "");
+    setNumber(player.number ?? "");
+    setPositions(player.positions);
+    setStatus(player.status);
+    setDeleteConfirm(false);
+    setEditing(true);
+  }
+
+  function togglePos(p: Position) {
+    setPositions((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  }
+
+  async function handleSave() {
+    if (!player) return;
+    if (!sei.trim() || !mei.trim()) {
+      toast("氏名を入力してください");
+      return;
+    }
+    setSaving(true);
     const supabase = createClient();
-    const { error } = await supabase.from("players").update({ status }).eq("id", player.id);
+    const { error } = await supabase
+      .from("players")
+      .update({
+        sei: sei.trim(),
+        mei: mei.trim(),
+        sei_kana: seiKana.trim() || null,
+        mei_kana: meiKana.trim() || null,
+        grade: grade || null,
+        number: number.trim() || null,
+        positions,
+        status,
+      })
+      .eq("id", player.id);
+    setSaving(false);
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("ステータスを更新しました");
+    toast("選手情報を更新しました");
+    setEditing(false);
     load();
   }
 
@@ -85,6 +132,116 @@ export default function PlayerDetailPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : !player ? (
         <EmptyState>選手が見つかりません</EmptyState>
+      ) : editing ? (
+        <>
+          <SectionLabel>選手情報を編集</SectionLabel>
+          <Card>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <FieldLabel>氏</FieldLabel>
+                <input className={inputClass()} value={sei} onChange={(e) => setSei(e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <FieldLabel>名</FieldLabel>
+                <input className={inputClass()} value={mei} onChange={(e) => setMei(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <div className="flex-1">
+                <FieldLabel>氏(カナ)</FieldLabel>
+                <input className={inputClass()} value={seiKana} onChange={(e) => setSeiKana(e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <FieldLabel>名(カナ)</FieldLabel>
+                <input className={inputClass()} value={meiKana} onChange={(e) => setMeiKana(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>学年</FieldLabel>
+              {status === "OB・OG" ? (
+                <input
+                  type="number"
+                  min={6}
+                  className={inputClass()}
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                />
+              ) : (
+                <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
+                  <option value="">選択してください</option>
+                  {GRADES.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>背番号(リバ)</FieldLabel>
+              <input className={inputClass()} value={number} onChange={(e) => setNumber(e.target.value)} />
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>ポジション(複数選択可)</FieldLabel>
+              <div className="flex gap-1.5 flex-wrap">
+                {POSITIONS.map((p) => (
+                  <SegButton
+                    key={p}
+                    variant="small"
+                    active={positions.includes(p)}
+                    onClick={() => togglePos(p)}
+                    className="flex-none px-3.5"
+                  >
+                    {p}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>ステータス</FieldLabel>
+              <select
+                className={inputClass()}
+                value={status}
+                onChange={(e) => setStatus(e.target.value as PlayerStatus)}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <SubmitButton onClick={handleSave} disabled={saving}>
+              {saving ? "保存中…" : "保存する"}
+            </SubmitButton>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+            >
+              キャンセル
+            </button>
+          </Card>
+
+          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
+          <Card>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+            >
+              {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
+            </button>
+          </Card>
+        </>
       ) : (
         <>
           <SectionLabel>基本情報</SectionLabel>
@@ -100,21 +257,7 @@ export default function PlayerDetailPage() {
             <div className="text-xs text-ink-soft mt-1">
               {player.positions.length > 0 ? player.positions.join("・") : "ポジション未設定"}
             </div>
-          </Card>
-
-          <SectionLabel>ステータス</SectionLabel>
-          <Card>
-            <select
-              className={inputClass()}
-              value={player.status}
-              onChange={(e) => handleStatusChange(e.target.value as PlayerStatus)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
           </Card>
 
           <SectionLabel>メモ</SectionLabel>
@@ -130,17 +273,7 @@ export default function PlayerDetailPage() {
             )}
           </Card>
 
-          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
-          <Card>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-            >
-              {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
-            </button>
-          </Card>
+          <SubmitButton onClick={startEdit}>編集する</SubmitButton>
         </>
       )}
     </PageShell>
