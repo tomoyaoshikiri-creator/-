@@ -121,6 +121,7 @@ export interface Database {
           id: string;
           schedule_id: string;
           user_id: string;
+          player_id: string | null;
           status: AttendanceStatus;
           accompany: YesNo | null;
           accompany_count: number | null;
@@ -133,6 +134,7 @@ export interface Database {
           id?: string;
           schedule_id: string;
           user_id: string;
+          player_id?: string | null;
           status: AttendanceStatus;
           accompany?: YesNo | null;
           accompany_count?: number | null;
@@ -237,6 +239,23 @@ export interface Database {
         };
         Relationships: [];
       };
+      player_guardians: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          profile_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          profile_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       player_notes: {
         Row: {
           id: string;
@@ -332,6 +351,7 @@ export type Notice = Database["public"]["Tables"]["notices"]["Row"];
 export type NoticeAttachment = Database["public"]["Tables"]["notice_attachments"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
+export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
