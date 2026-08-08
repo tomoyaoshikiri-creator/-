@@ -12,7 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
-import { playerFullName, scheduleMeta, sortPlayers } from "@/lib/format";
+import { playerFullName, scheduleMeta, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
@@ -60,12 +60,14 @@ export default function GamePage() {
     (async () => {
       const supabase = createClient();
       const [{ data: sch }, { data: p }] = await Promise.all([
-        supabase.from("schedules").select("*").eq("type", "game").order("date", { ascending: false }),
+        supabase.from("schedules").select("*").eq("type", "game").order("date", { ascending: true }),
         supabase.from("players").select("*"),
       ]);
       setGames(sch ?? []);
       setPlayers(sortPlayers((p ?? []).filter((x) => x.status === "在籍")));
-      setSelectedGameId((prev) => prev || sch?.[0]?.id || "");
+      const today = todayDateStr();
+      const defaultId = sch?.find((g) => g.date >= today)?.id ?? sch?.[sch.length - 1]?.id ?? "";
+      setSelectedGameId((prev) => prev || defaultId);
       setLoading(false);
     })();
   }, []);
