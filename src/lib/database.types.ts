@@ -49,6 +49,7 @@ export interface Database {
           name: string;
           role: Role;
           status: UserStatus;
+          email: string | null;
           created_at: string;
         };
         Insert: {
@@ -57,6 +58,7 @@ export interface Database {
           name: string;
           role?: Role;
           status?: UserStatus;
+          email?: string | null;
           created_at?: string;
         };
         Update: Partial<{
@@ -338,6 +340,17 @@ export interface Database {
         Args: Record<string, never>;
         Returns: string | null;
       };
+      list_team_members: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          name: string;
+          role: Role;
+          status: UserStatus;
+          email: string | null;
+          created_at: string;
+        }[];
+      };
     };
   };
 }
@@ -355,3 +368,4 @@ export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["R
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
+export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];

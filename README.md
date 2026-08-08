@@ -25,6 +25,7 @@
    - `0013_game_matches.sql`: 1日に複数試合ある場合に対応するため、予定とクォーター記録の間に「第◯試合・対戦相手」を表すgame_matchesテーブルを追加
    - `0014_player_guardians.sql`: 選手⇔保護者アカウントの紐付け(player_guardians)を追加し、出欠(attendances)を選手単位でも記録できるようにする
    - `0015_players_select_own_child.sql`: 保護者アカウント(一般・役員)が、紐付けられた自分の子ども(選手)の情報だけは閲覧できるようにする(playersテーブルは元々指導者・管理者のみ閲覧可だったための追加ポリシー)
+   - `0016_profile_email.sql`: profiles.emailを追加し、チーム作成・招待受諾時にauth.usersのメールアドレスをコピーする。list_team_members() RPCを追加し、ユーザー管理画面では管理者だけがメールアドレスを見られるようにする(profiles_selectポリシー自体には乗せていないため、他のロールはAPIレベルでも取得できない)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。

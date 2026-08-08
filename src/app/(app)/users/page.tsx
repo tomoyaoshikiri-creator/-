@@ -12,7 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { playerFullName } from "@/lib/format";
-import type { Invite, Player, Profile, Role, UserStatus } from "@/lib/database.types";
+import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
 const ROLE_OPTIONS: Role[] = ["一般", "役員", "指導者", "管理者"];
 const STATUS_OPTIONS: UserStatus[] = ["アクティブ", "休止"];
@@ -21,7 +21,7 @@ export default function UsersPage() {
   const router = useRouter();
   const { userId, teamId, role } = useSession();
   const toast = useToast();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [guardianLinks, setGuardianLinks] = useState<Record<string, string[]>>({});
@@ -40,7 +40,7 @@ export default function UsersPage() {
     const supabase = createClient();
     setLoading(true);
     const [{ data: p }, { data: inv }, { data: pl }, { data: links }] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: true }),
+      supabase.rpc("list_team_members"),
       supabase.from("invites").select("*").order("created_at", { ascending: false }),
       supabase.from("players").select("*").eq("status", "在籍"),
       supabase.from("player_guardians").select("player_id, profile_id"),
@@ -252,6 +252,13 @@ export default function UsersPage() {
                       保存
                     </button>
                   </div>
+
+                  {u.email && (
+                    <>
+                      <FieldLabel>メールアドレス</FieldLabel>
+                      <div className="text-[12.5px] text-ink mb-2.5">{u.email}</div>
+                    </>
+                  )}
 
                   <FieldLabel>紐付ける選手</FieldLabel>
                   {players.length === 0 ? (
