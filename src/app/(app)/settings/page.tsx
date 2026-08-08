@@ -9,7 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { teamLogoUrl } from "@/lib/teamLogo";
 import { safeExt } from "@/lib/storagePath";
@@ -19,9 +19,16 @@ const DEFAULT_ACCENT = "#22201c";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { role, teamId } = useSession();
+  const { userId, role, name: sessionName, teamId } = useSession();
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canManageTeam = canManageSettings(role);
+
+  const [name, setName] = useState(sessionName);
+  const [savingName, setSavingName] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const [primary, setPrimary] = useState(DEFAULT_PRIMARY);
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
@@ -31,13 +38,48 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (!canManageSettings(role)) {
-      router.replace("/schedule");
+  async function handleNameSave() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast("表示名を入力してください");
+      return;
     }
-  }, [role, router]);
+    setSavingName(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("profiles").update({ name: trimmed }).eq("id", userId);
+    setSavingName(false);
+    if (error) {
+      toast(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("表示名を更新しました");
+    router.refresh();
+  }
+
+  async function handlePasswordSave() {
+    if (newPassword.length < 8) {
+      toast("パスワードは8文字以上で入力してください");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast("確認用パスワードが一致しません");
+      return;
+    }
+    setSavingPassword(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) {
+      toast(`変更に失敗しました: ${error.message}`);
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    toast("パスワードを変更しました");
+  }
 
   useEffect(() => {
+    if (!canManageTeam) return;
     (async () => {
       const supabase = createClient();
       const { data } = await supabase
@@ -53,7 +95,7 @@ export default function SettingsPage() {
       setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
       setLoading(false);
     })();
-  }, [teamId]);
+  }, [teamId, canManageTeam]);
 
   async function handleSave() {
     setSaving(true);
@@ -127,133 +169,166 @@ export default function SettingsPage() {
     toast("ロゴを削除しました。反映には再読み込みが必要です。");
   }
 
-  if (!canManageSettings(role)) return null;
-
   return (
-    <PageShell header={<AppHeader title="チーム設定" rightSlot={<CurrentUserBadge />} />}>
-      <SectionLabel>ロゴ</SectionLabel>
-      {loading ? (
-        <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-      ) : (
-        <Card>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="チームロゴ" className="w-full h-full object-contain" />
-              ) : (
-                <span className="text-[10px] text-ink-soft text-center">未設定</span>
-              )}
-            </div>
-            <div className="flex-1">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-              >
-                {uploading ? "処理中…" : "画像を選ぶ"}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                className="hidden"
-                onChange={(e) => handleLogoChange(e.target.files?.[0])}
-              />
-              {logoUrl && (
+    <PageShell header={<AppHeader title="設定" rightSlot={<CurrentUserBadge />} />}>
+      <SectionLabel>アカウント</SectionLabel>
+      <Card>
+        <FieldLabel>表示名</FieldLabel>
+        <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass()} />
+        <SubmitButton onClick={handleNameSave} disabled={savingName}>
+          {savingName ? "保存中…" : "表示名を保存する"}
+        </SubmitButton>
+      </Card>
+
+      <Card>
+        <FieldLabel>新しいパスワード</FieldLabel>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className={inputClass()}
+        />
+        <div className="mt-3">
+          <FieldLabel>新しいパスワード(確認)</FieldLabel>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={inputClass()}
+          />
+        </div>
+        <SubmitButton onClick={handlePasswordSave} disabled={savingPassword}>
+          {savingPassword ? "変更中…" : "パスワードを変更する"}
+        </SubmitButton>
+      </Card>
+
+      {canManageTeam && (
+        <>
+          <SectionLabel>ロゴ</SectionLabel>
+          {loading ? (
+            <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
+          ) : (
+            <Card>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={logoUrl} alt="チームロゴ" className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-[10px] text-ink-soft text-center">未設定</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                  >
+                    {uploading ? "処理中…" : "画像を選ぶ"}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => handleLogoChange(e.target.files?.[0])}
+                  />
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleLogoRemove}
+                      disabled={uploading}
+                      className="ml-2 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white text-ink-soft"
+                    >
+                      削除
+                    </button>
+                  )}
+                  <div className="text-xs text-ink-soft mt-2">
+                    アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          <SectionLabel>配色</SectionLabel>
+          {loading ? (
+            <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
+          ) : (
+            <Card>
+              <div className="text-xs text-ink-soft mb-4">
+                {customized
+                  ? "このチーム専用の配色を使っています。"
+                  : "現在はアプリ標準の配色です。チームのブランドカラーに変更できます。"}
+              </div>
+
+              <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={primary}
+                  onChange={(e) => setPrimary(e.target.value)}
+                  className="w-12 h-10 rounded-lg border border-line bg-white"
+                />
+                <input
+                  type="text"
+                  value={primary}
+                  onChange={(e) => setPrimary(e.target.value)}
+                  className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+                />
+              </div>
+
+              <div className="mt-4">
+                <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-line bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                    className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2 items-center">
+                <span
+                  className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
+                  style={{ backgroundColor: primary }}
+                >
+                  基調色
+                </span>
+                <span
+                  className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
+                  style={{ backgroundColor: accent }}
+                >
+                  アクセント
+                </span>
+              </div>
+
+              <SubmitButton onClick={handleSave} disabled={saving}>
+                {saving ? "保存中…" : "この配色を保存する"}
+              </SubmitButton>
+
+              {customized && (
                 <button
                   type="button"
-                  onClick={handleLogoRemove}
-                  disabled={uploading}
-                  className="ml-2 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white text-ink-soft"
+                  onClick={handleReset}
+                  disabled={saving}
+                  className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
                 >
-                  削除
+                  デフォルトの配色に戻す
                 </button>
               )}
-              <div className="text-xs text-ink-soft mt-2">
-                アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      <SectionLabel>配色</SectionLabel>
-      {loading ? (
-        <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-      ) : (
-        <Card>
-          <div className="text-xs text-ink-soft mb-4">
-            {customized
-              ? "このチーム専用の配色を使っています。"
-              : "現在はアプリ標準の配色です。チームのブランドカラーに変更できます。"}
-          </div>
-
-          <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={primary}
-              onChange={(e) => setPrimary(e.target.value)}
-              className="w-12 h-10 rounded-lg border border-line bg-white"
-            />
-            <input
-              type="text"
-              value={primary}
-              onChange={(e) => setPrimary(e.target.value)}
-              className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-            />
-          </div>
-
-          <div className="mt-4">
-            <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={accent}
-                onChange={(e) => setAccent(e.target.value)}
-                className="w-12 h-10 rounded-lg border border-line bg-white"
-              />
-              <input
-                type="text"
-                value={accent}
-                onChange={(e) => setAccent(e.target.value)}
-                className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2 items-center">
-            <span
-              className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
-              style={{ backgroundColor: primary }}
-            >
-              基調色
-            </span>
-            <span
-              className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
-              style={{ backgroundColor: accent }}
-            >
-              アクセント
-            </span>
-          </div>
-
-          <SubmitButton onClick={handleSave} disabled={saving}>
-            {saving ? "保存中…" : "この配色を保存する"}
-          </SubmitButton>
-
-          {customized && (
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
-            >
-              デフォルトの配色に戻す
-            </button>
+            </Card>
           )}
-        </Card>
+        </>
       )}
     </PageShell>
   );

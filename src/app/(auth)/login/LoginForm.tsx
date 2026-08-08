@@ -26,6 +26,12 @@ export function LoginForm() {
         {pending ? "ログイン中…" : "ログイン"}
       </SubmitButton>
 
+      <div className="text-center text-[12px] mt-3">
+        <Link href="/forgot-password" className="text-ink-soft font-bold">
+          パスワードをお忘れですか?
+        </Link>
+      </div>
+
       <div className="text-center text-[12px] text-ink-soft mt-4">
         はじめての方は{" "}
         <Link href="/signup" className="text-orange font-bold">

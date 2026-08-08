@@ -19,6 +19,7 @@
    - `0007_notice_attachment_delete.sql`: お知らせ添付資料の削除用ポリシー(編集画面からの削除に必要)
    - `0008_notice_attachment_insert_any_writer.sql`: 添付資料の登録を発信者本人だけでなく書き込み権限のある全員に解放
    - `0009_notice_delete.sql`: お知らせ削除用のポリシー(編集画面からの削除に必要)
+   - `0010_profile_self_update.sql`: 本人による表示名の変更を許可するポリシー・ガード(権限・ステータス・所属チームは管理者のみ変更可)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -64,9 +65,10 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | 練習日報(登録・閲覧、チーム全体で共有) | ○ | ○ | ○ | ○ |
 | 選手 / 選手メモ / 試合記録 | – | – | ○ | ○ |
 | ユーザー管理・招待リンク発行 | – | – | – | ○ |
-| チーム設定(配色・ロゴ) | – | – | – | ○ |
+| 設定: 自分のアカウント編集(表示名・パスワード) | ○ | ○ | ○ | ○ |
+| 設定: チーム設定(配色・ロゴ) | – | – | – | ○ |
 
-画面上には権限名は表示せず、裏側の判定のみでタブ・操作を出し分けている(`src/lib/permissions.ts`)。データのアクセス制御はUI側の出し分けに加えて、Supabase側のRow Level Securityで最終的に担保している(`supabase/migrations/`)。
+画面上には権限名は表示せず、裏側の判定のみでタブ・操作を出し分けている(`src/lib/permissions.ts`)。データのアクセス制御はUI側の出し分けに加えて、Supabase側のRow Level Securityで最終的に担保している(`supabase/migrations/`)。「設定」タブは全ロールに表示されるが、中身は権限によって異なる(全員: 自分のアカウント編集のみ / 管理者: それに加えてチームのロゴ・配色設定)。他のユーザーの情報編集(表示名・権限・ステータス)は管理者向けの「ユーザー管理」タブに集約しており、管理者以外には他ユーザーの情報は一切表示されない。
 
 ## デザイン・ブランディング
 
@@ -86,10 +88,11 @@ supabase/migrations/
 src/
   app/
     (auth)/login, signup, setup, invite/[token]  認証フロー(ClubLinkブランディング)
+    (auth)/forgot-password, reset-password       パスワード再設定(忘れた場合の復旧)
     (app)/schedule, schedule/[id], notice, report, 予定(一覧は要約カード→詳細で出欠登録)・お知らせ・日報(全ロール)
           players, notes, game,                  選手・選手メモ・試合記録(指導者以上)
-          users                                  ユーザー管理・招待リンク発行(管理者のみ)
-          settings                               チーム設定: 配色・ロゴ(管理者のみ)
+          users                                  ユーザー管理(表示名・権限・ステータス編集)・招待リンク発行(管理者のみ)
+          settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ロゴ、管理者のみ)
     auth/confirm, auth/complete                  メール確認リンクのコールバック
     icon.tsx, apple-icon.tsx, manifest.ts, icons/ PWAアイコン・マニフェスト(ClubLink共通)
   components/        AppHeader・TabBar・Card・Modal等の共通UI

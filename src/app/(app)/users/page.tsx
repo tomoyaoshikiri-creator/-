@@ -24,6 +24,7 @@ export default function UsersPage() {
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<"一般" | "指導者" | null>(null);
   const [origin, setOrigin] = useState("");
@@ -51,6 +52,22 @@ export default function UsersPage() {
   useEffect(() => {
     if (!canAccessTab(role, "users")) router.replace("/schedule");
   }, [role, router]);
+
+  async function handleNameChange(id: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast("表示名を入力してください");
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.from("profiles").update({ name: trimmed }).eq("id", id);
+    if (error) {
+      toast(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("表示名を更新しました");
+    load();
+  }
 
   async function handleRoleChange(id: string, role: Role) {
     const supabase = createClient();
@@ -184,6 +201,26 @@ export default function UsersPage() {
 
               {expandedId === u.id && (
                 <div className="pb-3.5">
+                  <FieldLabel>表示名</FieldLabel>
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <input
+                      className={inputClass("flex-1")}
+                      value={nameDrafts[u.id] ?? u.name}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => setNameDrafts((m) => ({ ...m, [u.id]: e.target.value }))}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNameChange(u.id, nameDrafts[u.id] ?? u.name);
+                      }}
+                      className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                    >
+                      保存
+                    </button>
+                  </div>
+
                   <FieldLabel>ステータス</FieldLabel>
                   <select
                     className={inputClass("mb-2.5")}
