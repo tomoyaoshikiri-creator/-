@@ -39,7 +39,7 @@ export function AppHeader({
         )}
         {rightSlot}
       </div>
-      <h1 className="font-display font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
+      <h1 className="font-sans font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
         {title}
       </h1>
       {searchPlaceholder && (
