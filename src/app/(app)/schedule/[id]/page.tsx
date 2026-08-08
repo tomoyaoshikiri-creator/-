@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -18,6 +18,7 @@ import { NewScheduleModal } from "../NewScheduleModal";
 
 export default function ScheduleDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { userId, role } = useSession();
   const toast = useToast();
 
@@ -25,6 +26,7 @@ export default function ScheduleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
   const [accompany, setAccompany] = useState<YesNo | null>(null);
@@ -109,7 +111,7 @@ export default function ScheduleDetailPage() {
 
           {canWriteSchedule(role) && (
             <>
-              <div className="flex gap-2 mb-3">
+              <div className="flex flex-wrap gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setRosterOpen(true)}
@@ -124,6 +126,13 @@ export default function ScheduleDetailPage() {
                 >
                   編集
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setCopyOpen(true)}
+                  className="px-3 py-1.5 rounded-[8px] border border-line text-[11px] font-bold text-ink-soft bg-paper"
+                >
+                  コピーして登録
+                </button>
               </div>
               <AttendanceRosterModal schedule={schedule} open={rosterOpen} onClose={() => setRosterOpen(false)} />
               <NewScheduleModal
@@ -133,6 +142,16 @@ export default function ScheduleDetailPage() {
                 onCreated={() => {
                   setEditOpen(false);
                   load();
+                }}
+              />
+              <NewScheduleModal
+                open={copyOpen}
+                onClose={() => setCopyOpen(false)}
+                copySource={schedule}
+                onCreated={() => {
+                  setCopyOpen(false);
+                  toast("予定をコピーして登録しました");
+                  router.push("/schedule");
                 }}
               />
             </>

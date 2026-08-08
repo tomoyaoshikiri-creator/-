@@ -16,11 +16,13 @@ export function NewScheduleModal({
   onClose,
   onCreated,
   editSchedule,
+  copySource,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
   editSchedule?: Schedule;
+  copySource?: Schedule;
 }) {
   const supabase = createClient();
   const { userId, teamId } = useSession();
@@ -52,22 +54,23 @@ export function NewScheduleModal({
 
   useEffect(() => {
     if (!open) return;
-    if (editSchedule) {
-      setType(editSchedule.type);
-      setTitle(editSchedule.title);
-      setDate(editSchedule.date);
-      const [sh, sm] = (editSchedule.start_time ?? "").split(":");
+    const source = editSchedule ?? copySource;
+    if (source) {
+      setType(source.type);
+      setTitle(source.title);
+      setDate(editSchedule ? source.date : "");
+      const [sh, sm] = (source.start_time ?? "").split(":");
       setStartHour(sh ?? "");
       setStartMin(sm ?? "");
-      const [eh, em] = (editSchedule.end_time ?? "").split(":");
+      const [eh, em] = (source.end_time ?? "").split(":");
       setEndHour(eh ?? "");
       setEndMin(em ?? "");
-      setPlace(editSchedule.place ?? "");
-      setToban(editSchedule.toban ?? "");
+      setPlace(source.place ?? "");
+      setToban(source.toban ?? "");
     } else {
       reset();
     }
-  }, [open, editSchedule]);
+  }, [open, editSchedule, copySource]);
 
   async function handleSubmit() {
     if (!title.trim()) {
