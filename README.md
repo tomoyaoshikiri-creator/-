@@ -28,6 +28,7 @@
    - `0016_profile_email.sql`: profiles.emailを追加し、チーム作成・招待受諾時にauth.usersのメールアドレスをコピーする。list_team_members() RPCを追加し、ユーザー管理画面では管理者だけがメールアドレスを見られるようにする(profiles_selectポリシー自体には乗せていないため、他のロールはAPIレベルでも取得できない)
    - ユーザー管理画面からのユーザー削除は`src/app/api/admin/delete-user/route.ts`(service_roleキー使用)経由でauth.usersごと削除するため、マイグレーション追加なし。profiles.idはauth.users(id)にon delete cascadeで参照しているため、auth.users側を削除すればprofiles行(および紐づく出欠等)も自動的に削除される。これにより削除したユーザーのメールアドレスは新規登録に再利用できるようになる
    - `0017_schedule_target_and_admin_attendance.sql`: schedules.target_grade_minを追加し、予定ごとに出欠対象を「全員」または「○年生以上」に限定できるようにする。あわせてattendances_insert/updateポリシーを見直し、これまで検証していなかった選手との紐付け(player_guardians)チェックを追加しつつ、管理者は紐付けに関わらず全選手の出欠を代理登録・編集できるようにする
+   - `0018_advance_academic_year_admin_only.sql`: 年度更新(advance_academic_year)は誤操作の影響が大きいため、指導者では実行できないようにし管理者のみに限定する(UIの「年度更新」ボタンも管理者にのみ表示)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -119,6 +120,7 @@ src/
 
 - `players.grade` は在籍中は"0"(未就学)〜"6"だが、6年生が年度更新でOB・OGになった後も、年度更新のたびに増え続ける("卒団時の学年(6) + 卒団してからの年度更新回数")。画面上は「7年生」のようには出さず、`obogCohortLabel()`(`src/lib/format.ts`)で「卒団1年目」のような経過年数表示に変換する
 - 「選手」タブの一覧にはOB・OGを表示せず、件数だけのリンクから `/players/obog` に遷移する専用画面(卒団年次ごとにセクション分け)で確認する仕組みにしている(卒団者が増えても一覧が際限なく伸びないようにするため)
+- 年度更新(「年度更新」ボタン、`advance_academic_year()` RPC)は全選手の学年を一括で書き換える不可逆性の高い操作のため、指導者ではなく管理者のみが実行できる(UI・RPCの両方で制限)
 
 ## 出欠と選手⇔保護者の紐付け
 

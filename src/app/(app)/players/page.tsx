@@ -117,13 +117,15 @@ export default function PlayersPage() {
     >
       <div className="flex items-center justify-between mb-2.5">
         <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft">選手マスタ</div>
-        <button
-          type="button"
-          onClick={handleYearUpdate}
-          className="flex-none px-2.5 py-1.5 text-[11px] font-bold border border-line rounded-[10px] bg-paper text-ink-soft"
-        >
-          {yearConfirm ? "もう一度タップで実行" : "年度更新"}
-        </button>
+        {role === "管理者" && (
+          <button
+            type="button"
+            onClick={handleYearUpdate}
+            className="flex-none px-2.5 py-1.5 text-[11px] font-bold border border-line rounded-[10px] bg-paper text-ink-soft"
+          >
+            {yearConfirm ? "もう一度タップで実行" : "年度更新"}
+          </button>
+        )}
       </div>
 
       <Card>
