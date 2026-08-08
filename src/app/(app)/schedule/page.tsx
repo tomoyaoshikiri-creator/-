@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -9,8 +10,10 @@ import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
+import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { canWriteSchedule } from "@/lib/permissions";
+import { todayDateStr } from "@/lib/format";
 import type { Attendance, Schedule } from "@/lib/database.types";
 import { ScheduleCard } from "./ScheduleCard";
 import { NewScheduleModal } from "./NewScheduleModal";
@@ -24,6 +27,7 @@ export default function SchedulePage() {
   const [attendances, setAttendances] = useState<Record<string, Attendance>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -45,9 +49,27 @@ export default function SchedulePage() {
     load();
   }, [load]);
 
+  const today = todayDateStr();
+  const upcoming = useMemo(() => schedules.filter((s) => s.date >= today), [schedules, today]);
+  const hasPast = useMemo(() => schedules.some((s) => s.date < today), [schedules, today]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim();
+    if (!q) return upcoming;
+    return upcoming.filter((s) => s.title.includes(q) || (s.place ?? "").includes(q));
+  }, [upcoming, query]);
+
   return (
     <PageShell
-      header={<AppHeader title="直近の予定" searchPlaceholder="検索" rightSlot={<CurrentUserBadge />} />}
+      header={
+        <AppHeader
+          title="直近の予定"
+          searchPlaceholder="検索"
+          searchValue={query}
+          onSearchChange={setQuery}
+          rightSlot={<CurrentUserBadge />}
+        />
+      }
       fab={
         canWriteSchedule(role) && (
           <>
@@ -79,12 +101,19 @@ export default function SchedulePage() {
           <SectionLabel>予定 &amp; 出欠</SectionLabel>
           {loading ? (
             <EmptyState>読み込み中…</EmptyState>
-          ) : schedules.length === 0 ? (
-            <EmptyState>予定がありません</EmptyState>
+          ) : filtered.length === 0 ? (
+            <EmptyState>{query ? "該当する予定がありません" : "予定がありません"}</EmptyState>
           ) : (
-            schedules.map((s) => (
-              <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />
-            ))
+            filtered.map((s) => <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />)
+          )}
+          {!loading && !query && hasPast && (
+            <Link
+              href="/schedule/history"
+              className="flex items-center justify-center gap-1 mt-2 py-2.5 text-[12.5px] font-bold text-ink-soft"
+            >
+              過去の予定を見る
+              <ChevronRightIcon className="w-3 h-3" />
+            </Link>
           )}
         </div>
       ) : (

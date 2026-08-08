@@ -10,12 +10,16 @@ export function AppHeader({
   backHref,
   rightSlot,
   searchPlaceholder,
+  searchValue,
+  onSearchChange,
 }: {
   title: string;
   variant?: "list" | "detail";
   backHref?: string;
   rightSlot?: React.ReactNode;
   searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }) {
   const { teamName, teamLogoUrl } = useSession();
   const bg = variant === "detail" ? "bg-navy" : "bg-orange";
@@ -43,8 +47,15 @@ export function AppHeader({
         {title}
       </h1>
       {searchPlaceholder && (
-        <div className="bg-white/22 rounded-[10px] px-3 py-2.5 text-[12.5px] text-white/85">
-          🔍 {searchPlaceholder}
+        <div className="bg-white/22 rounded-[10px] px-3 py-2.5 flex items-center gap-1.5">
+          <span className="text-[12.5px]">🔍</span>
+          <input
+            type="text"
+            value={searchValue ?? ""}
+            onChange={(e) => onSearchChange?.(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="flex-1 min-w-0 bg-transparent text-[12.5px] text-white placeholder-white/70 outline-none"
+          />
         </div>
       )}
     </div>

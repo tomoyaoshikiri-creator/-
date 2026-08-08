@@ -10,6 +10,11 @@ export function formatTodayLabel(): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+export function todayDateStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function scheduleMeta(s: {
   date: string;
   start_time: string | null;
