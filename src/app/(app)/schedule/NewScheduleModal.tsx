@@ -66,7 +66,7 @@ export function NewScheduleModal({
       setEndHour(eh ?? "");
       setEndMin(em ?? "");
       setPlace(source.place ?? "");
-      setToban(source.toban ?? "");
+      setToban(editSchedule ? (source.toban ?? "") : "");
     } else {
       reset();
     }
