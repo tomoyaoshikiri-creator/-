@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Cormorant, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -28,12 +28,6 @@ export const metadata: Metadata = {
     title: "TsugaVic",
     statusBarStyle: "black-translucent",
   },
-};
-
-// viewport-fit=coverを指定しないと、ホームインジケーター等の安全域を
-// env(safe-area-inset-*)で参照しても常に0になってしまう(下部タブバーで使用)。
-export const viewport: Viewport = {
-  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -15,7 +15,7 @@ export function TabBar({ role }: { role: Role }) {
 
   return (
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-4.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >
