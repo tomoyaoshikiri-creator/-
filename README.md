@@ -26,6 +26,7 @@
    - `0014_player_guardians.sql`: 選手⇔保護者アカウントの紐付け(player_guardians)を追加し、出欠(attendances)を選手単位でも記録できるようにする
    - `0015_players_select_own_child.sql`: 保護者アカウント(一般・役員)が、紐付けられた自分の子ども(選手)の情報だけは閲覧できるようにする(playersテーブルは元々指導者・管理者のみ閲覧可だったための追加ポリシー)
    - `0016_profile_email.sql`: profiles.emailを追加し、チーム作成・招待受諾時にauth.usersのメールアドレスをコピーする。list_team_members() RPCを追加し、ユーザー管理画面では管理者だけがメールアドレスを見られるようにする(profiles_selectポリシー自体には乗せていないため、他のロールはAPIレベルでも取得できない)
+   - ユーザー管理画面からのユーザー削除は`src/app/api/admin/delete-user/route.ts`(service_roleキー使用)経由でauth.usersごと削除するため、マイグレーション追加なし。profiles.idはauth.users(id)にon delete cascadeで参照しているため、auth.users側を削除すればprofiles行(および紐づく出欠等)も自動的に削除される。これにより削除したユーザーのメールアドレスは新規登録に再利用できるようになる
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -46,7 +47,10 @@ cp .env.local.example .env.local
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` はProject Settings > API > service_role secretから取得する。ユーザー管理画面でのユーザー削除時にauth.usersのアカウント(メールアドレス含む)を完全に削除するために使用するサーバー専用の鍵で、`NEXT_PUBLIC_`を付けずブラウザに露出させない(`src/app/api/admin/delete-user/route.ts`でのみ使用)。Vercelにデプロイする場合もEnvironment Variablesに同名で追加すること。
 
 ### 3. 依存関係のインストールと起動
 
@@ -100,6 +104,7 @@ src/
           users                                  ユーザー管理(表示名・権限・ステータス編集)・招待リンク発行(管理者のみ)
           settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ロゴ、管理者のみ)
     auth/confirm, auth/complete                  メール確認リンクのコールバック
+    api/admin/delete-user                        ユーザー削除API(service_roleキーでauth.usersごと削除、サーバー専用)
     icon.tsx, apple-icon.tsx, manifest.ts, icons/ PWAアイコン・マニフェスト(ClubLink共通)
   components/        AppHeader・TabBar・Card・Modal等の共通UI
   lib/

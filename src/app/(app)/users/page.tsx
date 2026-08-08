@@ -131,10 +131,14 @@ export default function UsersPage() {
       return;
     }
     setDeleteConfirmId(null);
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
-    if (error) {
-      toast(error.message);
+    const res = await fetch("/api/admin/delete-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetId: id }),
+    });
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: "削除に失敗しました" }));
+      toast(error ?? "削除に失敗しました");
       return;
     }
     toast("ユーザーを削除しました");
