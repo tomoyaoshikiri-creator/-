@@ -256,11 +256,30 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
-      game_records: {
+      game_matches: {
         Row: {
           id: string;
           team_id: string;
           schedule_id: string;
+          game_number: number;
+          opponent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          schedule_id: string;
+          game_number: number;
+          opponent?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["game_matches"]["Insert"]>;
+        Relationships: [];
+      };
+      game_records: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
           quarter: number;
           starter_player_ids: string[];
           sub_player_ids: string[];
@@ -269,7 +288,7 @@ export interface Database {
         Insert: {
           id?: string;
           team_id: string;
-          schedule_id: string;
+          match_id: string;
           quarter: number;
           starter_player_ids?: string[];
           sub_player_ids?: string[];
@@ -314,4 +333,5 @@ export type NoticeAttachment = Database["public"]["Tables"]["notice_attachments"
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
+export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];

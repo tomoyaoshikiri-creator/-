@@ -21,6 +21,8 @@
    - `0009_notice_delete.sql`: お知らせ削除用のポリシー(編集画面からの削除に必要)
    - `0010_profile_self_update.sql`: 本人による表示名の変更を許可するポリシー・ガード(権限・ステータス・所属チームは管理者のみ変更可)
    - `0011_profile_delete_fk_fix.sql`: 予定・お知らせ・日報・選手メモ・招待リンクの作成者列を、ユーザー削除時にNULLへ変更するよう外部キーを修正(以前はこれらの記録があるとユーザーを削除できなかった)
+   - `0012_schedule_event_type.sql`: 予定の種別に「イベント」を追加
+   - `0013_game_matches.sql`: 1日に複数試合ある場合に対応するため、予定とクォーター記録の間に「第◯試合・対戦相手」を表すgame_matchesテーブルを追加
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。

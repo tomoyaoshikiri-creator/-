@@ -13,7 +13,7 @@ import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { playerFullName, scheduleMeta, sortPlayers, todayDateStr } from "@/lib/format";
-import type { Player, Schedule } from "@/lib/database.types";
+import type { GameMatch, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
   player,
@@ -49,6 +49,11 @@ export default function GamePage() {
   const toast = useToast();
   const [games, setGames] = useState<Schedule[]>([]);
   const [selectedGameId, setSelectedGameId] = useState("");
+  const [matches, setMatches] = useState<GameMatch[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState("");
+  const [matchesLoading, setMatchesLoading] = useState(false);
+  const [addingMatch, setAddingMatch] = useState(false);
+  const [opponent, setOpponent] = useState("");
   const [quarter, setQuarter] = useState(1);
   const [players, setPlayers] = useState<Player[]>([]);
   const [starters, setStarters] = useState<string[]>([]);
@@ -72,8 +77,47 @@ export default function GamePage() {
     })();
   }, []);
 
-  const loadRecord = useCallback(async (gameId: string, q: number) => {
-    if (!gameId) {
+  const loadMatches = useCallback(
+    async (gameId: string) => {
+      if (!gameId) {
+        setMatches([]);
+        setSelectedMatchId("");
+        return;
+      }
+      setMatchesLoading(true);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("game_matches")
+        .select("*")
+        .eq("schedule_id", gameId)
+        .order("game_number", { ascending: true });
+      let list = data ?? [];
+      if (list.length === 0) {
+        const { data: created } = await supabase
+          .from("game_matches")
+          .insert({ team_id: teamId, schedule_id: gameId, game_number: 1 })
+          .select()
+          .single();
+        if (created) list = [created];
+      }
+      setMatches(list);
+      setSelectedMatchId((prev) => (list.some((m) => m.id === prev) ? prev : (list[0]?.id ?? "")));
+      setMatchesLoading(false);
+    },
+    [teamId],
+  );
+
+  useEffect(() => {
+    loadMatches(selectedGameId);
+  }, [selectedGameId, loadMatches]);
+
+  useEffect(() => {
+    const m = matches.find((x) => x.id === selectedMatchId);
+    setOpponent(m?.opponent ?? "");
+  }, [selectedMatchId, matches]);
+
+  const loadRecord = useCallback(async (matchId: string, q: number) => {
+    if (!matchId) {
       setStarters([]);
       setSubs([]);
       return;
@@ -82,7 +126,7 @@ export default function GamePage() {
     const { data } = await supabase
       .from("game_records")
       .select("*")
-      .eq("schedule_id", gameId)
+      .eq("match_id", matchId)
       .eq("quarter", q)
       .maybeSingle();
     setStarters(data?.starter_player_ids ?? []);
@@ -90,8 +134,8 @@ export default function GamePage() {
   }, []);
 
   useEffect(() => {
-    loadRecord(selectedGameId, quarter);
-  }, [selectedGameId, quarter, loadRecord]);
+    loadRecord(selectedMatchId, quarter);
+  }, [selectedMatchId, quarter, loadRecord]);
 
   useEffect(() => {
     if (!canAccessTab(role, "game")) router.replace("/schedule");
@@ -115,36 +159,69 @@ export default function GamePage() {
     setSubs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  async function handleAddMatch() {
+    if (!selectedGameId) return;
+    setAddingMatch(true);
+    const supabase = createClient();
+    const nextNumber = (matches[matches.length - 1]?.game_number ?? 0) + 1;
+    const { data, error } = await supabase
+      .from("game_matches")
+      .insert({ team_id: teamId, schedule_id: selectedGameId, game_number: nextNumber })
+      .select()
+      .single();
+    setAddingMatch(false);
+    if (error) {
+      toast(`追加に失敗しました: ${error.message}`);
+      return;
+    }
+    if (data) {
+      setMatches((prev) => [...prev, data]);
+      setSelectedMatchId(data.id);
+    }
+  }
+
   async function handleSubmit() {
-    if (!selectedGameId) {
+    if (!selectedMatchId) {
       toast("試合を選択してください");
       return;
     }
     setSaving(true);
     const supabase = createClient();
+    const { error: opponentError } = await supabase
+      .from("game_matches")
+      .update({ opponent: opponent.trim() || null })
+      .eq("id", selectedMatchId);
+    if (opponentError) {
+      setSaving(false);
+      toast(`保存に失敗しました: ${opponentError.message}`);
+      return;
+    }
     const { error } = await supabase.from("game_records").upsert(
       {
         team_id: teamId,
-        schedule_id: selectedGameId,
+        match_id: selectedMatchId,
         quarter,
         starter_player_ids: starters,
         sub_player_ids: subs,
       },
-      { onConflict: "schedule_id,quarter" },
+      { onConflict: "match_id,quarter" },
     );
     setSaving(false);
     if (error) {
       toast(`登録に失敗しました: ${error.message}`);
       return;
     }
+    setMatches((prev) =>
+      prev.map((m) => (m.id === selectedMatchId ? { ...m, opponent: opponent.trim() || null } : m)),
+    );
     toast(`${quarter}Qの出場選手を登録しました`);
   }
 
-  const selectedGame = games.find((g) => g.id === selectedGameId);
+  const selectedMatch = matches.find((m) => m.id === selectedMatchId);
 
   return (
     <PageShell header={<AppHeader title="試合記録" rightSlot={<CurrentUserBadge />} />}>
-      <SectionLabel>対象の試合を選ぶ</SectionLabel>
+      <SectionLabel>対象の日付を選ぶ</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : games.length === 0 ? (
@@ -158,6 +235,47 @@ export default function GamePage() {
               </option>
             ))}
           </select>
+
+          <div className="mt-3">
+            <FieldLabel>何試合目</FieldLabel>
+            {matchesLoading ? (
+              <div className="text-[12.5px] text-ink-soft py-2">読み込み中…</div>
+            ) : (
+              <div className="flex gap-1.5 flex-wrap">
+                {matches.map((m) => (
+                  <SegButton
+                    key={m.id}
+                    variant="small"
+                    active={selectedMatchId === m.id}
+                    onClick={() => setSelectedMatchId(m.id)}
+                    className="flex-none px-3.5"
+                  >
+                    第{m.game_number}試合
+                  </SegButton>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddMatch}
+                  disabled={addingMatch}
+                  className="flex-none px-3 py-1.5 rounded-[10px] text-[11px] font-bold border border-line text-ink-soft bg-paper"
+                >
+                  {addingMatch ? "追加中…" : "+ 試合を追加"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {selectedMatch && (
+            <div className="mt-3">
+              <FieldLabel>対戦相手</FieldLabel>
+              <input
+                className={inputClass()}
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                placeholder="例:○○ミニバスケットボールクラブ"
+              />
+            </div>
+          )}
 
           <div className="mt-3">
             <FieldLabel>クォーター</FieldLabel>
@@ -208,7 +326,7 @@ export default function GamePage() {
             </Card>
           </div>
 
-          <SubmitButton onClick={handleSubmit} disabled={saving || !selectedGame}>
+          <SubmitButton onClick={handleSubmit} disabled={saving || !selectedMatch}>
             {saving ? "登録中…" : "このクォーターを登録する"}
           </SubmitButton>
         </>
