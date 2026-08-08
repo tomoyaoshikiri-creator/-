@@ -127,7 +127,7 @@ export default function UsersPage() {
     toast("リンクをコピーしました");
   }
 
-  const visibleInvites = invites.filter((inv) => inv.used_at || new Date(inv.expires_at) > new Date());
+  const visibleInvites = invites.filter((inv) => !inv.used_at && new Date(inv.expires_at) > new Date());
 
   return (
     <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
@@ -147,10 +147,7 @@ export default function UsersPage() {
         <Card>
           {visibleInvites.map((inv) => (
             <div key={inv.id} className="mb-3 last:mb-0">
-              <div className="text-xs font-bold">
-                {inv.role === "一般" ? "保護者用" : "指導者用"}
-                {inv.used_at ? "(使用済み)" : ""}
-              </div>
+              <div className="text-xs font-bold">{inv.role === "一般" ? "保護者用" : "指導者用"}</div>
               <div className="flex items-center gap-2 mt-1">
                 <input readOnly className={inputClass("text-[11px]")} value={`${origin}/invite/${inv.token}`} />
                 <button
