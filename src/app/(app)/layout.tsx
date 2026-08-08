@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SessionProvider } from "@/lib/session-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { TabBar } from "@/components/TabBar";
+import { Sidebar } from "@/components/Sidebar";
 import { InactivityLogout } from "@/components/InactivityLogout";
 import { teamLogoUrl } from "@/lib/teamLogo";
 
@@ -47,7 +48,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         <ToastProvider>
           <InactivityLogout />
-          <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
+          <div className="flex-1 flex md:flex-row flex-col min-h-0">
+            <Sidebar role={profile.role} />
+            <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
+          </div>
           <TabBar role={profile.role} />
         </ToastProvider>
       </SessionProvider>

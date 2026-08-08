@@ -3,35 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { TAB_LABELS, TAB_PATHS, tabsForRole, type TabKey } from "@/lib/permissions";
-import {
-  GameIcon,
-  NoticeIcon,
-  NotesIcon,
-  PlayersIcon,
-  ReportIcon,
-  ScheduleIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "@/components/icons";
-
-const TAB_ICONS: Record<TabKey, (props: { className?: string }) => React.ReactElement> = {
-  schedule: ScheduleIcon,
-  notice: NoticeIcon,
-  report: ReportIcon,
-  players: PlayersIcon,
-  notes: NotesIcon,
-  game: GameIcon,
-  users: UsersIcon,
-  settings: SettingsIcon,
-};
+import { TAB_LABELS, TAB_PATHS, tabsForRole } from "@/lib/permissions";
+import { TAB_ICONS } from "@/components/tabIcons";
 
 export function TabBar({ role }: { role: Role }) {
   const pathname = usePathname();
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
+    <nav className="md:hidden flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = TAB_PATHS[tab];
