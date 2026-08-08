@@ -1,20 +1,40 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 const ToastContext = createContext<(message: string) => void>(() => {});
 
+const DISPLAY_MS = 1800;
+const FADE_MS = 250;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [message, setMessage] = useState<string | null>(null);
+  const [queue, setQueue] = useState<string[]>([]);
+  const [current, setCurrent] = useState<string | null>(null);
   const [show, setShow] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
-    setMessage(msg);
-    setShow(true);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setShow(false), 1600);
+    setQueue((q) => [...q, msg]);
   }, []);
+
+  // キュー内の次のメッセージを表示する。同じフレーム内で複数回toast()が呼ばれても
+  // 後発のメッセージが先発のメッセージを即座に上書きして消してしまわないよう、
+  // 1件ずつ順番に表示してから次へ進む。
+  useEffect(() => {
+    if (current !== null || queue.length === 0) return;
+    const [next, ...rest] = queue;
+    setQueue(rest);
+    setCurrent(next);
+    setShow(true);
+    timerRef.current = setTimeout(() => {
+      setShow(false);
+      timerRef.current = setTimeout(() => setCurrent(null), FADE_MS);
+    }, DISPLAY_MS);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [queue, current]);
 
   return (
     <ToastContext.Provider value={showToast}>
@@ -24,7 +44,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
         }`}
       >
-        {message}
+        {current}
       </div>
     </ToastContext.Provider>
   );
