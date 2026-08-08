@@ -63,7 +63,7 @@ export default function SchedulePage() {
     <PageShell
       header={
         <AppHeader
-          title="直近の予定"
+          title="スケジュール"
           searchPlaceholder="検索"
           searchValue={query}
           onSearchChange={setQuery}

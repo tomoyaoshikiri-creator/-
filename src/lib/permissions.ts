@@ -33,7 +33,7 @@ export const TAB_PATHS: Record<TabKey, string> = {
 };
 
 export const PAGE_TITLES: Record<TabKey, string> = {
-  schedule: "直近の予定",
+  schedule: "スケジュール",
   notice: "お知らせ",
   report: "練習日報",
   players: "選手一覧",
