@@ -26,7 +26,9 @@ function AttendanceGroup({ title, rows }: { title: string; rows: Row[] }) {
             <div key={r.key} className="px-3.5 py-2.5 border-b border-line last:border-b-0">
               <div className="flex items-center justify-between">
                 <div className="font-bold text-[13px]">{r.name}</div>
-                <Pill tone={status === "出席" ? "ok" : "pending"}>{status ?? "未回答"}</Pill>
+                <Pill tone={status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending"}>
+                  {status ?? "未回答"}
+                </Pill>
               </div>
               {r.attendance && (
                 <div className="text-[11px] text-ink-soft mt-1">

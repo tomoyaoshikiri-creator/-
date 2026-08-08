@@ -1,8 +1,16 @@
-export function Pill({ tone, children }: { tone: "ok" | "pending"; children: React.ReactNode }) {
+export function Pill({
+  tone,
+  children,
+}: {
+  tone: "ok" | "pending" | "absent";
+  children: React.ReactNode;
+}) {
   const cls =
     tone === "ok"
       ? "bg-green/10 text-green"
-      : "bg-orange/10 text-orange";
+      : tone === "absent"
+        ? "bg-danger/10 text-danger"
+        : "bg-orange/10 text-orange";
   return (
     <span className={`font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg ${cls}`}>
       {children}
