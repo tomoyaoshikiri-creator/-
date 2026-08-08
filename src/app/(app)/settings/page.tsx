@@ -1,274 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
-import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canManageSettings } from "@/lib/permissions";
-import { teamLogoUrl } from "@/lib/teamLogo";
-import { safeExt } from "@/lib/storagePath";
 
-const DEFAULT_PRIMARY = "#9c8355";
-const DEFAULT_ACCENT = "#22201c";
+function SettingsRow({ href, label }: { href: string; label: string }) {
+  return (
+    <Link href={href} className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0">
+      <div className="font-bold text-[13.5px]">{label}</div>
+      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+    </Link>
+  );
+}
 
 export default function SettingsPage() {
-  const { role, name: sessionName, teamId } = useSession();
-  const toast = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { role } = useSession();
   const canManageTeam = canManageSettings(role);
-
-  const [primary, setPrimary] = useState(DEFAULT_PRIMARY);
-  const [accent, setAccent] = useState(DEFAULT_ACCENT);
-  const [customized, setCustomized] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    if (!canManageTeam) return;
-    (async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("teams")
-        .select("theme_primary, theme_accent, logo_path")
-        .eq("id", teamId)
-        .single();
-      if (data?.theme_primary || data?.theme_accent) {
-        setCustomized(true);
-        setPrimary(data.theme_primary ?? DEFAULT_PRIMARY);
-        setAccent(data.theme_accent ?? DEFAULT_ACCENT);
-      }
-      setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
-      setLoading(false);
-    })();
-  }, [teamId, canManageTeam]);
-
-  async function handleSave() {
-    setSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("teams")
-      .update({ theme_primary: primary, theme_accent: accent })
-      .eq("id", teamId);
-    setSaving(false);
-    if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-    setCustomized(true);
-    toast("配色を保存しました。反映には再読み込みが必要です。");
-  }
-
-  async function handleReset() {
-    setSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("teams")
-      .update({ theme_primary: null, theme_accent: null })
-      .eq("id", teamId);
-    setSaving(false);
-    if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
-      return;
-    }
-    setCustomized(false);
-    setPrimary(DEFAULT_PRIMARY);
-    setAccent(DEFAULT_ACCENT);
-    toast("デフォルトの配色に戻しました。反映には再読み込みが必要です。");
-  }
-
-  async function handleLogoChange(file: File | undefined) {
-    if (!file) return;
-    if (/\.(heic|heif)$/i.test(file.name)) {
-      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
-      return;
-    }
-    setUploading(true);
-    const supabase = createClient();
-    const path = `${teamId}/logo-${Date.now()}.${safeExt(file.name)}`;
-    const { error: uploadError } = await supabase.storage.from("team-logos").upload(path, file);
-    if (uploadError) {
-      setUploading(false);
-      toast(`アップロードに失敗しました: ${uploadError.message}`);
-      return;
-    }
-    const { error } = await supabase.from("teams").update({ logo_path: path }).eq("id", teamId);
-    setUploading(false);
-    if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-    setLogoUrl(teamLogoUrl(supabase, path));
-    toast("ロゴを更新しました。反映には再読み込みが必要です。");
-  }
-
-  async function handleLogoRemove() {
-    setUploading(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("teams").update({ logo_path: null }).eq("id", teamId);
-    setUploading(false);
-    if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
-      return;
-    }
-    setLogoUrl(null);
-    toast("ロゴを削除しました。反映には再読み込みが必要です。");
-  }
 
   return (
     <PageShell header={<AppHeader title="設定" rightSlot={<CurrentUserBadge />} />}>
       <SectionLabel>アカウント</SectionLabel>
       <Card>
-        <Link
-          href="/settings/name"
-          className="flex items-center justify-between py-2.5 border-b border-line"
-        >
-          <div>
-            <div className="font-bold text-[13.5px]">表示名</div>
-            <div className="text-[11px] text-ink-soft mt-0.5">{sessionName}</div>
-          </div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-        </Link>
-        <Link href="/settings/password" className="flex items-center justify-between py-2.5">
-          <div className="font-bold text-[13.5px]">パスワードを変更</div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-        </Link>
+        <SettingsRow href="/settings/name" label="表示名の変更" />
+        <SettingsRow href="/settings/password" label="パスワードを変更" />
       </Card>
 
       {canManageTeam && (
         <>
-          <SectionLabel>ロゴ</SectionLabel>
-          {loading ? (
-            <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-          ) : (
-            <Card>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={logoUrl} alt="チームロゴ" className="w-full h-full object-contain" />
-                  ) : (
-                    <span className="text-[10px] text-ink-soft text-center">未設定</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                  >
-                    {uploading ? "処理中…" : "画像を選ぶ"}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                    className="hidden"
-                    onChange={(e) => handleLogoChange(e.target.files?.[0])}
-                  />
-                  {logoUrl && (
-                    <button
-                      type="button"
-                      onClick={handleLogoRemove}
-                      disabled={uploading}
-                      className="ml-2 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white text-ink-soft"
-                    >
-                      削除
-                    </button>
-                  )}
-                  <div className="text-xs text-ink-soft mt-2">
-                    アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          <SectionLabel>配色</SectionLabel>
-          {loading ? (
-            <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-          ) : (
-            <Card>
-              <div className="text-xs text-ink-soft mb-4">
-                {customized
-                  ? "このチーム専用の配色を使っています。"
-                  : "現在はアプリ標準の配色です。チームのブランドカラーに変更できます。"}
-              </div>
-
-              <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={primary}
-                  onChange={(e) => setPrimary(e.target.value)}
-                  className="w-12 h-10 rounded-lg border border-line bg-white"
-                />
-                <input
-                  type="text"
-                  value={primary}
-                  onChange={(e) => setPrimary(e.target.value)}
-                  className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-                />
-              </div>
-
-              <div className="mt-4">
-                <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={accent}
-                    onChange={(e) => setAccent(e.target.value)}
-                    className="w-12 h-10 rounded-lg border border-line bg-white"
-                  />
-                  <input
-                    type="text"
-                    value={accent}
-                    onChange={(e) => setAccent(e.target.value)}
-                    className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 flex gap-2 items-center">
-                <span
-                  className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
-                  style={{ backgroundColor: primary }}
-                >
-                  基調色
-                </span>
-                <span
-                  className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
-                  style={{ backgroundColor: accent }}
-                >
-                  アクセント
-                </span>
-              </div>
-
-              <SubmitButton onClick={handleSave} disabled={saving}>
-                {saving ? "保存中…" : "この配色を保存する"}
-              </SubmitButton>
-
-              {customized && (
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  disabled={saving}
-                  className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
-                >
-                  デフォルトの配色に戻す
-                </button>
-              )}
-            </Card>
-          )}
+          <SectionLabel>チーム設定</SectionLabel>
+          <Card>
+            <SettingsRow href="/settings/logo" label="ロゴ" />
+            <SettingsRow href="/settings/color" label="配色" />
+          </Card>
         </>
       )}
     </PageShell>
