@@ -22,7 +22,7 @@ export function TypeTag({ type }: { type: "practice" | "game" }) {
 export function NumChip({ num, muted = false }: { num: string; muted?: boolean }) {
   return (
     <div
-      className={`w-8 h-8 rounded-[9px] font-display font-extrabold text-sm flex items-center justify-center flex-shrink-0 text-white ${
+      className={`w-8 h-8 rounded-[9px] font-sans font-extrabold text-sm flex items-center justify-center flex-shrink-0 text-white ${
         muted ? "bg-ink-soft" : "bg-orange"
       }`}
     >

@@ -66,7 +66,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
         >
           ‹
         </button>
-        <div className="font-display font-extrabold text-[17px] text-navy">
+        <div className="font-sans font-extrabold text-[17px] text-navy">
           {year}年{month + 1}月
         </div>
         <button
