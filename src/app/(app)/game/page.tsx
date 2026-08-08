@@ -13,21 +13,27 @@ import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { playerFullName, scheduleMeta, sortPlayers, todayDateStr } from "@/lib/format";
-import type { GameMatch, Player, Schedule } from "@/lib/database.types";
+import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
   player,
   checked,
   disabled,
+  absent,
   onToggle,
 }: {
   player: Player;
   checked: boolean;
   disabled: boolean;
+  absent?: boolean;
   onToggle: () => void;
 }) {
   return (
-    <div className={`flex items-center gap-2.5 py-2 border-b border-line last:border-b-0 ${disabled ? "opacity-40" : ""}`}>
+    <div
+      className={`flex items-center gap-2.5 py-2 border-b border-line last:border-b-0 ${
+        disabled || absent ? "opacity-40" : ""
+      }`}
+    >
       <button
         type="button"
         onClick={onToggle}
@@ -39,6 +45,7 @@ function PlayerCheckRow({
       </button>
       <NumChip num={player.number ?? "-"} />
       <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+      {absent && <span className="text-[10px] font-bold" style={{ color: "var(--danger)" }}>欠席</span>}
     </div>
   );
 }
@@ -58,6 +65,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [starters, setStarters] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
+  const [attendanceStatus, setAttendanceStatus] = useState<Record<string, AttendanceStatus>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -110,6 +118,26 @@ export default function GamePage() {
   useEffect(() => {
     loadMatches(selectedGameId);
   }, [selectedGameId, loadMatches]);
+
+  useEffect(() => {
+    (async () => {
+      if (!selectedGameId) {
+        setAttendanceStatus({});
+        return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("attendances")
+        .select("player_id, status")
+        .eq("schedule_id", selectedGameId)
+        .not("player_id", "is", null);
+      const map: Record<string, AttendanceStatus> = {};
+      (data ?? []).forEach((a) => {
+        if (a.player_id) map[a.player_id] = a.status;
+      });
+      setAttendanceStatus(map);
+    })();
+  }, [selectedGameId]);
 
   useEffect(() => {
     const m = matches.find((x) => x.id === selectedMatchId);
@@ -300,6 +328,7 @@ export default function GamePage() {
                     player={p}
                     checked={starters.includes(p.id)}
                     disabled={false}
+                    absent={attendanceStatus[p.id] === "欠席"}
                     onToggle={() => toggleStarter(p.id)}
                   />
                 ))
@@ -319,6 +348,7 @@ export default function GamePage() {
                     player={p}
                     checked={subs.includes(p.id)}
                     disabled={starters.includes(p.id)}
+                    absent={attendanceStatus[p.id] === "欠席"}
                     onToggle={() => toggleSub(p.id)}
                   />
                 ))
