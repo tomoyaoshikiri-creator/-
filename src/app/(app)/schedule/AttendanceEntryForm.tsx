@@ -67,7 +67,7 @@ export function AttendanceEntryForm({
         accompany_count: isGame && !isSelf && accompany === "あり" && accompanyCount ? Number(accompanyCount) : null,
         car: isGame ? car : null,
         seats: isGame && car === "可" && seats ? Number(seats) : null,
-        note: isGame ? note || null : null,
+        note: note || null,
       },
       { onConflict: "schedule_id,identity_key" },
     );
@@ -196,23 +196,24 @@ export function AttendanceEntryForm({
                       }}
                       placeholder="例:3"
                     />
-                    <div className="mt-2">
-                      <FieldLabel>備考</FieldLabel>
-                      <textarea
-                        rows={2}
-                        className={inputClass()}
-                        value={note}
-                        onChange={(e) => {
-                          setNote(e.target.value);
-                          setRegistered(false);
-                        }}
-                        placeholder="集合場所や注意点など"
-                      />
-                    </div>
                   </div>
                 )}
               </>
             )}
+
+            <div className="mt-3">
+              <FieldLabel>備考</FieldLabel>
+              <textarea
+                rows={2}
+                className={inputClass()}
+                value={note}
+                onChange={(e) => {
+                  setNote(e.target.value);
+                  setRegistered(false);
+                }}
+                placeholder="集合場所や注意点など"
+              />
+            </div>
 
             <SubmitButton onClick={handleSubmit} disabled={saving} className={registered ? "opacity-45" : ""}>
               {saving ? "登録中…" : registered ? "登録済み(この内容で更新する)" : "この内容で登録する"}
