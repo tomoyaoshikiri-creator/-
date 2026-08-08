@@ -48,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         <ToastProvider>
           <InactivityLogout />
-          <div className="flex-1 flex md:flex-row flex-col min-h-0">
+          <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0">
             <Sidebar role={profile.role} />
             <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
           </div>

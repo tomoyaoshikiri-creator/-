@@ -10,8 +10,8 @@ export function PageShell({
   return (
     <>
       {header}
-      <div className="flex-1 overflow-y-auto px-4.5 pt-4 pb-5 relative md:px-8 md:pt-6">
-        <div className="md:max-w-2xl md:mx-auto">{children}</div>
+      <div className="flex-1 overflow-y-auto px-4.5 pt-4 pb-5 relative min-[700px]:px-8 min-[700px]:pt-6">
+        <div className="min-[700px]:max-w-2xl min-[700px]:mx-auto">{children}</div>
       </div>
       {fab}
     </>

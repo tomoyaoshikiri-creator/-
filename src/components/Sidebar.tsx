@@ -13,7 +13,7 @@ export function Sidebar({ role }: { role: Role }) {
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="hidden md:flex flex-col w-[220px] flex-shrink-0 border-r border-line bg-white px-3 py-5">
+    <nav className="hidden min-[700px]:flex flex-col w-[190px] flex-shrink-0 border-r border-line bg-white px-3 py-5">
       <div className="flex items-center gap-2 px-2 mb-6">
         {teamLogoUrl && (
           // eslint-disable-next-line @next/next/no-img-element

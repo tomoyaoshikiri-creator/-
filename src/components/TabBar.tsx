@@ -11,7 +11,7 @@ export function TabBar({ role }: { role: Role }) {
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="md:hidden flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
+    <nav className="min-[700px]:hidden flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = TAB_PATHS[tab];
