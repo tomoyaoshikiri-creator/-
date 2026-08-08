@@ -34,9 +34,9 @@ export function AppHeader({
           <span className="flex items-center gap-1.5">
             {teamLogoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={teamLogoUrl} alt="" className="w-5 h-5 rounded object-contain bg-white/20" />
+              <img src={teamLogoUrl} alt="" className="w-6 h-6 rounded object-contain bg-white/20" />
             )}
-            <span className="font-mono text-[11.5px] tracking-widest uppercase opacity-80">
+            <span className="font-mono text-[15.5px] tracking-widest uppercase opacity-80">
               {teamName}
             </span>
           </span>
