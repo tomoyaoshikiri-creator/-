@@ -20,6 +20,7 @@
    - `0008_notice_attachment_insert_any_writer.sql`: 添付資料の登録を発信者本人だけでなく書き込み権限のある全員に解放
    - `0009_notice_delete.sql`: お知らせ削除用のポリシー(編集画面からの削除に必要)
    - `0010_profile_self_update.sql`: 本人による表示名の変更を許可するポリシー・ガード(権限・ステータス・所属チームは管理者のみ変更可)
+   - `0011_profile_delete_fk_fix.sql`: 予定・お知らせ・日報・選手メモ・招待リンクの作成者列を、ユーザー削除時にNULLへ変更するよう外部キーを修正(以前はこれらの記録があるとユーザーを削除できなかった)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
