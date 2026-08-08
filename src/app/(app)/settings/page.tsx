@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -9,7 +9,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
+import { ChevronRightIcon } from "@/components/icons";
 import { canManageSettings } from "@/lib/permissions";
 import { teamLogoUrl } from "@/lib/teamLogo";
 import { safeExt } from "@/lib/storagePath";
@@ -18,17 +19,10 @@ const DEFAULT_PRIMARY = "#9c8355";
 const DEFAULT_ACCENT = "#22201c";
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const { userId, role, name: sessionName, teamId } = useSession();
+  const { role, name: sessionName, teamId } = useSession();
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canManageTeam = canManageSettings(role);
-
-  const [name, setName] = useState(sessionName);
-  const [savingName, setSavingName] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [savingPassword, setSavingPassword] = useState(false);
 
   const [primary, setPrimary] = useState(DEFAULT_PRIMARY);
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
@@ -37,46 +31,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  async function handleNameSave() {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast("表示名を入力してください");
-      return;
-    }
-    setSavingName(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ name: trimmed }).eq("id", userId);
-    setSavingName(false);
-    if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-    toast("表示名を更新しました");
-    router.refresh();
-  }
-
-  async function handlePasswordSave() {
-    if (newPassword.length < 8) {
-      toast("パスワードは8文字以上で入力してください");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast("確認用パスワードが一致しません");
-      return;
-    }
-    setSavingPassword(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setSavingPassword(false);
-    if (error) {
-      toast(`変更に失敗しました: ${error.message}`);
-      return;
-    }
-    setNewPassword("");
-    setConfirmPassword("");
-    toast("パスワードを変更しました");
-  }
 
   useEffect(() => {
     if (!canManageTeam) return;
@@ -173,33 +127,20 @@ export default function SettingsPage() {
     <PageShell header={<AppHeader title="設定" rightSlot={<CurrentUserBadge />} />}>
       <SectionLabel>アカウント</SectionLabel>
       <Card>
-        <FieldLabel>表示名</FieldLabel>
-        <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass()} />
-        <SubmitButton onClick={handleNameSave} disabled={savingName}>
-          {savingName ? "保存中…" : "表示名を保存する"}
-        </SubmitButton>
-      </Card>
-
-      <Card>
-        <FieldLabel>新しいパスワード</FieldLabel>
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className={inputClass()}
-        />
-        <div className="mt-3">
-          <FieldLabel>新しいパスワード(確認)</FieldLabel>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className={inputClass()}
-          />
-        </div>
-        <SubmitButton onClick={handlePasswordSave} disabled={savingPassword}>
-          {savingPassword ? "変更中…" : "パスワードを変更する"}
-        </SubmitButton>
+        <Link
+          href="/settings/name"
+          className="flex items-center justify-between py-2.5 border-b border-line"
+        >
+          <div>
+            <div className="font-bold text-[13.5px]">表示名</div>
+            <div className="text-[11px] text-ink-soft mt-0.5">{sessionName}</div>
+          </div>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+        </Link>
+        <Link href="/settings/password" className="flex items-center justify-between py-2.5">
+          <div className="font-bold text-[13.5px]">パスワードを変更</div>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+        </Link>
       </Card>
 
       {canManageTeam && (
