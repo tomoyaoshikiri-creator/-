@@ -27,6 +27,7 @@
    - `0015_players_select_own_child.sql`: 保護者アカウント(一般・役員)が、紐付けられた自分の子ども(選手)の情報だけは閲覧できるようにする(playersテーブルは元々指導者・管理者のみ閲覧可だったための追加ポリシー)
    - `0016_profile_email.sql`: profiles.emailを追加し、チーム作成・招待受諾時にauth.usersのメールアドレスをコピーする。list_team_members() RPCを追加し、ユーザー管理画面では管理者だけがメールアドレスを見られるようにする(profiles_selectポリシー自体には乗せていないため、他のロールはAPIレベルでも取得できない)
    - ユーザー管理画面からのユーザー削除は`src/app/api/admin/delete-user/route.ts`(service_roleキー使用)経由でauth.usersごと削除するため、マイグレーション追加なし。profiles.idはauth.users(id)にon delete cascadeで参照しているため、auth.users側を削除すればprofiles行(および紐づく出欠等)も自動的に削除される。これにより削除したユーザーのメールアドレスは新規登録に再利用できるようになる
+   - `0017_schedule_target_and_admin_attendance.sql`: schedules.target_grade_minを追加し、予定ごとに出欠対象を「全員」または「○年生以上」に限定できるようにする。あわせてattendances_insert/updateポリシーを見直し、これまで検証していなかった選手との紐付け(player_guardians)チェックを追加しつつ、管理者は紐付けに関わらず全選手の出欠を代理登録・編集できるようにする
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -125,6 +126,8 @@ src/
 - 紐付けは管理者が「ユーザー管理」タブの各ユーザー欄から選手を選んで設定する(選手の編集画面側からではない)
 - 予定詳細画面では、ログインユーザーに紐付いている選手ごとに出欠フォームが表示される(兄弟がいれば複数)。指導者・管理者は追加で「本人」の出欠も登録できる。まだ選手と紐付いていないアカウントは、従来通り自分のアカウント名で1つだけ出欠フォームが表示される(移行期間の保険)
 - 出欠一覧(役員以上が見る集計画面)は「選手」「指導者」「未紐付けの保護者」に分けて表示する
+- 予定には「対象」(全員 / ○年生以上、`schedules.target_grade_min`)を設定でき、対象外の学年の選手は出欠登録フォーム・出欠一覧の両方から除外される(`src/lib/format.ts`の`isTargetEligible()`が判定基準の単一のソース)
+- 管理者は「選手の出欠を代理登録」欄から、紐付けの有無に関わらず全選手の出欠を代理で登録・編集できる(`attendances_insert`/`attendances_update`ポリシーで管理者を例外化)
 
 ## 既知の制約・今後の課題
 

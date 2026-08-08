@@ -39,6 +39,14 @@ export function gradeLabel(grade: string | null): string {
   return `${grade}年生`;
 }
 
+// 予定の対象学年(target_grade_min、nullなら全員)に選手が含まれるかどうかを判定する。
+export function isTargetEligible(playerGrade: string | null, targetGradeMin: string | null): boolean {
+  if (targetGradeMin === null) return true;
+  const g = playerGrade !== null ? parseInt(playerGrade, 10) : NaN;
+  const min = parseInt(targetGradeMin, 10);
+  return !isNaN(g) && g >= min;
+}
+
 export function obogCohortLabel(grade: string | null): string {
   const g = grade !== null ? parseInt(grade, 10) : NaN;
   if (isNaN(g) || g < 6) return "卒団年次不明";

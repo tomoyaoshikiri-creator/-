@@ -36,8 +36,11 @@ export function AttendanceEntryForm({
     (async () => {
       setLoading(true);
       const supabase = createClient();
-      let query = supabase.from("attendances").select("*").eq("schedule_id", scheduleId).eq("user_id", userId);
-      query = playerId ? query.eq("player_id", playerId) : query.is("player_id", null);
+      // player_idがある場合、出欠の実体は選手単位(identity_key=player_id)なので、
+      // 誰が登録したか(user_id)に関わらずその選手の記録を読み込む
+      // (管理者が保護者の代わりに編集する場合や、選手に複数の保護者が紐付く場合に必要)。
+      let query = supabase.from("attendances").select("*").eq("schedule_id", scheduleId);
+      query = playerId ? query.eq("player_id", playerId) : query.eq("user_id", userId).is("player_id", null);
       const { data: a } = await query.maybeSingle();
       setStatus(a?.status ?? null);
       setAccompany(a?.accompany ?? null);

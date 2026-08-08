@@ -100,6 +100,8 @@ export interface Database {
           end_time: string | null;
           place: string | null;
           toban: string | null;
+          // 対象学年の下限("○年生以上"のみが出欠登録対象になる)。nullは全員対象。
+          target_grade_min: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -113,6 +115,7 @@ export interface Database {
           end_time?: string | null;
           place?: string | null;
           toban?: string | null;
+          target_grade_min?: string | null;
           created_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"]>;

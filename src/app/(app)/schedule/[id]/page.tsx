@@ -9,7 +9,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
-import { scheduleMeta, playerFullName } from "@/lib/format";
+import { FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { isTargetEligible, playerFullName, scheduleMeta, sortPlayers } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
 import type { Player, Schedule } from "@/lib/database.types";
 import { AttendanceEntryForm } from "../AttendanceEntryForm";
@@ -30,6 +31,9 @@ export default function ScheduleDetailPage() {
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [subjects, setSubjects] = useState<AttendanceSubject[]>([]);
+  const [excludedLinkedCount, setExcludedLinkedCount] = useState(0);
+  const [proxyPlayers, setProxyPlayers] = useState<Player[]>([]);
+  const [proxyPlayerId, setProxyPlayerId] = useState("");
   const [loading, setLoading] = useState(true);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -51,17 +55,36 @@ export default function ScheduleDetailPage() {
       linkedPlayers = p ?? [];
     }
 
+    const targetGradeMin = s?.target_grade_min ?? null;
+    const eligibleLinked = linkedPlayers.filter((p) => isTargetEligible(p.grade, targetGradeMin));
+
     const list: AttendanceSubject[] = [];
     if (role === "指導者" || role === "管理者") {
       list.push({ key: "self", playerId: null, label: "本人" });
     }
-    for (const p of linkedPlayers) {
+    for (const p of eligibleLinked) {
       list.push({ key: p.id, playerId: p.id, label: playerFullName(p) });
     }
     if (list.length === 0) {
       list.push({ key: "self", playerId: null, label: "自分" });
     }
     setSubjects(list);
+    setExcludedLinkedCount(linkedPlayers.length - eligibleLinked.length);
+
+    if (role === "管理者") {
+      const { data: allPlayers } = await supabase.from("players").select("*").eq("status", "在籍");
+      const coveredIds = new Set(eligibleLinked.map((p) => p.id));
+      setProxyPlayers(
+        sortPlayers(
+          (allPlayers ?? [])
+            .filter((p) => isTargetEligible(p.grade, targetGradeMin))
+            .filter((p) => !coveredIds.has(p.id)),
+        ),
+      );
+    } else {
+      setProxyPlayers([]);
+    }
+    setProxyPlayerId("");
     setLoading(false);
   }, [params.id, userId, role]);
 
@@ -137,6 +160,12 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
+          {excludedLinkedCount > 0 && (
+            <div className="text-xs text-ink-soft text-center mt-1 mb-2">
+              ※この予定の対象学年外のため、出欠登録の対象外のお子さまがいます
+            </div>
+          )}
+
           {subjects.map((subject) => (
             <AttendanceEntryForm
               key={subject.key}
@@ -147,6 +176,37 @@ export default function ScheduleDetailPage() {
               isGame={isGame}
             />
           ))}
+
+          {role === "管理者" && proxyPlayers.length > 0 && (
+            <>
+              <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
+              <Card>
+                <FieldLabel>選手を選ぶ</FieldLabel>
+                <select
+                  className={inputClass()}
+                  value={proxyPlayerId}
+                  onChange={(e) => setProxyPlayerId(e.target.value)}
+                >
+                  <option value="">選手を選択してください</option>
+                  {proxyPlayers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {playerFullName(p)}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+              {proxyPlayerId && (
+                <AttendanceEntryForm
+                  key={proxyPlayerId}
+                  scheduleId={schedule.id}
+                  userId={userId}
+                  playerId={proxyPlayerId}
+                  label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
+                  isGame={isGame}
+                />
+              )}
+            </>
+          )}
         </>
       )}
     </PageShell>

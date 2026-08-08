@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
-import { playerFullName } from "@/lib/format";
+import { isTargetEligible, playerFullName } from "@/lib/format";
 import type { Attendance, Schedule } from "@/lib/database.types";
 
 interface Row {
@@ -101,11 +101,13 @@ export function AttendanceRosterModal({
       const attByUser = new Map((attendances ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
 
       setPlayerRows(
-        (players ?? []).map((p) => ({
-          key: p.id,
-          name: playerFullName(p),
-          attendance: attByPlayer.get(p.id) ?? null,
-        })),
+        (players ?? [])
+          .filter((p) => isTargetEligible(p.grade, schedule.target_grade_min))
+          .map((p) => ({
+            key: p.id,
+            name: playerFullName(p),
+            attendance: attByPlayer.get(p.id) ?? null,
+          })),
       );
 
       const staff = (profiles ?? []).filter((p) => p.role === "指導者" || p.role === "管理者");
@@ -122,7 +124,7 @@ export function AttendanceRosterModal({
 
       setLoading(false);
     })();
-  }, [open, schedule.id]);
+  }, [open, schedule.id, schedule.target_grade_min]);
 
   const isGame = schedule.type === "game";
   const allRows = [...playerRows, ...staffRows, ...otherRows];

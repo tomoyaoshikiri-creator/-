@@ -40,6 +40,7 @@ export function NewScheduleModal({
   const [endMin, setEndMin] = useState("");
   const [place, setPlace] = useState("");
   const [toban, setToban] = useState("");
+  const [targetGradeMin, setTargetGradeMin] = useState("");
   const [saving, setSaving] = useState(false);
 
   function reset() {
@@ -52,6 +53,7 @@ export function NewScheduleModal({
     setEndMin("");
     setPlace("");
     setToban("");
+    setTargetGradeMin("");
   }
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export function NewScheduleModal({
       setEndMin(em ?? "");
       setPlace(source.place ?? "");
       setToban(editSchedule ? (source.toban ?? "") : "");
+      setTargetGradeMin(source.target_grade_min ?? "");
     } else {
       reset();
     }
@@ -95,6 +98,7 @@ export function NewScheduleModal({
       end_time: endHour && endMin ? `${endHour}:${endMin}` : null,
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
+      target_grade_min: targetGradeMin || null,
     };
     const { error } = editSchedule
       ? await supabase
@@ -222,6 +226,21 @@ export function NewScheduleModal({
           onChange={(e) => setPlace(e.target.value)}
           placeholder="例:体育館A面"
         />
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>対象</FieldLabel>
+        <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>
+          <option value="">全員</option>
+          {["1", "2", "3", "4", "5", "6"].map((g) => (
+            <option key={g} value={g}>
+              {g}年生以上
+            </option>
+          ))}
+        </select>
+        <div className="text-xs text-ink-soft mt-1">
+          「○年生以上」を選ぶと、対象外の学年の選手は出欠登録の対象から外れます。
+        </div>
       </div>
 
       {type === "practice" && (
