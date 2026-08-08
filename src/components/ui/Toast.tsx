@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const ToastContext = createContext<(message: string) => void>(() => {});
 
@@ -11,30 +11,32 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<string[]>([]);
   const [current, setCurrent] = useState<string | null>(null);
   const [show, setShow] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setQueue((q) => [...q, msg]);
   }, []);
 
-  // キュー内の次のメッセージを表示する。同じフレーム内で複数回toast()が呼ばれても
-  // 後発のメッセージが先発のメッセージを即座に上書きして消してしまわないよう、
-  // 1件ずつ順番に表示してから次へ進む。
+  // キュー内の次のメッセージを取り出して表示対象にする。表示中(current !== null)の
+  // 間は次を取り出さないことで、複数回toast()が呼ばれても1件ずつ順番に表示する。
   useEffect(() => {
     if (current !== null || queue.length === 0) return;
-    const [next, ...rest] = queue;
-    setQueue(rest);
-    setCurrent(next);
-    setShow(true);
-    timerRef.current = setTimeout(() => {
-      setShow(false);
-      timerRef.current = setTimeout(() => setCurrent(null), FADE_MS);
-    }, DISPLAY_MS);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
+    setCurrent(queue[0]);
+    setQueue((q) => q.slice(1));
   }, [queue, current]);
+
+  // 表示中のメッセージを一定時間後にフェードアウトし、キューの次へ進める。
+  // このeffectの依存配列は current のみにしてあるので、タイマーが自分自身の
+  // cleanupで即座にキャンセルされてしまうことがない。
+  useEffect(() => {
+    if (current === null) return;
+    setShow(true);
+    const hideTimer = setTimeout(() => setShow(false), DISPLAY_MS);
+    const clearTimer = setTimeout(() => setCurrent(null), DISPLAY_MS + FADE_MS);
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [current]);
 
   return (
     <ToastContext.Provider value={showToast}>
