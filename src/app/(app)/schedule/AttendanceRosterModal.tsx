@@ -14,7 +14,17 @@ interface Row {
   attendance: Attendance | null;
 }
 
-function AttendanceGroup({ title, rows }: { title: string; rows: Row[] }) {
+// 帯同(保護者が一緒に来るかどうか)は選手に紐づく出欠(保護者→子ども)でのみ収集しており、
+// 指導者・未紐付けアカウントの「本人」の出欠では収集していないため表示しない。
+function AttendanceGroup({
+  title,
+  rows,
+  showAccompany = true,
+}: {
+  title: string;
+  rows: Row[];
+  showAccompany?: boolean;
+}) {
   if (rows.length === 0) return null;
   return (
     <div className="mb-3 last:mb-0">
@@ -32,13 +42,17 @@ function AttendanceGroup({ title, rows }: { title: string; rows: Row[] }) {
               </div>
               {r.attendance && (
                 <div className="text-[11px] text-ink-soft mt-1">
-                  帯同:{" "}
-                  {r.attendance.accompany === "あり"
-                    ? `あり(${r.attendance.accompany_count ?? "-"}名)`
-                    : r.attendance.accompany === "なし"
-                      ? "なし"
-                      : "未回答"}
-                  {" ・ "}
+                  {showAccompany && (
+                    <>
+                      帯同:{" "}
+                      {r.attendance.accompany === "あり"
+                        ? `あり(${r.attendance.accompany_count ?? "-"}名)`
+                        : r.attendance.accompany === "なし"
+                          ? "なし"
+                          : "未回答"}
+                      {" ・ "}
+                    </>
+                  )}
                   車出し:{" "}
                   {r.attendance.car === "可"
                     ? `可(乗車${r.attendance.seats ?? "-"}人)`
@@ -159,8 +173,8 @@ export function AttendanceRosterModal({
           ) : (
             <>
               <AttendanceGroup title="選手" rows={playerRows} />
-              <AttendanceGroup title="指導者" rows={staffRows} />
-              <AttendanceGroup title="未紐付けの保護者" rows={otherRows} />
+              <AttendanceGroup title="指導者" rows={staffRows} showAccompany={false} />
+              <AttendanceGroup title="未紐付けの保護者" rows={otherRows} showAccompany={false} />
             </>
           )}
         </>
