@@ -1,3 +1,5 @@
+import { scheduleTypeColor } from "@/lib/scheduleColor";
+
 export function Pill({
   tone,
   children,
@@ -19,8 +21,13 @@ export function Pill({
 }
 
 export function TypeTag({ type }: { type: "practice" | "game" | "event" }) {
+  const color = scheduleTypeColor(type);
   const cls =
-    type === "game" ? "bg-orange/10 text-orange" : type === "event" ? "bg-green/10 text-green" : "bg-navy/8 text-navy";
+    color === "danger"
+      ? "bg-danger/10 text-danger"
+      : color === "sky"
+        ? "bg-sky/10 text-sky"
+        : "bg-orange/10 text-orange";
   const label = type === "game" ? "試合" : type === "event" ? "イベント" : "練習";
   return (
     <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 ${cls}`}>{label}</span>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { scheduleMeta } from "@/lib/format";
+import { scheduleTypeColor } from "@/lib/scheduleColor";
 import type { Schedule } from "@/lib/database.types";
 
 function pad(n: number) {
@@ -89,8 +90,26 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
           if (!c.date) return <div key={i} className="aspect-square" />;
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
-          const hasGame = events.some((e) => e.type === "game");
+          // 同じ日に複数種別があれば 試合(danger) > イベント(sky) > 練習(orange) の優先度でマスの色を決める。
+          const dayColors = new Set(events.map((e) => scheduleTypeColor(e.type)));
+          const dayColor = dayColors.has("danger")
+            ? "danger"
+            : dayColors.has("sky")
+              ? "sky"
+              : dayColors.has("orange")
+                ? "orange"
+                : null;
           const isSelected = selectedDate === c.date;
+          const cellCls =
+            dayColor === "danger"
+              ? "bg-danger/22 border-danger font-bold"
+              : dayColor === "sky"
+                ? "bg-sky/18 border-sky font-bold"
+                : dayColor === "orange"
+                  ? "bg-orange/18 border-orange font-bold"
+                  : "bg-white border-line";
+          const dotCls =
+            dayColor === "danger" ? "bg-danger" : dayColor === "sky" ? "bg-sky" : dayColor === "orange" ? "bg-orange" : "";
           return (
             <button
               key={c.date}
@@ -98,16 +117,10 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
               onClick={() => setSelectedDate(c.date!)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs border relative ${
                 isSelected ? "outline outline-2 outline-navy" : ""
-              } ${
-                hasGame
-                  ? "bg-orange/28 border-orange font-bold"
-                  : hasEvent
-                    ? "bg-orange/14 border-orange/35 font-bold"
-                    : "bg-white border-line"
-              }`}
+              } ${cellCls}`}
             >
               {c.day}
-              {hasEvent && <span className="w-1 h-1 rounded-full bg-orange mt-0.5" />}
+              {hasEvent && <span className={`w-1 h-1 rounded-full mt-0.5 ${dotCls}`} />}
             </button>
           );
         })}
