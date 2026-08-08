@@ -6,7 +6,9 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { formatDateLabel } from "@/lib/format";
 import type { Schedule, ScheduleType } from "@/lib/database.types";
+import { MiniCalendarPicker } from "./MiniCalendarPicker";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = ["00", "15", "30", "45"];
@@ -31,7 +33,7 @@ export function NewScheduleModal({
 
   const [type, setType] = useState<ScheduleType>("practice");
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
+  const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
   const [startMin, setStartMin] = useState("");
   const [endHour, setEndHour] = useState("");
@@ -43,7 +45,7 @@ export function NewScheduleModal({
   function reset() {
     setType("practice");
     setTitle("");
-    setDate("");
+    setDates([]);
     setStartHour("");
     setStartMin("");
     setEndHour("");
@@ -58,7 +60,7 @@ export function NewScheduleModal({
     if (source) {
       setType(source.type);
       setTitle(source.title);
-      setDate(editSchedule ? source.date : "");
+      setDates(editSchedule ? [source.date] : []);
       const [sh, sm] = (source.start_time ?? "").split(":");
       setStartHour(sh ?? "");
       setStartMin(sm ?? "");
@@ -72,28 +74,36 @@ export function NewScheduleModal({
     }
   }, [open, editSchedule, copySource]);
 
+  function toggleDate(d: string) {
+    setDates((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
+  }
+
   async function handleSubmit() {
     if (!title.trim()) {
       toast("タイトルを入力してください");
       return;
     }
-    if (!date) {
+    if (dates.length === 0) {
       toast("日付を選択してください");
       return;
     }
     setSaving(true);
-    const payload = {
+    const base = {
       type,
       title: title.trim(),
-      date,
       start_time: startHour && startMin ? `${startHour}:${startMin}` : null,
       end_time: endHour && endMin ? `${endHour}:${endMin}` : null,
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
     };
     const { error } = editSchedule
-      ? await supabase.from("schedules").update(payload).eq("id", editSchedule.id)
-      : await supabase.from("schedules").insert({ ...payload, team_id: teamId, created_by: userId });
+      ? await supabase
+          .from("schedules")
+          .update({ ...base, date: dates[0] })
+          .eq("id", editSchedule.id)
+      : await supabase
+          .from("schedules")
+          .insert(dates.map((date) => ({ ...base, date, team_id: teamId, created_by: userId })));
     setSaving(false);
     if (error) {
       toast(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
@@ -129,8 +139,33 @@ export function NewScheduleModal({
       </div>
 
       <div className="mt-3">
-        <FieldLabel>日付</FieldLabel>
-        <input type="date" className={inputClass()} value={date} onChange={(e) => setDate(e.target.value)} />
+        <FieldLabel>{isEdit ? "日付" : "日付(複数選択可)"}</FieldLabel>
+        {isEdit ? (
+          <input
+            type="date"
+            className={inputClass()}
+            value={dates[0] ?? ""}
+            onChange={(e) => setDates(e.target.value ? [e.target.value] : [])}
+          />
+        ) : (
+          <>
+            <MiniCalendarPicker selected={dates} onToggle={toggleDate} />
+            {dates.length > 0 && (
+              <div className="mt-2 flex gap-1.5 flex-wrap">
+                {dates.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDate(d)}
+                    className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-navy/8 text-navy"
+                  >
+                    {formatDateLabel(d)} ×
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div className="mt-3">
@@ -202,7 +237,13 @@ export function NewScheduleModal({
       )}
 
       <SubmitButton onClick={handleSubmit} disabled={saving}>
-        {saving ? "処理中…" : isEdit ? "この内容で更新する" : "この内容で登録する"}
+        {saving
+          ? "処理中…"
+          : isEdit
+            ? "この内容で更新する"
+            : dates.length > 1
+              ? `この内容で${dates.length}件登録する`
+              : "この内容で登録する"}
       </SubmitButton>
     </Modal>
   );
