@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { scheduleMeta } from "@/lib/format";
@@ -120,14 +121,16 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
           <EmptyState>この日の予定はありません</EmptyState>
         ) : (
           dayEvents.map((ev) => (
-            <Card key={ev.id}>
-              <div className="font-bold text-[14.5px]">
-                <TypeTag type={ev.type} />
-                {ev.title}
-              </div>
-              <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>
-              {ev.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{ev.toban}</div>}
-            </Card>
+            <Link key={ev.id} href={`/schedule/${ev.id}`}>
+              <Card className="cursor-pointer">
+                <div className="font-bold text-[14.5px]">
+                  <TypeTag type={ev.type} />
+                  {ev.title}
+                </div>
+                <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>
+                {ev.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{ev.toban}</div>}
+              </Card>
+            </Link>
           ))
         )}
       </div>

@@ -67,7 +67,7 @@ export default function SchedulePage() {
             <EmptyState>予定がありません</EmptyState>
           ) : (
             schedules.map((s) => (
-              <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} onSaved={load} />
+              <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />
             ))
           )}
         </div>

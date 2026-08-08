@@ -35,11 +35,16 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
 body {
   background: linear-gradient(180deg, #f3efe4 0%, #ece5d4 100%);
   color: var(--ink);
   font-family: var(--font-sans);
-  min-height: 100vh;
 }
 
 /*
@@ -55,19 +60,20 @@ textarea {
 .app-shell {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--paper);
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
   .app-shell {
-    min-height: calc(100vh - 48px);
+    height: calc(100dvh - 48px);
     margin-block: 24px;
     border-radius: 28px;
-    overflow: hidden;
     box-shadow: 0 30px 60px -20px rgba(22, 35, 63, 0.35);
   }
 }

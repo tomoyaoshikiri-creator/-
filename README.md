@@ -73,6 +73,7 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 - ログイン前(`/login` `/signup` `/invite/[token]`)は製品名「ClubLink」の共通ブランディングのみを表示し、特定チームの名称・配色は出さない
 - ログイン後はチーム名(+ロゴ)をヘッダーに表示し、配色・ロゴはチームごとにカスタマイズ可能(`teams.theme_primary` / `theme_accent` / `logo_path`。管理者が「設定」タブから変更できる。未設定時はアプリ標準の落ち着いた配色を使う)
 - 見出しフォントはCormorant(セリフ体)、本文はNoto Sans JP(Windows環境ではMeiryoを優先)、ラベル類はJetBrains Monoで、FAITH CREATIONのブランドトーンに合わせたシックな雰囲気を意図している
+- `.app-shell` を画面の高さ(`100dvh`)に固定してoverflow: hiddenにし、内部のコンテンツ部分だけがスクロールする構造にしている(`src/app/globals.css`)。これによりヘッダーと下部タブバーは常に画面に固定され、スクロールしても動かない
 - ホーム画面に追加した際のアイコン(PWAアイコン・favicon・apple-touch-icon)は、`get_default_team_logo_path()` RPCで取得した「最初に作られたチーム」のロゴがあればそれを、無ければClubLink共通の「CL」マークを使う(`src/lib/brandIcon.tsx`)。このアプリは本来チームIDで分離するマルチテナント構成だが、**現状は都賀ビクトリーズ1チームのみの運用と割り切っている**ため、この仕組みで問題ない。複数チームが本格的に混在する段階になったら、ホーム画面アイコンをチームごとに安全に出し分ける方式(サブドメイン分離など)へ見直す必要がある
 
 ## ディレクトリ構成
@@ -85,7 +86,7 @@ supabase/migrations/
 src/
   app/
     (auth)/login, signup, setup, invite/[token]  認証フロー(ClubLinkブランディング)
-    (app)/schedule, notice, report,              予定・お知らせ・日報(全ロール)
+    (app)/schedule, schedule/[id], notice, report, 予定(一覧は要約カード→詳細で出欠登録)・お知らせ・日報(全ロール)
           players, notes, game,                  選手・選手メモ・試合記録(指導者以上)
           users                                  ユーザー管理・招待リンク発行(管理者のみ)
           settings                               チーム設定: 配色・ロゴ(管理者のみ)
