@@ -47,7 +47,7 @@ export function AppHeader({
         {title}
       </h1>
       {searchPlaceholder && (
-        <div className="bg-white/22 rounded-[10px] px-3 py-2.5 flex items-center gap-1.5">
+        <div className="bg-white/22 rounded-[10px] px-3 py-1.5 flex items-center gap-1.5">
           <span className="text-[12.5px]">🔍</span>
           <input
             type="text"

@@ -24,6 +24,7 @@ export default function NoticePage() {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -54,9 +55,19 @@ export default function NoticePage() {
     load();
   }, [load]);
 
+  const filteredNotices = notices.filter((n) => n.title.includes(query.trim()));
+
   return (
     <PageShell
-      header={<AppHeader title="お知らせ" rightSlot={<CurrentUserBadge />} />}
+      header={
+        <AppHeader
+          title="お知らせ"
+          searchPlaceholder="検索"
+          searchValue={query}
+          onSearchChange={setQuery}
+          rightSlot={<CurrentUserBadge />}
+        />
+      }
       fab={
         canWriteNotice(role) && (
           <>
@@ -77,10 +88,10 @@ export default function NoticePage() {
       <SectionLabel>お知らせ</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
-      ) : notices.length === 0 ? (
-        <EmptyState>お知らせがありません</EmptyState>
+      ) : filteredNotices.length === 0 ? (
+        <EmptyState>{query ? "該当するお知らせがありません" : "お知らせがありません"}</EmptyState>
       ) : (
-        notices.map((n) => (
+        filteredNotices.map((n) => (
           <Link key={n.id} href={`/notice/${n.id}`}>
             <Card className="cursor-pointer">
               <div className="font-bold text-[14.5px]">{n.title}</div>
