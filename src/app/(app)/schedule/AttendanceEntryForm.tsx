@@ -211,7 +211,7 @@ export function AttendanceEntryForm({
                   setNote(e.target.value);
                   setRegistered(false);
                 }}
-                placeholder="集合場所や注意点など"
+                placeholder="集計担当者への連絡事項があれば"
               />
             </div>
 
