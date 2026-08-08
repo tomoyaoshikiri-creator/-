@@ -20,6 +20,7 @@ export function AttendanceEntryForm({
   label: string;
   isGame: boolean;
 }) {
+  const isSelf = playerId === null;
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
@@ -62,8 +63,8 @@ export function AttendanceEntryForm({
         user_id: userId,
         player_id: playerId,
         status,
-        accompany: isGame ? accompany : null,
-        accompany_count: isGame && accompany === "あり" && accompanyCount ? Number(accompanyCount) : null,
+        accompany: isGame && !isSelf ? accompany : null,
+        accompany_count: isGame && !isSelf && accompany === "あり" && accompanyCount ? Number(accompanyCount) : null,
         car: isGame ? car : null,
         seats: isGame && car === "可" && seats ? Number(seats) : null,
         note: isGame ? note || null : null,
@@ -110,46 +111,50 @@ export function AttendanceEntryForm({
 
             {isGame && (
               <>
-                <div className="mt-3">
-                  <FieldLabel>保護者の帯同</FieldLabel>
-                  <div className="flex gap-2">
-                    <SegButton
-                      variant="small"
-                      active={accompany === "あり"}
-                      onClick={() => {
-                        setAccompany("あり");
-                        setRegistered(false);
-                      }}
-                    >
-                      あり
-                    </SegButton>
-                    <SegButton
-                      variant="small"
-                      active={accompany === "なし"}
-                      onClick={() => {
-                        setAccompany("なし");
-                        setRegistered(false);
-                      }}
-                    >
-                      なし
-                    </SegButton>
-                  </div>
-                </div>
-                {accompany === "あり" && (
-                  <div className="mt-3">
-                    <FieldLabel>帯同人数</FieldLabel>
-                    <input
-                      type="number"
-                      min={1}
-                      className={inputClass()}
-                      value={accompanyCount}
-                      onChange={(e) => {
-                        setAccompanyCount(e.target.value);
-                        setRegistered(false);
-                      }}
-                      placeholder="例:2"
-                    />
-                  </div>
+                {!isSelf && (
+                  <>
+                    <div className="mt-3">
+                      <FieldLabel>保護者の帯同</FieldLabel>
+                      <div className="flex gap-2">
+                        <SegButton
+                          variant="small"
+                          active={accompany === "あり"}
+                          onClick={() => {
+                            setAccompany("あり");
+                            setRegistered(false);
+                          }}
+                        >
+                          あり
+                        </SegButton>
+                        <SegButton
+                          variant="small"
+                          active={accompany === "なし"}
+                          onClick={() => {
+                            setAccompany("なし");
+                            setRegistered(false);
+                          }}
+                        >
+                          なし
+                        </SegButton>
+                      </div>
+                    </div>
+                    {accompany === "あり" && (
+                      <div className="mt-3">
+                        <FieldLabel>帯同人数</FieldLabel>
+                        <input
+                          type="number"
+                          min={1}
+                          className={inputClass()}
+                          value={accompanyCount}
+                          onChange={(e) => {
+                            setAccompanyCount(e.target.value);
+                            setRegistered(false);
+                          }}
+                          placeholder="例:2"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="mt-3">
