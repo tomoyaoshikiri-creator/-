@@ -9,9 +9,16 @@ import { TAB_ICONS } from "@/components/tabIcons";
 export function TabBar({ role }: { role: Role }) {
   const pathname = usePathname();
   const tabs = tabsForRole(role);
+  // 管理者はタブ数が8個と最も多く、フルディスプレイのiPhoneでは端の項目が
+  // 画面の丸みや安全域ぎりぎりに寄ってしまうため、左右の余白を少し多めに取って内側に寄せる。
+  const dense = tabs.length >= 8;
 
   return (
-    <nav className="min-[700px]:hidden flex items-start px-1 pt-2.5 pb-3.5 border-t border-line bg-white">
+    <nav
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-3.5 border-t border-line bg-white ${
+        dense ? "px-3" : "px-1"
+      }`}
+    >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = TAB_PATHS[tab];
