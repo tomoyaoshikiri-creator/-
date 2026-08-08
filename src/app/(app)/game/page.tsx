@@ -12,7 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
-import { playerFullName, scheduleMeta, sortPlayers, todayDateStr } from "@/lib/format";
+import { formatDateLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
@@ -259,7 +259,8 @@ export default function GamePage() {
           <select className={inputClass()} value={selectedGameId} onChange={(e) => setSelectedGameId(e.target.value)}>
             {games.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.title} ({scheduleMeta(g)})
+                {g.title} ({formatDateLabel(g.date)}
+                {g.place ? ` @ ${g.place}` : ""})
               </option>
             ))}
           </select>
