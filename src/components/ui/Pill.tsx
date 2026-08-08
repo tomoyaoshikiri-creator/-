@@ -10,12 +10,12 @@ export function Pill({ tone, children }: { tone: "ok" | "pending"; children: Rea
   );
 }
 
-export function TypeTag({ type }: { type: "practice" | "game" }) {
-  const cls = type === "game" ? "bg-orange/10 text-orange" : "bg-navy/8 text-navy";
+export function TypeTag({ type }: { type: "practice" | "game" | "event" }) {
+  const cls =
+    type === "game" ? "bg-orange/10 text-orange" : type === "event" ? "bg-green/10 text-green" : "bg-navy/8 text-navy";
+  const label = type === "game" ? "試合" : type === "event" ? "イベント" : "練習";
   return (
-    <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 ${cls}`}>
-      {type === "game" ? "試合" : "練習"}
-    </span>
+    <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 ${cls}`}>{label}</span>
   );
 }
 

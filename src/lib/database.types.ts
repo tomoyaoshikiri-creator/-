@@ -3,7 +3,7 @@
 
 export type Role = "一般" | "役員" | "指導者" | "管理者";
 export type UserStatus = "アクティブ" | "休止";
-export type ScheduleType = "practice" | "game";
+export type ScheduleType = "practice" | "game" | "event";
 export type AttendanceStatus = "出席" | "欠席";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";

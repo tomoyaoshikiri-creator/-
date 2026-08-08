@@ -110,6 +110,9 @@ export function NewScheduleModal({
         <SegButton active={type === "game"} onClick={() => setType("game")}>
           試合
         </SegButton>
+        <SegButton active={type === "event"} onClick={() => setType("event")}>
+          イベント
+        </SegButton>
       </div>
 
       <div className="mt-3">
