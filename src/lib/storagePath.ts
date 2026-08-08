@@ -6,6 +6,13 @@ export function safeExt(fileName: string): string {
   return match ? match[1].toLowerCase() : "bin";
 }
 
+const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "bmp", "svg"]);
+
+// 添付資料が画像かどうかを拡張子から判定する(お知らせ詳細画面でのインライン表示に使用)。
+export function isImageFile(fileName: string): boolean {
+  return IMAGE_EXTS.has(safeExt(fileName));
+}
+
 // 添付資料の「種類」ラベルも日本語のためStorageキーには使えない。
 // パス生成専用のASCIIスラッグに変換する(DBのkind列には引き続き日本語のまま保存する)。
 export function attachmentKindSlug(kind: string): string {

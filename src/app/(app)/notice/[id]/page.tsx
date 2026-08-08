@@ -12,7 +12,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
-import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
 import type { AttachmentKind, Notice, NoticeAttachment } from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null };
@@ -286,16 +286,24 @@ export default function NoticeDetailPage() {
               <SectionLabel>添付資料</SectionLabel>
               <Card>
                 {attachments.map((a) => (
-                  <div key={a.id} className="text-xs text-ink-soft mb-1 last:mb-0">
-                    {a.url ? (
-                      <a href={a.url} target="_blank" rel="noreferrer" className="text-orange font-bold">
-                        📎 {a.kind}:{a.file_name}
+                  <div key={a.id} className="mb-3 last:mb-0">
+                    <div className="text-xs text-ink-soft mb-1.5">
+                      {KINDS.find((k) => k.kind === a.kind)?.emoji ?? "📎"} {a.kind}:{a.file_name}
+                    </div>
+                    {a.url && isImageFile(a.file_name) ? (
+                      <a href={a.url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={a.url}
+                          alt={a.file_name}
+                          className="w-full rounded-[10px] border border-line object-contain"
+                        />
                       </a>
-                    ) : (
-                      <>
-                        📎 {a.kind}:{a.file_name}
-                      </>
-                    )}
+                    ) : a.url ? (
+                      <a href={a.url} target="_blank" rel="noreferrer" className="text-orange font-bold text-xs">
+                        開く
+                      </a>
+                    ) : null}
                   </div>
                 ))}
               </Card>
