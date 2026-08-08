@@ -55,7 +55,25 @@ export default function NoticePage() {
   }, [load]);
 
   return (
-    <PageShell header={<AppHeader title="お知らせ" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell
+      header={<AppHeader title="お知らせ" rightSlot={<CurrentUserBadge />} />}
+      fab={
+        canWriteNotice(role) && (
+          <>
+            <Fab onClick={() => setModalOpen(true)} />
+            <NewNoticeModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onCreated={() => {
+                setModalOpen(false);
+                load();
+                toast("お知らせを登録しました");
+              }}
+            />
+          </>
+        )
+      }
+    >
       <SectionLabel>お知らせ</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
@@ -85,21 +103,6 @@ export default function NoticePage() {
             </Card>
           </Link>
         ))
-      )}
-
-      {canWriteNotice(role) && (
-        <>
-          <Fab onClick={() => setModalOpen(true)} />
-          <NewNoticeModal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-            onCreated={() => {
-              setModalOpen(false);
-              load();
-              toast("お知らせを登録しました");
-            }}
-          />
-        </>
       )}
     </PageShell>
   );

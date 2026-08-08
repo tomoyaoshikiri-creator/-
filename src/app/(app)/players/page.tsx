@@ -98,7 +98,23 @@ export default function PlayersPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="選手一覧" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell
+      header={<AppHeader title="選手一覧" rightSlot={<CurrentUserBadge />} />}
+      fab={
+        <>
+          <Fab onClick={() => setModalOpen(true)} />
+          <NewPlayerModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onCreated={() => {
+              setModalOpen(false);
+              load();
+              toast("選手を登録しました");
+            }}
+          />
+        </>
+      }
+    >
       <div className="flex items-center justify-between mb-2.5">
         <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft">選手マスタ</div>
         <button
@@ -130,17 +146,6 @@ export default function PlayersPage() {
           </Card>
         </Link>
       )}
-
-      <Fab onClick={() => setModalOpen(true)} />
-      <NewPlayerModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onCreated={() => {
-          setModalOpen(false);
-          load();
-          toast("選手を登録しました");
-        }}
-      />
     </PageShell>
   );
 }

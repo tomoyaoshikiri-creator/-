@@ -48,6 +48,22 @@ export default function SchedulePage() {
   return (
     <PageShell
       header={<AppHeader title="直近の予定" searchPlaceholder="検索" rightSlot={<CurrentUserBadge />} />}
+      fab={
+        canWriteSchedule(role) && (
+          <>
+            <Fab onClick={() => setModalOpen(true)} />
+            <NewScheduleModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onCreated={() => {
+                setModalOpen(false);
+                load();
+                toast("予定を登録しました");
+              }}
+            />
+          </>
+        )
+      }
     >
       <div className="flex gap-2 mb-3.5">
         <SegButton active={view === "list"} onClick={() => setView("list")}>
@@ -73,21 +89,6 @@ export default function SchedulePage() {
         </div>
       ) : (
         <CalendarView schedules={schedules} />
-      )}
-
-      {canWriteSchedule(role) && (
-        <>
-          <Fab onClick={() => setModalOpen(true)} />
-          <NewScheduleModal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-            onCreated={() => {
-              setModalOpen(false);
-              load();
-              toast("予定を登録しました");
-            }}
-          />
-        </>
       )}
     </PageShell>
   );
