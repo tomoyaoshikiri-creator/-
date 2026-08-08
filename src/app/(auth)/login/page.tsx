@@ -15,7 +15,9 @@ export default async function LoginPage({
       )}
       {notice === "inactivity" && (
         <div className="mb-3 text-[12.5px] text-ink-soft text-center bg-white border border-line rounded-2xl p-3">
-          しばらく操作がなかったため、自動的にログアウトしました。もう一度ログインしてください。
+          しばらく操作がなかったため、自動的にログアウトしました。
+          <br />
+          もう一度ログインしてください。
         </div>
       )}
       <LoginForm />
