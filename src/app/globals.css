@@ -87,6 +87,8 @@ textarea {
 */
 @media (min-width: 700px) {
   .app-shell {
-    max-width: 1100px;
+    /* 大きなPC画面でカードが小さく浮いて見えないよう、ウィンドウ幅の96%まで
+       広がるようにしつつ、超ワイドモニタでは1600pxで頭打ちにする。 */
+    max-width: min(1600px, 96vw);
   }
 }
