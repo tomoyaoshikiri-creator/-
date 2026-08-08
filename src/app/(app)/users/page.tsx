@@ -127,6 +127,8 @@ export default function UsersPage() {
     toast("リンクをコピーしました");
   }
 
+  const visibleInvites = invites.filter((inv) => inv.used_at || new Date(inv.expires_at) > new Date());
+
   return (
     <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
       <SectionLabel>招待リンクを発行</SectionLabel>
@@ -141,9 +143,9 @@ export default function UsersPage() {
         </div>
       </Card>
 
-      {invites.length > 0 && (
+      {visibleInvites.length > 0 && (
         <Card>
-          {invites.map((inv) => (
+          {visibleInvites.map((inv) => (
             <div key={inv.id} className="mb-3 last:mb-0">
               <div className="text-xs font-bold">
                 {inv.role === "一般" ? "保護者用" : "指導者用"}
