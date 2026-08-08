@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BackIcon } from "@/components/icons";
+import { BackIcon, SearchIcon } from "@/components/icons";
 import { useSession } from "@/lib/session-context";
 
 export function AppHeader({
@@ -47,8 +47,8 @@ export function AppHeader({
         {title}
       </h1>
       {searchPlaceholder && (
-        <div className="bg-white/22 rounded-[10px] px-3 py-1.5 flex items-center gap-1.5">
-          <span className="text-[12.5px]">🔍</span>
+        <div className="bg-white/22 rounded-[10px] px-3 py-1 flex items-center gap-1.5">
+          <SearchIcon className="w-3.5 h-3.5 opacity-80 flex-shrink-0" />
           <input
             type="text"
             value={searchValue ?? ""}
