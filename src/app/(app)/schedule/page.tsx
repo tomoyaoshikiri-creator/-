@@ -22,7 +22,7 @@ import { CalendarView } from "./CalendarView";
 export default function SchedulePage() {
   const { userId, role } = useSession();
   const toast = useToast();
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar">("calendar");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [attendances, setAttendances] = useState<Record<string, Attendance>>({});
   const [loading, setLoading] = useState(true);
