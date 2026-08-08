@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { safeExt } from "@/lib/storagePath";
+import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
 import type { AttachmentKind } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
@@ -69,7 +69,7 @@ export function NewNoticeModal({
 
     const entries = Object.entries(files) as [AttachmentKind, File][];
     for (const [kind, file] of entries) {
-      const path = `${teamId}/${notice.id}/${kind}-${Date.now()}.${safeExt(file.name)}`;
+      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(file.name)}`;
       const { error: uploadError } = await supabase.storage
         .from("notice-attachments")
         .upload(path, file);

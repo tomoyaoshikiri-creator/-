@@ -12,7 +12,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
-import { safeExt } from "@/lib/storagePath";
+import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
 import type { AttachmentKind, Notice, NoticeAttachment } from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null };
@@ -120,7 +120,7 @@ export default function NoticeDetailPage() {
 
     const entries = Object.entries(newFiles) as [AttachmentKind, File][];
     for (const [kind, file] of entries) {
-      const path = `${teamId}/${notice.id}/${kind}-${Date.now()}.${safeExt(file.name)}`;
+      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, file);
       if (uploadError) {
         toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
