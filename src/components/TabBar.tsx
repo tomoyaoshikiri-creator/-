@@ -32,7 +32,7 @@ export function TabBar({ role }: { role: Role }) {
             }`}
           >
             <Icon className="w-[19px] h-[19px]" />
-            {TAB_LABELS[tab]}
+            <span className={tab === "schedule" ? "text-[7.5px] whitespace-nowrap" : ""}>{TAB_LABELS[tab]}</span>
           </Link>
         );
       })}
