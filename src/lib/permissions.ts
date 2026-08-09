@@ -47,8 +47,8 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
 const ROLE_TABS: Record<Role, TabKey[]> = {
-  一般: ["schedule", "notice", "report", "settings"],
-  役員: ["schedule", "notice", "report", "settings"],
+  一般: ["schedule", "notice", "settings"],
+  役員: ["schedule", "notice", "settings"],
   指導者: ["schedule", "notice", "report", "players", "notes", "game", "settings"],
   管理者: ["schedule", "notice", "report", "players", "notes", "game", "users", "settings"],
 };

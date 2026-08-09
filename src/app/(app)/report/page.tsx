@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -9,11 +10,13 @@ import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { canAccessTab } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Report } from "@/lib/database.types";
 
 export default function ReportPage() {
-  const { userId, teamId } = useSession();
+  const router = useRouter();
+  const { userId, teamId, role } = useSession();
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
@@ -37,6 +40,10 @@ export default function ReportPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!canAccessTab(role, "report")) router.replace("/schedule");
+  }, [role, router]);
 
   async function handleSubmit() {
     if (!body.trim()) {
