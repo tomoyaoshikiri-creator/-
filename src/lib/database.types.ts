@@ -219,7 +219,10 @@ export interface Database {
           date_label?: string | null;
           body: string;
         };
-        Update: Record<string, never>;
+        Update: Partial<{
+          date_label: string | null;
+          body: string;
+        }>;
         Relationships: [];
       };
       players: {

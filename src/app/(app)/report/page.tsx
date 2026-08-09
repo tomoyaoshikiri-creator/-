@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { canAccessTab } from "@/lib/permissions";
+import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Report } from "@/lib/database.types";
 
@@ -24,6 +24,12 @@ export default function ReportPage() {
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDateLabel, setEditDateLabel] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -69,6 +75,51 @@ export default function ReportPage() {
     load();
   }
 
+  function startEdit(r: Report) {
+    setEditingId(r.id);
+    setEditDateLabel(r.date_label ?? "");
+    setEditBody(r.body);
+  }
+
+  async function handleSaveEdit(id: string) {
+    if (!editBody.trim()) {
+      toast("内容を入力してください");
+      return;
+    }
+    setSavingEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("reports")
+      .update({ date_label: editDateLabel.trim() || null, body: editBody.trim() })
+      .eq("id", id);
+    setSavingEdit(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("日報を更新しました");
+    setEditingId(null);
+    load();
+  }
+
+  async function handleDelete(id: string) {
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId((cur) => (cur === id ? null : cur)), 3000);
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.from("reports").delete().eq("id", id);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setDeleteConfirmId(null);
+    setExpandedId(null);
+    toast("日報を削除しました");
+    load();
+  }
+
   return (
     <PageShell header={<AppHeader title="練習日報" rightSlot={<CurrentUserBadge />} />}>
       <SectionLabel>日報を書く</SectionLabel>
@@ -87,7 +138,7 @@ export default function ReportPage() {
             className={inputClass()}
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="今日の練習の様子や気づきを記入"
+            placeholder="今日の練習についての気づきや共有事項"
           />
         </div>
         <SubmitButton onClick={handleSubmit} disabled={saving}>
@@ -101,15 +152,77 @@ export default function ReportPage() {
       ) : reports.length === 0 ? (
         <EmptyState>まだ日報がありません</EmptyState>
       ) : (
-        reports.map((r) => (
-          <Card key={r.id}>
-            <div className="font-bold text-[14.5px]">{r.date_label || "日付未記入"}</div>
-            <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
-            <div className="text-xs text-ink-soft mt-1.5">
-              {r.author_id ? (profiles[r.author_id] ?? "") : ""}
-            </div>
-          </Card>
-        ))
+        reports.map((r) =>
+          editingId === r.id ? (
+            <Card key={r.id}>
+              <FieldLabel>日付</FieldLabel>
+              <input
+                className={inputClass()}
+                value={editDateLabel}
+                onChange={(e) => setEditDateLabel(e.target.value)}
+                placeholder="例:8/10"
+              />
+              <div className="mt-3">
+                <FieldLabel>内容</FieldLabel>
+                <textarea
+                  rows={3}
+                  className={inputClass()}
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleSaveEdit(r.id)}
+                  disabled={savingEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                >
+                  {savingEdit ? "保存中…" : "保存"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingId(null)}
+                  disabled={savingEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <Card
+              key={r.id}
+              className={canWriteReport(role) ? "cursor-pointer" : ""}
+              onClick={() => canWriteReport(role) && setExpandedId(expandedId === r.id ? null : r.id)}
+            >
+              <div className="font-bold text-[14.5px]">{r.date_label || "日付未記入"}</div>
+              <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
+              <div className="text-xs text-ink-soft mt-1.5">
+                {r.author_id ? (profiles[r.author_id] ?? "") : ""}
+              </div>
+              {expandedId === r.id && (
+                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                  >
+                    編集
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(r.id)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  >
+                    {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
+                  </button>
+                </div>
+              )}
+            </Card>
+          ),
+        )
       )}
     </PageShell>
   );

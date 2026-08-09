@@ -39,6 +39,7 @@
    - `0026_attendance_roster_all_roles.sql`: 出欠一覧(選手名込み)を全ロールが見られるようにする`list_roster_players()`関数(SECURITY DEFINER、選手一覧タブ本体のRLSは変更せず最小限のフィールドだけを公開)を追加。あわせてattendancesにDELETEポリシーが無く誰も出欠を削除できなかったため、UPDATEと同じ条件(管理者は全員分、本人は自分の登録分のみ)で追加する
    - `0027_notice_audience.sql`: noticesに公開範囲(audience: 全員/指導者のみ/役員以上/学年指定)とtarget_grade_minを追加し、SELECTポリシーを公開範囲に応じて絞り込むよう変更する(指導者・管理者は常に全件閲覧可)
    - `0028_schedule_delete_all_roles.sql`: schedulesのDELETEを役員以上限定から全ロールに広げる(登録・編集(schedules_insert/update)と同じ範囲に揃え、予定編集画面から削除できるようにするため)
+   - `0029_report_all_roles_edit_delete.sql`: 練習日報の閲覧・登録を再び全ロールに開放する(0020を戻す)。あわせてUPDATE/DELETEポリシーが元々無かったため追加(お知らせと同じく記入者本人に限らず全ロールが編集・削除できる)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -84,7 +85,7 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | 予定の出欠一覧・帯同/車出し状況を見る | ○ | ○ | ○ | ○ |
 | お知らせ(閲覧) | ○ | ○ | ○ | ○ |
 | お知らせ(登録・編集) | ○ | ○ | ○ | ○ |
-| 練習日報(登録・閲覧) | – | – | ○ | ○ |
+| 練習日報(閲覧・登録・編集・削除) | ○ | ○ | ○ | ○ |
 | 選手一覧(選手メモを含む) | – | – | ○ | ○ |
 | 試合記録: 結果の閲覧(`/game/results`) | ○ | ○ | ○ | ○ |
 | 試合記録: スタメン登録・得点入力(`/game`, `/game/[id]`) | – | – | ○ | ○ |
