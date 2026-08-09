@@ -43,9 +43,11 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
 // 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
+// 「試合記録」タブは一般・役員にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
+// 操作できるため、一般・役員がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
-  一般: ["schedule", "notice", "settings"],
-  役員: ["schedule", "notice", "settings"],
+  一般: ["schedule", "notice", "game", "settings"],
+  役員: ["schedule", "notice", "game", "settings"],
   指導者: ["schedule", "notice", "report", "players", "game", "settings"],
   管理者: ["schedule", "notice", "report", "players", "game", "users", "settings"],
 };
@@ -56,6 +58,18 @@ export function tabsForRole(role: Role): TabKey[] {
 
 export function canAccessTab(role: Role, tab: TabKey): boolean {
   return ROLE_TABS[role].includes(tab);
+}
+
+// 「試合記録」タブのリンク先。指導者・管理者はスタメン登録などができる一覧画面(/game)へ、
+// 一般・役員は結果を見るだけの/game/resultsへ直接飛ばす。
+export function tabHrefForRole(role: Role, tab: TabKey): string {
+  if (tab === "game" && !canRecordGames(role)) return "/game/results";
+  return TAB_PATHS[tab];
+}
+
+// 試合の記録(スタメン登録・得点入力など)を操作できるロール。/game・/game/[id]のガードに使う。
+export function canRecordGames(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
 }
 
 export function canWriteSchedule(role: Role): boolean {

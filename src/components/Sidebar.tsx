@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { TAB_LABELS, TAB_PATHS, tabsForRole } from "@/lib/permissions";
+import { TAB_LABELS, tabHrefForRole, tabsForRole } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 import { useSession } from "@/lib/session-context";
 
@@ -25,7 +25,7 @@ export function Sidebar({ role }: { role: Role }) {
       <div className="flex flex-col gap-0.5">
         {tabs.map((tab) => {
           const Icon = TAB_ICONS[tab];
-          const href = TAB_PATHS[tab];
+          const href = tabHrefForRole(role, tab);
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link

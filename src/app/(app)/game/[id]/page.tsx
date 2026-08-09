@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { canAccessTab } from "@/lib/permissions";
+import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
 
@@ -165,7 +165,7 @@ export default function GameDetailPage() {
   }, [selectedMatchId, quarter, loadRecord]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "game")) router.replace("/schedule");
+    if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
 
   function toggleStarter(id: string) {

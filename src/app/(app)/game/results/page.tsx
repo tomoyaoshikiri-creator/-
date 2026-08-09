@@ -10,7 +10,7 @@ import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon, VideoIcon } from "@/components/icons";
-import { canAccessTab } from "@/lib/permissions";
+import { canAccessTab, canRecordGames } from "@/lib/permissions";
 import { formatDateLabel, fiscalYearOf, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
 
@@ -77,7 +77,15 @@ export default function GameResultsPage() {
   const winRateLabel = winCount + loseCount > 0 ? `${((winCount / (winCount + loseCount)) * 100).toFixed(1)}%` : "-";
 
   return (
-    <PageShell header={<AppHeader title="試合結果一覧" variant="detail" backHref="/game" />}>
+    <PageShell
+      header={
+        <AppHeader
+          title="試合結果一覧"
+          variant={canRecordGames(role) ? "detail" : "list"}
+          backHref={canRecordGames(role) ? "/game" : undefined}
+        />
+      }
+    >
       <div className="flex gap-2 mb-2">
         {CATEGORY_TABS.map((t) => (
           <SegButton key={t.value} active={category === t.value} onClick={() => setCategory(t.value)}>

@@ -11,7 +11,7 @@ import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { canAccessTab } from "@/lib/permissions";
+import { canRecordGames } from "@/lib/permissions";
 import { formatDateLabel } from "@/lib/format";
 import type { GameCategory, Schedule } from "@/lib/database.types";
 
@@ -42,7 +42,7 @@ export default function GameListPage() {
   }, []);
 
   useEffect(() => {
-    if (!canAccessTab(role, "game")) router.replace("/schedule");
+    if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
 
   const filteredGames = category === "all" ? games : games.filter((g) => g.game_category === category);

@@ -35,6 +35,7 @@
    - `0022_game_match_result_and_photo.sql`: game_matchesに自チーム/相手チームの得点とスコア写真のパスを追加し、専用のStorageバケット(game-score-photos)を作成する。あわせてgame_recordsにDELETEポリシーが無かったため追加する(スタメン・途中出場登録の削除に必要)
    - `0023_game_match_video_url.sql`: game_matchesに振り返り用の動画URL(YouTube等)を追加する
    - `0024_schedule_game_category.sql`: schedulesに「練習試合」「公式戦」の区分(game_category)を追加する。type="game"の予定にのみ意味を持ち、それ以外はnull
+   - `0025_game_matches_select_all_roles.sql`: game_matchesのSELECTを指導者・管理者限定から全ロールに広げる(一般・役員に試合結果一覧の閲覧を開放するため)。登録・編集・削除は引き続き指導者・管理者のみ
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -81,7 +82,9 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | お知らせ(閲覧) | ○ | ○ | ○ | ○ |
 | お知らせ(登録・編集) | ○ | ○ | ○ | ○ |
 | 練習日報(登録・閲覧) | – | – | ○ | ○ |
-| 選手一覧(選手メモを含む) / 試合記録 | – | – | ○ | ○ |
+| 選手一覧(選手メモを含む) | – | – | ○ | ○ |
+| 試合記録: 結果の閲覧(`/game/results`) | ○ | ○ | ○ | ○ |
+| 試合記録: スタメン登録・得点入力(`/game`, `/game/[id]`) | – | – | ○ | ○ |
 | ユーザー管理・招待リンク発行 | – | – | – | ○ |
 | 設定: 自分のアカウント編集(表示名・パスワード) | ○ | ○ | ○ | ○ |
 | 設定: チーム設定(配色・ロゴ) | – | – | – | ○ |
@@ -147,6 +150,7 @@ src/
 - `/game/results`(試合結果一覧)は得点が入力済みの全試合を日付降順で一覧表示し、勝敗数・勝率を自動集計する画面。もともとGoogleスプレッドシートで管理していた対戦戦績表をアプリ内に置き換える目的で追加した。各試合の`opponent`(対戦相手)・`team_score`/`opponent_score`(得点)・`video_url`(振り返り用動画リンク、YouTube等)を一覧表示する
 - 試合(予定)は「練習試合」「公式戦」の区分(`schedules.game_category`)を持つ。区分は予定登録時に種別で「試合」を選ぶと選択できる、予定そのものの属性として一元管理しており(試合ごとに二重に持たせていない)、`/game`・`/game/results`の両方でこの区分によるタブ絞り込みができる。カレンダー・予定一覧の種別タグにも「練習試合」「公式戦」がそのまま表示される(未設定の場合は「試合」)
 - `/game/results`は試合日から算出した4月始まりの年度(`fiscalYearOf`、`src/lib/format.ts`)でも絞り込める。選手の「年度更新」のような更新操作は不要で、試合日から都度自動的に年度を判定する。年度タブは実際にデータが存在する年度のみを新しい順に表示し、初期表示は最新年度を選択した状態になる
+- 「試合記録」タブは一般・役員にも表示するが、タップした先は`/game/results`(結果閲覧のみ)に固定している。スタメン登録・得点入力ができる`/game`・`/game/[id]`は指導者・管理者のみが遷移できるルートで、タブのリンク先自体をロールごとに出し分けている(`tabHrefForRole`、`src/lib/permissions.ts`)。一般・役員が直接URLを叩いた場合もページ側のガードで`/game/results`に戻す。DB側もあわせて、`game_matches`のSELECTのみ全ロールに開放し(`0025_game_matches_select_all_roles.sql`)、登録・編集・削除とスタメン(`game_records`)は引き続き指導者・管理者限定のまま
 
 ## 既知の制約・今後の課題
 

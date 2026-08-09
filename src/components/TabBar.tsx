@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { TAB_LABELS, TAB_PATHS, tabsForRole } from "@/lib/permissions";
+import { TAB_LABELS, tabHrefForRole, tabsForRole } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 
 export function TabBar({ role }: { role: Role }) {
@@ -21,7 +21,7 @@ export function TabBar({ role }: { role: Role }) {
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
-        const href = TAB_PATHS[tab];
+        const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
