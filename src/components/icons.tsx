@@ -61,6 +61,15 @@ export function GameIcon(props: IconProps) {
   );
 }
 
+export function VideoIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="2" y="6" width="14" height="12" rx="2" />
+      <path d="M16 10l6-3.5v11L16 14" />
+    </svg>
+  );
+}
+
 export function UsersIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

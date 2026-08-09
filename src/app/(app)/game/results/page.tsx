@@ -9,6 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
+import { VideoIcon } from "@/components/icons";
 import { canAccessTab } from "@/lib/permissions";
 import { formatDateLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
@@ -109,17 +110,11 @@ export default function GameResultsPage() {
                 </div>
                 <Pill tone={result === "勝ち" ? "ok" : result === "負け" ? "absent" : "pending"}>{result}</Pill>
                 {m.video_url ? (
-                  <a
-                    href={m.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="動画を見る"
-                    className="flex-shrink-0 text-[14px]"
-                  >
-                    🎥
+                  <a href={m.video_url} target="_blank" rel="noreferrer" aria-label="動画を見る" className="flex-shrink-0">
+                    <VideoIcon className="w-[15px] h-[15px] text-orange" />
                   </a>
                 ) : (
-                  <span className="flex-shrink-0 w-[14px]" />
+                  <span className="flex-shrink-0 w-[15px]" />
                 )}
               </div>
             );
