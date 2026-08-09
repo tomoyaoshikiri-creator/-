@@ -143,7 +143,11 @@ export default function GameResultsPage() {
                   {m.schedules?.date ? formatDateLabel(m.schedules.date) : "-"}
                 </div>
                 {category === "all" && m.schedules?.game_category && (
-                  <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 bg-danger/10 text-danger">
+                  <span
+                    className={`font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 ${
+                      m.schedules.game_category === "公式戦" ? "bg-danger/10 text-danger" : "bg-sky/10 text-sky"
+                    }`}
+                  >
                     {m.schedules.game_category}
                   </span>
                 )}
