@@ -17,12 +17,14 @@ export function NewScheduleModal({
   open,
   onClose,
   onCreated,
+  onDeleted,
   editSchedule,
   copySource,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
+  onDeleted?: () => void;
   editSchedule?: Schedule;
   copySource?: Schedule;
 }) {
@@ -43,6 +45,8 @@ export function NewScheduleModal({
   const [toban, setToban] = useState("");
   const [targetGradeMin, setTargetGradeMin] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   function reset() {
     setType("practice");
@@ -60,6 +64,7 @@ export function NewScheduleModal({
 
   useEffect(() => {
     if (!open) return;
+    setDeleteConfirm(false);
     const source = editSchedule ?? copySource;
     if (source) {
       setType(source.type);
@@ -119,6 +124,24 @@ export function NewScheduleModal({
     }
     if (!isEdit) reset();
     onCreated();
+  }
+
+  async function handleDelete() {
+    if (!editSchedule) return;
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      setTimeout(() => setDeleteConfirm(false), 3000);
+      return;
+    }
+    setDeleting(true);
+    const { error } = await supabase.from("schedules").delete().eq("id", editSchedule.id);
+    setDeleting(false);
+    setDeleteConfirm(false);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    onDeleted?.();
   }
 
   return (
@@ -273,7 +296,7 @@ export function NewScheduleModal({
         </div>
       )}
 
-      <SubmitButton onClick={handleSubmit} disabled={saving}>
+      <SubmitButton onClick={handleSubmit} disabled={saving || deleting}>
         {saving
           ? "処理中…"
           : isEdit
@@ -282,6 +305,18 @@ export function NewScheduleModal({
               ? `この内容で${dates.length}件登録する`
               : "この内容で登録する"}
       </SubmitButton>
+
+      {isEdit && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving || deleting}
+          className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white disabled:opacity-50"
+          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+        >
+          {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この予定を削除する"}
+        </button>
+      )}
     </Modal>
   );
 }

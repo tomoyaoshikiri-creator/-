@@ -163,6 +163,11 @@ export default function ScheduleDetailPage() {
                   setEditOpen(false);
                   load();
                 }}
+                onDeleted={() => {
+                  setEditOpen(false);
+                  toast("予定を削除しました");
+                  router.push("/schedule");
+                }}
               />
               <NewScheduleModal
                 open={copyOpen}
