@@ -9,13 +9,16 @@ function pad(n: number) {
 export function MiniCalendarPicker({
   selected,
   onToggle,
+  initialDate,
 }: {
   selected: string[];
   onToggle: (date: string) => void;
+  // カレンダーを開いた時に表示する月(未指定なら今月)。編集時は既存の日付の月を最初から表示するために使う。
+  initialDate?: string;
 }) {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  const initial = initialDate ? new Date(initialDate + "T00:00:00") : new Date();
+  const [year, setYear] = useState(initial.getFullYear());
+  const [month, setMonth] = useState(initial.getMonth());
 
   const firstDay = new Date(year, month, 1);
   const startOffset = (firstDay.getDay() + 6) % 7; // 月曜始まり

@@ -186,12 +186,16 @@ export function NewScheduleModal({
       <div className="mt-3">
         <FieldLabel>{isEdit ? "日付" : "日付(複数選択可)"}</FieldLabel>
         {isEdit ? (
-          <input
-            type="date"
-            className={inputClass()}
-            value={dates[0] ?? ""}
-            onChange={(e) => setDates(e.target.value ? [e.target.value] : [])}
-          />
+          <>
+            <MiniCalendarPicker
+              selected={dates}
+              onToggle={(d) => setDates([d])}
+              initialDate={editSchedule?.date}
+            />
+            {dates[0] && (
+              <div className="text-xs text-ink-soft mt-1.5">選択中:{formatDateLabel(dates[0])}</div>
+            )}
+          </>
         ) : (
           <>
             <MiniCalendarPicker selected={dates} onToggle={toggleDate} />
