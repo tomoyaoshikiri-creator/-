@@ -9,7 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
-import { VideoIcon } from "@/components/icons";
+import { ChevronRightIcon, VideoIcon } from "@/components/icons";
 import { canAccessTab } from "@/lib/permissions";
 import { formatDateLabel, fiscalYearOf, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
@@ -87,26 +87,20 @@ export default function GameResultsPage() {
       </div>
 
       {availableYears.length > 0 && (
-        <div className="flex gap-2 mb-3.5 overflow-x-auto">
-          <SegButton
-            variant="small"
-            className="flex-shrink-0 whitespace-nowrap px-3"
-            active={fiscalYear === "all"}
-            onClick={() => setFiscalYear("all")}
+        <div className="relative inline-block mb-3.5">
+          <select
+            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            value={fiscalYear === "all" ? "all" : String(fiscalYear)}
+            onChange={(e) => setFiscalYear(e.target.value === "all" ? "all" : Number(e.target.value))}
           >
-            すべて
-          </SegButton>
-          {availableYears.map((y) => (
-            <SegButton
-              key={y}
-              variant="small"
-              className="flex-shrink-0 whitespace-nowrap px-3"
-              active={fiscalYear === y}
-              onClick={() => setFiscalYear(y)}
-            >
-              {fiscalYearLabel(y)}
-            </SegButton>
-          ))}
+            <option value="all">すべての年度</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {fiscalYearLabel(y)}
+              </option>
+            ))}
+          </select>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
         </div>
       )}
 
