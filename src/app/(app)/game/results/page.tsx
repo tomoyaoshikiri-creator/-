@@ -142,6 +142,11 @@ export default function GameResultsPage() {
                 <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
                   {m.schedules?.date ? formatDateLabel(m.schedules.date) : "-"}
                 </div>
+                {category === "all" && m.schedules?.game_category && (
+                  <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 bg-danger/10 text-danger">
+                    {m.schedules.game_category}
+                  </span>
+                )}
                 <div className="font-bold text-[12.5px] flex-1 min-w-0 truncate">
                   {m.opponent || "(対戦相手未設定)"}
                 </div>
