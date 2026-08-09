@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -36,6 +37,8 @@ export default function ScheduleDetailPage() {
   const [proxyPlayerId, setProxyPlayerId] = useState("");
   const [unlinkedGuardians, setUnlinkedGuardians] = useState<{ id: string; name: string }[]>([]);
   const [unlinkedGuardianId, setUnlinkedGuardianId] = useState("");
+  const [prevId, setPrevId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -49,6 +52,30 @@ export default function ScheduleDetailPage() {
       supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
     ]);
     setSchedule(s ?? null);
+
+    if (s) {
+      const [{ data: prevRows }, { data: nextRows }] = await Promise.all([
+        supabase
+          .from("schedules")
+          .select("id")
+          .or(`date.lt.${s.date},and(date.eq.${s.date},created_at.lt.${s.created_at})`)
+          .order("date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(1),
+        supabase
+          .from("schedules")
+          .select("id")
+          .or(`date.gt.${s.date},and(date.eq.${s.date},created_at.gt.${s.created_at})`)
+          .order("date", { ascending: true })
+          .order("created_at", { ascending: true })
+          .limit(1),
+      ]);
+      setPrevId(prevRows?.[0]?.id ?? null);
+      setNextId(nextRows?.[0]?.id ?? null);
+    } else {
+      setPrevId(null);
+      setNextId(null);
+    }
 
     const playerIds = (links ?? []).map((l) => l.player_id);
     let linkedPlayers: Player[] = [];
@@ -113,6 +140,35 @@ export default function ScheduleDetailPage() {
         <EmptyState>予定が見つかりません</EmptyState>
       ) : (
         <>
+          <div className="flex items-center justify-between mb-3">
+            {prevId ? (
+              <Link
+                href={`/schedule/${prevId}`}
+                aria-label="前の予定"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ‹
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ‹
+              </span>
+            )}
+            {nextId ? (
+              <Link
+                href={`/schedule/${nextId}`}
+                aria-label="次の予定"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ›
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ›
+              </span>
+            )}
+          </div>
+
           <SectionLabel>予定の内容</SectionLabel>
           <Card>
             <div className="font-bold text-[14.5px]">
