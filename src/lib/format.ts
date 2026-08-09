@@ -15,6 +15,17 @@ export function todayDateStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// 4月始まりの年度(例: 2026-01-12は2025年度)を日付文字列から算出する。
+export function fiscalYearOf(dateStr: string): number {
+  const d = new Date(dateStr + "T00:00:00");
+  const y = d.getFullYear();
+  return d.getMonth() + 1 >= 4 ? y : y - 1;
+}
+
+export function fiscalYearLabel(year: number): string {
+  return `${year}年度`;
+}
+
 export function scheduleMeta(s: {
   date: string;
   start_time: string | null;

@@ -11,7 +11,7 @@ import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { VideoIcon } from "@/components/icons";
 import { canAccessTab } from "@/lib/permissions";
-import { formatDateLabel } from "@/lib/format";
+import { formatDateLabel, fiscalYearOf, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
 
 interface MatchWithDate extends GameMatch {
@@ -29,6 +29,8 @@ export default function GameResultsPage() {
   const { role } = useSession();
   const [allMatches, setAllMatches] = useState<MatchWithDate[]>([]);
   const [category, setCategory] = useState<GameCategory | "all">("all");
+  const [fiscalYear, setFiscalYear] = useState<number | "all">("all");
+  const [yearInitialized, setYearInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,15 +49,27 @@ export default function GameResultsPage() {
       });
       setAllMatches(sorted);
       setLoading(false);
+      if (!yearInitialized && sorted.length > 0 && sorted[0].schedules?.date) {
+        setFiscalYear(fiscalYearOf(sorted[0].schedules.date));
+        setYearInitialized(true);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!canAccessTab(role, "game")) router.replace("/schedule");
   }, [role, router]);
 
-  const matches =
-    category === "all" ? allMatches : allMatches.filter((m) => m.schedules?.game_category === category);
+  const availableYears = Array.from(
+    new Set(allMatches.filter((m) => m.schedules?.date).map((m) => fiscalYearOf(m.schedules!.date))),
+  ).sort((a, b) => b - a);
+
+  const matches = allMatches.filter((m) => {
+    if (category !== "all" && m.schedules?.game_category !== category) return false;
+    if (fiscalYear !== "all" && (!m.schedules?.date || fiscalYearOf(m.schedules.date) !== fiscalYear)) return false;
+    return true;
+  });
 
   const winCount = matches.filter((m) => (m.team_score ?? 0) > (m.opponent_score ?? 0)).length;
   const loseCount = matches.filter((m) => (m.team_score ?? 0) < (m.opponent_score ?? 0)).length;
@@ -64,13 +78,37 @@ export default function GameResultsPage() {
 
   return (
     <PageShell header={<AppHeader title="試合結果一覧" variant="detail" backHref="/game" />}>
-      <div className="flex gap-2 mb-3.5">
+      <div className="flex gap-2 mb-2">
         {CATEGORY_TABS.map((t) => (
           <SegButton key={t.value} active={category === t.value} onClick={() => setCategory(t.value)}>
             {t.label}
           </SegButton>
         ))}
       </div>
+
+      {availableYears.length > 0 && (
+        <div className="flex gap-2 mb-3.5 overflow-x-auto">
+          <SegButton
+            variant="small"
+            className="flex-shrink-0 whitespace-nowrap px-3"
+            active={fiscalYear === "all"}
+            onClick={() => setFiscalYear("all")}
+          >
+            すべて
+          </SegButton>
+          {availableYears.map((y) => (
+            <SegButton
+              key={y}
+              variant="small"
+              className="flex-shrink-0 whitespace-nowrap px-3"
+              active={fiscalYear === y}
+              onClick={() => setFiscalYear(y)}
+            >
+              {fiscalYearLabel(y)}
+            </SegButton>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
