@@ -33,6 +33,7 @@
    - `0020_report_staff_only.sql`: 練習日報の閲覧・登録を指導者・管理者のみに制限する(これまでは一般・役員も含め全ロールが閲覧・登録できた)
    - `0021_player_notes_edit_delete.sql`: 選手メモの編集・削除を指導者・管理者に許可する(これまでは登録のみ可能で、編集・削除用のポリシーが無かった)
    - `0022_game_match_result_and_photo.sql`: game_matchesに自チーム/相手チームの得点とスコア写真のパスを追加し、専用のStorageバケット(game-score-photos)を作成する。あわせてgame_recordsにDELETEポリシーが無かったため追加する(スタメン・途中出場登録の削除に必要)
+   - `0023_game_match_video_url.sql`: game_matchesに振り返り用の動画URL(YouTube等)を追加する
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -142,6 +143,7 @@ src/
 - クォーターごとのスタメン・途中出場は、一度登録すると選手を選ぶチェックボックス一覧の代わりに登録済みメンバーの要約が表示される。要約をタップすると「編集」(チェックボックス一覧に戻って選び直す)・「削除」(そのクォーターの登録を削除する)ボタンが出る
 - 試合(`game_matches`)には対戦相手に加えて自チーム/相手チームの得点を記録できる。勝敗は得点から自動判定して表示するため、専用の列は持たない
 - スコア写真の添付機能は`game_matches.score_photo_path`列とStorageバケット`game-score-photos`をDB側に用意済みだが、PostgRESTのスキーマキャッシュが更新されない問題が未解決のためUIからは一旦外している(再度組み込む際はそのまま使える)
+- `/game/results`(試合結果一覧)は得点が入力済みの全試合を日付降順で一覧表示し、勝敗数・勝率を自動集計する画面。もともとGoogleスプレッドシートで管理していた対戦戦績表をアプリ内に置き換える目的で追加した。各試合の`opponent`(対戦相手)・`team_score`/`opponent_score`(得点)・`video_url`(振り返り用動画リンク、YouTube等)を一覧表示する
 
 ## 既知の制約・今後の課題
 

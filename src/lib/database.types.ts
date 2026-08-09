@@ -292,6 +292,7 @@ export interface Database {
           team_score: number | null;
           opponent_score: number | null;
           score_photo_path: string | null;
+          video_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -303,6 +304,7 @@ export interface Database {
           team_score?: number | null;
           opponent_score?: number | null;
           score_photo_path?: string | null;
+          video_url?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["game_matches"]["Insert"]>;
         Relationships: [];

@@ -39,6 +39,14 @@ export default function GameListPage() {
 
   return (
     <PageShell header={<AppHeader title="試合記録" rightSlot={<CurrentUserBadge />} />}>
+      <Link
+        href="/game/results"
+        className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
+      >
+        試合結果一覧を見る
+        <ChevronRightIcon className="w-3 h-3" />
+      </Link>
+
       <SectionLabel>試合を選ぶ</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>

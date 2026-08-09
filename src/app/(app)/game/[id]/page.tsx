@@ -63,6 +63,7 @@ export default function GameDetailPage() {
   const [opponent, setOpponent] = useState("");
   const [teamScore, setTeamScore] = useState("");
   const [opponentScore, setOpponentScore] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [savingMatch, setSavingMatch] = useState(false);
   const [quarter, setQuarter] = useState(1);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -134,6 +135,7 @@ export default function GameDetailPage() {
     setOpponent(m?.opponent ?? "");
     setTeamScore(m?.team_score != null ? String(m.team_score) : "");
     setOpponentScore(m?.opponent_score != null ? String(m.opponent_score) : "");
+    setVideoUrl(m?.video_url ?? "");
   }, [selectedMatchId, matches]);
 
   const loadRecord = useCallback(async (matchId: string, q: number) => {
@@ -269,6 +271,7 @@ export default function GameDetailPage() {
         opponent: opponent.trim() || null,
         team_score: teamScoreNum,
         opponent_score: opponentScoreNum,
+        video_url: videoUrl.trim() || null,
       })
       .eq("id", selectedMatchId);
     setSavingMatch(false);
@@ -279,7 +282,13 @@ export default function GameDetailPage() {
     setMatches((prev) =>
       prev.map((m) =>
         m.id === selectedMatchId
-          ? { ...m, opponent: opponent.trim() || null, team_score: teamScoreNum, opponent_score: opponentScoreNum }
+          ? {
+              ...m,
+              opponent: opponent.trim() || null,
+              team_score: teamScoreNum,
+              opponent_score: opponentScoreNum,
+              video_url: videoUrl.trim() || null,
+            }
           : m,
       ),
     );
@@ -384,6 +393,16 @@ export default function GameDetailPage() {
                     {matchResult}
                   </div>
                 )}
+
+                <div className="mt-3">
+                  <FieldLabel>動画URL</FieldLabel>
+                  <input
+                    className={inputClass()}
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="例:https://www.youtube.com/playlist?list=..."
+                  />
+                </div>
 
                 <SubmitButton onClick={handleSaveMatch} disabled={savingMatch}>
                   {savingMatch ? "保存中…" : "対戦結果を保存する"}
