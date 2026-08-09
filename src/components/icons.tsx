@@ -52,16 +52,6 @@ export function PlayersIcon(props: IconProps) {
   );
 }
 
-export function NotesIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M4 4h16v13H8l-4 4z" />
-      <line x1="8" y1="9" x2="16" y2="9" />
-      <line x1="8" y1="13" x2="13" y2="13" />
-    </svg>
-  );
-}
-
 export function GameIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

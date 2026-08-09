@@ -5,7 +5,6 @@ export type TabKey =
   | "notice"
   | "report"
   | "players"
-  | "notes"
   | "game"
   | "users"
   | "settings";
@@ -15,7 +14,6 @@ export const TAB_LABELS: Record<TabKey, string> = {
   notice: "お知らせ",
   report: "日報",
   players: "選手一覧",
-  notes: "選手メモ",
   game: "試合記録",
   users: "管理",
   settings: "設定",
@@ -26,7 +24,6 @@ export const TAB_PATHS: Record<TabKey, string> = {
   notice: "/notice",
   report: "/report",
   players: "/players",
-  notes: "/notes",
   game: "/game",
   users: "/users",
   settings: "/settings",
@@ -37,7 +34,6 @@ export const PAGE_TITLES: Record<TabKey, string> = {
   notice: "お知らせ",
   report: "練習日報",
   players: "選手一覧",
-  notes: "選手メモ",
   game: "試合記録",
   users: "ユーザー管理",
   settings: "設定",
@@ -46,11 +42,12 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 仕様メモ 2章「権限構造」に基づくタブ出し分け。単一のソースとしてUI・ルートガード双方から参照する。
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
+// 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
 const ROLE_TABS: Record<Role, TabKey[]> = {
   一般: ["schedule", "notice", "settings"],
   役員: ["schedule", "notice", "settings"],
-  指導者: ["schedule", "notice", "report", "players", "notes", "game", "settings"],
-  管理者: ["schedule", "notice", "report", "players", "notes", "game", "users", "settings"],
+  指導者: ["schedule", "notice", "report", "players", "game", "settings"],
+  管理者: ["schedule", "notice", "report", "players", "game", "users", "settings"],
 };
 
 export function tabsForRole(role: Role): TabKey[] {

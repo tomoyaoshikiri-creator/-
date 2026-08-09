@@ -77,7 +77,7 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | お知らせ(閲覧) | ○ | ○ | ○ | ○ |
 | お知らせ(登録・編集) | ○ | ○ | ○ | ○ |
 | 練習日報(登録・閲覧) | – | – | ○ | ○ |
-| 選手 / 選手メモ / 試合記録 | – | – | ○ | ○ |
+| 選手一覧(選手メモを含む) / 試合記録 | – | – | ○ | ○ |
 | ユーザー管理・招待リンク発行 | – | – | – | ○ |
 | 設定: 自分のアカウント編集(表示名・パスワード) | ○ | ○ | ○ | ○ |
 | 設定: チーム設定(配色・ロゴ) | – | – | – | ○ |
@@ -103,8 +103,8 @@ src/
   app/
     (auth)/login, signup, setup, invite/[token]  認証フロー(ClubLinkブランディング)
     (auth)/forgot-password, reset-password       パスワード再設定(忘れた場合の復旧)
-    (app)/schedule, schedule/[id], notice, report, 予定(一覧は要約カード→詳細で出欠登録)・お知らせ・日報(全ロール)
-          players, notes, game,                  選手・選手メモ・試合記録(指導者以上)
+    (app)/schedule, schedule/[id], notice,        予定(一覧は要約カード→詳細で出欠登録)・お知らせ(全ロール)
+          report, players, players/[id], game,   日報・選手一覧(選手詳細でメモの閲覧・登録も行う)・試合記録(指導者以上)
           users                                  ユーザー管理(表示名・権限・ステータス編集)・招待リンク発行(管理者のみ)
           settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ロゴ、管理者のみ)
     auth/confirm, auth/complete                  メール確認リンクのコールバック
