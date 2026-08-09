@@ -81,32 +81,34 @@ export default function GameResultsPage() {
             const diff = teamScore - opponentScore;
             const result = diff > 0 ? "勝ち" : diff < 0 ? "負け" : "引き分け";
             return (
-              <Card key={m.id}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-ink-soft">
-                      {m.schedules?.date ? formatDateLabel(m.schedules.date) : "日付不明"}
-                    </div>
-                    <div className="font-bold text-[14px] mt-0.5">{m.opponent || "(対戦相手未設定)"}</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <Pill tone={result === "勝ち" ? "ok" : result === "負け" ? "absent" : "pending"}>{result}</Pill>
-                    <div className="text-xs text-ink-soft mt-1">
-                      {teamScore}-{opponentScore} ({diff > 0 ? `+${diff}` : diff})
-                    </div>
-                  </div>
+              <div
+                key={m.id}
+                className="bg-white border border-line rounded-2xl px-3.5 py-2 mb-2 flex items-center gap-2"
+              >
+                <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
+                  {m.schedules?.date ? formatDateLabel(m.schedules.date) : "-"}
                 </div>
-                {m.video_url && (
+                <div className="font-bold text-[12.5px] flex-1 min-w-0 truncate">
+                  {m.opponent || "(対戦相手未設定)"}
+                </div>
+                <div className="font-mono text-[11px] text-ink-soft flex-shrink-0">
+                  {teamScore}-{opponentScore}
+                </div>
+                <Pill tone={result === "勝ち" ? "ok" : result === "負け" ? "absent" : "pending"}>{result}</Pill>
+                {m.video_url ? (
                   <a
                     href={m.video_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-orange font-bold text-xs mt-2 inline-block"
+                    aria-label="動画を見る"
+                    className="flex-shrink-0 text-[14px]"
                   >
-                    🎥 動画を見る
+                    🎥
                   </a>
+                ) : (
+                  <span className="flex-shrink-0 w-[14px]" />
                 )}
-              </Card>
+              </div>
             );
           })}
         </>
