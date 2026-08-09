@@ -31,6 +31,7 @@
    - `0018_advance_academic_year_admin_only.sql`: 年度更新(advance_academic_year)は誤操作の影響が大きいため、指導者では実行できないようにし管理者のみに限定する(UIの「年度更新」ボタンも管理者にのみ表示)
    - `0019_invite_link_reusable.sql`: 招待リンクを、有効期限内であれば同じロール(保護者用/指導者用)の複数人が繰り返し使えるようにする(これまでは1人使うと無効になっていた)。あわせて有効期限のデフォルトを30日から3日に短縮する(今後発行する分のみ、既存の招待には影響しない)
    - `0020_report_staff_only.sql`: 練習日報の閲覧・登録を指導者・管理者のみに制限する(これまでは一般・役員も含め全ロールが閲覧・登録できた)
+   - `0021_player_notes_edit_delete.sql`: 選手メモの編集・削除を指導者・管理者に許可する(これまでは登録のみ可能で、編集・削除用のポリシーが無かった)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。

@@ -26,6 +26,11 @@ export default function PlayerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState("");
+  const [savingNoteEdit, setSavingNoteEdit] = useState(false);
+  const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
 
   const [sei, setSei] = useState("");
   const [mei, setMei] = useState("");
@@ -143,6 +148,50 @@ export default function PlayerDetailPage() {
     }
     setNoteBody("");
     toast("メモを登録しました");
+    load();
+  }
+
+  function startEditNote(n: PlayerNote) {
+    setEditingNoteId(n.id);
+    setEditNoteBody(n.body);
+  }
+
+  async function handleSaveNoteEdit(noteId: string) {
+    if (!editNoteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNoteEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("player_notes")
+      .update({ body: editNoteBody.trim() })
+      .eq("id", noteId);
+    setSavingNoteEdit(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを更新しました");
+    setEditingNoteId(null);
+    load();
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    if (deleteNoteConfirmId !== noteId) {
+      setDeleteNoteConfirmId(noteId);
+      setTimeout(() => setDeleteNoteConfirmId((cur) => (cur === noteId ? null : cur)), 3000);
+      return;
+    }
+    setDeleteNoteConfirmId(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("player_notes").delete().eq("id", noteId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを削除しました");
+    setExpandedNoteId(null);
     load();
   }
 
@@ -308,8 +357,63 @@ export default function PlayerDetailPage() {
               <div className="text-xs text-ink-soft">まだメモがありません</div>
             ) : (
               notes.map((n) => (
-                <div key={n.id} className="text-xs text-ink-soft mb-1.5 last:mb-0">
-                  {n.created_at.slice(0, 10)}: {n.body}
+                <div key={n.id} className="py-1.5 border-b border-line last:border-b-0">
+                  {editingNoteId === n.id ? (
+                    <div>
+                      <textarea
+                        rows={3}
+                        className={inputClass()}
+                        value={editNoteBody}
+                        onChange={(e) => setEditNoteBody(e.target.value)}
+                      />
+                      <div className="flex gap-2 mt-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveNoteEdit(n.id)}
+                          disabled={savingNoteEdit}
+                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                        >
+                          {savingNoteEdit ? "保存中…" : "保存"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingNoteId(null)}
+                          disabled={savingNoteEdit}
+                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
+                    >
+                      <div className="text-xs text-ink-soft">
+                        {n.created_at.slice(0, 10)}: {n.body}
+                      </div>
+                      {expandedNoteId === n.id && (
+                        <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => startEditNote(n)}
+                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                          >
+                            編集
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNote(n.id)}
+                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                          >
+                            {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}

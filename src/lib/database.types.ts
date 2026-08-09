@@ -277,7 +277,9 @@ export interface Database {
           author_id?: string | null;
           body: string;
         };
-        Update: Record<string, never>;
+        Update: Partial<{
+          body: string;
+        }>;
         Relationships: [];
       };
       game_matches: {
