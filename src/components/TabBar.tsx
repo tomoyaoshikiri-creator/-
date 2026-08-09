@@ -27,12 +27,12 @@ export function TabBar({ role }: { role: Role }) {
           <Link
             key={tab}
             href={href}
-            className={`flex-1 min-w-0 text-center text-[9px] font-medium flex flex-col items-center gap-0.5 ${
+            className={`flex-1 min-w-0 text-center text-[7.5px] font-medium flex flex-col items-center gap-0.5 ${
               isActive ? "text-orange font-bold" : "text-ink-soft"
             }`}
           >
             <Icon className="w-[19px] h-[19px]" />
-            <span className={tab === "schedule" ? "text-[7.5px] whitespace-nowrap" : ""}>{TAB_LABELS[tab]}</span>
+            <span className="whitespace-nowrap">{TAB_LABELS[tab]}</span>
           </Link>
         );
       })}
