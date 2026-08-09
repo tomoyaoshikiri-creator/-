@@ -76,10 +76,10 @@ export default function GameResultsPage() {
           <Card>
             <div className="text-center">
               <div className="font-extrabold text-[22px] text-navy">
-                {matches.length}戦
-                <span style={{ color: "var(--green)" }}>{winCount}勝</span>
+                {matches.length}戦{" "}
+                <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
                 <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>
-                {drawCount > 0 && <span className="text-ink-soft">{drawCount}分</span>}
+                {drawCount > 0 && <span className="text-ink-soft"> {drawCount}分</span>}
               </div>
               <div className="text-[11px] text-ink-soft mt-1">勝率 {winRateLabel}</div>
             </div>
