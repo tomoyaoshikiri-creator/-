@@ -54,6 +54,7 @@ export default function GameResultsPage() {
 
   const winCount = matches.filter((m) => (m.team_score ?? 0) > (m.opponent_score ?? 0)).length;
   const loseCount = matches.filter((m) => (m.team_score ?? 0) < (m.opponent_score ?? 0)).length;
+  const drawCount = matches.length - winCount - loseCount;
   const winRateLabel = winCount + loseCount > 0 ? `${((winCount / (winCount + loseCount)) * 100).toFixed(1)}%` : "-";
 
   return (
@@ -73,23 +74,14 @@ export default function GameResultsPage() {
       ) : (
         <>
           <Card>
-            <div className="flex justify-around text-center">
-              <div>
-                <div className="text-[20px] font-extrabold" style={{ color: "var(--green)" }}>
-                  {winCount}
-                </div>
-                <div className="text-[10.5px] text-ink-soft mt-0.5">勝ち</div>
+            <div className="text-center">
+              <div className="font-extrabold text-[22px] text-navy">
+                {matches.length}戦
+                <span style={{ color: "var(--green)" }}>{winCount}勝</span>
+                <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>
+                {drawCount > 0 && <span className="text-ink-soft">{drawCount}分</span>}
               </div>
-              <div>
-                <div className="text-[20px] font-extrabold" style={{ color: "var(--danger)" }}>
-                  {loseCount}
-                </div>
-                <div className="text-[10.5px] text-ink-soft mt-0.5">負け</div>
-              </div>
-              <div>
-                <div className="text-[20px] font-extrabold text-navy">{winRateLabel}</div>
-                <div className="text-[10.5px] text-ink-soft mt-0.5">勝率</div>
-              </div>
+              <div className="text-[11px] text-ink-soft mt-1">勝率 {winRateLabel}</div>
             </div>
           </Card>
 
