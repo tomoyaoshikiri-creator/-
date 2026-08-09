@@ -10,7 +10,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <span className="block text-4xl tracking-[0.2em]">Club</span>
             <span className="block text-4xl tracking-[0.2em]">Link</span>
           </h1>
-          <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-ink-soft mt-3">
+          <div
+            className="text-[10px] tracking-[0.3em] uppercase text-ink-soft mt-3"
+            style={{ fontFamily: '"Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, "メイリオ", sans-serif' }}
+          >
             Team Management Tools
           </div>
         </div>
