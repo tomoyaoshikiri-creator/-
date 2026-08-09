@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
@@ -16,12 +17,15 @@ export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const toast = useToast();
+  const { userId } = useSession();
   const [player, setPlayer] = useState<Player | null>(null);
   const [notes, setNotes] = useState<PlayerNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [noteBody, setNoteBody] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   const [sei, setSei] = useState("");
   const [mei, setMei] = useState("");
@@ -116,6 +120,30 @@ export default function PlayerDetailPage() {
     }
     toast("選手を削除しました");
     router.push("/players");
+  }
+
+  async function handleAddNote() {
+    if (!player) return;
+    if (!noteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNote(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("player_notes").insert({
+      team_id: player.team_id,
+      player_id: player.id,
+      author_id: userId,
+      body: noteBody.trim(),
+    });
+    setSavingNote(false);
+    if (error) {
+      toast(`登録に失敗しました: ${error.message}`);
+      return;
+    }
+    setNoteBody("");
+    toast("メモを登録しました");
+    load();
   }
 
   return (
@@ -260,7 +288,21 @@ export default function PlayerDetailPage() {
             <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
           </Card>
 
-          <SectionLabel>メモ</SectionLabel>
+          <SectionLabel>メモを追加</SectionLabel>
+          <Card>
+            <textarea
+              rows={3}
+              className={inputClass()}
+              value={noteBody}
+              onChange={(e) => setNoteBody(e.target.value)}
+              placeholder="例:左手のレイアップが安定してきた"
+            />
+            <SubmitButton onClick={handleAddNote} disabled={savingNote}>
+              {savingNote ? "登録中…" : "メモを登録する"}
+            </SubmitButton>
+          </Card>
+
+          <SectionLabel>これまでのメモ</SectionLabel>
           <Card>
             {notes.length === 0 ? (
               <div className="text-xs text-ink-soft">まだメモがありません</div>
