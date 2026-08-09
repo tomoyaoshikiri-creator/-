@@ -12,7 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canRecordGames } from "@/lib/permissions";
-import { formatDateLabel } from "@/lib/format";
+import { formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule } from "@/lib/database.types";
 
 const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
@@ -71,29 +71,32 @@ export default function GameListPage() {
       ) : filteredGames.length === 0 ? (
         <EmptyState>試合の予定がありません</EmptyState>
       ) : (
-        filteredGames.map((g) => (
-          <Link key={g.id} href={`/game/${g.id}`}>
-            <Card className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-[14.5px]">
-                    {g.game_category && (
-                      <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
-                        {g.game_category}
-                      </span>
-                    )}
-                    {g.title}
+        filteredGames.map((g) => {
+          const isPast = g.date < todayDateStr();
+          return (
+            <Link key={g.id} href={`/game/${g.id}`}>
+              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "#e8e6e1" } : undefined}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-[14.5px]">
+                      {g.game_category && (
+                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
+                          {g.game_category}
+                        </span>
+                      )}
+                      {g.title}
+                    </div>
+                    <div className="text-xs text-ink-soft mt-0.5">
+                      {formatDateLabel(g.date)}
+                      {g.place ? ` @ ${g.place}` : ""}
+                    </div>
                   </div>
-                  <div className="text-xs text-ink-soft mt-0.5">
-                    {formatDateLabel(g.date)}
-                    {g.place ? ` @ ${g.place}` : ""}
-                  </div>
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Card>
-          </Link>
-        ))
+              </Card>
+            </Link>
+          );
+        })
       )}
     </PageShell>
   );
