@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -12,7 +12,6 @@ import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
-import { safeExt } from "@/lib/storagePath";
 import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
@@ -64,11 +63,7 @@ export default function GameDetailPage() {
   const [opponent, setOpponent] = useState("");
   const [teamScore, setTeamScore] = useState("");
   const [opponentScore, setOpponentScore] = useState("");
-  const [scorePhotoPath, setScorePhotoPath] = useState<string | null>(null);
-  const [scorePhotoUrl, setScorePhotoUrl] = useState<string | null>(null);
-  const [scorePhotoFile, setScorePhotoFile] = useState<File | null>(null);
   const [savingMatch, setSavingMatch] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [quarter, setQuarter] = useState(1);
   const [players, setPlayers] = useState<Player[]>([]);
   const [starters, setStarters] = useState<string[]>([]);
@@ -139,19 +134,6 @@ export default function GameDetailPage() {
     setOpponent(m?.opponent ?? "");
     setTeamScore(m?.team_score != null ? String(m.team_score) : "");
     setOpponentScore(m?.opponent_score != null ? String(m.opponent_score) : "");
-    setScorePhotoFile(null);
-    setScorePhotoPath(m?.score_photo_path ?? null);
-    (async () => {
-      if (!m?.score_photo_path) {
-        setScorePhotoUrl(null);
-        return;
-      }
-      const supabase = createClient();
-      const { data: signed } = await supabase.storage
-        .from("game-score-photos")
-        .createSignedUrl(m.score_photo_path, 60 * 60);
-      setScorePhotoUrl(signed?.signedUrl ?? null);
-    })();
   }, [selectedMatchId, matches]);
 
   const loadRecord = useCallback(async (matchId: string, q: number) => {
@@ -275,55 +257,10 @@ export default function GameDetailPage() {
     toast(`${quarter}Qの登録を削除しました`);
   }
 
-  function handlePickScorePhoto(file: File | undefined) {
-    if (!file) return;
-    if (/\.(heic|heif)$/i.test(file.name)) {
-      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
-      return;
-    }
-    setScorePhotoFile(file);
-  }
-
-  async function handleRemoveScorePhoto() {
-    if (scorePhotoFile) {
-      setScorePhotoFile(null);
-      return;
-    }
-    if (!scorePhotoPath || !selectedMatchId) return;
-    const supabase = createClient();
-    await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
-    const { error } = await supabase
-      .from("game_matches")
-      .update({ score_photo_path: null })
-      .eq("id", selectedMatchId);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setScorePhotoPath(null);
-    setScorePhotoUrl(null);
-    setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: null } : m)));
-    toast("写真を削除しました");
-  }
-
   async function handleSaveMatch() {
     if (!selectedMatchId) return;
     setSavingMatch(true);
     const supabase = createClient();
-    let photoPath = scorePhotoPath;
-    if (scorePhotoFile) {
-      const path = `${teamId}/${selectedMatchId}/score-${Date.now()}.${safeExt(scorePhotoFile.name)}`;
-      const { error: uploadError } = await supabase.storage.from("game-score-photos").upload(path, scorePhotoFile);
-      if (uploadError) {
-        setSavingMatch(false);
-        toast(`写真のアップロードに失敗しました: ${uploadError.message}`);
-        return;
-      }
-      if (scorePhotoPath) {
-        await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
-      }
-      photoPath = path;
-    }
     const teamScoreNum = teamScore.trim() === "" ? null : Number(teamScore);
     const opponentScoreNum = opponentScore.trim() === "" ? null : Number(opponentScore);
     const { error } = await supabase
@@ -332,7 +269,6 @@ export default function GameDetailPage() {
         opponent: opponent.trim() || null,
         team_score: teamScoreNum,
         opponent_score: opponentScoreNum,
-        score_photo_path: photoPath,
       })
       .eq("id", selectedMatchId);
     setSavingMatch(false);
@@ -340,27 +276,13 @@ export default function GameDetailPage() {
       toast(`保存に失敗しました: ${error.message}`);
       return;
     }
-    setScorePhotoPath(photoPath);
-    setScorePhotoFile(null);
     setMatches((prev) =>
       prev.map((m) =>
         m.id === selectedMatchId
-          ? {
-              ...m,
-              opponent: opponent.trim() || null,
-              team_score: teamScoreNum,
-              opponent_score: opponentScoreNum,
-              score_photo_path: photoPath,
-            }
+          ? { ...m, opponent: opponent.trim() || null, team_score: teamScoreNum, opponent_score: opponentScoreNum }
           : m,
       ),
     );
-    if (photoPath) {
-      const { data: signed } = await supabase.storage.from("game-score-photos").createSignedUrl(photoPath, 60 * 60);
-      setScorePhotoUrl(signed?.signedUrl ?? null);
-    } else {
-      setScorePhotoUrl(null);
-    }
     toast("対戦結果を保存しました");
   }
 
@@ -462,43 +384,6 @@ export default function GameDetailPage() {
                     {matchResult}
                   </div>
                 )}
-
-                <div className="mt-3">
-                  <FieldLabel>スコア写真</FieldLabel>
-                  {scorePhotoUrl && !scorePhotoFile && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={scorePhotoUrl} alt="スコア" className="w-full rounded-[10px] border border-line mb-2" />
-                  )}
-                  {scorePhotoFile && (
-                    <div className="text-xs text-ink-soft mb-2">選択中: {scorePhotoFile.name}</div>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                    >
-                      {scorePhotoUrl || scorePhotoFile ? "写真を変更" : "写真を選ぶ"}
-                    </button>
-                    {(scorePhotoUrl || scorePhotoFile) && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveScorePhoto}
-                        className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white"
-                        style={{ color: "var(--danger)" }}
-                      >
-                        削除
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handlePickScorePhoto(e.target.files?.[0])}
-                  />
-                </div>
 
                 <SubmitButton onClick={handleSaveMatch} disabled={savingMatch}>
                   {savingMatch ? "保存中…" : "対戦結果を保存する"}
