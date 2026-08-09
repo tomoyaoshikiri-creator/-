@@ -91,7 +91,7 @@ export default function GameResultsPage() {
                 <div className="font-bold text-[12.5px] flex-1 min-w-0 truncate">
                   {m.opponent || "(対戦相手未設定)"}
                 </div>
-                <div className="font-mono text-[11px] text-ink-soft flex-shrink-0">
+                <div className="font-mono font-bold text-[13px] text-ink flex-shrink-0 mx-1">
                   {teamScore}-{opponentScore}
                 </div>
                 <Pill tone={result === "勝ち" ? "ok" : result === "負け" ? "absent" : "pending"}>{result}</Pill>
