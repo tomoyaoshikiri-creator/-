@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
@@ -73,17 +73,15 @@ export default function GameResultsPage() {
         <EmptyState>結果が登録された試合がありません</EmptyState>
       ) : (
         <>
-          <Card>
-            <div className="text-center">
-              <div className="font-extrabold text-[22px] text-navy">
-                {matches.length}戦{" "}
-                <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
-                <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>
-                {drawCount > 0 && <span className="text-ink-soft"> {drawCount}分</span>}
-              </div>
-              <div className="text-[11px] text-ink-soft mt-1">勝率 {winRateLabel}</div>
+          <div className="bg-white border border-line rounded-2xl px-4 py-2.5 mb-2.5 text-center">
+            <div className="font-extrabold text-[22px] text-navy">
+              {matches.length}戦{" "}
+              <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
+              <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>
+              {drawCount > 0 && <span className="text-ink-soft"> {drawCount}分</span>}
             </div>
-          </Card>
+            <div className="text-[13px] font-bold text-ink-soft mt-1">勝率 {winRateLabel}</div>
+          </div>
 
           <SectionLabel>試合ごとの結果</SectionLabel>
           {matches.map((m) => {
