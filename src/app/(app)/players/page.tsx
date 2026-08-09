@@ -116,7 +116,9 @@ export default function PlayersPage() {
       }
     >
       <div className="flex items-center justify-between mb-2.5">
-        <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft">選手マスタ</div>
+        <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft">
+          選手マスタ({activeList.length}名)
+        </div>
         {role === "管理者" && (
           <button
             type="button"
