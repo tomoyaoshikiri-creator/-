@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import holiday_jp from "@holiday-jp/holiday_jp";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { scheduleMeta } from "@/lib/format";
@@ -11,6 +12,20 @@ import type { Schedule } from "@/lib/database.types";
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
+
+// 月曜始まりの曜日インデックス(0=月...5=土, 6=日)を基準に、日付文字列の休日区分を判定する。
+function holidayKind(dateStr: string, weekdayIndex: number): "holiday" | "saturday" | "sunday" | null {
+  if (holiday_jp.isHoliday(new Date(dateStr + "T00:00:00"))) return "holiday";
+  if (weekdayIndex === 6) return "sunday";
+  if (weekdayIndex === 5) return "saturday";
+  return null;
+}
+
+const HOLIDAY_TEXT_CLASS: Record<"holiday" | "saturday" | "sunday", string> = {
+  holiday: "text-holiday",
+  saturday: "text-sky",
+  sunday: "text-danger",
+};
 
 export function CalendarView({ schedules }: { schedules: Schedule[] }) {
   const now = useMemo(() => new Date(), []);
@@ -79,9 +94,11 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-[10.5px] text-ink-soft font-bold mb-1">
-        {["月", "火", "水", "木", "金", "土", "日"].map((w) => (
-          <div key={w}>{w}</div>
+      <div className="grid grid-cols-7 text-center text-[10.5px] font-bold mb-1">
+        {["月", "火", "水", "木", "金", "土", "日"].map((w, i) => (
+          <div key={w} className={i === 5 ? "text-sky" : i === 6 ? "text-danger" : "text-ink-soft"}>
+            {w}
+          </div>
         ))}
       </div>
 
@@ -90,6 +107,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
           if (!c.date) return <div key={i} className="aspect-square" />;
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
+          const holiday = holidayKind(c.date, i % 7);
           // 同じ日に複数種別があれば 試合(danger) > イベント(sky) > 練習(orange) の優先度でマスの色を決める。
           const dayColors = new Set(events.map((e) => scheduleTypeColor(e.type)));
           const dayColor = dayColors.has("danger")
@@ -119,7 +137,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
                 isSelected ? "outline outline-2 outline-navy" : ""
               } ${cellCls}`}
             >
-              {c.day}
+              <span className={holiday ? HOLIDAY_TEXT_CLASS[holiday] : ""}>{c.day}</span>
               {hasEvent && <span className={`w-1 h-1 rounded-full mt-0.5 ${dotCls}`} />}
             </button>
           );

@@ -15,6 +15,7 @@
   --line: rgba(34, 32, 28, 0.12);
   --danger: #c0392b;
   --sky: #3b82c4;
+  --holiday: #7d5a94;
 }
 
 @theme inline {
@@ -27,6 +28,7 @@
   --color-line: var(--line);
   --color-danger: var(--danger);
   --color-sky: var(--sky);
+  --color-holiday: var(--holiday);
 
   /*
     MeiryoはWindows標準搭載フォントでWeb配信はできないため、
