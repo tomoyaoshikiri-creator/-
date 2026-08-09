@@ -39,7 +39,11 @@ export default function GameResultsPage() {
         .not("team_score", "is", null)
         .not("opponent_score", "is", null)
         .returns<MatchWithDate[]>();
-      const sorted = (data ?? []).slice().sort((a, b) => (b.schedules?.date ?? "").localeCompare(a.schedules?.date ?? ""));
+      const sorted = (data ?? []).slice().sort((a, b) => {
+        const dateDiff = (b.schedules?.date ?? "").localeCompare(a.schedules?.date ?? "");
+        if (dateDiff !== 0) return dateDiff;
+        return b.game_number - a.game_number;
+      });
       setAllMatches(sorted);
       setLoading(false);
     })();
