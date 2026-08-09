@@ -11,12 +11,12 @@ export type TabKey =
   | "settings";
 
 export const TAB_LABELS: Record<TabKey, string> = {
-  schedule: "予定",
+  schedule: "スケジュール",
   notice: "お知らせ",
   report: "日報",
-  players: "選手",
-  notes: "メモ",
-  game: "試合",
+  players: "選手一覧",
+  notes: "選手メモ",
+  game: "試合記録",
   users: "管理",
   settings: "設定",
 };
