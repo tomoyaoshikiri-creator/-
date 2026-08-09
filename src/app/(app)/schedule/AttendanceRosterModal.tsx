@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { isTargetEligible, playerFullName } from "@/lib/format";
-import type { Attendance, Schedule } from "@/lib/database.types";
+import type { Attendance, Role, Schedule } from "@/lib/database.types";
+import { AttendanceEntryForm } from "./AttendanceEntryForm";
 
 interface Row {
   key: string;
@@ -20,10 +21,29 @@ function AttendanceGroup({
   title,
   rows,
   showAccompany = true,
+  isPlayerGroup = false,
+  isEditable,
+  expandedKey,
+  onToggle,
+  scheduleId,
+  isGame,
+  editorUserId,
+  onChanged,
 }: {
   title: string;
   rows: Row[];
   showAccompany?: boolean;
+  // 選手に紐づく出欠(player_id)は誰が編集しても「人」ではなく「選手」が識別子なので、
+  // 保存時のuser_idには「編集している本人」を渡す(選手一覧タブと同じ挙動)。
+  // 本人・未紐付け保護者の出欠(player_id=null)はuser_id自体が識別子なので、rowのkey(=対象者本人)を渡す。
+  isPlayerGroup?: boolean;
+  isEditable: (key: string) => boolean;
+  expandedKey: string | null;
+  onToggle: (key: string) => void;
+  scheduleId: string;
+  isGame: boolean;
+  editorUserId: string;
+  onChanged: () => void;
 }) {
   if (rows.length === 0) return null;
   return (
@@ -32,34 +52,54 @@ function AttendanceGroup({
       <div className="border border-line rounded-2xl overflow-hidden">
         {rows.map((r) => {
           const status = r.attendance?.status ?? null;
+          const editable = isEditable(r.key);
+          const expanded = expandedKey === r.key;
           return (
-            <div key={r.key} className="px-3.5 py-2.5 border-b border-line last:border-b-0">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-[13px]">{r.name}</div>
-                <Pill tone={status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending"}>
-                  {status ?? "未回答"}
-                </Pill>
+            <div key={r.key} className="border-b border-line last:border-b-0">
+              <div
+                className={`px-3.5 py-2.5 ${editable ? "cursor-pointer" : ""}`}
+                onClick={() => editable && onToggle(r.key)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-[13px]">{r.name}</div>
+                  <Pill tone={status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending"}>
+                    {status ?? "未回答"}
+                  </Pill>
+                </div>
+                {r.attendance && (
+                  <div className="text-[11px] text-ink-soft mt-1">
+                    {showAccompany && (
+                      <>
+                        帯同:{" "}
+                        {r.attendance.accompany === "あり"
+                          ? `あり(${r.attendance.accompany_count ?? "-"}名)`
+                          : r.attendance.accompany === "なし"
+                            ? "なし"
+                            : "未回答"}
+                        {" ・ "}
+                      </>
+                    )}
+                    車出し:{" "}
+                    {r.attendance.car === "可"
+                      ? `可(乗車${r.attendance.seats ?? "-"}人)`
+                      : r.attendance.car === "不可"
+                        ? "不可"
+                        : "未回答"}
+                    {r.attendance.note && ` ・ 備考:${r.attendance.note}`}
+                  </div>
+                )}
               </div>
-              {r.attendance && (
-                <div className="text-[11px] text-ink-soft mt-1">
-                  {showAccompany && (
-                    <>
-                      帯同:{" "}
-                      {r.attendance.accompany === "あり"
-                        ? `あり(${r.attendance.accompany_count ?? "-"}名)`
-                        : r.attendance.accompany === "なし"
-                          ? "なし"
-                          : "未回答"}
-                      {" ・ "}
-                    </>
-                  )}
-                  車出し:{" "}
-                  {r.attendance.car === "可"
-                    ? `可(乗車${r.attendance.seats ?? "-"}人)`
-                    : r.attendance.car === "不可"
-                      ? "不可"
-                      : "未回答"}
-                  {r.attendance.note && ` ・ 備考:${r.attendance.note}`}
+              {expanded && (
+                <div className="px-3.5 pb-3.5" onClick={(e) => e.stopPropagation()}>
+                  <AttendanceEntryForm
+                    scheduleId={scheduleId}
+                    userId={isPlayerGroup ? editorUserId : r.key}
+                    playerId={isPlayerGroup ? r.key : null}
+                    label={r.name}
+                    isGame={isGame}
+                    allowDelete
+                    onChanged={onChanged}
+                  />
                 </div>
               )}
             </div>
@@ -74,58 +114,73 @@ export function AttendanceRosterModal({
   schedule,
   open,
   onClose,
+  userId,
+  role,
 }: {
   schedule: Schedule;
   open: boolean;
   onClose: () => void;
+  userId: string;
+  role: Role;
 }) {
   const [playerRows, setPlayerRows] = useState<Row[]>([]);
   const [staffRows, setStaffRows] = useState<Row[]>([]);
   const [otherRows, setOtherRows] = useState<Row[]>([]);
+  const [linkedPlayerIds, setLinkedPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const [{ data: players }, { data: profiles }, { data: attendances }, { data: links }] = await Promise.all([
+      supabase.rpc("list_roster_players"),
+      supabase.from("profiles").select("id, name, role").order("name"),
+      supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
+      supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
+    ]);
+
+    const attByPlayer = new Map(
+      (attendances ?? []).filter((a) => a.player_id).map((a) => [a.player_id as string, a]),
+    );
+    const attByUser = new Map((attendances ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
+
+    setPlayerRows(
+      (players ?? [])
+        .filter((p) => isTargetEligible(p.grade, schedule.target_grade_min))
+        .map((p) => ({
+          key: p.id,
+          name: playerFullName(p),
+          attendance: attByPlayer.get(p.id) ?? null,
+        })),
+    );
+
+    const staff = (profiles ?? []).filter((p) => p.role === "指導者" || p.role === "管理者");
+    setStaffRows(staff.map((p) => ({ key: p.id, name: p.name, attendance: attByUser.get(p.id) ?? null })));
+
+    const staffIds = new Set(staff.map((p) => p.id));
+    setOtherRows(
+      (profiles ?? [])
+        .filter((p) => !staffIds.has(p.id) && attByUser.has(p.id))
+        .map((p) => ({ key: p.id, name: p.name, attendance: attByUser.get(p.id) ?? null })),
+    );
+
+    setLinkedPlayerIds(new Set((links ?? []).map((l) => l.player_id)));
+    setLoading(false);
+  }, [schedule.id, schedule.target_grade_min, userId]);
 
   useEffect(() => {
     if (!open) return;
-    (async () => {
-      setLoading(true);
-      const supabase = createClient();
-      const [{ data: players }, { data: profiles }, { data: attendances }] = await Promise.all([
-        supabase.rpc("list_roster_players"),
-        supabase.from("profiles").select("id, name, role").order("name"),
-        supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
-      ]);
+    setExpandedKey(null);
+    load();
+  }, [open, load]);
 
-      const attByPlayer = new Map(
-        (attendances ?? []).filter((a) => a.player_id).map((a) => [a.player_id as string, a]),
-      );
-      const attByUser = new Map((attendances ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
+  function handleChanged() {
+    setExpandedKey(null);
+    load();
+  }
 
-      setPlayerRows(
-        (players ?? [])
-          .filter((p) => isTargetEligible(p.grade, schedule.target_grade_min))
-          .map((p) => ({
-            key: p.id,
-            name: playerFullName(p),
-            attendance: attByPlayer.get(p.id) ?? null,
-          })),
-      );
-
-      const staff = (profiles ?? []).filter((p) => p.role === "指導者" || p.role === "管理者");
-      setStaffRows(
-        staff.map((p) => ({ key: p.id, name: p.name, attendance: attByUser.get(p.id) ?? null })),
-      );
-
-      const staffIds = new Set(staff.map((p) => p.id));
-      setOtherRows(
-        (profiles ?? [])
-          .filter((p) => !staffIds.has(p.id) && attByUser.has(p.id))
-          .map((p) => ({ key: p.id, name: p.name, attendance: attByUser.get(p.id) ?? null })),
-      );
-
-      setLoading(false);
-    })();
-  }, [open, schedule.id, schedule.target_grade_min]);
-
+  const isAdmin = role === "管理者";
   const isGame = schedule.type === "game";
   const allRows = [...playerRows, ...staffRows, ...otherRows];
   const attendingCount = allRows.filter((r) => r.attendance?.status === "出席").length;
@@ -174,9 +229,42 @@ export function AttendanceRosterModal({
             <EmptyState>メンバーがいません</EmptyState>
           ) : (
             <>
-              <AttendanceGroup title="選手" rows={playerRows} />
-              <AttendanceGroup title="指導者" rows={staffRows} showAccompany={false} />
-              <AttendanceGroup title="未紐付けの保護者" rows={otherRows} showAccompany={false} />
+              <AttendanceGroup
+                title="選手"
+                rows={playerRows}
+                isPlayerGroup
+                isEditable={(key) => isAdmin || linkedPlayerIds.has(key)}
+                expandedKey={expandedKey}
+                onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
+                scheduleId={schedule.id}
+                isGame={isGame}
+                editorUserId={userId}
+                onChanged={handleChanged}
+              />
+              <AttendanceGroup
+                title="指導者"
+                rows={staffRows}
+                showAccompany={false}
+                isEditable={(key) => isAdmin || key === userId}
+                expandedKey={expandedKey}
+                onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
+                scheduleId={schedule.id}
+                isGame={isGame}
+                editorUserId={userId}
+                onChanged={handleChanged}
+              />
+              <AttendanceGroup
+                title="未紐付けの保護者"
+                rows={otherRows}
+                showAccompany={false}
+                isEditable={(key) => isAdmin || key === userId}
+                expandedKey={expandedKey}
+                onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
+                scheduleId={schedule.id}
+                isGame={isGame}
+                editorUserId={userId}
+                onChanged={handleChanged}
+              />
             </>
           )}
         </>

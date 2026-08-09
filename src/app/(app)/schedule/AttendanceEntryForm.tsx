@@ -14,6 +14,7 @@ export function AttendanceEntryForm({
   label,
   isGame,
   allowDelete = false,
+  onChanged,
 }: {
   scheduleId: string;
   userId: string;
@@ -21,6 +22,7 @@ export function AttendanceEntryForm({
   label: string;
   isGame: boolean;
   allowDelete?: boolean;
+  onChanged?: () => void;
 }) {
   const isSelf = playerId === null;
   const toast = useToast();
@@ -84,6 +86,7 @@ export function AttendanceEntryForm({
     }
     toast("登録しました");
     setRegistered(true);
+    onChanged?.();
   }
 
   async function handleDelete() {
@@ -111,6 +114,7 @@ export function AttendanceEntryForm({
     setSeats("");
     setNote("");
     setRegistered(false);
+    onChanged?.();
   }
 
   return (

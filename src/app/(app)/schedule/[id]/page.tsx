@@ -148,7 +148,13 @@ export default function ScheduleDetailPage() {
                   コピーして登録
                 </button>
               </div>
-              <AttendanceRosterModal schedule={schedule} open={rosterOpen} onClose={() => setRosterOpen(false)} />
+              <AttendanceRosterModal
+                schedule={schedule}
+                open={rosterOpen}
+                onClose={() => setRosterOpen(false)}
+                userId={userId}
+                role={role}
+              />
               <NewScheduleModal
                 open={editOpen}
                 onClose={() => setEditOpen(false)}
