@@ -6,6 +6,7 @@ export type UserStatus = "アクティブ" | "休止";
 export type ScheduleType = "practice" | "game" | "event";
 // 種別が"game"の予定にのみ意味を持つ区分。試合記録・試合結果一覧の絞り込みにも使う。
 export type GameCategory = "練習試合" | "公式戦";
+export type NoticeAudience = "全員" | "指導者のみ" | "役員以上" | "学年指定";
 export type AttendanceStatus = "出席" | "欠席";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
@@ -163,6 +164,8 @@ export interface Database {
           body: string | null;
           sender_id: string | null;
           created_at: string;
+          audience: NoticeAudience;
+          target_grade_min: string | null;
         };
         Insert: {
           id?: string;
@@ -170,10 +173,14 @@ export interface Database {
           title: string;
           body?: string | null;
           sender_id?: string | null;
+          audience?: NoticeAudience;
+          target_grade_min?: string | null;
         };
         Update: Partial<{
           title: string;
           body: string | null;
+          audience: NoticeAudience;
+          target_grade_min: string | null;
         }>;
         Relationships: [];
       };

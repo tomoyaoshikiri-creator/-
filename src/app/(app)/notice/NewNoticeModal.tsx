@@ -5,15 +5,17 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
-import { SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
-import type { AttachmentKind } from "@/lib/database.types";
+import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "対戦表", emoji: "📋" },
   { kind: "配車表", emoji: "🚗" },
   { kind: "その他", emoji: "📎" },
 ];
+
+const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "役員以上", "学年指定"];
 
 export function NewNoticeModal({
   open,
@@ -30,12 +32,16 @@ export function NewNoticeModal({
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [audience, setAudience] = useState<NoticeAudience>("全員");
+  const [targetGradeMin, setTargetGradeMin] = useState("");
   const [files, setFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
   const [saving, setSaving] = useState(false);
 
   function reset() {
     setTitle("");
     setBody("");
+    setAudience("全員");
+    setTargetGradeMin("");
     setFiles({});
   }
 
@@ -53,11 +59,22 @@ export function NewNoticeModal({
       toast("タイトルを入力してください");
       return;
     }
+    if (audience === "学年指定" && !targetGradeMin) {
+      toast("対象学年を選択してください");
+      return;
+    }
     setSaving(true);
 
     const { data: notice, error } = await supabase
       .from("notices")
-      .insert({ team_id: teamId, title: title.trim(), body: body.trim() || null, sender_id: userId })
+      .insert({
+        team_id: teamId,
+        title: title.trim(),
+        body: body.trim() || null,
+        sender_id: userId,
+        audience,
+        target_grade_min: audience === "学年指定" ? targetGradeMin : null,
+      })
       .select()
       .single();
 
@@ -112,6 +129,32 @@ export function NewNoticeModal({
           onChange={(e) => setBody(e.target.value)}
           placeholder="詳細を入力"
         />
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>公開範囲</FieldLabel>
+        <div className="flex gap-1.5 flex-wrap">
+          {AUDIENCES.map((a) => (
+            <SegButton key={a} variant="small" active={audience === a} onClick={() => setAudience(a)} className="flex-none px-3">
+              {a}
+            </SegButton>
+          ))}
+        </div>
+        <div className="text-xs text-ink-soft mt-1">指導者・管理者は公開範囲に関わらず常にすべてのお知らせを見られます</div>
+        {audience === "学年指定" && (
+          <select
+            className={inputClass("mt-2")}
+            value={targetGradeMin}
+            onChange={(e) => setTargetGradeMin(e.target.value)}
+          >
+            <option value="">対象学年を選択してください</option>
+            {["1", "2", "3", "4", "5", "6"].map((g) => (
+              <option key={g} value={g}>
+                {g}年生以上
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="mt-3">

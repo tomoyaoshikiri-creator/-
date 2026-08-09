@@ -94,7 +94,14 @@ export default function NoticePage() {
         filteredNotices.map((n) => (
           <Link key={n.id} href={`/notice/${n.id}`}>
             <Card className="cursor-pointer">
-              <div className="font-bold text-[14.5px]">{n.title}</div>
+              <div className="font-bold text-[14.5px]">
+                {n.audience !== "全員" && (
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
+                    {n.audience}
+                  </span>
+                )}
+                {n.title}
+              </div>
               <div className="text-xs text-ink-soft mt-0.5">
                 {n.sender_id && profiles[n.sender_id] ? `${profiles[n.sender_id]} · ` : ""}
                 {formatDateLabel(n.created_at.slice(0, 10))}配信

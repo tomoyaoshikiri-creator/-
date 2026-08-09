@@ -8,12 +8,12 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
-import type { AttachmentKind, Notice, NoticeAttachment } from "@/lib/database.types";
+import type { AttachmentKind, Notice, NoticeAttachment, NoticeAudience } from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null };
 
@@ -22,6 +22,8 @@ const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "配車表", emoji: "🚗" },
   { kind: "その他", emoji: "📎" },
 ];
+
+const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "役員以上", "学年指定"];
 
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
@@ -35,6 +37,8 @@ export default function NoticeDetailPage() {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [audience, setAudience] = useState<NoticeAudience>("全員");
+  const [targetGradeMin, setTargetGradeMin] = useState("");
   const [newFiles, setNewFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -73,6 +77,8 @@ export default function NoticeDetailPage() {
     if (!notice) return;
     setTitle(notice.title);
     setBody(notice.body ?? "");
+    setAudience(notice.audience);
+    setTargetGradeMin(notice.target_grade_min ?? "");
     setNewFiles({});
     setEditing(true);
   }
@@ -106,11 +112,20 @@ export default function NoticeDetailPage() {
       toast("タイトルを入力してください");
       return;
     }
+    if (audience === "学年指定" && !targetGradeMin) {
+      toast("対象学年を選択してください");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("notices")
-      .update({ title: title.trim(), body: body.trim() || null })
+      .update({
+        title: title.trim(),
+        body: body.trim() || null,
+        audience,
+        target_grade_min: audience === "学年指定" ? targetGradeMin : null,
+      })
       .eq("id", notice.id);
     if (error) {
       setSaving(false);
@@ -186,6 +201,37 @@ export default function NoticeDetailPage() {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
               />
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>公開範囲</FieldLabel>
+              <div className="flex gap-1.5 flex-wrap">
+                {AUDIENCES.map((a) => (
+                  <SegButton
+                    key={a}
+                    variant="small"
+                    active={audience === a}
+                    onClick={() => setAudience(a)}
+                    className="flex-none px-3"
+                  >
+                    {a}
+                  </SegButton>
+                ))}
+              </div>
+              {audience === "学年指定" && (
+                <select
+                  className={inputClass("mt-2")}
+                  value={targetGradeMin}
+                  onChange={(e) => setTargetGradeMin(e.target.value)}
+                >
+                  <option value="">対象学年を選択してください</option>
+                  {["1", "2", "3", "4", "5", "6"].map((g) => (
+                    <option key={g} value={g}>
+                      {g}年生以上
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="mt-3">
@@ -277,6 +323,19 @@ export default function NoticeDetailPage() {
           <Card>
             <div className="text-xs text-ink-soft">{formatDateLabel(notice.created_at.slice(0, 10))}配信</div>
           </Card>
+          {notice.audience !== "全員" && (
+            <>
+              <SectionLabel>公開範囲</SectionLabel>
+              <Card>
+                <div className="text-xs text-ink-soft">
+                  {notice.audience}
+                  {notice.audience === "学年指定" && notice.target_grade_min
+                    ? `(${notice.target_grade_min}年生以上)`
+                    : ""}
+                </div>
+              </Card>
+            </>
+          )}
           <SectionLabel>本文</SectionLabel>
           <Card>
             <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
