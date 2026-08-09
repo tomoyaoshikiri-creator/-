@@ -13,12 +13,14 @@ export function AttendanceEntryForm({
   playerId,
   label,
   isGame,
+  allowDelete = false,
 }: {
   scheduleId: string;
   userId: string;
   playerId: string | null;
   label: string;
   isGame: boolean;
+  allowDelete?: boolean;
 }) {
   const isSelf = playerId === null;
   const toast = useToast();
@@ -31,6 +33,7 @@ export function AttendanceEntryForm({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -81,6 +84,33 @@ export function AttendanceEntryForm({
     }
     toast("登録しました");
     setRegistered(true);
+  }
+
+  async function handleDelete() {
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      setTimeout(() => setDeleteConfirm(false), 3000);
+      return;
+    }
+    setSaving(true);
+    const supabase = createClient();
+    let query = supabase.from("attendances").delete().eq("schedule_id", scheduleId).eq("user_id", userId);
+    query = playerId ? query.eq("player_id", playerId) : query.is("player_id", null);
+    const { error } = await query;
+    setSaving(false);
+    setDeleteConfirm(false);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("出欠を削除しました");
+    setStatus(null);
+    setAccompany(null);
+    setAccompanyCount("");
+    setCar(null);
+    setSeats("");
+    setNote("");
+    setRegistered(false);
   }
 
   return (
@@ -221,6 +251,18 @@ export function AttendanceEntryForm({
             <SubmitButton onClick={handleSubmit} disabled={saving} className={registered ? "opacity-45" : ""}>
               {saving ? "登録中…" : registered ? "登録済み(この内容で更新する)" : "この内容で登録する"}
             </SubmitButton>
+
+            {allowDelete && registered && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={saving}
+                className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white disabled:opacity-50"
+                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              >
+                {deleteConfirm ? "もう一度タップで削除確定" : "この出欠を削除する"}
+              </button>
+            )}
           </>
         )}
       </Card>

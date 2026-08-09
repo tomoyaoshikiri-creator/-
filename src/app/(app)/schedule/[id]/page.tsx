@@ -34,6 +34,8 @@ export default function ScheduleDetailPage() {
   const [excludedLinkedCount, setExcludedLinkedCount] = useState(0);
   const [proxyPlayers, setProxyPlayers] = useState<Player[]>([]);
   const [proxyPlayerId, setProxyPlayerId] = useState("");
+  const [unlinkedGuardians, setUnlinkedGuardians] = useState<{ id: string; name: string }[]>([]);
+  const [unlinkedGuardianId, setUnlinkedGuardianId] = useState("");
   const [loading, setLoading] = useState(true);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -81,10 +83,19 @@ export default function ScheduleDetailPage() {
             .filter((p) => !coveredIds.has(p.id)),
         ),
       );
+
+      const [{ data: guardianProfiles }, { data: allLinks }] = await Promise.all([
+        supabase.from("profiles").select("id, name, role").in("role", ["一般", "役員"]).order("name"),
+        supabase.from("player_guardians").select("profile_id"),
+      ]);
+      const linkedIds = new Set((allLinks ?? []).map((l) => l.profile_id));
+      setUnlinkedGuardians((guardianProfiles ?? []).filter((p) => !linkedIds.has(p.id)));
     } else {
       setProxyPlayers([]);
+      setUnlinkedGuardians([]);
     }
     setProxyPlayerId("");
+    setUnlinkedGuardianId("");
     setLoading(false);
   }, [params.id, userId, role]);
 
@@ -203,6 +214,38 @@ export default function ScheduleDetailPage() {
                   playerId={proxyPlayerId}
                   label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
                   isGame={isGame}
+                />
+              )}
+            </>
+          )}
+
+          {role === "管理者" && unlinkedGuardians.length > 0 && (
+            <>
+              <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
+              <Card>
+                <FieldLabel>保護者を選ぶ</FieldLabel>
+                <select
+                  className={inputClass()}
+                  value={unlinkedGuardianId}
+                  onChange={(e) => setUnlinkedGuardianId(e.target.value)}
+                >
+                  <option value="">保護者を選択してください</option>
+                  {unlinkedGuardians.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+              {unlinkedGuardianId && (
+                <AttendanceEntryForm
+                  key={unlinkedGuardianId}
+                  scheduleId={schedule.id}
+                  userId={unlinkedGuardianId}
+                  playerId={null}
+                  label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
+                  isGame={isGame}
+                  allowDelete
                 />
               )}
             </>

@@ -90,7 +90,7 @@ export function AttendanceRosterModal({
       setLoading(true);
       const supabase = createClient();
       const [{ data: players }, { data: profiles }, { data: attendances }] = await Promise.all([
-        supabase.from("players").select("*").eq("status", "在籍"),
+        supabase.rpc("list_roster_players"),
         supabase.from("profiles").select("id, name, role").order("name"),
         supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
       ]);

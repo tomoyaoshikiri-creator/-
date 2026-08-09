@@ -369,6 +369,10 @@ export interface Database {
           created_at: string;
         }[];
       };
+      list_roster_players: {
+        Args: Record<string, never>;
+        Returns: { id: string; sei: string; mei: string; grade: string | null; status: string }[];
+      };
     };
   };
 }
@@ -387,3 +391,4 @@ export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
+export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];
