@@ -11,7 +11,7 @@ import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
-import { playerFullName } from "@/lib/format";
+import { formatDateLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
 const ROLE_OPTIONS: Role[] = ["一般", "役員", "指導者", "管理者"];
@@ -164,7 +164,8 @@ export default function UsersPage() {
     toast("リンクをコピーしました");
   }
 
-  const visibleInvites = invites.filter((inv) => !inv.used_at && new Date(inv.expires_at) > new Date());
+  // 招待リンクは複数人が使い回せるため、一度使われたかどうかではなく有効期限だけで表示を絞る
+  const visibleInvites = invites.filter((inv) => new Date(inv.expires_at) > new Date());
 
   return (
     <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
@@ -194,6 +195,9 @@ export default function UsersPage() {
                 >
                   コピー
                 </button>
+              </div>
+              <div className="text-[10.5px] text-ink-soft mt-1">
+                有効期限: {formatDateLabel(inv.expires_at.slice(0, 10))}まで(このリンクは複数人が登録に使えます)
               </div>
             </div>
           ))}

@@ -29,6 +29,7 @@
    - ユーザー管理画面からのユーザー削除は`src/app/api/admin/delete-user/route.ts`(service_roleキー使用)経由でauth.usersごと削除するため、マイグレーション追加なし。profiles.idはauth.users(id)にon delete cascadeで参照しているため、auth.users側を削除すればprofiles行(および紐づく出欠等)も自動的に削除される。これにより削除したユーザーのメールアドレスは新規登録に再利用できるようになる
    - `0017_schedule_target_and_admin_attendance.sql`: schedules.target_grade_minを追加し、予定ごとに出欠対象を「全員」または「○年生以上」に限定できるようにする。あわせてattendances_insert/updateポリシーを見直し、これまで検証していなかった選手との紐付け(player_guardians)チェックを追加しつつ、管理者は紐付けに関わらず全選手の出欠を代理登録・編集できるようにする
    - `0018_advance_academic_year_admin_only.sql`: 年度更新(advance_academic_year)は誤操作の影響が大きいため、指導者では実行できないようにし管理者のみに限定する(UIの「年度更新」ボタンも管理者にのみ表示)
+   - `0019_invite_link_reusable.sql`: 招待リンクを、有効期限内であれば同じロール(保護者用/指導者用)の複数人が繰り返し使えるようにする(これまでは1人使うと無効になっていた)。あわせて有効期限のデフォルトを30日から3日に短縮する(今後発行する分のみ、既存の招待には影響しない)
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
