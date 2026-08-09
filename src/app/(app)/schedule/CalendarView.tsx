@@ -137,7 +137,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
             <Link key={ev.id} href={`/schedule/${ev.id}`}>
               <Card className="cursor-pointer">
                 <div className="font-bold text-[14.5px]">
-                  <TypeTag type={ev.type} />
+                  <TypeTag type={ev.type} gameCategory={ev.game_category} />
                   {ev.title}
                 </div>
                 <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>

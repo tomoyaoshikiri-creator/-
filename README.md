@@ -34,6 +34,7 @@
    - `0021_player_notes_edit_delete.sql`: 選手メモの編集・削除を指導者・管理者に許可する(これまでは登録のみ可能で、編集・削除用のポリシーが無かった)
    - `0022_game_match_result_and_photo.sql`: game_matchesに自チーム/相手チームの得点とスコア写真のパスを追加し、専用のStorageバケット(game-score-photos)を作成する。あわせてgame_recordsにDELETEポリシーが無かったため追加する(スタメン・途中出場登録の削除に必要)
    - `0023_game_match_video_url.sql`: game_matchesに振り返り用の動画URL(YouTube等)を追加する
+   - `0024_schedule_game_category.sql`: schedulesに「練習試合」「公式戦」の区分(game_category)を追加する。type="game"の予定にのみ意味を持ち、それ以外はnull
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -144,6 +145,7 @@ src/
 - 試合(`game_matches`)には対戦相手に加えて自チーム/相手チームの得点を記録できる。勝敗は得点から自動判定して表示するため、専用の列は持たない
 - スコア写真の添付機能は`game_matches.score_photo_path`列とStorageバケット`game-score-photos`をDB側に用意済みだが、PostgRESTのスキーマキャッシュが更新されない問題が未解決のためUIからは一旦外している(再度組み込む際はそのまま使える)
 - `/game/results`(試合結果一覧)は得点が入力済みの全試合を日付降順で一覧表示し、勝敗数・勝率を自動集計する画面。もともとGoogleスプレッドシートで管理していた対戦戦績表をアプリ内に置き換える目的で追加した。各試合の`opponent`(対戦相手)・`team_score`/`opponent_score`(得点)・`video_url`(振り返り用動画リンク、YouTube等)を一覧表示する
+- 試合(予定)は「練習試合」「公式戦」の区分(`schedules.game_category`)を持つ。区分は予定登録時に種別で「試合」を選ぶと選択できる、予定そのものの属性として一元管理しており(試合ごとに二重に持たせていない)、`/game`・`/game/results`の両方でこの区分によるタブ絞り込みができる。カレンダー・予定一覧の種別タグにも「練習試合」「公式戦」がそのまま表示される(未設定の場合は「試合」)
 
 ## 既知の制約・今後の課題
 

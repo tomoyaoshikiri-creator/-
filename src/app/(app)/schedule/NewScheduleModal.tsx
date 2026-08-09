@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { formatDateLabel } from "@/lib/format";
-import type { Schedule, ScheduleType } from "@/lib/database.types";
+import type { GameCategory, Schedule, ScheduleType } from "@/lib/database.types";
 import { MiniCalendarPicker } from "./MiniCalendarPicker";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
@@ -32,6 +32,7 @@ export function NewScheduleModal({
   const isEdit = Boolean(editSchedule);
 
   const [type, setType] = useState<ScheduleType>("practice");
+  const [gameCategory, setGameCategory] = useState<GameCategory>("練習試合");
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -45,6 +46,7 @@ export function NewScheduleModal({
 
   function reset() {
     setType("practice");
+    setGameCategory("練習試合");
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -61,6 +63,7 @@ export function NewScheduleModal({
     const source = editSchedule ?? copySource;
     if (source) {
       setType(source.type);
+      setGameCategory(source.game_category ?? "練習試合");
       setTitle(source.title);
       setDates(editSchedule ? [source.date] : []);
       const [sh, sm] = (source.start_time ?? "").split(":");
@@ -99,6 +102,7 @@ export function NewScheduleModal({
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
       target_grade_min: targetGradeMin || null,
+      game_category: type === "game" ? gameCategory : null,
     };
     const { error } = editSchedule
       ? await supabase
@@ -131,6 +135,20 @@ export function NewScheduleModal({
           イベント
         </SegButton>
       </div>
+
+      {type === "game" && (
+        <div className="mt-3">
+          <FieldLabel>試合の区分</FieldLabel>
+          <div className="flex gap-2">
+            <SegButton active={gameCategory === "練習試合"} onClick={() => setGameCategory("練習試合")}>
+              練習試合
+            </SegButton>
+            <SegButton active={gameCategory === "公式戦"} onClick={() => setGameCategory("公式戦")}>
+              公式戦
+            </SegButton>
+          </div>
+        </div>
+      )}
 
       <div className="mt-3">
         <FieldLabel>タイトル</FieldLabel>

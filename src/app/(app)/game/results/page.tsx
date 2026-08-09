@@ -8,18 +8,26 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
+import { SegButton } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { formatDateLabel } from "@/lib/format";
-import type { GameMatch } from "@/lib/database.types";
+import type { GameCategory, GameMatch } from "@/lib/database.types";
 
 interface MatchWithDate extends GameMatch {
-  schedules: { date: string } | null;
+  schedules: { date: string; game_category: GameCategory | null } | null;
 }
+
+const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
+  { label: "すべて", value: "all" },
+  { label: "練習試合", value: "練習試合" },
+  { label: "公式戦", value: "公式戦" },
+];
 
 export default function GameResultsPage() {
   const router = useRouter();
   const { role } = useSession();
-  const [matches, setMatches] = useState<MatchWithDate[]>([]);
+  const [allMatches, setAllMatches] = useState<MatchWithDate[]>([]);
+  const [category, setCategory] = useState<GameCategory | "all">("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,12 +35,12 @@ export default function GameResultsPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from("game_matches")
-        .select("*, schedules(date)")
+        .select("*, schedules(date, game_category)")
         .not("team_score", "is", null)
         .not("opponent_score", "is", null)
         .returns<MatchWithDate[]>();
       const sorted = (data ?? []).slice().sort((a, b) => (b.schedules?.date ?? "").localeCompare(a.schedules?.date ?? ""));
-      setMatches(sorted);
+      setAllMatches(sorted);
       setLoading(false);
     })();
   }, []);
@@ -41,12 +49,23 @@ export default function GameResultsPage() {
     if (!canAccessTab(role, "game")) router.replace("/schedule");
   }, [role, router]);
 
+  const matches =
+    category === "all" ? allMatches : allMatches.filter((m) => m.schedules?.game_category === category);
+
   const winCount = matches.filter((m) => (m.team_score ?? 0) > (m.opponent_score ?? 0)).length;
   const loseCount = matches.filter((m) => (m.team_score ?? 0) < (m.opponent_score ?? 0)).length;
   const winRateLabel = winCount + loseCount > 0 ? `${((winCount / (winCount + loseCount)) * 100).toFixed(1)}%` : "-";
 
   return (
     <PageShell header={<AppHeader title="試合結果一覧" variant="detail" backHref="/game" />}>
+      <div className="flex gap-2 mb-3.5">
+        {CATEGORY_TABS.map((t) => (
+          <SegButton key={t.value} active={category === t.value} onClick={() => setCategory(t.value)}>
+            {t.label}
+          </SegButton>
+        ))}
+      </div>
+
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : matches.length === 0 ? (

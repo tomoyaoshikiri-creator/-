@@ -22,7 +22,7 @@ export function ScheduleCard({
         <div className="flex items-center justify-between">
           <div>
             <div className="font-bold text-[14.5px]">
-              <TypeTag type={schedule.type} />
+              <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
               {schedule.title}
             </div>
             <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(schedule)}</div>

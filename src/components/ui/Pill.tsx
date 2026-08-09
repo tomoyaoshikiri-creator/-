@@ -20,7 +20,13 @@ export function Pill({
   );
 }
 
-export function TypeTag({ type }: { type: "practice" | "game" | "event" }) {
+export function TypeTag({
+  type,
+  gameCategory,
+}: {
+  type: "practice" | "game" | "event";
+  gameCategory?: "練習試合" | "公式戦" | null;
+}) {
   const color = scheduleTypeColor(type);
   const cls =
     color === "danger"
@@ -28,7 +34,7 @@ export function TypeTag({ type }: { type: "practice" | "game" | "event" }) {
       : color === "sky"
         ? "bg-sky/10 text-sky"
         : "bg-orange/10 text-orange";
-  const label = type === "game" ? "試合" : type === "event" ? "イベント" : "練習";
+  const label = type === "game" ? (gameCategory ?? "試合") : type === "event" ? "イベント" : "練習";
   return (
     <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 ${cls}`}>{label}</span>
   );

@@ -105,7 +105,7 @@ export default function ScheduleDetailPage() {
           <SectionLabel>予定の内容</SectionLabel>
           <Card>
             <div className="font-bold text-[14.5px]">
-              <TypeTag type={schedule.type} />
+              <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
               {schedule.title}
             </div>
             <div className="text-xs text-ink-soft mt-1">{scheduleMeta(schedule)}</div>
