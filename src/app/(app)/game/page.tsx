@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -13,6 +13,7 @@ import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab } from "@/lib/permissions";
 import { formatDateLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import { safeExt } from "@/lib/storagePath";
 import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
@@ -61,10 +62,21 @@ export default function GamePage() {
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [addingMatch, setAddingMatch] = useState(false);
   const [opponent, setOpponent] = useState("");
+  const [teamScore, setTeamScore] = useState("");
+  const [opponentScore, setOpponentScore] = useState("");
+  const [scorePhotoPath, setScorePhotoPath] = useState<string | null>(null);
+  const [scorePhotoUrl, setScorePhotoUrl] = useState<string | null>(null);
+  const [scorePhotoFile, setScorePhotoFile] = useState<File | null>(null);
+  const [savingMatch, setSavingMatch] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [quarter, setQuarter] = useState(1);
   const [players, setPlayers] = useState<Player[]>([]);
   const [starters, setStarters] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [memberEditing, setMemberEditing] = useState(false);
+  const [memberExpanded, setMemberExpanded] = useState(false);
+  const [deleteRecordConfirm, setDeleteRecordConfirm] = useState(false);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, AttendanceStatus>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -142,12 +154,31 @@ export default function GamePage() {
   useEffect(() => {
     const m = matches.find((x) => x.id === selectedMatchId);
     setOpponent(m?.opponent ?? "");
+    setTeamScore(m?.team_score != null ? String(m.team_score) : "");
+    setOpponentScore(m?.opponent_score != null ? String(m.opponent_score) : "");
+    setScorePhotoFile(null);
+    setScorePhotoPath(m?.score_photo_path ?? null);
+    (async () => {
+      if (!m?.score_photo_path) {
+        setScorePhotoUrl(null);
+        return;
+      }
+      const supabase = createClient();
+      const { data: signed } = await supabase.storage
+        .from("game-score-photos")
+        .createSignedUrl(m.score_photo_path, 60 * 60);
+      setScorePhotoUrl(signed?.signedUrl ?? null);
+    })();
   }, [selectedMatchId, matches]);
 
   const loadRecord = useCallback(async (matchId: string, q: number) => {
+    setMemberEditing(false);
+    setMemberExpanded(false);
+    setDeleteRecordConfirm(false);
     if (!matchId) {
       setStarters([]);
       setSubs([]);
+      setRecordId(null);
       return;
     }
     const supabase = createClient();
@@ -159,6 +190,7 @@ export default function GamePage() {
       .maybeSingle();
     setStarters(data?.starter_player_ids ?? []);
     setSubs(data?.sub_player_ids ?? []);
+    setRecordId(data?.id ?? null);
   }, []);
 
   useEffect(() => {
@@ -215,37 +247,151 @@ export default function GamePage() {
     }
     setSaving(true);
     const supabase = createClient();
-    const { error: opponentError } = await supabase
-      .from("game_matches")
-      .update({ opponent: opponent.trim() || null })
-      .eq("id", selectedMatchId);
-    if (opponentError) {
-      setSaving(false);
-      toast(`保存に失敗しました: ${opponentError.message}`);
-      return;
-    }
-    const { error } = await supabase.from("game_records").upsert(
-      {
-        team_id: teamId,
-        match_id: selectedMatchId,
-        quarter,
-        starter_player_ids: starters,
-        sub_player_ids: subs,
-      },
-      { onConflict: "match_id,quarter" },
-    );
+    const { data, error } = await supabase
+      .from("game_records")
+      .upsert(
+        {
+          team_id: teamId,
+          match_id: selectedMatchId,
+          quarter,
+          starter_player_ids: starters,
+          sub_player_ids: subs,
+        },
+        { onConflict: "match_id,quarter" },
+      )
+      .select()
+      .single();
     setSaving(false);
     if (error) {
       toast(`登録に失敗しました: ${error.message}`);
       return;
     }
-    setMatches((prev) =>
-      prev.map((m) => (m.id === selectedMatchId ? { ...m, opponent: opponent.trim() || null } : m)),
-    );
+    setRecordId(data?.id ?? null);
+    setMemberEditing(false);
     toast(`${quarter}Qの出場選手を登録しました`);
   }
 
+  async function handleDeleteRecord() {
+    if (!recordId) return;
+    if (!deleteRecordConfirm) {
+      setDeleteRecordConfirm(true);
+      setTimeout(() => setDeleteRecordConfirm(false), 3000);
+      return;
+    }
+    setDeleteRecordConfirm(false);
+    const supabase = createClient();
+    const { error } = await supabase.from("game_records").delete().eq("id", recordId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setStarters([]);
+    setSubs([]);
+    setRecordId(null);
+    setMemberExpanded(false);
+    toast(`${quarter}Qの登録を削除しました`);
+  }
+
+  function handlePickScorePhoto(file: File | undefined) {
+    if (!file) return;
+    if (/\.(heic|heif)$/i.test(file.name)) {
+      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      return;
+    }
+    setScorePhotoFile(file);
+  }
+
+  async function handleRemoveScorePhoto() {
+    if (scorePhotoFile) {
+      setScorePhotoFile(null);
+      return;
+    }
+    if (!scorePhotoPath || !selectedMatchId) return;
+    const supabase = createClient();
+    await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
+    const { error } = await supabase
+      .from("game_matches")
+      .update({ score_photo_path: null })
+      .eq("id", selectedMatchId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setScorePhotoPath(null);
+    setScorePhotoUrl(null);
+    setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: null } : m)));
+    toast("写真を削除しました");
+  }
+
+  async function handleSaveMatch() {
+    if (!selectedMatchId) return;
+    setSavingMatch(true);
+    const supabase = createClient();
+    let photoPath = scorePhotoPath;
+    if (scorePhotoFile) {
+      const path = `${teamId}/${selectedMatchId}/score-${Date.now()}.${safeExt(scorePhotoFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("game-score-photos").upload(path, scorePhotoFile);
+      if (uploadError) {
+        setSavingMatch(false);
+        toast(`写真のアップロードに失敗しました: ${uploadError.message}`);
+        return;
+      }
+      if (scorePhotoPath) {
+        await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
+      }
+      photoPath = path;
+    }
+    const teamScoreNum = teamScore.trim() === "" ? null : Number(teamScore);
+    const opponentScoreNum = opponentScore.trim() === "" ? null : Number(opponentScore);
+    const { error } = await supabase
+      .from("game_matches")
+      .update({
+        opponent: opponent.trim() || null,
+        team_score: teamScoreNum,
+        opponent_score: opponentScoreNum,
+        score_photo_path: photoPath,
+      })
+      .eq("id", selectedMatchId);
+    setSavingMatch(false);
+    if (error) {
+      toast(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    setScorePhotoPath(photoPath);
+    setScorePhotoFile(null);
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === selectedMatchId
+          ? {
+              ...m,
+              opponent: opponent.trim() || null,
+              team_score: teamScoreNum,
+              opponent_score: opponentScoreNum,
+              score_photo_path: photoPath,
+            }
+          : m,
+      ),
+    );
+    if (photoPath) {
+      const { data: signed } = await supabase.storage.from("game-score-photos").createSignedUrl(photoPath, 60 * 60);
+      setScorePhotoUrl(signed?.signedUrl ?? null);
+    } else {
+      setScorePhotoUrl(null);
+    }
+    toast("対戦結果を保存しました");
+  }
+
   const selectedMatch = matches.find((m) => m.id === selectedMatchId);
+  const teamScoreNum = teamScore.trim() === "" ? null : Number(teamScore);
+  const opponentScoreNum = opponentScore.trim() === "" ? null : Number(opponentScore);
+  const matchResult =
+    teamScoreNum !== null && opponentScoreNum !== null
+      ? teamScoreNum > opponentScoreNum
+        ? "勝ち"
+        : teamScoreNum < opponentScoreNum
+          ? "負け"
+          : "引き分け"
+      : null;
 
   return (
     <PageShell header={<AppHeader title="試合記録" rightSlot={<CurrentUserBadge />} />}>
@@ -296,13 +442,95 @@ export default function GamePage() {
 
           {selectedMatch && (
             <div className="mt-3">
-              <FieldLabel>対戦相手</FieldLabel>
-              <input
-                className={inputClass()}
-                value={opponent}
-                onChange={(e) => setOpponent(e.target.value)}
-                placeholder="例:○○ミニバスケットボールクラブ"
-              />
+              <FieldLabel>対戦相手・結果</FieldLabel>
+              <Card>
+                <input
+                  className={inputClass()}
+                  value={opponent}
+                  onChange={(e) => setOpponent(e.target.value)}
+                  placeholder="例:○○ミニバスケットボールクラブ"
+                />
+
+                <div className="mt-3 flex gap-2">
+                  <div className="flex-1">
+                    <FieldLabel>自チーム得点</FieldLabel>
+                    <input
+                      type="number"
+                      min={0}
+                      className={inputClass()}
+                      value={teamScore}
+                      onChange={(e) => setTeamScore(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldLabel>相手得点</FieldLabel>
+                    <input
+                      type="number"
+                      min={0}
+                      className={inputClass()}
+                      value={opponentScore}
+                      onChange={(e) => setOpponentScore(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {matchResult && (
+                  <div
+                    className="mt-2 text-center font-bold text-[13px] py-1.5 rounded-[8px] bg-paper"
+                    style={{
+                      color:
+                        matchResult === "勝ち"
+                          ? "var(--green)"
+                          : matchResult === "負け"
+                            ? "var(--danger)"
+                            : "var(--ink-soft)",
+                    }}
+                  >
+                    {matchResult}
+                  </div>
+                )}
+
+                <div className="mt-3">
+                  <FieldLabel>スコア写真</FieldLabel>
+                  {scorePhotoUrl && !scorePhotoFile && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={scorePhotoUrl} alt="スコア" className="w-full rounded-[10px] border border-line mb-2" />
+                  )}
+                  {scorePhotoFile && (
+                    <div className="text-xs text-ink-soft mb-2">選択中: {scorePhotoFile.name}</div>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                    >
+                      {scorePhotoUrl || scorePhotoFile ? "写真を変更" : "写真を選ぶ"}
+                    </button>
+                    {(scorePhotoUrl || scorePhotoFile) && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveScorePhoto}
+                        className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white"
+                        style={{ color: "var(--danger)" }}
+                      >
+                        削除
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePickScorePhoto(e.target.files?.[0])}
+                  />
+                </div>
+
+                <SubmitButton onClick={handleSaveMatch} disabled={savingMatch}>
+                  {savingMatch ? "保存中…" : "対戦結果を保存する"}
+                </SubmitButton>
+              </Card>
             </div>
           )}
 
@@ -317,49 +545,108 @@ export default function GamePage() {
             </div>
           </div>
 
-          <div className="mt-3">
-            <FieldLabel>スタメン(最大5人)</FieldLabel>
-            <Card>
-              {players.length === 0 ? (
-                <EmptyState>在籍中の選手がいません</EmptyState>
-              ) : (
-                players.map((p) => (
-                  <PlayerCheckRow
-                    key={p.id}
-                    player={p}
-                    checked={starters.includes(p.id)}
-                    disabled={false}
-                    absent={attendanceStatus[p.id] === "欠席"}
-                    onToggle={() => toggleStarter(p.id)}
-                  />
-                ))
-              )}
-            </Card>
-          </div>
+          {recordId && !memberEditing ? (
+            <div className="mt-3">
+              <FieldLabel>登録済みメンバー</FieldLabel>
+              <Card className="cursor-pointer" onClick={() => setMemberExpanded((v) => !v)}>
+                <div className="text-xs font-bold text-ink-soft mb-1">スタメン</div>
+                <div className="text-[13px] font-bold mb-2">
+                  {starters.length > 0
+                    ? starters
+                        .map((id) => players.find((p) => p.id === id))
+                        .filter((p): p is Player => Boolean(p))
+                        .map((p) => playerFullName(p))
+                        .join("、")
+                    : "未登録"}
+                </div>
+                <div className="text-xs font-bold text-ink-soft mb-1">途中出場</div>
+                <div className="text-[13px] font-bold">
+                  {subs.length > 0
+                    ? subs
+                        .map((id) => players.find((p) => p.id === id))
+                        .filter((p): p is Player => Boolean(p))
+                        .map((p) => playerFullName(p))
+                        .join("、")
+                    : "なし"}
+                </div>
+                {memberExpanded && (
+                  <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setMemberEditing(true)}
+                      className="flex-1 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
+                    >
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteRecord}
+                      className="flex-1 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    >
+                      {deleteRecordConfirm ? "もう一度タップで削除確定" : "削除"}
+                    </button>
+                  </div>
+                )}
+              </Card>
+            </div>
+          ) : (
+            <>
+              <div className="mt-3">
+                <FieldLabel>スタメン(最大5人)</FieldLabel>
+                <Card>
+                  {players.length === 0 ? (
+                    <EmptyState>在籍中の選手がいません</EmptyState>
+                  ) : (
+                    players.map((p) => (
+                      <PlayerCheckRow
+                        key={p.id}
+                        player={p}
+                        checked={starters.includes(p.id)}
+                        disabled={false}
+                        absent={attendanceStatus[p.id] === "欠席"}
+                        onToggle={() => toggleStarter(p.id)}
+                      />
+                    ))
+                  )}
+                </Card>
+              </div>
 
-          <div className="mt-3">
-            <FieldLabel>途中出場</FieldLabel>
-            <Card>
-              {players.length === 0 ? (
-                <EmptyState>在籍中の選手がいません</EmptyState>
-              ) : (
-                players.map((p) => (
-                  <PlayerCheckRow
-                    key={p.id}
-                    player={p}
-                    checked={subs.includes(p.id)}
-                    disabled={starters.includes(p.id)}
-                    absent={attendanceStatus[p.id] === "欠席"}
-                    onToggle={() => toggleSub(p.id)}
-                  />
-                ))
-              )}
-            </Card>
-          </div>
+              <div className="mt-3">
+                <FieldLabel>途中出場</FieldLabel>
+                <Card>
+                  {players.length === 0 ? (
+                    <EmptyState>在籍中の選手がいません</EmptyState>
+                  ) : (
+                    players.map((p) => (
+                      <PlayerCheckRow
+                        key={p.id}
+                        player={p}
+                        checked={subs.includes(p.id)}
+                        disabled={starters.includes(p.id)}
+                        absent={attendanceStatus[p.id] === "欠席"}
+                        onToggle={() => toggleSub(p.id)}
+                      />
+                    ))
+                  )}
+                </Card>
+              </div>
 
-          <SubmitButton onClick={handleSubmit} disabled={saving || !selectedMatch}>
-            {saving ? "登録中…" : "このクォーターを登録する"}
-          </SubmitButton>
+              <SubmitButton onClick={handleSubmit} disabled={saving || !selectedMatch}>
+                {saving ? "登録中…" : "このクォーターを登録する"}
+              </SubmitButton>
+              {memberEditing && (
+                <button
+                  type="button"
+                  onClick={() => loadRecord(selectedMatchId, quarter)}
+                  disabled={saving}
+                  className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+                >
+                  キャンセル
+                </button>
+              )}
+            </>
+          )}
         </>
       )}
     </PageShell>
