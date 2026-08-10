@@ -14,7 +14,7 @@ alter table public.teams alter column slug set not null;
 do $$
 begin
   alter table public.teams add constraint teams_slug_key unique (slug);
-exception when duplicate_object then
+exception when duplicate_object or duplicate_table then
   null;
 end $$;
 
