@@ -21,19 +21,26 @@ export function BirthdaySelect({ value, onChange }: { value: string; onChange: (
   const [yStr, mStr, dStr] = value ? value.split("-") : ["", "", ""];
 
   function compose(y: string, m: string, d: string): string {
-    if (!y || !m || !d) return "";
     const maxDay = daysInMonth(Number(y), Number(m));
     const dd = Math.min(Number(d), maxDay);
     return `${y}-${pad(Number(m))}-${pad(dd)}`;
   }
 
+  // 年・月・日いずれか1つだけ選んだ時点で、他の未選択項目には仮の値(1月1日)を補って
+  // 確定した日付を作る。3つ揃うまで反映を待つと、1つ選んだ瞬間に選択が消えて見えるため。
+  function handleYearChange(y: string) {
+    onChange(y ? compose(y, mStr || "1", dStr || "1") : "");
+  }
+  function handleMonthChange(m: string) {
+    onChange(m ? compose(yStr || String(CURRENT_YEAR), m, dStr || "1") : "");
+  }
+  function handleDayChange(d: string) {
+    onChange(d ? compose(yStr || String(CURRENT_YEAR), mStr || "1", d) : "");
+  }
+
   return (
     <div className="flex gap-1.5">
-      <select
-        className={inputClass()}
-        value={yStr}
-        onChange={(e) => onChange(compose(e.target.value, mStr, dStr))}
-      >
+      <select className={inputClass()} value={yStr} onChange={(e) => handleYearChange(e.target.value)}>
         <option value="">未設定</option>
         {YEARS.map((y) => (
           <option key={y} value={y}>
@@ -44,7 +51,7 @@ export function BirthdaySelect({ value, onChange }: { value: string; onChange: (
       <select
         className={inputClass()}
         value={mStr ? String(Number(mStr)) : ""}
-        onChange={(e) => onChange(compose(yStr, e.target.value, dStr))}
+        onChange={(e) => handleMonthChange(e.target.value)}
       >
         <option value="">-</option>
         {MONTHS.map((m) => (
@@ -56,7 +63,7 @@ export function BirthdaySelect({ value, onChange }: { value: string; onChange: (
       <select
         className={inputClass()}
         value={dStr ? String(Number(dStr)) : ""}
-        onChange={(e) => onChange(compose(yStr, mStr, e.target.value))}
+        onChange={(e) => handleDayChange(e.target.value)}
       >
         <option value="">-</option>
         {DAYS.map((d) => (
