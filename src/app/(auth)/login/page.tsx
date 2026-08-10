@@ -1,3 +1,4 @@
+import { AuthHeading } from "../AuthHeading";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage({
@@ -8,6 +9,7 @@ export default async function LoginPage({
   const { error, notice } = await searchParams;
   return (
     <div>
+      <AuthHeading />
       {error && (
         <div className="mb-3 text-[12.5px] text-danger text-center bg-white border border-line rounded-2xl p-3">
           {error === "confirm_failed" ? "確認リンクが無効か期限切れです。もう一度お試しください。" : error}

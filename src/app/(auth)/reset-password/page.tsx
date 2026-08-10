@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AuthHeading } from "../AuthHeading";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 
 export default async function ResetPasswordPage() {
@@ -9,5 +10,10 @@ export default async function ResetPasswordPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  return <ResetPasswordForm />;
+  return (
+    <div>
+      <AuthHeading />
+      <ResetPasswordForm />
+    </div>
+  );
 }

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AuthHeading } from "../AuthHeading";
 import { SignupForm } from "./SignupForm";
 
 export default async function SignupPage() {
@@ -17,5 +18,10 @@ export default async function SignupPage() {
     redirect(profile ? "/schedule" : "/setup");
   }
 
-  return <SignupForm />;
+  return (
+    <div>
+      <AuthHeading />
+      <SignupForm />
+    </div>
+  );
 }
