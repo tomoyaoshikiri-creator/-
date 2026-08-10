@@ -61,7 +61,8 @@ export default function SettingsColorPage() {
       return;
     }
     setCustomized(true);
-    toast("配色を保存しました。反映には再読み込みが必要です。");
+    toast("配色を保存しました");
+    router.refresh();
   }
 
   async function handleReset() {
@@ -79,7 +80,8 @@ export default function SettingsColorPage() {
     setCustomized(false);
     setPrimary(DEFAULT_PRIMARY);
     setAccent(DEFAULT_ACCENT);
-    toast("デフォルトの配色に戻しました。反映には再読み込みが必要です。");
+    toast("デフォルトの配色に戻しました");
+    router.refresh();
   }
 
   return (

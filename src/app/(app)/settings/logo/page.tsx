@@ -59,7 +59,8 @@ export default function SettingsLogoPage() {
       return;
     }
     setLogoUrl(teamLogoUrl(supabase, path));
-    toast("ロゴを更新しました。反映には再読み込みが必要です。");
+    toast("ロゴを更新しました");
+    router.refresh();
   }
 
   async function handleLogoRemove() {
@@ -72,7 +73,8 @@ export default function SettingsLogoPage() {
       return;
     }
     setLogoUrl(null);
-    toast("ロゴを削除しました。反映には再読み込みが必要です。");
+    toast("ロゴを削除しました");
+    router.refresh();
   }
 
   return (
