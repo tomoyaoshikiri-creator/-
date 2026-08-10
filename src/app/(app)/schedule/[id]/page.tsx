@@ -17,6 +17,7 @@ import type { Player, Schedule } from "@/lib/database.types";
 import { AttendanceEntryForm } from "../AttendanceEntryForm";
 import { AttendanceRosterModal } from "../AttendanceRosterModal";
 import { NewScheduleModal } from "../NewScheduleModal";
+import { PracticeMenuCard } from "../PracticeMenuCard";
 
 interface AttendanceSubject {
   key: string;
@@ -237,6 +238,8 @@ export default function ScheduleDetailPage() {
               />
             </>
           )}
+
+          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
 
           {excludedLinkedCount > 0 && (
             <div className="text-xs text-ink-soft text-center mt-1 mb-2">

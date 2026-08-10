@@ -88,6 +88,11 @@ export function canManagePlayers(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// 練習メニュー(CLUB KARTE)の登録・編集・削除ができるロール。閲覧は全ロールに開放している。
+export function canManagePracticeMenus(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 export function canManageUsers(role: Role): boolean {
   return role === "管理者";
 }

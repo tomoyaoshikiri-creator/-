@@ -331,6 +331,30 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["game_matches"]["Insert"]>;
         Relationships: [];
       };
+      practice_menus: {
+        Row: {
+          id: string;
+          team_id: string;
+          schedule_id: string;
+          theme: string | null;
+          content: string | null;
+          created_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          schedule_id: string;
+          theme?: string | null;
+          content?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<{
+          theme: string | null;
+          content: string | null;
+        }>;
+        Relationships: [];
+      };
       game_records: {
         Row: {
           id: string;
@@ -418,5 +442,6 @@ export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["R
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
+export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];
