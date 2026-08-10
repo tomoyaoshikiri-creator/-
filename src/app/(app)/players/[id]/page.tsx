@@ -11,6 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { loadProfilesMap } from "@/lib/profiles";
 import type { Grade, Player, PlayerNote, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
@@ -20,6 +21,7 @@ export default function PlayerDetailPage() {
   const { userId } = useSession();
   const [player, setPlayer] = useState<Player | null>(null);
   const [notes, setNotes] = useState<PlayerNote[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -44,16 +46,18 @@ export default function PlayerDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: p }, { data: n }] = await Promise.all([
+    const [{ data: p }, { data: n }, profMap] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.id).single(),
       supabase
         .from("player_notes")
         .select("*")
         .eq("player_id", params.id)
         .order("created_at", { ascending: false }),
+      loadProfilesMap(supabase),
     ]);
     setPlayer(p ?? null);
     setNotes(n ?? []);
+    setProfiles(profMap);
     setLoading(false);
   }, [params.id]);
 
@@ -379,6 +383,7 @@ export default function PlayerDetailPage() {
                 >
                   <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
                     {formatDateLabel(n.created_at.slice(0, 10))}
+                    {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   {expandedNoteId === n.id && (
