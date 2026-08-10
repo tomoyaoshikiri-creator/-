@@ -337,6 +337,74 @@ export default function PlayerDetailPage() {
             <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
           </Card>
 
+          <SectionLabel>これまでのメモ</SectionLabel>
+          {notes.length === 0 ? (
+            <Card>
+              <div className="text-xs text-ink-soft">まだメモがありません</div>
+            </Card>
+          ) : (
+            notes.map((n) =>
+              editingNoteId === n.id ? (
+                <Card key={n.id}>
+                  <textarea
+                    rows={3}
+                    className={inputClass()}
+                    value={editNoteBody}
+                    onChange={(e) => setEditNoteBody(e.target.value)}
+                  />
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveNoteEdit(n.id)}
+                      disabled={savingNoteEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                    >
+                      {savingNoteEdit ? "保存中…" : "保存"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingNoteId(null)}
+                      disabled={savingNoteEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </Card>
+              ) : (
+                <Card
+                  key={n.id}
+                  className="cursor-pointer"
+                  onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
+                >
+                  <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                    {formatDateLabel(n.created_at.slice(0, 10))}
+                  </div>
+                  <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+                  {expandedNoteId === n.id && (
+                    <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => startEditNote(n)}
+                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNote(n.id)}
+                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      >
+                        {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              ),
+            )
+          )}
+
           <SectionLabel>メモを追加</SectionLabel>
           <Card>
             <textarea
@@ -349,74 +417,6 @@ export default function PlayerDetailPage() {
             <SubmitButton onClick={handleAddNote} disabled={savingNote}>
               {savingNote ? "登録中…" : "メモを登録する"}
             </SubmitButton>
-          </Card>
-
-          <SectionLabel>これまでのメモ</SectionLabel>
-          <Card>
-            {notes.length === 0 ? (
-              <div className="text-xs text-ink-soft">まだメモがありません</div>
-            ) : (
-              notes.map((n) => (
-                <div key={n.id} className="py-1.5 border-b border-line last:border-b-0">
-                  {editingNoteId === n.id ? (
-                    <div>
-                      <textarea
-                        rows={3}
-                        className={inputClass()}
-                        value={editNoteBody}
-                        onChange={(e) => setEditNoteBody(e.target.value)}
-                      />
-                      <div className="flex gap-2 mt-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleSaveNoteEdit(n.id)}
-                          disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
-                        >
-                          {savingNoteEdit ? "保存中…" : "保存"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingNoteId(null)}
-                          disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
-                        >
-                          キャンセル
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className="cursor-pointer"
-                      onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
-                    >
-                      <div className="text-xs text-ink-soft">
-                        {formatDateLabel(n.created_at.slice(0, 10))}: {n.body}
-                      </div>
-                      {expandedNoteId === n.id && (
-                        <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
-                            onClick={() => startEditNote(n)}
-                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
-                          >
-                            編集
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteNote(n.id)}
-                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
-                            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                          >
-                            {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
           </Card>
 
           <SubmitButton onClick={startEdit}>編集する</SubmitButton>
