@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
-import { gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { formatDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
 import type { Grade, Player, PlayerNote, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
@@ -391,7 +391,7 @@ export default function PlayerDetailPage() {
                       onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
                     >
                       <div className="text-xs text-ink-soft">
-                        {n.created_at.slice(0, 10)}: {n.body}
+                        {formatDateLabel(n.created_at.slice(0, 10))}: {n.body}
                       </div>
                       {expandedNoteId === n.id && (
                         <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
