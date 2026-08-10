@@ -428,23 +428,25 @@ export default function GameDetailPage() {
               <Card className="cursor-pointer" onClick={() => setMemberExpanded((v) => !v)}>
                 <div className="text-xs font-bold text-ink-soft mb-1">スタメン</div>
                 <div className="text-[13px] font-bold mb-2">
-                  {starters.length > 0
-                    ? starters
-                        .map((id) => players.find((p) => p.id === id))
-                        .filter((p): p is Player => Boolean(p))
-                        .map((p) => playerFullName(p))
-                        .join("、")
-                    : "未登録"}
+                  {starters.length > 0 ? (
+                    starters
+                      .map((id) => players.find((p) => p.id === id))
+                      .filter((p): p is Player => Boolean(p))
+                      .map((p) => <div key={p.id}>{playerFullName(p)}</div>)
+                  ) : (
+                    <div>未登録</div>
+                  )}
                 </div>
                 <div className="text-xs font-bold text-ink-soft mb-1">途中出場</div>
                 <div className="text-[13px] font-bold">
-                  {subs.length > 0
-                    ? subs
-                        .map((id) => players.find((p) => p.id === id))
-                        .filter((p): p is Player => Boolean(p))
-                        .map((p) => playerFullName(p))
-                        .join("、")
-                    : "なし"}
+                  {subs.length > 0 ? (
+                    subs
+                      .map((id) => players.find((p) => p.id === id))
+                      .filter((p): p is Player => Boolean(p))
+                      .map((p) => <div key={p.id}>{playerFullName(p)}</div>)
+                  ) : (
+                    <div>なし</div>
+                  )}
                 </div>
                 {memberExpanded && (
                   <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
