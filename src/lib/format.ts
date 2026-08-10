@@ -31,6 +31,12 @@ export function fiscalYearLabel(year: number): string {
   return `${year}年度`;
 }
 
+// 予定に手動で年度が固定されている場合はそちらを優先し、無ければ日付から自動判定する。
+// 新チーム発足など、実態が4月始まりの年度と一致しないケースに対応するため。
+export function effectiveFiscalYear(dateStr: string, override: number | null | undefined): number {
+  return override ?? fiscalYearOf(dateStr);
+}
+
 export function scheduleMeta(s: {
   date: string;
   start_time: string | null;

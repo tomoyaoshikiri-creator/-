@@ -6,12 +6,14 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { formatDateLabel } from "@/lib/format";
+import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule, ScheduleType } from "@/lib/database.types";
 import { MiniCalendarPicker } from "./MiniCalendarPicker";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MINUTES = ["00", "15", "30", "45"];
+const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
+const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
 
 export function NewScheduleModal({
   open,
@@ -44,6 +46,7 @@ export function NewScheduleModal({
   const [place, setPlace] = useState("");
   const [toban, setToban] = useState("");
   const [targetGradeMin, setTargetGradeMin] = useState("");
+  const [fiscalYearOverride, setFiscalYearOverride] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -60,6 +63,7 @@ export function NewScheduleModal({
     setPlace("");
     setToban("");
     setTargetGradeMin("");
+    setFiscalYearOverride("");
   }
 
   useEffect(() => {
@@ -80,6 +84,9 @@ export function NewScheduleModal({
       setPlace(source.place ?? "");
       setToban(editSchedule ? (source.toban ?? "") : "");
       setTargetGradeMin(source.target_grade_min ?? "");
+      setFiscalYearOverride(
+        editSchedule && source.fiscal_year_override != null ? String(source.fiscal_year_override) : "",
+      );
     } else {
       reset();
     }
@@ -108,6 +115,7 @@ export function NewScheduleModal({
       toban: type === "practice" ? toban.trim() || null : null,
       target_grade_min: targetGradeMin || null,
       game_category: type === "game" ? gameCategory : null,
+      fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
     };
     const { error } = editSchedule
       ? await supabase
@@ -169,6 +177,27 @@ export function NewScheduleModal({
             <SegButton active={gameCategory === "公式戦"} onClick={() => setGameCategory("公式戦")}>
               公式戦
             </SegButton>
+          </div>
+        </div>
+      )}
+
+      {type === "game" && (
+        <div className="mt-3">
+          <FieldLabel>年度</FieldLabel>
+          <select
+            className={inputClass()}
+            value={fiscalYearOverride}
+            onChange={(e) => setFiscalYearOverride(e.target.value)}
+          >
+            <option value="">自動判定({fiscalYearLabel(fiscalYearOf(dates[0] ?? todayDateStr()))})</option>
+            {FISCAL_YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>
+                {fiscalYearLabel(y)}に固定
+              </option>
+            ))}
+          </select>
+          <div className="text-xs text-ink-soft mt-1">
+            試合結果一覧の年度は通常4月始まりで試合日から自動判定されますが、新チーム発足など実態に合わせて固定できます。
           </div>
         </div>
       )}

@@ -107,6 +107,8 @@ export interface Database {
           target_grade_min: string | null;
           // type="game"の予定にのみ意味を持つ(練習試合/公式戦)。それ以外はnull。
           game_category: GameCategory | null;
+          // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
+          fiscal_year_override: number | null;
           created_by: string | null;
           created_at: string;
         };
@@ -122,6 +124,7 @@ export interface Database {
           toban?: string | null;
           target_grade_min?: string | null;
           game_category?: GameCategory | null;
+          fiscal_year_override?: number | null;
           created_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"]>;

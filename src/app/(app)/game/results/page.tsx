@@ -11,11 +11,11 @@ import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon, VideoIcon } from "@/components/icons";
 import { canAccessTab, canRecordGames } from "@/lib/permissions";
-import { formatDateLabel, fiscalYearOf, fiscalYearLabel } from "@/lib/format";
+import { formatDateLabel, effectiveFiscalYear, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
 
 interface MatchWithDate extends GameMatch {
-  schedules: { date: string; game_category: GameCategory | null } | null;
+  schedules: { date: string; game_category: GameCategory | null; fiscal_year_override: number | null } | null;
 }
 
 const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
@@ -38,7 +38,7 @@ export default function GameResultsPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from("game_matches")
-        .select("*, schedules(date, game_category)")
+        .select("*, schedules(date, game_category, fiscal_year_override)")
         .not("team_score", "is", null)
         .not("opponent_score", "is", null)
         .returns<MatchWithDate[]>();
@@ -50,7 +50,7 @@ export default function GameResultsPage() {
       setAllMatches(sorted);
       setLoading(false);
       if (!yearInitialized && sorted.length > 0 && sorted[0].schedules?.date) {
-        setFiscalYear(fiscalYearOf(sorted[0].schedules.date));
+        setFiscalYear(effectiveFiscalYear(sorted[0].schedules.date, sorted[0].schedules.fiscal_year_override));
         setYearInitialized(true);
       }
     })();
@@ -62,12 +62,20 @@ export default function GameResultsPage() {
   }, [role, router]);
 
   const availableYears = Array.from(
-    new Set(allMatches.filter((m) => m.schedules?.date).map((m) => fiscalYearOf(m.schedules!.date))),
+    new Set(
+      allMatches
+        .filter((m) => m.schedules?.date)
+        .map((m) => effectiveFiscalYear(m.schedules!.date, m.schedules!.fiscal_year_override)),
+    ),
   ).sort((a, b) => b - a);
 
   const matches = allMatches.filter((m) => {
     if (category !== "all" && m.schedules?.game_category !== category) return false;
-    if (fiscalYear !== "all" && (!m.schedules?.date || fiscalYearOf(m.schedules.date) !== fiscalYear)) return false;
+    if (
+      fiscalYear !== "all" &&
+      (!m.schedules?.date || effectiveFiscalYear(m.schedules.date, m.schedules.fiscal_year_override) !== fiscalYear)
+    )
+      return false;
     return true;
   });
 
