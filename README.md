@@ -1,6 +1,6 @@
 # ClubLink
 
-少年スポーツチーム向けのチーム運営アプリ。予定・出欠管理、お知らせ、練習日報、選手マスタ、選手メモ、試合記録、ユーザー管理を1つのアプリにまとめている。都賀ビクトリーズを試運転チームとして開発しているが、チームIDによる完全なマルチテナント設計になっており、FAITH CREATIONの事業として他チームへの展開も想定している。ログイン前の画面は「ClubLink」という製品名で統一し、チーム名などの個別ブランドはログイン後にのみ表示する。
+少年スポーツチーム向けのチーム運営アプリ。予定・出欠管理、お知らせ、練習日報、選手マスタ、選手メモ、試合記録、ユーザー管理を1つのアプリにまとめている。都賀ビクトリーズを試運転チームとして開発しているが、チームIDによる完全なマルチテナント設計になっており、FAITH CREATIONの事業として他チームへの展開も想定している。共通の新規登録・ログイン画面(`/signup`・`/login`)は「ClubLink」という製品名で統一する。各チームには専用のログインURL(`/login/{slug}`)が自動発行され、そこからアクセスした場合のみ設定>ログイン画面で登録したロゴ・チーム名が表示される(未設定なら引き続きClubLinkの汎用表示のまま)。
 
 技術構成: Next.js (App Router) + TypeScript + Tailwind CSS / Supabase (Postgres + Auth + Storage、Row Level Securityでチームごとにデータを分離)。
 
@@ -44,6 +44,7 @@
    - `0031_invite_officer_and_revoke.sql`: 役員に保護者用(role='一般')招待リンクの発行・閲覧を開放する(指導者用は指導者・管理者のみ、役員が指導者用リンクを使って自分を指導者登録できないようにするため)。あわせてinvitesにDELETEポリシーが無く誰も取り消せなかったため、管理者のみ取り消せるよう追加する
    - `0032_player_birthday.sql`: playersにbirthday(date、任意)を追加し、list_roster_players()の返り値にも含める(スケジュールのカレンダーで全ロールに誕生日を表示するため。選手一覧タブ本体のRLSは変更しない)
    - `0033_schedule_fiscal_year_override.sql`: schedulesにfiscal_year_override(int、任意)を追加する。試合結果一覧の年度は通常4月始まりで試合日から自動判定するが、新チーム発足など実態が暦上の年度と一致しないケースに対応するため、予定単位で手動固定できるようにする
+   - `0034_team_login_branding.sql`: teamsにslug(ランダム英数字、自動採番・一意)を追加し、`/login/[slug]`というチーム専用ログインURLでアクセスした場合にそのチームのロゴ・チーム名をログイン画面に表示できるようにする。ログイン前の匿名アクセスから参照する必要があるため、通常のRLSではなく`get_team_login_branding(p_slug)`という最小限の情報だけを返すSECURITY DEFINER関数を経由する。共通の`/login`(スラッグなし)は今まで通りClubLinkの汎用画面のまま変わらない
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。
@@ -96,7 +97,7 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 | ユーザー管理: 招待リンク発行(保護者用) | – | ○ | – | ○ |
 | ユーザー管理: 招待リンク発行(指導者用)・取り消し・メンバーの権限/ステータス変更・削除・選手紐付け | – | – | – | ○ |
 | 設定: 自分のアカウント編集(表示名・パスワード) | ○ | ○ | ○ | ○ |
-| 設定: チーム設定(配色・ロゴ) | – | – | – | ○ |
+| 設定: チーム設定(配色・ロゴ・ログイン画面のチーム名) | – | – | – | ○ |
 
 画面上には権限名は表示せず、裏側の判定のみでタブ・操作を出し分けている(`src/lib/permissions.ts`)。データのアクセス制御はUI側の出し分けに加えて、Supabase側のRow Level Securityで最終的に担保している(`supabase/migrations/`)。「設定」タブは全ロールに表示されるが、中身は権限によって異なる(全員: 自分のアカウント編集のみ / 管理者: それに加えてチームのロゴ・配色設定)。他のユーザーの情報編集(表示名・権限・ステータス)は管理者向けの「ユーザー管理」タブに集約しており、管理者以外には他ユーザーの情報は一切表示されない。
 
@@ -104,8 +105,9 @@ Supabaseプロジェクトの「Authentication > Providers」でメール確認(
 
 ## デザイン・ブランディング
 
-- ログイン前(`/login` `/signup` `/invite/[token]`)は製品名「ClubLink」の共通ブランディングのみを表示し、特定チームの名称・配色は出さない
-- ログイン後はチーム名(+ロゴ)をヘッダーに表示し、配色・ロゴはチームごとにカスタマイズ可能(`teams.theme_primary` / `theme_accent` / `logo_path`。管理者が「設定」タブから変更できる。未設定時はアプリ標準の落ち着いた配色を使う)
+- 共通の`/login` `/signup` `/invite/[token]`は製品名「ClubLink」の共通ブランディングのみを表示し、特定チームの名称・配色は出さない(新規チームは必ずこの共通画面から登録する)
+- 各チームには`teams.slug`(自動採番のランダム英数字)を使った専用ログインURL `/login/{slug}` があり、そこからアクセスした場合だけ設定>ログイン画面で登録したロゴ・チーム名がログイン画面に表示される((auth)/layout.tsxがURLのslugを`get_team_login_branding()` RPCに渡して取得。ログイン前の匿名アクセスなので通常のRLSではなくこの専用RPC経由)。未設定のチーム(都賀ビクトリーズを含む既存データ)は今まで通りClubLinkの汎用表示のまま
+- ログイン後はチーム名(+ロゴ)をヘッダーに表示し、配色・ロゴ・ログイン画面のチーム名表記はチームごとにカスタマイズ可能(`teams.theme_primary` / `theme_accent` / `logo_path` / `name`。管理者が「設定」タブから変更できる。配色・ロゴ未設定時はアプリ標準の落ち着いた配色を使う)
 - 見出しフォントはCormorant(セリフ体)、本文はNoto Sans JP(Windows環境ではMeiryoを優先)、ラベル類はJetBrains Monoで、FAITH CREATIONのブランドトーンに合わせたシックな雰囲気を意図している
 - `.app-shell` を画面の高さ(`100dvh`)に固定してoverflow: hiddenにし、内部のコンテンツ部分だけがスクロールする構造にしている(`src/app/globals.css`)。これによりヘッダーと下部タブバーは常に画面に固定され、スクロールしても動かない
 - ホーム画面に追加した際のアイコン(PWAアイコン・favicon・apple-touch-icon)は、`get_default_team_logo_path()` RPCで取得した「最初に作られたチーム」のロゴがあればそれを、無ければClubLink共通の「CL」マークを使う(`src/lib/brandIcon.tsx`)。このアプリは本来チームIDで分離するマルチテナント構成だが、**現状は都賀ビクトリーズ1チームのみの運用と割り切っている**ため、この仕組みで問題ない。複数チームが本格的に混在する段階になったら、ホーム画面アイコンをチームごとに安全に出し分ける方式(サブドメイン分離など)へ見直す必要がある
@@ -123,14 +125,14 @@ supabase/migrations/
   0003_team_logo.sql    チームロゴアップロード用の列・Storageバケット・RLS
 src/
   app/
-    (auth)/login, signup, setup, invite/[token]  認証フロー(ClubLinkブランディング)
+    (auth)/login, login/[slug], signup, setup, invite/[token]  認証フロー(loginはClubLink共通、login/[slug]はチーム専用ブランディング)
     (auth)/forgot-password, reset-password       パスワード再設定(忘れた場合の復旧)
     (app)/schedule, schedule/[id], notice,        予定(一覧は要約カード→詳細で出欠登録)・お知らせ(全ロール)
           report, players, players/[id],         日報・選手一覧(選手詳細から選手メモの専用ページ players/[id]/notes に遷移)・
           players/[id]/notes,
           game, game/[id],                       試合記録(一覧は要約カード→詳細でスタメン・結果を記録、指導者以上)
           users                                  ユーザー管理(表示名・権限・ステータス編集、管理者のみ)・招待リンク発行(保護者用は役員も、指導者用と取り消しは管理者のみ)
-          settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ロゴ、管理者のみ)
+          settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ログイン画面〈ロゴ・チーム名・専用URL〉、管理者のみ)
     auth/confirm, auth/complete                  メール確認リンクのコールバック
     api/admin/delete-user                        ユーザー削除API(service_roleキーでauth.usersごと削除、サーバー専用)
     icon.tsx, apple-icon.tsx, manifest.ts, icons/ PWAアイコン・マニフェスト(ClubLink共通)
