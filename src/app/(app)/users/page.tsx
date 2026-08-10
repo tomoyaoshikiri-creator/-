@@ -15,6 +15,7 @@ import { formatDateLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
 const ROLE_OPTIONS: Role[] = ["一般", "役員", "指導者", "管理者"];
+const ROLE_SORT_ORDER: Record<Role, number> = { 管理者: 0, 指導者: 1, 役員: 2, 一般: 3 };
 const STATUS_OPTIONS: UserStatus[] = ["アクティブ", "休止"];
 
 export default function UsersPage() {
@@ -167,6 +168,9 @@ export default function UsersPage() {
   // 招待リンクは複数人が使い回せるため、一度使われたかどうかではなく有効期限だけで表示を絞る
   const visibleInvites = invites.filter((inv) => new Date(inv.expires_at) > new Date());
 
+  // 権限(管理者→指導者→役員→一般)でグループ分けして表示する。同じ権限内では登録順(RPCの並び)を保つ。
+  const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
+
   return (
     <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} accessBadge="admin" />}>
       <SectionLabel>招待リンクを発行</SectionLabel>
@@ -212,7 +216,7 @@ export default function UsersPage() {
         {loading ? (
           <EmptyState>読み込み中…</EmptyState>
         ) : (
-          profiles.map((u) => (
+          sortedProfiles.map((u) => (
             <div key={u.id}>
               <div
                 className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 cursor-pointer"
