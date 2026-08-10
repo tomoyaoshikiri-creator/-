@@ -171,7 +171,7 @@ export default function GameDetailPage() {
   function toggleStarter(id: string) {
     const isActive = starters.includes(id);
     if (!isActive && starters.length >= 5) {
-      toast("スタメンは5人までです");
+      toast("スターティングは5人までです");
       return;
     }
     setStarters(isActive ? starters.filter((x) => x !== id) : [...starters, id]);
@@ -180,7 +180,7 @@ export default function GameDetailPage() {
 
   function toggleSub(id: string) {
     if (starters.includes(id)) {
-      toast("スタメンの選手は途中出場に選べません");
+      toast("スターティングの選手は途中出場に選べません");
       return;
     }
     setSubs((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -426,13 +426,17 @@ export default function GameDetailPage() {
             <div className="mt-3">
               <FieldLabel>登録済みメンバー</FieldLabel>
               <Card className="cursor-pointer" onClick={() => setMemberExpanded((v) => !v)}>
-                <div className="text-xs font-bold text-ink-soft mb-1">スタメン</div>
+                <div className="text-xs font-bold text-ink-soft mb-1">スターティング</div>
                 <div className="text-[13px] font-bold mb-2">
                   {starters.length > 0 ? (
                     starters
                       .map((id) => players.find((p) => p.id === id))
                       .filter((p): p is Player => Boolean(p))
-                      .map((p) => <div key={p.id}>{playerFullName(p)}</div>)
+                      .map((p) => (
+                        <div key={p.id}>
+                          <span className="font-mono text-ink-soft">{p.number ?? "-"}</span> {playerFullName(p)}
+                        </div>
+                      ))
                   ) : (
                     <div>未登録</div>
                   )}
@@ -443,7 +447,11 @@ export default function GameDetailPage() {
                     subs
                       .map((id) => players.find((p) => p.id === id))
                       .filter((p): p is Player => Boolean(p))
-                      .map((p) => <div key={p.id}>{playerFullName(p)}</div>)
+                      .map((p) => (
+                        <div key={p.id}>
+                          <span className="font-mono text-ink-soft">{p.number ?? "-"}</span> {playerFullName(p)}
+                        </div>
+                      ))
                   ) : (
                     <div>なし</div>
                   )}
@@ -472,7 +480,7 @@ export default function GameDetailPage() {
           ) : (
             <>
               <div className="mt-3">
-                <FieldLabel>スタメン(最大5人)</FieldLabel>
+                <FieldLabel>スターティング(最大5人)</FieldLabel>
                 <Card>
                   {players.length === 0 ? (
                     <EmptyState>在籍中の選手がいません</EmptyState>
