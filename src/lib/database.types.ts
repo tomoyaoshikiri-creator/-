@@ -238,6 +238,7 @@ export interface Database {
           number: string | null;
           positions: Position[];
           status: PlayerStatus;
+          birthday: string | null;
           created_at: string;
         };
         Insert: {
@@ -251,6 +252,7 @@ export interface Database {
           number?: string | null;
           positions?: Position[];
           status?: PlayerStatus;
+          birthday?: string | null;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["players"]["Insert"], "grade">> & {
           // 編集画面からOB・OGの経過年数(6超)を直接入力できるようUpdateだけ広げる
@@ -381,7 +383,14 @@ export interface Database {
       };
       list_roster_players: {
         Args: Record<string, never>;
-        Returns: { id: string; sei: string; mei: string; grade: string | null; status: string }[];
+        Returns: {
+          id: string;
+          sei: string;
+          mei: string;
+          grade: string | null;
+          status: string;
+          birthday: string | null;
+        }[];
       };
     };
   };

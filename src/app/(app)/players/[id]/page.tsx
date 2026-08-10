@@ -11,7 +11,8 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
-import { gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { BirthdaySelect } from "../BirthdaySelect";
 import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
@@ -33,6 +34,7 @@ export default function PlayerDetailPage() {
   const [number, setNumber] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
   const [status, setStatus] = useState<PlayerStatus>("在籍");
+  const [birthday, setBirthday] = useState("");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -63,6 +65,7 @@ export default function PlayerDetailPage() {
     setNumber(player.number ?? "");
     setPositions(player.positions);
     setStatus(player.status);
+    setBirthday(player.birthday ?? "");
     setDeleteConfirm(false);
     setEditing(true);
   }
@@ -90,6 +93,7 @@ export default function PlayerDetailPage() {
         number: number.trim() || null,
         positions,
         status,
+        birthday: birthday || null,
       })
       .eq("id", player.id);
     setSaving(false);
@@ -182,6 +186,11 @@ export default function PlayerDetailPage() {
             </div>
 
             <div className="mt-3">
+              <FieldLabel>誕生日</FieldLabel>
+              <BirthdaySelect value={birthday} onChange={setBirthday} />
+            </div>
+
+            <div className="mt-3">
               <FieldLabel>背番号(リバ)</FieldLabel>
               <input className={inputClass()} value={number} onChange={(e) => setNumber(e.target.value)} />
             </div>
@@ -259,6 +268,9 @@ export default function PlayerDetailPage() {
               {player.positions.length > 0 ? player.positions.join("・") : "ポジション未設定"}
             </div>
             <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
+            {player.birthday && (
+              <div className="text-xs text-ink-soft mt-1">誕生日: {formatFullDateLabel(player.birthday)}</div>
+            )}
           </Card>
 
           <SectionLabel>メモ</SectionLabel>

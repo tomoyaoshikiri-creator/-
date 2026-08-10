@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { GRADES, POSITIONS } from "@/lib/playerOptions";
+import { BirthdaySelect } from "./BirthdaySelect";
 import type { Grade, Position } from "@/lib/database.types";
 
 export function NewPlayerModal({
@@ -29,6 +30,7 @@ export function NewPlayerModal({
   const [grade, setGrade] = useState<Grade | "">("");
   const [number, setNumber] = useState("");
   const [positions, setPositions] = useState<Position[]>([]);
+  const [birthday, setBirthday] = useState("");
   const [saving, setSaving] = useState(false);
 
   function reset() {
@@ -39,6 +41,7 @@ export function NewPlayerModal({
     setGrade("");
     setNumber("");
     setPositions([]);
+    setBirthday("");
   }
 
   function togglePos(p: Position) {
@@ -60,6 +63,7 @@ export function NewPlayerModal({
       grade: grade || null,
       number: number.trim() || null,
       positions,
+      birthday: birthday || null,
     });
     setSaving(false);
     if (error) {
@@ -114,6 +118,11 @@ export function NewPlayerModal({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>誕生日</FieldLabel>
+        <BirthdaySelect value={birthday} onChange={setBirthday} />
       </div>
 
       <div className="mt-3">

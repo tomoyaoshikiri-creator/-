@@ -13,8 +13,9 @@ import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { canWriteSchedule } from "@/lib/permissions";
-import { todayDateStr } from "@/lib/format";
+import { playerFullName, todayDateStr } from "@/lib/format";
 import type { Attendance, Schedule } from "@/lib/database.types";
+import type { Birthday } from "./CalendarView";
 import { ScheduleCard } from "./ScheduleCard";
 import { NewScheduleModal } from "./NewScheduleModal";
 import { CalendarView } from "./CalendarView";
@@ -25,6 +26,7 @@ export default function SchedulePage() {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [attendances, setAttendances] = useState<Record<string, Attendance>>({});
+  const [birthdays, setBirthdays] = useState<Birthday[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -32,9 +34,10 @@ export default function SchedulePage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: sch }, { data: att }] = await Promise.all([
+    const [{ data: sch }, { data: att }, { data: roster }] = await Promise.all([
       supabase.from("schedules").select("*").order("date", { ascending: true }),
       supabase.from("attendances").select("*").eq("user_id", userId),
+      supabase.rpc("list_roster_players"),
     ]);
     setSchedules(sch ?? []);
     const map: Record<string, Attendance> = {};
@@ -42,6 +45,11 @@ export default function SchedulePage() {
       map[a.schedule_id] = a;
     });
     setAttendances(map);
+    setBirthdays(
+      (roster ?? [])
+        .filter((p) => p.birthday)
+        .map((p) => ({ name: playerFullName(p), birthday: p.birthday as string })),
+    );
     setLoading(false);
   }, [userId]);
 
@@ -117,7 +125,7 @@ export default function SchedulePage() {
           )}
         </div>
       ) : (
-        <CalendarView schedules={schedules} />
+        <CalendarView schedules={schedules} birthdays={birthdays} />
       )}
     </PageShell>
   );

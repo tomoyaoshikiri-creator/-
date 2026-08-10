@@ -27,7 +27,13 @@ const HOLIDAY_TEXT_CLASS: Record<"holiday" | "saturday" | "sunday", string> = {
   sunday: "text-danger",
 };
 
-export function CalendarView({ schedules }: { schedules: Schedule[] }) {
+export interface Birthday {
+  name: string;
+  // "YYYY-MM-DD"。年は無視して月日だけを毎年の誕生日として扱う。
+  birthday: string;
+}
+
+export function CalendarView({ schedules, birthdays = [] }: { schedules: Schedule[]; birthdays?: Birthday[] }) {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -42,6 +48,18 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
     }
     return map;
   }, [schedules]);
+
+  // 月日(MM-DD)をキーに、毎年その日を誕生日とする選手名の一覧をまとめる。
+  const birthdaysByMonthDay = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const b of birthdays) {
+      const key = b.birthday.slice(5, 10);
+      const list = map.get(key) ?? [];
+      list.push(b.name);
+      map.set(key, list);
+    }
+    return map;
+  }, [birthdays]);
 
   const firstDay = new Date(year, month, 1);
   const startOffset = (firstDay.getDay() + 6) % 7; // 月曜始まり
@@ -71,6 +89,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
   }
 
   const dayEvents = selectedDate ? eventsByDate.get(selectedDate) ?? [] : [];
+  const dayBirthdays = selectedDate ? birthdaysByMonthDay.get(selectedDate.slice(5, 10)) ?? [] : [];
 
   return (
     <div>
@@ -108,6 +127,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
           const holiday = holidayKind(c.date, i % 7);
+          const hasBirthday = birthdaysByMonthDay.has(c.date.slice(5, 10));
           // 同じ日に複数種別があれば 試合(danger) > イベント(sky) > 練習(orange) の優先度でマスの色を決める。
           const dayColors = new Set(events.map((e) => scheduleTypeColor(e.type)));
           const dayColor = dayColors.has("danger")
@@ -137,6 +157,7 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
                 isSelected ? "outline outline-2 outline-navy" : ""
               } ${cellCls}`}
             >
+              {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
               <span className={holiday ? HOLIDAY_TEXT_CLASS[holiday] : ""}>{c.day}</span>
               {hasEvent && <span className={`w-1 h-1 rounded-full mt-0.5 ${dotCls}`} />}
             </button>
@@ -148,21 +169,30 @@ export function CalendarView({ schedules }: { schedules: Schedule[] }) {
         <SectionLabel>選択した日の予定</SectionLabel>
         {!selectedDate ? (
           <EmptyState>日付をタップしてください</EmptyState>
-        ) : dayEvents.length === 0 ? (
-          <EmptyState>この日の予定はありません</EmptyState>
         ) : (
-          dayEvents.map((ev) => (
-            <Link key={ev.id} href={`/schedule/${ev.id}`}>
-              <Card className="cursor-pointer">
-                <div className="font-bold text-[14.5px]">
-                  <TypeTag type={ev.type} gameCategory={ev.game_category} />
-                  {ev.title}
-                </div>
-                <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>
-                {ev.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{ev.toban}</div>}
+          <>
+            {dayBirthdays.length > 0 && (
+              <Card>
+                <div className="font-bold text-[13px]">🎂 誕生日: {dayBirthdays.join("・")}</div>
               </Card>
-            </Link>
-          ))
+            )}
+            {dayEvents.length === 0 ? (
+              dayBirthdays.length === 0 && <EmptyState>この日の予定はありません</EmptyState>
+            ) : (
+              dayEvents.map((ev) => (
+                <Link key={ev.id} href={`/schedule/${ev.id}`}>
+                  <Card className="cursor-pointer">
+                    <div className="font-bold text-[14.5px]">
+                      <TypeTag type={ev.type} gameCategory={ev.game_category} />
+                      {ev.title}
+                    </div>
+                    <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>
+                    {ev.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{ev.toban}</div>}
+                  </Card>
+                </Link>
+              ))
+            )}
+          </>
         )}
       </div>
     </div>
