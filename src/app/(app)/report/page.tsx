@@ -14,19 +14,75 @@ import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Report } from "@/lib/database.types";
 
+const MONTHS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+
+function daysInMonth(month: number): string[] {
+  const count = new Date(new Date().getFullYear(), month, 0).getDate();
+  return Array.from({ length: count }, (_, i) => String(i + 1));
+}
+
+function parseDateLabel(label: string | null): { month: string; day: string } {
+  const today = new Date();
+  const fallback = { month: String(today.getMonth() + 1), day: String(today.getDate()) };
+  const m = label?.match(/^(\d{1,2})\/(\d{1,2})$/);
+  return m ? { month: m[1], day: m[2] } : fallback;
+}
+
+function MonthDaySelect({
+  month,
+  day,
+  onMonthChange,
+  onDayChange,
+}: {
+  month: string;
+  day: string;
+  onMonthChange: (m: string) => void;
+  onDayChange: (d: string) => void;
+}) {
+  const days = daysInMonth(Number(month));
+  return (
+    <div className="flex gap-1.5 items-center">
+      <select
+        className={inputClass()}
+        value={month}
+        onChange={(e) => {
+          onMonthChange(e.target.value);
+          if (Number(day) > daysInMonth(Number(e.target.value)).length) onDayChange("1");
+        }}
+      >
+        {MONTHS.map((m) => (
+          <option key={m} value={m}>
+            {m}月
+          </option>
+        ))}
+      </select>
+      <select className={inputClass()} value={day} onChange={(e) => onDayChange(e.target.value)}>
+        {days.map((d) => (
+          <option key={d} value={d}>
+            {d}日
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export default function ReportPage() {
   const router = useRouter();
   const { userId, teamId, role } = useSession();
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
-  const [dateLabel, setDateLabel] = useState("");
+  const today = new Date();
+  const [month, setMonth] = useState(String(today.getMonth() + 1));
+  const [day, setDay] = useState(String(today.getDate()));
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDateLabel, setEditDateLabel] = useState("");
+  const [editMonth, setEditMonth] = useState("1");
+  const [editDay, setEditDay] = useState("1");
   const [editBody, setEditBody] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -61,7 +117,7 @@ export default function ReportPage() {
     const { error } = await supabase.from("reports").insert({
       team_id: teamId,
       author_id: userId,
-      date_label: dateLabel.trim() || null,
+      date_label: `${month}/${day}`,
       body: body.trim(),
     });
     setSaving(false);
@@ -69,7 +125,8 @@ export default function ReportPage() {
       toast(`登録に失敗しました: ${error.message}`);
       return;
     }
-    setDateLabel("");
+    setMonth(String(today.getMonth() + 1));
+    setDay(String(today.getDate()));
     setBody("");
     toast("日報を登録しました");
     load();
@@ -77,7 +134,9 @@ export default function ReportPage() {
 
   function startEdit(r: Report) {
     setEditingId(r.id);
-    setEditDateLabel(r.date_label ?? "");
+    const parsed = parseDateLabel(r.date_label);
+    setEditMonth(parsed.month);
+    setEditDay(parsed.day);
     setEditBody(r.body);
   }
 
@@ -90,7 +149,7 @@ export default function ReportPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from("reports")
-      .update({ date_label: editDateLabel.trim() || null, body: editBody.trim() })
+      .update({ date_label: `${editMonth}/${editDay}`, body: editBody.trim() })
       .eq("id", id);
     setSavingEdit(false);
     if (error) {
@@ -125,12 +184,7 @@ export default function ReportPage() {
       <SectionLabel>日報を書く</SectionLabel>
       <Card>
         <FieldLabel>日付</FieldLabel>
-        <input
-          className={inputClass()}
-          value={dateLabel}
-          onChange={(e) => setDateLabel(e.target.value)}
-          placeholder="例:8/10"
-        />
+        <MonthDaySelect month={month} day={day} onMonthChange={setMonth} onDayChange={setDay} />
         <div className="mt-3">
           <FieldLabel>内容</FieldLabel>
           <textarea
@@ -156,12 +210,7 @@ export default function ReportPage() {
           editingId === r.id ? (
             <Card key={r.id}>
               <FieldLabel>日付</FieldLabel>
-              <input
-                className={inputClass()}
-                value={editDateLabel}
-                onChange={(e) => setEditDateLabel(e.target.value)}
-                placeholder="例:8/10"
-              />
+              <MonthDaySelect month={editMonth} day={editDay} onMonthChange={setEditMonth} onDayChange={setEditDay} />
               <div className="mt-3">
                 <FieldLabel>内容</FieldLabel>
                 <textarea
