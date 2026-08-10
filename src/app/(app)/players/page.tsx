@@ -28,17 +28,19 @@ function PlayerRow({ player, noteCount }: { player: Player; noteCount: number })
     >
       <NumChip num={player.number ?? "-"} muted={isObog} />
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+        <div className="flex items-center gap-3">
+          <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+          <span
+            className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
+            }`}
+          >
+            {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
+          </span>
+        </div>
         <div className="text-[11px] text-ink-soft mt-0.5">
           {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
         </div>
-        <span
-          className={`inline-block mt-1 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
-          }`}
-        >
-          {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
-        </span>
       </div>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </Link>
