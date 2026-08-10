@@ -20,6 +20,7 @@ import { NewPlayerModal } from "./NewPlayerModal";
 
 function PlayerRow({ player, noteCount }: { player: Player; noteCount: number }) {
   const isObog = player.status === "OB・OG";
+  const hasNotes = noteCount > 0;
   return (
     <Link
       href={`/players/${player.id}`}
@@ -29,9 +30,16 @@ function PlayerRow({ player, noteCount }: { player: Player; noteCount: number })
       <div className="flex-1">
         <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
         <div className="text-[11px] text-ink-soft mt-0.5">
-          {gradeLabel(player.grade)}・{player.positions.join("/")} · メモ{noteCount}件 · {player.status}
+          {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
         </div>
       </div>
+      <span
+        className={`flex-shrink-0 font-mono text-[10.5px] font-bold px-2 py-1 rounded-md border whitespace-nowrap ${
+          hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
+        }`}
+      >
+        {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
+      </span>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </Link>
   );
