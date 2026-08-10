@@ -24,6 +24,7 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          slug: string;
           theme_primary: string | null;
           theme_accent: string | null;
           logo_path: string | null;
@@ -32,6 +33,7 @@ export interface Database {
         Insert: {
           id?: string;
           name: string;
+          slug?: string;
           theme_primary?: string | null;
           theme_accent?: string | null;
           logo_path?: string | null;
@@ -372,6 +374,10 @@ export interface Database {
       get_default_team_logo_path: {
         Args: Record<string, never>;
         Returns: string | null;
+      };
+      get_team_login_branding: {
+        Args: { p_slug: string };
+        Returns: { name: string; logo_path: string | null }[];
       };
       list_team_members: {
         Args: Record<string, never>;

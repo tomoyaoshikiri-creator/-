@@ -34,7 +34,7 @@ export default function SettingsPage() {
         <>
           <SectionLabel>チーム設定</SectionLabel>
           <Card>
-            <SettingsRow href="/settings/logo" label="ロゴ" />
+            <SettingsRow href="/settings/logo" label="ログイン画面" />
             <SettingsRow href="/settings/color" label="配色" />
           </Card>
         </>
