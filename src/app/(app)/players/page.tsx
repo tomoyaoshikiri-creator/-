@@ -99,7 +99,7 @@ export default function PlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手一覧" rightSlot={<CurrentUserBadge />} />}
+      header={<AppHeader title="選手一覧" rightSlot={<CurrentUserBadge />} accessBadge="coach" />}
       fab={
         <>
           <Fab onClick={() => setModalOpen(true)} />

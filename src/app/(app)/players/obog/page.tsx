@@ -50,7 +50,7 @@ export default function ObogPage() {
   });
 
   return (
-    <PageShell header={<AppHeader title="OB・OG" variant="detail" backHref="/players" />}>
+    <PageShell header={<AppHeader title="OB・OG" variant="detail" backHref="/players" accessBadge="coach" />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : players.length === 0 ? (

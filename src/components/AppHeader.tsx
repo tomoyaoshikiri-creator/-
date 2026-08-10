@@ -12,6 +12,7 @@ export function AppHeader({
   searchPlaceholder,
   searchValue,
   onSearchChange,
+  accessBadge,
 }: {
   title: string;
   variant?: "list" | "detail";
@@ -20,6 +21,9 @@ export function AppHeader({
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  // このページに実際にアクセスできるロールを画面上で明示するための任意バッジ。
+  // "coach"は指導者・管理者専用画面、"admin"は管理者専用画面であることを示す。
+  accessBadge?: "coach" | "admin";
 }) {
   const { teamName, teamLogoUrl } = useSession();
   const bg = variant === "detail" ? "bg-navy" : "bg-orange";
@@ -43,8 +47,13 @@ export function AppHeader({
         )}
         {rightSlot}
       </div>
-      <h1 className="font-sans font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
+      <h1 className="flex items-center flex-wrap gap-2 font-sans font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
         {title}
+        {accessBadge && (
+          <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 tracking-wide">
+            {accessBadge === "admin" ? "管理者専用画面" : "コーチ専用画面"}
+          </span>
+        )}
       </h1>
       {searchPlaceholder && (
         <div className="bg-white/22 rounded-[10px] px-3 py-1 flex items-center gap-1.5">

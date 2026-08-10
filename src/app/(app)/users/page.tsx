@@ -168,7 +168,7 @@ export default function UsersPage() {
   const visibleInvites = invites.filter((inv) => new Date(inv.expires_at) > new Date());
 
   return (
-    <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} accessBadge="admin" />}>
       <SectionLabel>招待リンクを発行</SectionLabel>
       <Card>
         <div className="flex gap-2">

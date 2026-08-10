@@ -308,7 +308,7 @@ export default function GameDetailPage() {
       : null;
 
   return (
-    <PageShell header={<AppHeader title={game?.title ?? "試合記録"} variant="detail" backHref="/game" />}>
+    <PageShell header={<AppHeader title={game?.title ?? "試合記録"} variant="detail" backHref="/game" accessBadge="coach" />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !game ? (

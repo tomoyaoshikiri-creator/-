@@ -76,7 +76,7 @@ export default function SettingsLogoPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="ロゴ" variant="detail" backHref="/settings" />}>
+    <PageShell header={<AppHeader title="ロゴ" variant="detail" backHref="/settings" accessBadge="admin" />}>
       <SectionLabel>ロゴ</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
