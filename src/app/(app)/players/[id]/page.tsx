@@ -2,37 +2,28 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
-import { formatDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
-import { loadProfilesMap } from "@/lib/profiles";
-import type { Grade, Player, PlayerNote, PlayerStatus, Position } from "@/lib/database.types";
+import { gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const toast = useToast();
-  const { userId } = useSession();
   const [player, setPlayer] = useState<Player | null>(null);
-  const [notes, setNotes] = useState<PlayerNote[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [noteCount, setNoteCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [noteBody, setNoteBody] = useState("");
-  const [savingNote, setSavingNote] = useState(false);
-  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editNoteBody, setEditNoteBody] = useState("");
-  const [savingNoteEdit, setSavingNoteEdit] = useState(false);
-  const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
 
   const [sei, setSei] = useState("");
   const [mei, setMei] = useState("");
@@ -46,18 +37,15 @@ export default function PlayerDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: p }, { data: n }, profMap] = await Promise.all([
+    const [{ data: p }, { count }] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.id).single(),
       supabase
         .from("player_notes")
-        .select("*")
-        .eq("player_id", params.id)
-        .order("created_at", { ascending: false }),
-      loadProfilesMap(supabase),
+        .select("id", { count: "exact", head: true })
+        .eq("player_id", params.id),
     ]);
     setPlayer(p ?? null);
-    setNotes(n ?? []);
-    setProfiles(profMap);
+    setNoteCount(count ?? 0);
     setLoading(false);
   }, [params.id]);
 
@@ -129,74 +117,6 @@ export default function PlayerDetailPage() {
     }
     toast("選手を削除しました");
     router.push("/players");
-  }
-
-  async function handleAddNote() {
-    if (!player) return;
-    if (!noteBody.trim()) {
-      toast("メモを入力してください");
-      return;
-    }
-    setSavingNote(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("player_notes").insert({
-      team_id: player.team_id,
-      player_id: player.id,
-      author_id: userId,
-      body: noteBody.trim(),
-    });
-    setSavingNote(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
-      return;
-    }
-    setNoteBody("");
-    toast("メモを登録しました");
-    load();
-  }
-
-  function startEditNote(n: PlayerNote) {
-    setEditingNoteId(n.id);
-    setEditNoteBody(n.body);
-  }
-
-  async function handleSaveNoteEdit(noteId: string) {
-    if (!editNoteBody.trim()) {
-      toast("メモを入力してください");
-      return;
-    }
-    setSavingNoteEdit(true);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("player_notes")
-      .update({ body: editNoteBody.trim() })
-      .eq("id", noteId);
-    setSavingNoteEdit(false);
-    if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
-      return;
-    }
-    toast("メモを更新しました");
-    setEditingNoteId(null);
-    load();
-  }
-
-  async function handleDeleteNote(noteId: string) {
-    if (deleteNoteConfirmId !== noteId) {
-      setDeleteNoteConfirmId(noteId);
-      setTimeout(() => setDeleteNoteConfirmId((cur) => (cur === noteId ? null : cur)), 3000);
-      return;
-    }
-    setDeleteNoteConfirmId(null);
-    const supabase = createClient();
-    const { error } = await supabase.from("player_notes").delete().eq("id", noteId);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    toast("メモを削除しました");
-    setExpandedNoteId(null);
-    load();
   }
 
   return (
@@ -341,88 +261,17 @@ export default function PlayerDetailPage() {
             <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
           </Card>
 
-          <SectionLabel>これまでのメモ</SectionLabel>
-          {notes.length === 0 ? (
-            <Card>
-              <div className="text-xs text-ink-soft">まだメモがありません</div>
+          <SectionLabel>メモ</SectionLabel>
+          <Link href={`/players/${player.id}/notes`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">
+                  {noteCount > 0 ? `メモあり(${noteCount}件)` : "メモなし"}
+                </div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
             </Card>
-          ) : (
-            notes.map((n) =>
-              editingNoteId === n.id ? (
-                <Card key={n.id}>
-                  <textarea
-                    rows={3}
-                    className={inputClass()}
-                    value={editNoteBody}
-                    onChange={(e) => setEditNoteBody(e.target.value)}
-                  />
-                  <div className="flex gap-2 mt-1.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSaveNoteEdit(n.id)}
-                      disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
-                    >
-                      {savingNoteEdit ? "保存中…" : "保存"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingNoteId(null)}
-                      disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
-                    >
-                      キャンセル
-                    </button>
-                  </div>
-                </Card>
-              ) : (
-                <Card
-                  key={n.id}
-                  className="cursor-pointer"
-                  onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
-                >
-                  <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                    {formatDateLabel(n.created_at.slice(0, 10))}
-                    {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
-                  </div>
-                  <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
-                  {expandedNoteId === n.id && (
-                    <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => startEditNote(n)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
-                      >
-                        編集
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteNote(n.id)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
-                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                      >
-                        {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
-                      </button>
-                    </div>
-                  )}
-                </Card>
-              ),
-            )
-          )}
-
-          <SectionLabel>メモを追加</SectionLabel>
-          <Card>
-            <textarea
-              rows={3}
-              className={inputClass()}
-              value={noteBody}
-              onChange={(e) => setNoteBody(e.target.value)}
-              placeholder="例:左手のレイアップが安定してきた"
-            />
-            <SubmitButton onClick={handleAddNote} disabled={savingNote}>
-              {savingNote ? "登録中…" : "メモを登録する"}
-            </SubmitButton>
-          </Card>
+          </Link>
 
           <SubmitButton onClick={startEdit}>編集する</SubmitButton>
         </>

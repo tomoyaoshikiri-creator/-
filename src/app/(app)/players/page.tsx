@@ -19,31 +19,34 @@ import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
 function PlayerRow({ player, noteCount }: { player: Player; noteCount: number }) {
+  const router = useRouter();
   const isObog = player.status === "OB・OG";
   const hasNotes = noteCount > 0;
   return (
-    <Link
-      href={`/players/${player.id}`}
-      className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
+    <div
+      onClick={() => router.push(`/players/${player.id}`)}
+      className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 cursor-pointer"
     >
       <NumChip num={player.number ?? "-"} muted={isObog} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3">
           <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
-          <span
+          <Link
+            href={`/players/${player.id}/notes`}
+            onClick={(e) => e.stopPropagation()}
             className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
               hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
             }`}
           >
             {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
-          </span>
+          </Link>
         </div>
         <div className="text-[11px] text-ink-soft mt-0.5">
           {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
         </div>
       </div>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-    </Link>
+    </div>
   );
 }
 
