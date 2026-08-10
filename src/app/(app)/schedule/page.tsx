@@ -30,6 +30,7 @@ export default function SchedulePage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -90,6 +91,9 @@ export default function SchedulePage() {
                 load();
                 toast("予定を登録しました");
               }}
+              initialDates={
+                view === "calendar" && calendarSelectedDate ? [calendarSelectedDate] : undefined
+              }
             />
           </>
         )
@@ -125,7 +129,7 @@ export default function SchedulePage() {
           )}
         </div>
       ) : (
-        <CalendarView schedules={schedules} birthdays={birthdays} />
+        <CalendarView schedules={schedules} birthdays={birthdays} onSelectDate={setCalendarSelectedDate} />
       )}
     </PageShell>
   );

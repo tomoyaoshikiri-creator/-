@@ -22,6 +22,7 @@ export function NewScheduleModal({
   onDeleted,
   editSchedule,
   copySource,
+  initialDates,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,6 +30,8 @@ export function NewScheduleModal({
   onDeleted?: () => void;
   editSchedule?: Schedule;
   copySource?: Schedule;
+  // 新規登録時のみ有効。カレンダーで選択中の日付を初期選択状態にするのに使う。
+  initialDates?: string[];
 }) {
   const supabase = createClient();
   const { userId, teamId } = useSession();
@@ -89,8 +92,9 @@ export function NewScheduleModal({
       );
     } else {
       reset();
+      if (initialDates && initialDates.length > 0) setDates(initialDates);
     }
-  }, [open, editSchedule, copySource]);
+  }, [open, editSchedule, copySource, initialDates]);
 
   function toggleDate(d: string) {
     setDates((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort()));
@@ -227,7 +231,7 @@ export function NewScheduleModal({
           </>
         ) : (
           <>
-            <MiniCalendarPicker selected={dates} onToggle={toggleDate} />
+            <MiniCalendarPicker selected={dates} onToggle={toggleDate} initialDate={initialDates?.[0]} />
             {dates.length > 0 && (
               <div className="mt-2 flex gap-1.5 flex-wrap">
                 {dates.map((d) => (

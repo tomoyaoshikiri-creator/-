@@ -33,11 +33,25 @@ export interface Birthday {
   birthday: string;
 }
 
-export function CalendarView({ schedules, birthdays = [] }: { schedules: Schedule[]; birthdays?: Birthday[] }) {
+export function CalendarView({
+  schedules,
+  birthdays = [],
+  onSelectDate,
+}: {
+  schedules: Schedule[];
+  birthdays?: Birthday[];
+  // 選択中の日付が変わるたびに呼ばれる。「予定を追加」で選択日を初期値として渡すのに使う。
+  onSelectDate?: (date: string) => void;
+}) {
   const now = useMemo(() => new Date(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  function selectDate(date: string) {
+    setSelectedDate(date);
+    onSelectDate?.(date);
+  }
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, Schedule[]>();
@@ -152,7 +166,7 @@ export function CalendarView({ schedules, birthdays = [] }: { schedules: Schedul
             <button
               key={c.date}
               type="button"
-              onClick={() => setSelectedDate(c.date!)}
+              onClick={() => selectDate(c.date!)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs border relative ${
                 isSelected ? "outline outline-2 outline-navy" : ""
               } ${cellCls}`}
