@@ -20,7 +20,7 @@ export function AuthHeading({
             />
           )}
           <h1 className="font-medium text-ink text-2xl leading-tight break-words">{teamName}</h1>
-          <div className="text-[10px] tracking-[0.3em] uppercase text-ink-soft mt-3" style={{ fontFamily: FONT_JP }}>
+          <div className="text-[10px] tracking-[0.3em] text-ink-soft mt-3" style={{ fontFamily: FONT_JP }}>
             Club Link
           </div>
           <div className="text-[10px] tracking-[0.3em] uppercase text-ink-soft" style={{ fontFamily: FONT_JP }}>
