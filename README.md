@@ -40,6 +40,7 @@
    - `0027_notice_audience.sql`: noticesに公開範囲(audience: 全員/指導者のみ/役員以上/学年指定)とtarget_grade_minを追加し、SELECTポリシーを公開範囲に応じて絞り込むよう変更する(指導者・管理者は常に全件閲覧可)
    - `0028_schedule_delete_all_roles.sql`: schedulesのDELETEを役員以上限定から全ロールに広げる(登録・編集(schedules_insert/update)と同じ範囲に揃え、予定編集画面から削除できるようにするため)
    - `0029_report_all_roles_edit_delete.sql`: 練習日報の閲覧・登録を再び全ロールに開放する(0020を戻す)。あわせてUPDATE/DELETEポリシーが元々無かったため追加(お知らせと同じく記入者本人に限らず全ロールが編集・削除できる)
+   - `0030_report_real_date.sql`: 日報の日付を年を持たない自由入力(date_label、例:「8/10」)から実際のdate型に置き換える。既存データはdate_labelの月日をcreated_atの年に当てはめて復元し(年をまたぐ場合は前年と判定)、date_label列は削除する
 3. ダッシュボード → Project Settings → API から `Project URL` と `anon public`(または新しいPublishable key)を控える
 
 Supabase CLIがある場合は、SQL Editorの代わりに以下でも適用できる。

@@ -12,32 +12,35 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
+import { formatFullDateLabel } from "@/lib/format";
 import type { Report } from "@/lib/database.types";
 
-// 「8/10」のような月/日の値と、選択肢に表示する「8月10日」ラベルのペアを1年分まとめて作る。
-// 月と日を別々のselectにすると2回操作が必要になるため、1つのselect(スクロール)で選べるようにしている。
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+// 実際の日付(年入り)を1つのselect(スクロール)で選べるようにする。過去2年分をカバーしておけば、
+// 編集時に既存の日報の日付が選択肢から外れることはまず無い。
 const DATE_OPTIONS: { value: string; label: string }[] = (() => {
-  const year = new Date().getFullYear();
   const options: { value: string; label: string }[] = [];
-  for (let month = 1; month <= 12; month++) {
-    const count = new Date(year, month, 0).getDate();
-    for (let day = 1; day <= count; day++) {
-      options.push({ value: `${month}/${day}`, label: `${month}月${day}日` });
-    }
+  const today = new Date();
+  for (let i = 730; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    options.push({ value, label: formatFullDateLabel(value) });
   }
   return options;
 })();
 
-function parseDateLabel(label: string | null): string {
-  const today = new Date();
-  const fallback = `${today.getMonth() + 1}/${today.getDate()}`;
-  return label && DATE_OPTIONS.some((o) => o.value === label) ? label : fallback;
-}
-
 function DateSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // 編集対象の日付が選択肢の範囲外(2年より前)だった場合に備えて、無ければ選択肢に足しておく。
+  const options = DATE_OPTIONS.some((o) => o.value === value)
+    ? DATE_OPTIONS
+    : [{ value, label: formatFullDateLabel(value) }, ...DATE_OPTIONS];
   return (
     <select className={inputClass()} value={value} onChange={(e) => onChange(e.target.value)}>
-      {DATE_OPTIONS.map((o) => (
+      {options.map((o) => (
         <option key={o.value} value={o.value}>
           {o.label}
         </option>
@@ -52,14 +55,14 @@ export default function ReportPage() {
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
-  const today = new Date();
-  const [dateValue, setDateValue] = useState(`${today.getMonth() + 1}/${today.getDate()}`);
+  const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
+  const [dateValue, setDateValue] = useState(todayValue);
   const [body, setBody] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDateValue, setEditDateValue] = useState("1/1");
+  const [editDateValue, setEditDateValue] = useState(todayValue);
   const [editBody, setEditBody] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -94,7 +97,7 @@ export default function ReportPage() {
     const { error } = await supabase.from("reports").insert({
       team_id: teamId,
       author_id: userId,
-      date_label: dateValue,
+      date: dateValue,
       body: body.trim(),
     });
     setSaving(false);
@@ -102,7 +105,7 @@ export default function ReportPage() {
       toast(`登録に失敗しました: ${error.message}`);
       return;
     }
-    setDateValue(`${today.getMonth() + 1}/${today.getDate()}`);
+    setDateValue(todayValue);
     setBody("");
     toast("日報を登録しました");
     load();
@@ -110,7 +113,7 @@ export default function ReportPage() {
 
   function startEdit(r: Report) {
     setEditingId(r.id);
-    setEditDateValue(parseDateLabel(r.date_label));
+    setEditDateValue(r.date);
     setEditBody(r.body);
   }
 
@@ -123,7 +126,7 @@ export default function ReportPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from("reports")
-      .update({ date_label: editDateValue, body: editBody.trim() })
+      .update({ date: editDateValue, body: editBody.trim() })
       .eq("id", id);
     setSavingEdit(false);
     if (error) {
@@ -219,7 +222,7 @@ export default function ReportPage() {
               className={canWriteReport(role) ? "cursor-pointer" : ""}
               onClick={() => canWriteReport(role) && setExpandedId(expandedId === r.id ? null : r.id)}
             >
-              <div className="font-bold text-[14.5px]">{r.date_label || "日付未記入"}</div>
+              <div className="font-bold text-[14.5px]">{formatFullDateLabel(r.date)}</div>
               <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
               <div className="text-xs text-ink-soft mt-1.5">
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}

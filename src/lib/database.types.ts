@@ -208,7 +208,7 @@ export interface Database {
           id: string;
           team_id: string;
           author_id: string | null;
-          date_label: string | null;
+          date: string;
           body: string;
           created_at: string;
         };
@@ -216,11 +216,11 @@ export interface Database {
           id?: string;
           team_id: string;
           author_id?: string | null;
-          date_label?: string | null;
+          date: string;
           body: string;
         };
         Update: Partial<{
-          date_label: string | null;
+          date: string;
           body: string;
         }>;
         Relationships: [];
