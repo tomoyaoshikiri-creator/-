@@ -88,3 +88,9 @@ export function sortPlayers<T extends { grade: string | null; number: string | n
     return na - nb;
   });
 }
+
+// 相手選手の背番号は文字列で保存しているため、単純な文字列ソートだと
+// "10"が"2"より前に来てしまう。番号として数値比較する。
+export function sortOpponentPlayers<T extends { number: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => Number(a.number) - Number(b.number) || a.number.localeCompare(b.number));
+}
