@@ -122,14 +122,7 @@ export function StatPad({
         <EmptyState>{emptyMessage}</EmptyState>
       ) : (
         <Card className="mt-2">
-          <div className="flex items-center gap-2.5">
-            <div className="font-bold text-[14.5px] flex-1">
-              #{selected.number ?? "-"}
-              {selected.name ? ` ${selected.name}` : ""}
-            </div>
-            <div className="font-mono text-[15px] font-bold text-orange">{row?.pts ?? 0}pts</div>
-          </div>
-          <div className="flex gap-3 mt-1.5 text-[10.5px] text-ink-soft font-mono">
+          <div className="flex gap-3 text-[10.5px] text-ink-soft font-mono">
             <span>FG {fgPct(row)}</span>
             <span>FT {ftPct(row)}</span>
             <span>REB {row?.reb ?? 0}</span>
