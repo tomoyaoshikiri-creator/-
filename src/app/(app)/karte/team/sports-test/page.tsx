@@ -95,7 +95,7 @@ export default function KarteTeamSportsTestPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="チームカルテ / スポーツテスト" variant="detail" backHref="/karte/team" accessBadge="coach" />}
+      header={<AppHeader title="スポーツテスト" variant="detail" backHref="/karte/team" accessBadge="coach" />}
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="relative inline-block">

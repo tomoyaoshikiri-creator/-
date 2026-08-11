@@ -49,9 +49,8 @@ export function AppHeader({
         )}
       </h1>
       {backHref && (
-        <Link href={backHref} aria-label="戻る" className="inline-flex items-center gap-1 opacity-90 mb-1.5">
-          <BackIcon className="w-4 h-4" />
-          <span className="text-[12px] font-bold">戻る</span>
+        <Link href={backHref} aria-label="戻る" className="inline-flex items-center opacity-90 mb-1.5">
+          <BackIcon className="w-6 h-6" />
         </Link>
       )}
       {searchPlaceholder && (
