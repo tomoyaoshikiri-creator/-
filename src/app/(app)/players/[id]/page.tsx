@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
@@ -12,6 +13,7 @@ import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui
 import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { canManagePlayers } from "@/lib/permissions";
 import { BirthdaySelect } from "../BirthdaySelect";
 import { PlayerGrowthCard } from "../PlayerGrowthCard";
 import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
@@ -19,6 +21,8 @@ import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { role } = useSession();
+  const isStaff = canManagePlayers(role);
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
@@ -274,17 +278,21 @@ export default function PlayerDetailPage() {
             )}
           </Card>
 
-          <SectionLabel>メモ</SectionLabel>
-          <Link href={`/players/${player.id}/notes`}>
-            <Card className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-[13.5px]">
-                  {noteCount > 0 ? `メモあり(${noteCount}件)` : "メモなし"}
-                </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Card>
-          </Link>
+          {isStaff && (
+            <>
+              <SectionLabel>メモ</SectionLabel>
+              <Link href={`/players/${player.id}/notes`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[13.5px]">
+                      {noteCount > 0 ? `メモあり(${noteCount}件)` : "メモなし"}
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </div>
+                </Card>
+              </Link>
+            </>
+          )}
 
           <SectionLabel>スポーツテスト</SectionLabel>
           <Link href={`/players/${player.id}/sports-test`}>
@@ -298,7 +306,7 @@ export default function PlayerDetailPage() {
 
           <PlayerGrowthCard playerId={player.id} teamId={player.team_id} />
 
-          <SubmitButton onClick={startEdit}>編集する</SubmitButton>
+          {isStaff && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
       )}
     </PageShell>
