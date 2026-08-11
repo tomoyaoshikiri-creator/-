@@ -71,7 +71,7 @@ export default function KarteTeamPage() {
     (async () => {
       const supabase = createClient();
       const [{ data: p }, { data: lines }] = await Promise.all([
-        supabase.from("players").select("*").neq("status", "OB・OG"),
+        supabase.from("players").select("*"),
         supabase
           .from("game_player_stat_lines")
           .select("*, game_matches(schedules(date, fiscal_year_override))")
@@ -103,8 +103,12 @@ export default function KarteTeamPage() {
     return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
   });
 
+  // 在籍中の選手は常に表示。OB・OGは選んだ年度に出場記録がある場合だけ一覧に含める。
+  const gamePlayers = players.filter(
+    (p) => p.status !== "OB・OG" || linesForYear.some((l) => l.player_id === p.id),
+  );
   const teamAverages = computeTeamGameAverages(linesForYear);
-  const playerAverages = players.map((p) => ({
+  const playerAverages = gamePlayers.map((p) => ({
     player: p,
     averages: computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)),
   }));
@@ -114,7 +118,11 @@ export default function KarteTeamPage() {
       ? [...playerAverages].sort((a, b) => sortValue(b.averages) - sortValue(a.averages))
       : playerAverages;
 
-  const sportsTestValues: { player: Player; values: SportsTestValues }[] = players.map((p) => {
+  // 在籍中の選手は常に表示。OB・OGは選んだ年度・四半期に記録がある場合だけ一覧に含める。
+  const sportsTestPlayers = players.filter(
+    (p) => p.status !== "OB・OG" || sportsTestRecords.some((r) => r.player_id === p.id),
+  );
+  const sportsTestValues: { player: Player; values: SportsTestValues }[] = sportsTestPlayers.map((p) => {
     const record = sportsTestRecords.find((r) => r.player_id === p.id);
     const values: SportsTestValues = {};
     SPORTS_TEST_RANKING_METRICS.forEach((m) => {
