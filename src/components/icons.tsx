@@ -81,6 +81,16 @@ export function UsersIcon(props: IconProps) {
   );
 }
 
+export function KarteIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path d="M15 3v5h5" />
+      <path d="M7.5 14h2.2l1.3-3 1.6 6 1.3-3h2.6" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

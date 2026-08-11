@@ -6,6 +6,7 @@ export type TabKey =
   | "report"
   | "players"
   | "game"
+  | "karte"
   | "users"
   | "settings";
 
@@ -15,6 +16,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   report: "日報",
   players: "選手一覧",
   game: "試合記録",
+  karte: "カルテ",
   users: "管理",
   settings: "設定",
 };
@@ -25,6 +27,7 @@ export const TAB_PATHS: Record<TabKey, string> = {
   report: "/report",
   players: "/players",
   game: "/game",
+  karte: "/karte",
   users: "/users",
   settings: "/settings",
 };
@@ -35,6 +38,7 @@ export const PAGE_TITLES: Record<TabKey, string> = {
   report: "練習日報",
   players: "選手一覧",
   game: "試合記録",
+  karte: "カルテ",
   users: "ユーザー管理",
   settings: "設定",
 };
@@ -48,8 +52,8 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 const ROLE_TABS: Record<Role, TabKey[]> = {
   一般: ["schedule", "notice", "report", "game", "settings"],
   役員: ["schedule", "notice", "report", "game", "users", "settings"],
-  指導者: ["schedule", "notice", "report", "players", "game", "settings"],
-  管理者: ["schedule", "notice", "report", "players", "game", "users", "settings"],
+  指導者: ["schedule", "notice", "report", "players", "game", "karte", "settings"],
+  管理者: ["schedule", "notice", "report", "players", "game", "karte", "users", "settings"],
 };
 
 export function tabsForRole(role: Role): TabKey[] {
@@ -95,6 +99,11 @@ export function canManagePracticeMenus(role: Role): boolean {
 
 // スポーツテスト記録(CLUB KARTE、四半期ごと)の閲覧・登録・編集ができるロール。
 export function canManageSportsTests(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
+// カルテタブ(選手ごとのスタッツ・スポーツテスト横断ビュー)を見られるロール。
+export function canViewKarte(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
