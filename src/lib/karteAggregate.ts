@@ -1,4 +1,4 @@
-import type { GamePlayerStatLine } from "@/lib/database.types";
+import type { GamePlayerStatLine, SportsTestRecord } from "@/lib/database.types";
 
 export interface SeasonStatAverages {
   gp: number;
@@ -100,4 +100,112 @@ export const RANKING_METRICS: { value: RankingMetric; label: string; unit: strin
   { value: "eff", label: "EFF", unit: "" },
   { value: "fgPct", label: "FG成功率", unit: "%" },
   { value: "ftPct", label: "FT成功率", unit: "%" },
+];
+
+// スポーツテストは項目ごとに「速い/遠い/多いほど良い」の向きが違うため、
+// 項目ごとにdirection(asc=小さいほど良い, desc=大きいほど良い)を持たせる。
+// ①②の2回計測がある項目は、そのうち良い方の記録をランキング対象にする。
+export type SportsTestMetric =
+  | "wingspan_cm"
+  | "sprint20m"
+  | "long_jump"
+  | "lane_agility"
+  | "side_step"
+  | "shuttle_20m_x3"
+  | "ball_throw"
+  | "back_fist_right"
+  | "back_fist_left"
+  | "ft_golf"
+  | "beep_test_reps";
+
+function bestOf(v1: number | null, v2: number | null, direction: "asc" | "desc"): number | null {
+  const vals = [v1, v2].filter((v): v is number => v !== null);
+  if (vals.length === 0) return null;
+  return direction === "asc" ? Math.min(...vals) : Math.max(...vals);
+}
+
+export const SPORTS_TEST_RANKING_METRICS: {
+  value: SportsTestMetric;
+  label: string;
+  unit: string;
+  direction: "asc" | "desc";
+  extract: (r: SportsTestRecord) => number | null;
+}[] = [
+  {
+    value: "sprint20m",
+    label: "20mスプリント(ベスト)",
+    unit: "秒",
+    direction: "asc",
+    extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
+  },
+  {
+    value: "long_jump",
+    label: "立ち幅跳び(ベスト)",
+    unit: "cm",
+    direction: "desc",
+    extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
+  },
+  {
+    value: "lane_agility",
+    label: "レーンアジリティ(ベスト)",
+    unit: "秒",
+    direction: "asc",
+    extract: (r) => bestOf(r.lane_agility_1, r.lane_agility_2, "asc"),
+  },
+  {
+    value: "side_step",
+    label: "反復横跳び(ベスト)",
+    unit: "点",
+    direction: "desc",
+    extract: (r) => bestOf(r.side_step_1, r.side_step_2, "desc"),
+  },
+  {
+    value: "shuttle_20m_x3",
+    label: "20m三往復",
+    unit: "秒",
+    direction: "asc",
+    extract: (r) => r.shuttle_20m_x3,
+  },
+  {
+    value: "ball_throw",
+    label: "ボール投げ(ベスト)",
+    unit: "m",
+    direction: "desc",
+    extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
+  },
+  {
+    value: "back_fist_right",
+    label: "背中こぶし合わせ(右上)",
+    unit: "cm",
+    direction: "asc",
+    extract: (r) => r.back_fist_right,
+  },
+  {
+    value: "back_fist_left",
+    label: "背中こぶし合わせ(左上)",
+    unit: "cm",
+    direction: "asc",
+    extract: (r) => r.back_fist_left,
+  },
+  {
+    value: "ft_golf",
+    label: "FTゴルフ",
+    unit: "/10",
+    direction: "desc",
+    extract: (r) => r.ft_golf,
+  },
+  {
+    value: "beep_test_reps",
+    label: "20mシャトルラン",
+    unit: "回",
+    direction: "desc",
+    extract: (r) => r.beep_test_reps,
+  },
+  {
+    value: "wingspan_cm",
+    label: "ウイングスパン",
+    unit: "cm",
+    direction: "desc",
+    extract: (r) => r.wingspan_cm,
+  },
 ];
