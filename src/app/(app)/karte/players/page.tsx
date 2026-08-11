@@ -7,20 +7,20 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 
-function PlayerRow({ player, muted }: { player: Player; muted?: boolean }) {
+function PlayerRow({ player }: { player: Player }) {
   return (
     <Link
       href={`/karte/players/${player.id}`}
       className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
     >
-      <NumChip num={player.number ?? "-"} muted={muted} />
+      <NumChip num={player.number ?? "-"} />
       <div className="flex-1 min-w-0">
         <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
         <div className="text-[11px] text-ink-soft mt-0.5">
@@ -69,14 +69,14 @@ export default function KartePlayersPage() {
       </Card>
 
       {!loading && obogList.length > 0 && (
-        <>
-          <SectionLabel>OB・OG</SectionLabel>
-          <Card>
-            {obogList.map((p) => (
-              <PlayerRow key={p.id} player={p} muted />
-            ))}
+        <Link href="/karte/players/obog">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-[13.5px]">OB・OG({obogList.length}名)</div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            </div>
           </Card>
-        </>
+        </Link>
       )}
     </PageShell>
   );
