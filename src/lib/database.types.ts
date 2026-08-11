@@ -17,6 +17,18 @@ export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
 export type ReactionType = "thumbs_up" | "ok_gesture" | "bow" | "pray";
+export type StatEvent =
+  | "fg_make"
+  | "fg_miss"
+  | "ft_make"
+  | "ft_miss"
+  | "reb_off"
+  | "reb_def"
+  | "ast"
+  | "stl"
+  | "blk"
+  | "tov"
+  | "fouls";
 
 export interface Database {
   public: {
@@ -446,6 +458,29 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      game_stat_events: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          player_id: string;
+          quarter: number;
+          event: StatEvent;
+          delta: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          player_id: string;
+          quarter: number;
+          event: StatEvent;
+          delta: number;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       sports_test_records: {
         Row: {
           id: string;
@@ -577,7 +612,13 @@ export interface Database {
         }[];
       };
       record_game_stat: {
-        Args: { p_match_id: string; p_player_id: string; p_event: string; p_delta: number };
+        Args: {
+          p_match_id: string;
+          p_player_id: string;
+          p_quarter: number;
+          p_event: string;
+          p_delta: number;
+        };
         Returns: {
           id: string;
           team_id: string;
@@ -623,5 +664,6 @@ export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"]
 export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records"]["Row"];
 export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_records"]["Row"];
 export type GamePlayerStatLine = Database["public"]["Tables"]["game_player_stat_lines"]["Row"];
+export type GameStatEvent = Database["public"]["Tables"]["game_stat_events"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];

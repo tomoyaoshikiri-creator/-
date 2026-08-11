@@ -1,18 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, GamePlayerStatLine } from "./database.types";
+import type { Database, GamePlayerStatLine, StatEvent } from "./database.types";
 
-export type StatEvent =
-  | "fg_make"
-  | "fg_miss"
-  | "ft_make"
-  | "ft_miss"
-  | "reb_off"
-  | "reb_def"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "tov"
-  | "fouls";
+export type { StatEvent };
 
 export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "fg_make", label: "FG成功" },
@@ -171,13 +160,25 @@ export function recordGameStat(
   supabase: SupabaseClient<Database>,
   matchId: string,
   playerId: string,
+  quarter: number,
   event: StatEvent,
   delta: number,
 ) {
   return supabase.rpc("record_game_stat", {
     p_match_id: matchId,
     p_player_id: playerId,
+    p_quarter: quarter,
     p_event: event,
     p_delta: delta,
   });
+}
+
+export function statEventLabel(event: StatEvent): string {
+  return STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
+}
+
+export function statEventPoints(event: StatEvent, delta: number): number {
+  if (event === "fg_make") return delta * 2;
+  if (event === "ft_make") return delta;
+  return 0;
 }

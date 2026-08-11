@@ -11,10 +11,18 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { StatPad } from "../StatPad";
+import { GameStatLog } from "../GameStatLog";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
-import { emptyStatLine, applyStatEventLocally, isStatEventAllowed, recordGameStat, type StatEvent } from "@/lib/gameStats";
-import type { AttendanceStatus, GameMatch, GamePlayerStatLine, Player, Schedule } from "@/lib/database.types";
+import {
+  emptyStatLine,
+  applyStatEventLocally,
+  isStatEventAllowed,
+  recordGameStat,
+  statEventPoints,
+  type StatEvent,
+} from "@/lib/gameStats";
+import type { AttendanceStatus, GameMatch, GamePlayerStatLine, GameStatEvent, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
   player,
@@ -73,6 +81,7 @@ export default function GameDetailPage() {
   const [subs, setSubs] = useState<string[]>([]);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
+  const [statEvents, setStatEvents] = useState<GameStatEvent[]>([]);
   const [memberEditing, setMemberEditing] = useState(false);
   const [memberExpanded, setMemberExpanded] = useState(false);
   const [deleteRecordConfirm, setDeleteRecordConfirm] = useState(false);
@@ -185,9 +194,35 @@ export default function GameDetailPage() {
     loadStatLines(selectedMatchId);
   }, [selectedMatchId, loadStatLines]);
 
+  const loadStatEvents = useCallback(async (matchId: string) => {
+    if (!matchId) {
+      setStatEvents([]);
+      return;
+    }
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("game_stat_events")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setStatEvents(data ?? []);
+  }, []);
+
+  useEffect(() => {
+    loadStatEvents(selectedMatchId);
+  }, [selectedMatchId, loadStatEvents]);
+
   useEffect(() => {
     if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
+
+  function adjustTeamScore(matchId: string, pointsDelta: number) {
+    if (pointsDelta === 0) return;
+    setMatches((prev) =>
+      prev.map((m) => (m.id === matchId ? { ...m, team_score: Math.max(0, (m.team_score ?? 0) + pointsDelta) } : m)),
+    );
+  }
 
   async function handleStatTap(playerId: string, event: StatEvent, delta: number) {
     if (!selectedMatchId) return;
@@ -195,16 +230,32 @@ export default function GameDetailPage() {
     if (!isStatEventAllowed(prevRow, event, delta)) return;
     const nextRow = applyStatEventLocally(prevRow, event, delta);
     setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
+    const pointsDelta = statEventPoints(event, delta);
+    adjustTeamScore(selectedMatchId, pointsDelta);
     const supabase = createClient();
-    const { data, error } = await recordGameStat(supabase, selectedMatchId, playerId, event, delta);
+    const { data, error } = await recordGameStat(supabase, selectedMatchId, playerId, quarter, event, delta);
     if (error) {
       toast(`スタッツの記録に失敗しました: ${error.message}`);
       setStatLines((prev) => ({ ...prev, [playerId]: prevRow }));
+      adjustTeamScore(selectedMatchId, -pointsDelta);
       return;
     }
     if (data) {
       setStatLines((prev) => ({ ...prev, [playerId]: data }));
     }
+    setStatEvents((prev) => [
+      {
+        id: crypto.randomUUID(),
+        team_id: teamId,
+        match_id: selectedMatchId,
+        player_id: playerId,
+        quarter,
+        event,
+        delta,
+        created_at: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
   }
 
   function toggleStarter(id: string) {
@@ -580,6 +631,8 @@ export default function GameDetailPage() {
               <StatPad key={selectedMatchId} players={players} statLines={statLines} onTap={handleStatTap} />
             </div>
           )}
+
+          <GameStatLog events={statEvents} players={players} />
         </>
       )}
     </PageShell>
