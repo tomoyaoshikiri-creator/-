@@ -171,10 +171,9 @@ export default function KarteTeamPage() {
               <div className="text-[11px] text-ink-soft mb-1.5">項目名をタップすると、その項目順に並び替わります</div>
             )}
 
-            <div className="bg-white border border-line rounded-2xl overflow-hidden mb-2.5">
-              <div className="overflow-x-auto">
-                <table className="border-collapse text-[11.5px] w-full">
-                  <thead>
+            <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+              <table className="border-collapse text-[11.5px] w-full">
+                <thead>
                     <tr>
                       <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                         選手
@@ -225,7 +224,6 @@ export default function KarteTeamPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
             </div>
           </>
         )
