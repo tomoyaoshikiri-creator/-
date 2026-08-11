@@ -127,7 +127,7 @@ export default function KarteTeamPage() {
     );
 
   return (
-    <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" />}>
+    <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge="coach" />}>
       <div className="flex gap-1.5 mb-3">
         <SegButton active={category === "game"} onClick={() => setCategory("game")}>
           試合スタッツ

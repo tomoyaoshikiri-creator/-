@@ -104,7 +104,7 @@ export default function KartePlayerPage() {
 
   if (loading) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" />}>
+      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
         <EmptyState>読み込み中…</EmptyState>
       </PageShell>
     );
@@ -112,14 +112,14 @@ export default function KartePlayerPage() {
 
   if (!player) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" />}>
+      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
         <EmptyState>選手が見つかりません</EmptyState>
       </PageShell>
     );
   }
 
   return (
-    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" />}>
+    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge="coach" />}>
       <Card>
         <div className="flex items-center gap-2.5">
           <NumChip num={player.number ?? "-"} />
