@@ -167,7 +167,7 @@ function bestOf(v1: number | null, v2: number | null, direction: "asc" | "desc")
 export const SPORTS_TEST_RANKING_METRICS: {
   value: SportsTestMetric;
   label: string;
-  abbr: string;
+  abbrLines: [string, string];
   unit: string;
   direction: "asc" | "desc";
   extract: (r: SportsTestRecord) => number | null;
@@ -175,7 +175,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "sprint20m",
     label: "20mスプリント",
-    abbr: "20mSP",
+    abbrLines: ["20m", "走"],
     unit: "秒",
     direction: "asc",
     extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
@@ -183,7 +183,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "long_jump",
     label: "立ち幅跳び",
-    abbr: "立幅跳",
+    abbrLines: ["立幅", "跳び"],
     unit: "cm",
     direction: "desc",
     extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
@@ -191,7 +191,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "lane_agility",
     label: "レーンアジリティ",
-    abbr: "アジリ",
+    abbrLines: ["レーン", "アジリ"],
     unit: "秒",
     direction: "asc",
     extract: (r) => bestOf(r.lane_agility_1, r.lane_agility_2, "asc"),
@@ -199,7 +199,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "side_step",
     label: "反復横跳び",
-    abbr: "反復横",
+    abbrLines: ["反復横", "跳び"],
     unit: "点",
     direction: "desc",
     extract: (r) => bestOf(r.side_step_1, r.side_step_2, "desc"),
@@ -207,7 +207,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "shuttle_20m_x3",
     label: "20m三往復",
-    abbr: "3往復",
+    abbrLines: ["20m", "三往復"],
     unit: "秒",
     direction: "asc",
     extract: (r) => r.shuttle_20m_x3,
@@ -215,7 +215,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "ball_throw",
     label: "ボール投げ",
-    abbr: "投球",
+    abbrLines: ["ボール", "投げ"],
     unit: "m",
     direction: "desc",
     extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
@@ -223,7 +223,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "back_fist_right",
     label: "背中こぶし合わせ(右上)",
-    abbr: "背中右",
+    abbrLines: ["背中", "右上"],
     unit: "cm",
     direction: "asc",
     extract: (r) => r.back_fist_right,
@@ -231,7 +231,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "back_fist_left",
     label: "背中こぶし合わせ(左上)",
-    abbr: "背中左",
+    abbrLines: ["背中", "左上"],
     unit: "cm",
     direction: "asc",
     extract: (r) => r.back_fist_left,
@@ -239,7 +239,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "ft_golf",
     label: "FTゴルフ",
-    abbr: "FTゴルフ",
+    abbrLines: ["FT", "ゴルフ"],
     unit: "/10",
     direction: "desc",
     extract: (r) => r.ft_golf,
@@ -247,7 +247,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "beep_test_reps",
     label: "20mシャトルラン",
-    abbr: "シャトル",
+    abbrLines: ["20m", "シャトル"],
     unit: "回",
     direction: "desc",
     extract: (r) => r.beep_test_reps,
@@ -255,7 +255,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "wingspan_cm",
     label: "ウイングスパン",
-    abbr: "スパン",
+    abbrLines: ["ウイング", "スパン"],
     unit: "cm",
     direction: "desc",
     extract: (r) => r.wingspan_cm,

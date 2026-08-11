@@ -35,8 +35,8 @@ const PERCENT_COLUMNS = new Set<keyof SeasonStatAverages>(["fgPct", "ftPct"]);
 
 const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "pts", abbr: "PTS" },
-  { key: "fgPct", abbr: "FG" },
-  { key: "ftPct", abbr: "FT" },
+  { key: "fgPct", abbr: "FG%" },
+  { key: "ftPct", abbr: "FT%" },
   { key: "ast", abbr: "AST" },
   { key: "rebOff", abbr: "OREB" },
   { key: "rebDef", abbr: "DREB" },
@@ -270,8 +270,8 @@ export default function KarteTeamPage() {
 
             <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
               <li>PTS:得点</li>
-              <li>FG:フィールドゴール成功率</li>
-              <li>FT:フリースロー成功率</li>
+              <li>FG%:フィールドゴール成功率</li>
+              <li>FT%:フリースロー成功率</li>
               <li>AST:アシスト</li>
               <li>OREB:オフェンスリバウンド</li>
               <li>DREB:ディフェンスリバウンド</li>
@@ -305,23 +305,24 @@ export default function KarteTeamPage() {
                 <table className="border-collapse text-[11.5px] w-full">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                      <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                         選手
                       </th>
                       {SPORTS_TEST_RANKING_METRICS.map((m) => (
                         <th
                           key={m.value}
                           onClick={() => sportsTestRankingMode && setSportsTestSortKey(m.value)}
-                          className={`sticky top-0 h-9 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                          className={`sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight ${
                             sportsTestRankingMode ? "cursor-pointer" : ""
                           } ${sportsTestRankingMode && sportsTestSortKey === m.value ? "text-orange" : "text-ink-soft"}`}
                         >
-                          {m.abbr}
+                          <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
+                          <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
                         </th>
                       ))}
                     </tr>
                     <tr className="bg-paper">
-                      <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                      <th className="sticky left-0 top-11 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                         チーム平均
                       </th>
                       {SPORTS_TEST_RANKING_METRICS.map((m) => {
@@ -329,7 +330,7 @@ export default function KarteTeamPage() {
                         return (
                           <th
                             key={m.value}
-                            className="sticky top-9 h-9 bg-paper z-20 w-[54px] min-w-[54px] px-1 text-center font-mono font-bold border-b border-line"
+                            className="sticky top-11 h-9 bg-paper z-20 w-[54px] min-w-[54px] px-1 text-center font-mono font-bold border-b border-line"
                           >
                             {v === null || v === undefined ? "-" : v}
                           </th>
@@ -365,7 +366,7 @@ export default function KarteTeamPage() {
               <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
                 {SPORTS_TEST_RANKING_METRICS.map((m) => (
                   <li key={m.value}>
-                    {m.abbr}:{m.label}
+                    {m.abbrLines.join("")}:{m.label}
                     {m.unit ? `(${m.unit})` : ""}
                   </li>
                 ))}
