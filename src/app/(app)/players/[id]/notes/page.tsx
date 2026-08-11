@@ -9,16 +9,15 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { BowIcon, OkGestureIcon, ThumbsUpIcon } from "@/components/icons";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
 
-const REACTIONS: { type: ReactionType; Icon: typeof ThumbsUpIcon }[] = [
-  { type: "thumbs_up", Icon: ThumbsUpIcon },
-  { type: "ok_gesture", Icon: OkGestureIcon },
-  { type: "bow", Icon: BowIcon },
+const REACTIONS: { type: ReactionType; src: string; alt: string }[] = [
+  { type: "thumbs_up", src: "/emoji/thumbs-up.svg", alt: "👍" },
+  { type: "ok_gesture", src: "/emoji/ok-gesture.svg", alt: "🙆" },
+  { type: "bow", src: "/emoji/bow.svg", alt: "🙇" },
 ];
 
 export default function PlayerNotesPage() {
@@ -238,7 +237,7 @@ export default function PlayerNotesPage() {
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   <div className="flex gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                    {REACTIONS.map(({ type, Icon }) => {
+                    {REACTIONS.map(({ type, src, alt }) => {
                       const forNote = reactions.filter((r) => r.note_id === n.id && r.reaction_type === type);
                       const mine = forNote.some((r) => r.profile_id === userId);
                       return (
@@ -247,11 +246,16 @@ export default function PlayerNotesPage() {
                           type="button"
                           onClick={() => toggleReaction(n.id, type)}
                           className={`flex items-center gap-1 px-2 py-1 rounded-full border ${
-                            mine ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                            mine ? "border-orange bg-orange/8" : "border-line bg-paper"
                           }`}
                         >
-                          <Icon className="w-3.5 h-3.5" />
-                          {forNote.length > 0 && <span className="text-[10.5px] font-bold">{forNote.length}</span>}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={src} alt={alt} className="w-4 h-4" />
+                          {forNote.length > 0 && (
+                            <span className={`text-[10.5px] font-bold ${mine ? "text-orange" : "text-ink-soft"}`}>
+                              {forNote.length}
+                            </span>
+                          )}
                         </button>
                       );
                     })}

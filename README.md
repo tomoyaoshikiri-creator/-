@@ -181,6 +181,11 @@ src/
 - 新チーム発足など、実態が4月始まりの年度と一致しないケース(例: 2月の試合が実質次年度チームの活動)のために、予定編集画面(種別が「試合」の時のみ)で年度を手動固定できる(`schedules.fiscal_year_override`)。`/game/results`側は`effectiveFiscalYear()`(`fiscal_year_override`があればそちらを優先、無ければ`fiscalYearOf`で自動判定)を通して年度を算出する
 - 「試合記録」タブは一般・役員にも表示するが、タップした先は`/game/results`(結果閲覧のみ)に固定している。スタメン登録・得点入力ができる`/game`・`/game/[id]`は指導者・管理者のみが遷移できるルートで、タブのリンク先自体をロールごとに出し分けている(`tabHrefForRole`、`src/lib/permissions.ts`)。一般・役員が直接URLを叩いた場合もページ側のガードで`/game/results`に戻す。DB側もあわせて、`game_matches`のSELECTのみ全ロールに開放し(`0025_game_matches_select_all_roles.sql`)、登録・編集・削除とスタメン(`game_records`)は引き続き指導者・管理者限定のまま
 
+## 選手メモのスタンプ機能
+
+- 選手メモ(`/players/[id]/notes`)の各メモに、閲覧した他の指導者・管理者がスタンプ(👍/🙆/🙇)を押せる(`player_note_reactions`)。1人が同じメモに複数種類のスタンプを押せる(Slack/Teamsのリアクションと同じ形)。押した人数はスタンプの横に表示し、自分が押したスタンプはオレンジ色でハイライトする
+- スタンプの絵柄は絵文字の文字コードをそのまま使わず(端末のOSごとに見た目が変わってしまうため)、[Twemoji](https://github.com/jdecked/twemoji)のSVG画像を`public/emoji/`に同梱し、どの端末でも同じ見た目になるようにしている。Twemojiのグラフィックは[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)(Copyright 2020 Twitter, Inc and other contributors)
+
 ## 既知の制約・今後の課題
 
 - 複数チーム所属ユーザーへの対応(チーム選択画面)は未実装

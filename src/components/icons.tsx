@@ -114,37 +114,6 @@ export function SearchIcon(props: IconProps) {
   );
 }
 
-export function ThumbsUpIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z" />
-      <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-    </svg>
-  );
-}
-
-export function OkGestureIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <circle cx="12" cy="9" r="2.3" />
-      <path d="M6 9c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5" />
-      <path d="M12 12v6M12 18l-3 3M12 18l3 3" />
-    </svg>
-  );
-}
-
-export function BowIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <circle cx="5.5" cy="10" r="2.2" />
-      <path d="M7.3 11.2L14 15" />
-      <path d="M14 15v7" />
-      <path d="M14 15l4-2" />
-      <path d="M14 22l-3 0M14 22l3 0" />
-    </svg>
-  );
-}
-
 export function SettingsIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
