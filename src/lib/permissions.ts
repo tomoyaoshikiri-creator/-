@@ -93,6 +93,11 @@ export function canManagePracticeMenus(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// スポーツテスト記録(CLUB KARTE、四半期ごと)の閲覧・登録・編集ができるロール。
+export function canManageSportsTests(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 export function canManageUsers(role: Role): boolean {
   return role === "管理者";
 }

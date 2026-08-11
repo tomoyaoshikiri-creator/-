@@ -376,6 +376,85 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["game_records"]["Insert"]>;
         Relationships: [];
       };
+      sports_test_records: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          fiscal_year: number;
+          quarter: number;
+          wingspan_cm: number | null;
+          sprint20m_1: number | null;
+          sprint20m_2: number | null;
+          long_jump_1: number | null;
+          long_jump_2: number | null;
+          lane_agility_1: number | null;
+          lane_agility_2: number | null;
+          side_step_1: number | null;
+          side_step_2: number | null;
+          shuttle_20m_x3: number | null;
+          ball_throw_1: number | null;
+          ball_throw_2: number | null;
+          back_fist_right: number | null;
+          back_fist_left: number | null;
+          ft_golf: number | null;
+          beep_test_reps: number | null;
+          recorded_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          fiscal_year: number;
+          quarter: number;
+          wingspan_cm?: number | null;
+          sprint20m_1?: number | null;
+          sprint20m_2?: number | null;
+          long_jump_1?: number | null;
+          long_jump_2?: number | null;
+          lane_agility_1?: number | null;
+          lane_agility_2?: number | null;
+          side_step_1?: number | null;
+          side_step_2?: number | null;
+          shuttle_20m_x3?: number | null;
+          ball_throw_1?: number | null;
+          ball_throw_2?: number | null;
+          back_fist_right?: number | null;
+          back_fist_left?: number | null;
+          ft_golf?: number | null;
+          beep_test_reps?: number | null;
+          recorded_by?: string | null;
+        };
+        Update: Partial<Omit<Database["public"]["Tables"]["sports_test_records"]["Insert"], "player_id" | "fiscal_year" | "quarter">>;
+        Relationships: [];
+      };
+      player_growth_records: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          measured_on: string;
+          height_cm: number | null;
+          weight_kg: number | null;
+          recorded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          measured_on: string;
+          height_cm?: number | null;
+          weight_kg?: number | null;
+          recorded_by?: string | null;
+        };
+        Update: Partial<{
+          height_cm: number | null;
+          weight_kg: number | null;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -443,5 +522,7 @@ export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];
+export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records"]["Row"];
+export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_records"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];
