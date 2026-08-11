@@ -615,8 +615,9 @@ export default function GameStatsPage() {
     setOpponentSubs([]);
     setBenchedOpponentStarterIds([]);
     setOpponentRecordId(null);
+    setOpponentPlayers([]);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
-    toast("この試合のスタッツ・スタメンをリセットしました");
+    toast("この試合のスタッツ・スタメン・相手選手の登録をリセットしました");
   }
 
   const onCourtIds = Array.from(
