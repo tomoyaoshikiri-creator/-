@@ -110,7 +110,7 @@ export default function KarteRankingPage() {
   const unit = category === "game" ? RANKING_METRICS.find((m) => m.value === metric)!.unit : testMetricInfo.unit;
 
   return (
-    <PageShell header={<AppHeader title="ランキング" variant="detail" backHref="/karte" />}>
+    <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" />}>
       <div className="flex gap-1.5 mb-3">
         <SegButton active={category === "game"} onClick={() => setCategory("game")}>
           試合スタッツ
@@ -177,7 +177,7 @@ export default function KarteRankingPage() {
           ranked.map((r, i) => (
             <Link
               key={r.player.id}
-              href={`/karte/${r.player.id}`}
+              href={`/karte/players/${r.player.id}`}
               className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
             >
               <div className="font-mono font-bold text-[13px] text-ink-soft w-5 flex-shrink-0 text-center">
