@@ -197,7 +197,9 @@ export default function KarteTeamPage() {
                       {GAME_COLUMNS.map((c) => (
                         <th
                           key={c.key}
-                          className="sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line"
+                          className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                            c.key === "eff" && (teamAverages[c.key] as number) < 0 ? "text-danger" : ""
+                          }`}
                         >
                           {teamAverages[c.key]}
                         </th>
@@ -215,7 +217,9 @@ export default function KarteTeamPage() {
                         {GAME_COLUMNS.map((c) => (
                           <td
                             key={c.key}
-                            className="w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                            className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
+                              c.key === "eff" && (averages[c.key] as number) < 0 ? "text-danger" : ""
+                            }`}
                           >
                             {averages[c.key]}
                           </td>

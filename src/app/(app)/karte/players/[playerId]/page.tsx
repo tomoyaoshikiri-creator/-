@@ -172,7 +172,13 @@ export default function KartePlayerPage() {
               ].map((item) => (
                 <div key={item.label} className="text-center bg-paper rounded-[10px] py-2">
                   <div className="text-[10px] font-bold text-ink-soft">{item.label}</div>
-                  <div className="font-mono text-[15px] font-bold mt-0.5">{item.value}</div>
+                  <div
+                    className={`font-mono text-[15px] font-bold mt-0.5 ${
+                      item.label === "EFF" && typeof item.value === "number" && item.value < 0 ? "text-danger" : ""
+                    }`}
+                  >
+                    {item.value}
+                  </div>
                 </div>
               ))}
             </div>
