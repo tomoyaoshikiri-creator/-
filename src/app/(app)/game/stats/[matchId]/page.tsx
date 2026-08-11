@@ -60,6 +60,7 @@ export default function GameStatsPage() {
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -297,8 +298,10 @@ export default function GameStatsPage() {
     setStatEvents([]);
     setOpponentStatLines({});
     setOpponentStatEvents([]);
+    setOnCourtIds([]);
+    setResetKey((k) => k + 1);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
-    toast("この試合のスタッツをリセットしました");
+    toast("この試合のスタッツ・スタメンをリセットしました");
   }
 
   const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
@@ -371,7 +374,11 @@ export default function GameStatsPage() {
             className="w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white"
             style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
           >
-            {resetting ? "リセット中…" : resetConfirm ? "もう一度タップでこの試合のスタッツを全てリセット" : "この試合のスタッツをオールリセット"}
+            {resetting
+              ? "リセット中…"
+              : resetConfirm
+                ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
+                : "この試合のスタッツ・スタメンをオールリセット"}
           </button>
 
           <div className="mt-3">
@@ -386,6 +393,7 @@ export default function GameStatsPage() {
           </div>
 
           <LineupSection
+            key={resetKey}
             matchId={matchId}
             teamId={teamId}
             quarter={quarter}
