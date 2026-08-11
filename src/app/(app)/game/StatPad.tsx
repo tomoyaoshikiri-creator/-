@@ -46,15 +46,18 @@ function ChipRow({
   entrants,
   statLines,
   active,
+  activeColor = "orange",
   onSelect,
   onOpenMemberChange,
 }: {
   entrants: StatEntrant[];
   statLines: Record<string, StatTotals>;
   active: (id: string) => boolean;
+  activeColor?: "orange" | "navy";
   onSelect: (id: string) => void;
   onOpenMemberChange?: () => void;
 }) {
+  const activeClass = activeColor === "navy" ? "border-navy bg-navy text-white" : "border-orange bg-orange text-white";
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1">
       {entrants.map((e) => {
@@ -66,7 +69,7 @@ function ChipRow({
             type="button"
             onClick={() => onSelect(e.id)}
             className={`flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border font-bold ${
-              isActive ? "border-orange bg-orange text-white" : "border-line bg-white text-ink"
+              isActive ? activeClass : "border-line bg-white text-ink"
             }`}
           >
             <span className="text-[15px] leading-none">{e.number ?? "-"}</span>
@@ -224,6 +227,7 @@ export function StatPad({
           entrants={opponentEntrants}
           statLines={opponentStatLines}
           active={(id) => selected?.side === "opponent" && selected.id === id}
+          activeColor="navy"
           onSelect={(id) => setSelected({ side: "opponent", id })}
           onOpenMemberChange={onOpenOpponentMemberChange}
         />
