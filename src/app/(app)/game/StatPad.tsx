@@ -2,53 +2,68 @@
 
 import { useEffect, useState } from "react";
 import { Card, EmptyState } from "@/components/ui/Card";
-import { STAT_BUTTONS, fgPct, ftPct, statEventCount, isStatEventAllowed, type StatEvent } from "@/lib/gameStats";
-import { playerFullName } from "@/lib/format";
-import type { GamePlayerStatLine, Player } from "@/lib/database.types";
+import {
+  STAT_BUTTONS,
+  fgPct,
+  ftPct,
+  statEventCount,
+  isStatEventAllowed,
+  type StatEvent,
+  type StatTotals,
+} from "@/lib/gameStats";
+
+export interface StatEntrant {
+  id: string;
+  number: string | null;
+  name: string | null;
+}
 
 // 選手チップ(横スクロール)とスタッツパッドを常に同時に表示し、
 // 「選手を選ぶ→スクロールしてボタンを探す」という手間をなくして試合中の速さに合わせている。
+// 自チーム(選手名あり)・対戦相手(背番号のみ)のどちらでも使える。
 export function StatPad({
-  players,
+  entrants,
   statLines,
   onTap,
+  emptyMessage = "選手がいません",
 }: {
-  players: Player[];
-  statLines: Record<string, GamePlayerStatLine>;
-  onTap: (playerId: string, event: StatEvent, delta: number) => void;
+  entrants: StatEntrant[];
+  statLines: Record<string, StatTotals>;
+  onTap: (entrantId: string, event: StatEvent, delta: number) => void;
+  emptyMessage?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (players.length === 0) return;
-    if (!selectedId || !players.some((p) => p.id === selectedId)) {
-      setSelectedId(players[0].id);
+    if (entrants.length === 0) return;
+    if (!selectedId || !entrants.some((e) => e.id === selectedId)) {
+      setSelectedId(entrants[0].id);
     }
-  }, [players, selectedId]);
+  }, [entrants, selectedId]);
 
-  if (players.length === 0) {
-    return <EmptyState>在籍中の選手がいません</EmptyState>;
+  if (entrants.length === 0) {
+    return <EmptyState>{emptyMessage}</EmptyState>;
   }
 
-  const selectedPlayer = players.find((p) => p.id === selectedId) ?? players[0];
-  const row = statLines[selectedPlayer.id];
+  const selected = entrants.find((e) => e.id === selectedId) ?? entrants[0];
+  const row = statLines[selected.id];
 
   return (
     <>
       <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {players.map((p) => {
-          const r = statLines[p.id];
-          const active = selectedPlayer.id === p.id;
+        {entrants.map((e) => {
+          const r = statLines[e.id];
+          const active = selected.id === e.id;
           return (
             <button
-              key={p.id}
+              key={e.id}
               type="button"
-              onClick={() => setSelectedId(p.id)}
+              onClick={() => setSelectedId(e.id)}
               className={`flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border font-bold ${
                 active ? "border-orange bg-orange text-white" : "border-line bg-white text-ink"
               }`}
             >
-              <span className="text-[15px] leading-none">{p.number ?? "-"}</span>
+              <span className="text-[15px] leading-none">{e.number ?? "-"}</span>
               <span className={`text-[9.5px] mt-0.5 leading-none ${active ? "text-white/85" : "text-ink-soft"}`}>
                 {r?.pts ?? 0}pts
               </span>
@@ -60,7 +75,8 @@ export function StatPad({
       <Card className="mt-2">
         <div className="flex items-center gap-2.5">
           <div className="font-bold text-[14.5px] flex-1">
-            #{selectedPlayer.number ?? "-"} {playerFullName(selectedPlayer)}
+            #{selected.number ?? "-"}
+            {selected.name ? ` ${selected.name}` : ""}
           </div>
           <div className="font-mono text-[15px] font-bold text-orange">{row?.pts ?? 0}pts</div>
         </div>
@@ -81,7 +97,7 @@ export function StatPad({
               >
                 <button
                   type="button"
-                  onClick={() => canMinus && onTap(selectedPlayer.id, event, -1)}
+                  onClick={() => canMinus && onTap(selected.id, event, -1)}
                   disabled={!canMinus}
                   className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
                 >
@@ -93,7 +109,7 @@ export function StatPad({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onTap(selectedPlayer.id, event, 1)}
+                  onClick={() => onTap(selected.id, event, 1)}
                   className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
                 >
                   ＋

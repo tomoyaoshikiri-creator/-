@@ -1,7 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, GamePlayerStatLine, StatEvent } from "./database.types";
+import type { Database, GamePlayerStatLine, GameOpponentStatLine, StatEvent } from "./database.types";
 
 export type { StatEvent };
+
+// 自チーム(GamePlayerStatLine)・相手チーム(GameOpponentStatLine)どちらも
+// 集計値としてはこの形をしているため、表示・計算ロジックはこの型だけを見て共通化する。
+export interface StatTotals {
+  fg_made: number;
+  fg_att: number;
+  ft_made: number;
+  ft_att: number;
+  pts: number;
+  reb_off: number;
+  reb_def: number;
+  ast: number;
+  blk: number;
+  stl: number;
+  tov: number;
+  fouls: number;
+  reb: number;
+  eff: number;
+}
 
 export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "fg_make", label: "FG成功" },
@@ -17,7 +36,7 @@ export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "reb_def", label: "DEFリバウンド" },
 ];
 
-export function statEventCount(row: GamePlayerStatLine | undefined, event: StatEvent): number {
+export function statEventCount(row: StatTotals | undefined, event: StatEvent): number {
   if (!row) return 0;
   switch (event) {
     case "fg_make":
@@ -45,12 +64,12 @@ export function statEventCount(row: GamePlayerStatLine | undefined, event: StatE
   }
 }
 
-export function fgPct(row: GamePlayerStatLine | undefined): string {
+export function fgPct(row: StatTotals | undefined): string {
   if (!row || row.fg_att === 0) return "-";
   return `${Math.round((row.fg_made / row.fg_att) * 100)}%`;
 }
 
-export function ftPct(row: GamePlayerStatLine | undefined): string {
+export function ftPct(row: StatTotals | undefined): string {
   if (!row || row.ft_att === 0) return "-";
   return `${Math.round((row.ft_made / row.ft_att) * 100)}%`;
 }
@@ -79,12 +98,32 @@ export function emptyStatLine(teamId: string, matchId: string, playerId: string)
   };
 }
 
-// タップ直後の楽観的更新用。RPC(record_game_stat)と同じ計算をクライアント側でも再現する。
-export function applyStatEventLocally(
-  row: GamePlayerStatLine,
-  event: StatEvent,
-  delta: number,
-): GamePlayerStatLine {
+export function emptyOpponentStatLine(teamId: string, matchId: string, opponentPlayerId: string): GameOpponentStatLine {
+  return {
+    id: "",
+    team_id: teamId,
+    match_id: matchId,
+    opponent_player_id: opponentPlayerId,
+    fg_made: 0,
+    fg_att: 0,
+    ft_made: 0,
+    ft_att: 0,
+    pts: 0,
+    reb_off: 0,
+    reb_def: 0,
+    ast: 0,
+    blk: 0,
+    stl: 0,
+    tov: 0,
+    fouls: 0,
+    reb: 0,
+    eff: 0,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+// タップ直後の楽観的更新用。RPC(record_game_stat/record_opponent_game_stat)と同じ計算を再現する。
+export function applyStatEventLocally<T extends StatTotals>(row: T, event: StatEvent, delta: number): T {
   const next = { ...row };
   switch (event) {
     case "fg_make":
@@ -139,7 +178,7 @@ export function applyStatEventLocally(
   return next;
 }
 
-export function isStatEventAllowed(row: GamePlayerStatLine, event: StatEvent, delta: number): boolean {
+export function isStatEventAllowed<T extends StatTotals>(row: T, event: StatEvent, delta: number): boolean {
   const next = applyStatEventLocally(row, event, delta);
   return (
     next.fg_made >= 0 &&
@@ -167,6 +206,23 @@ export function recordGameStat(
   return supabase.rpc("record_game_stat", {
     p_match_id: matchId,
     p_player_id: playerId,
+    p_quarter: quarter,
+    p_event: event,
+    p_delta: delta,
+  });
+}
+
+export function recordOpponentGameStat(
+  supabase: SupabaseClient<Database>,
+  matchId: string,
+  opponentPlayerId: string,
+  quarter: number,
+  event: StatEvent,
+  delta: number,
+) {
+  return supabase.rpc("record_opponent_game_stat", {
+    p_match_id: matchId,
+    p_opponent_player_id: opponentPlayerId,
     p_quarter: quarter,
     p_event: event,
     p_delta: delta,

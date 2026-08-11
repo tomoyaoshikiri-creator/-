@@ -1,20 +1,25 @@
 "use client";
 
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { statEventLabel, statEventPoints } from "@/lib/gameStats";
-import { playerFullName } from "@/lib/format";
-import type { GameStatEvent, Player } from "@/lib/database.types";
+import { statEventLabel, statEventPoints, type StatEvent } from "@/lib/gameStats";
+
+export interface StatLogEntry {
+  id: string;
+  quarter: number;
+  entrantLabel: string;
+  event: StatEvent;
+  delta: number;
+}
 
 // HOOP Jのプレーバイプレーログを再現した、直近の記録一覧(新しい順)。
-export function GameStatLog({ events, players }: { events: GameStatEvent[]; players: Player[] }) {
+export function GameStatLog({ title, events }: { title: string; events: StatLogEntry[] }) {
   if (events.length === 0) return null;
 
   return (
     <div className="mt-4">
-      <SectionLabel>記録ログ</SectionLabel>
+      <SectionLabel>{title}</SectionLabel>
       <Card>
         {events.slice(0, 20).map((e) => {
-          const player = players.find((p) => p.id === e.player_id);
           const pts = statEventPoints(e.event, e.delta);
           return (
             <div
@@ -23,9 +28,7 @@ export function GameStatLog({ events, players }: { events: GameStatEvent[]; play
             >
               <div>
                 <span className="font-mono text-ink-soft mr-1.5">{e.quarter}Q</span>
-                <span className="font-bold">
-                  {player ? `#${player.number ?? "-"} ${playerFullName(player)}` : "-"}
-                </span>
+                <span className="font-bold">{e.entrantLabel}</span>
                 <span className="text-ink-soft ml-1.5">
                   {statEventLabel(e.event)}
                   {e.delta < 0 ? "(取消)" : ""}

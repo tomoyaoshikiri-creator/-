@@ -382,6 +382,77 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["game_matches"]["Insert"]>;
         Relationships: [];
       };
+      game_opponent_players: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          number: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          number: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      game_opponent_stat_lines: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          opponent_player_id: string;
+          fg_made: number;
+          fg_att: number;
+          ft_made: number;
+          ft_att: number;
+          pts: number;
+          reb_off: number;
+          reb_def: number;
+          ast: number;
+          blk: number;
+          stl: number;
+          tov: number;
+          fouls: number;
+          reb: number;
+          eff: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          opponent_player_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      game_opponent_stat_events: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          opponent_player_id: string;
+          quarter: number;
+          event: StatEvent;
+          delta: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          opponent_player_id: string;
+          quarter: number;
+          event: StatEvent;
+          delta: number;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       practice_menus: {
         Row: {
           id: string;
@@ -641,6 +712,36 @@ export interface Database {
           updated_at: string;
         };
       };
+      record_opponent_game_stat: {
+        Args: {
+          p_match_id: string;
+          p_opponent_player_id: string;
+          p_quarter: number;
+          p_event: string;
+          p_delta: number;
+        };
+        Returns: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          opponent_player_id: string;
+          fg_made: number;
+          fg_att: number;
+          ft_made: number;
+          ft_att: number;
+          pts: number;
+          reb_off: number;
+          reb_def: number;
+          ast: number;
+          blk: number;
+          stl: number;
+          tov: number;
+          fouls: number;
+          reb: number;
+          eff: number;
+          updated_at: string;
+        };
+      };
     };
   };
 }
@@ -665,5 +766,8 @@ export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records
 export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_records"]["Row"];
 export type GamePlayerStatLine = Database["public"]["Tables"]["game_player_stat_lines"]["Row"];
 export type GameStatEvent = Database["public"]["Tables"]["game_stat_events"]["Row"];
+export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_players"]["Row"];
+export type GameOpponentStatLine = Database["public"]["Tables"]["game_opponent_stat_lines"]["Row"];
+export type GameOpponentStatEvent = Database["public"]["Tables"]["game_opponent_stat_events"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];
