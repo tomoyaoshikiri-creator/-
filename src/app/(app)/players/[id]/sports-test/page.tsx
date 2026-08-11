@@ -97,10 +97,29 @@ export default function SportsTestPage() {
   const [notConducted, setNotConducted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!canManageSportsTests(role)) router.replace("/players");
-  }, [role, router]);
+    (async () => {
+      if (canManageSportsTests(role)) {
+        setAuthorized(true);
+        return;
+      }
+      const supabase = createClient();
+      const { data: link } = await supabase
+        .from("player_guardians")
+        .select("id")
+        .eq("player_id", params.id)
+        .eq("profile_id", userId)
+        .maybeSingle();
+      if (link) {
+        setAuthorized(true);
+      } else {
+        setAuthorized(false);
+        router.replace("/players");
+      }
+    })();
+  }, [role, userId, params.id, router]);
 
   useEffect(() => {
     (async () => {
@@ -177,6 +196,8 @@ export default function SportsTestPage() {
     toast("スポーツテスト記録を保存しました");
   }
 
+  if (!authorized) return null;
+
   return (
     <PageShell
       header={
@@ -184,7 +205,6 @@ export default function SportsTestPage() {
           title={player ? `${playerFullName(player)} / スポーツテスト` : "スポーツテスト"}
           variant="detail"
           backHref={`/players/${params.id}`}
-          accessBadge="coach"
         />
       }
     >
