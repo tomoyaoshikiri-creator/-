@@ -14,8 +14,8 @@ import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import {
   computeSeasonAverages,
+  formatGameStatValue,
   GAME_COLUMNS,
-  PERCENT_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, gradeLabel, playerFullName, todayDateStr } from "@/lib/format";
@@ -24,6 +24,10 @@ import type { GamePlayerStatLine, Player, PlayerGrowthRecord, SportsTestRecord }
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
 const QUARTERS = [1, 2, 3, 4] as const;
+
+// FG/FTは「成功数/試投数」の分数表示になるため、他の列より少し幅を広げる。
+const colWidthClass = (key: (typeof GAME_COLUMNS)[number]["key"]) =>
+  key === "fgPct" || key === "ftPct" ? "w-[58px] min-w-[58px]" : "w-[50px] min-w-[50px]";
 
 interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
@@ -155,7 +159,7 @@ export default function KartePlayerPage() {
                 {GAME_COLUMNS.map((c) => (
                   <th
                     key={c.key}
-                    className="sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
+                    className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft`}
                   >
                     {c.abbr}
                   </th>
@@ -170,11 +174,11 @@ export default function KartePlayerPage() {
                   return (
                     <th
                       key={c.key}
-                      className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                      className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
                         c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                       }`}
                     >
-                      {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                      {formatGameStatValue(c.key, seasonAverages)}
                     </th>
                   );
                 })}
@@ -191,11 +195,11 @@ export default function KartePlayerPage() {
                     return (
                       <td
                         key={c.key}
-                        className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
+                        className={`${colWidthClass(c.key)} px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
                           c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                         }`}
                       >
-                        {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                        {formatGameStatValue(c.key, row.averages)}
                       </td>
                     );
                   })}

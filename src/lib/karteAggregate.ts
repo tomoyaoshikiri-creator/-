@@ -16,14 +16,18 @@ export interface SeasonStatAverages {
   eff: number;
   fgPct: number | null;
   ftPct: number | null;
+  fgMadeTotal: number;
+  fgAttTotal: number;
+  ftMadeTotal: number;
+  ftAttTotal: number;
 }
 
 // 得点・FG成功率・FT成功率・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・
 // ターンオーバー・EFFの順。チームカルテ・選手カルテの表で共通して使う列定義。
 export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "pts", abbr: "PTS" },
-  { key: "fgPct", abbr: "FG%" },
-  { key: "ftPct", abbr: "FT%" },
+  { key: "fgPct", abbr: "FG" },
+  { key: "ftPct", abbr: "FT" },
   { key: "ast", abbr: "AST" },
   { key: "rebOff", abbr: "OREB" },
   { key: "rebDef", abbr: "DREB" },
@@ -33,7 +37,14 @@ export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "eff", abbr: "EFF" },
 ];
 
-export const PERCENT_COLUMNS = new Set<keyof SeasonStatAverages>(["fgPct", "ftPct"]);
+// FG/FTは「成功数/試投数」の分数表示にする(成功率だけでなく分母も見えるように)。
+// それ以外の列は数値をそのまま表示する。
+export function formatGameStatValue(key: keyof SeasonStatAverages, a: SeasonStatAverages): string {
+  if (key === "fgPct") return a.fgAttTotal > 0 ? `${a.fgMadeTotal}/${a.fgAttTotal}` : "-";
+  if (key === "ftPct") return a.ftAttTotal > 0 ? `${a.ftMadeTotal}/${a.ftAttTotal}` : "-";
+  const v = a[key] as number | null;
+  return v === null ? "-" : `${v}`;
+}
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -57,6 +68,10 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
       eff: 0,
       fgPct: null,
       ftPct: null,
+      fgMadeTotal: 0,
+      fgAttTotal: 0,
+      ftMadeTotal: 0,
+      ftAttTotal: 0,
     };
   }
   const sum = lines.reduce(
@@ -109,6 +124,10 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
     eff: round1(sum.eff / gp),
     fgPct: sum.fgAtt > 0 ? round1((sum.fgMade / sum.fgAtt) * 100) : null,
     ftPct: sum.ftAtt > 0 ? round1((sum.ftMade / sum.ftAtt) * 100) : null,
+    fgMadeTotal: sum.fgMade,
+    fgAttTotal: sum.fgAtt,
+    ftMadeTotal: sum.ftMade,
+    ftAttTotal: sum.ftAtt,
   };
 }
 
@@ -151,6 +170,10 @@ export function computeTeamAverages(
     eff: mean("eff"),
     fgPct: totals.fgAtt > 0 ? round1((totals.fgMade / totals.fgAtt) * 100) : null,
     ftPct: totals.ftAtt > 0 ? round1((totals.ftMade / totals.ftAtt) * 100) : null,
+    fgMadeTotal: totals.fgMade,
+    fgAttTotal: totals.fgAtt,
+    ftMadeTotal: totals.ftMade,
+    ftAttTotal: totals.ftAtt,
   };
 }
 

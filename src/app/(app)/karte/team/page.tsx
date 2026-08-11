@@ -14,8 +14,8 @@ import { canViewKarte } from "@/lib/permissions";
 import {
   computeSeasonAverages,
   computeTeamAverages,
+  formatGameStatValue,
   GAME_COLUMNS,
-  PERCENT_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
   type SportsTestMetric,
@@ -32,6 +32,10 @@ interface StatLineWithDate extends GamePlayerStatLine {
 }
 
 type SportsTestValues = Partial<Record<SportsTestMetric, number | null>>;
+
+// FG/FTは「成功数/試投数」の分数表示になるため、他の列より少し幅を広げる。
+const colWidthClass = (key: keyof SeasonStatAverages) =>
+  key === "fgPct" || key === "ftPct" ? "w-[58px] min-w-[58px]" : "w-[50px] min-w-[50px]";
 
 export default function KarteTeamPage() {
   const router = useRouter();
@@ -210,7 +214,7 @@ export default function KarteTeamPage() {
                       <th
                         key={c.key}
                         onClick={() => gameRankingMode && setSortKey(c.key)}
-                        className={`sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                        className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center ${
                           gameRankingMode ? "cursor-pointer" : ""
                         } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
                       >
@@ -227,11 +231,11 @@ export default function KarteTeamPage() {
                       return (
                         <th
                           key={c.key}
-                          className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                          className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
                             c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                           }`}
                         >
-                          {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                          {formatGameStatValue(c.key, teamAverages)}
                         </th>
                       );
                     })}
@@ -250,11 +254,11 @@ export default function KarteTeamPage() {
                         return (
                           <td
                             key={c.key}
-                            className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
+                            className={`${colWidthClass(c.key)} px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
                               c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                             }`}
                           >
-                            {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                            {formatGameStatValue(c.key, averages)}
                           </td>
                         );
                       })}
@@ -266,8 +270,8 @@ export default function KarteTeamPage() {
 
             <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
               <li>PTS:得点</li>
-              <li>FG%:フィールドゴール成功率</li>
-              <li>FT%:フリースロー成功率</li>
+              <li>FG:フィールドゴール成功数/試投数</li>
+              <li>FT:フリースロー成功数/試投数</li>
               <li>AST:アシスト</li>
               <li>OREB:オフェンスリバウンド</li>
               <li>DREB:ディフェンスリバウンド</li>
