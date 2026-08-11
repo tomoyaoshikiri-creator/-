@@ -83,6 +83,37 @@ function numOrNull(v: string): number | null {
   return trimmed === "" ? null : Number(trimmed);
 }
 
+function fmtNum(n: number): string {
+  const r = Math.round(n * 100) / 100;
+  return String(r);
+}
+
+function fmtDiff(diff: number): string {
+  const r = Math.round(diff * 100) / 100;
+  if (r === 0) return "±0";
+  return r > 0 ? `+${fmtNum(r)}` : fmtNum(r);
+}
+
+function CompareLine({
+  label,
+  current,
+  baseline,
+}: {
+  label?: string;
+  current: string;
+  baseline: number | null;
+}) {
+  if (baseline === null) return null;
+  const cur = current.trim() === "" ? null : Number(current);
+  if (cur === null) return null;
+  return (
+    <div className="text-[10.5px] text-navy font-bold mt-1">
+      {label ? `${label}: ` : ""}
+      {fmtNum(baseline)} → {fmtNum(cur)} ({fmtDiff(cur - baseline)})
+    </div>
+  );
+}
+
 export default function SportsTestPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -95,6 +126,7 @@ export default function SportsTestPage() {
   const [record, setRecord] = useState<SportsTestRecord | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [notConducted, setNotConducted] = useState(false);
+  const [baseline, setBaseline] = useState<SportsTestRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -142,6 +174,22 @@ export default function SportsTestPage() {
     setRecord(data ?? null);
     setForm(recordToForm(data ?? null));
     setNotConducted(data?.not_conducted ?? false);
+
+    if (quarter > 1) {
+      const { data: baseRows } = await supabase
+        .from("sports_test_records")
+        .select("*")
+        .eq("player_id", params.id)
+        .eq("fiscal_year", fiscalYear)
+        .eq("not_conducted", false)
+        .lt("quarter", quarter)
+        .order("quarter", { ascending: true })
+        .limit(1);
+      setBaseline(baseRows?.[0] ?? null);
+    } else {
+      setBaseline(null);
+    }
+
     setLoading(false);
   }, [params.id, fiscalYear, quarter]);
 
@@ -243,6 +291,11 @@ export default function SportsTestPage() {
             </SegButton>
           </div>
         </div>
+        {baseline && (
+          <div className="text-[11px] text-ink-soft mt-3">
+            Q{baseline.quarter}(初回実績)との比較を各項目に表示しています
+          </div>
+        )}
       </Card>
 
       {loading ? (
@@ -261,6 +314,7 @@ export default function SportsTestPage() {
               value={form.wingspan_cm}
               onChange={(e) => setField("wingspan_cm", e.target.value)}
             />
+            <CompareLine current={form.wingspan_cm} baseline={baseline?.wingspan_cm ?? null} />
           </Card>
 
           <SectionLabel>スプリント・敏捷性</SectionLabel>
@@ -287,6 +341,8 @@ export default function SportsTestPage() {
               />
             </div>
             <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
+            <CompareLine label="1回目" current={form.sprint20m_1} baseline={baseline?.sprint20m_1 ?? null} />
+            <CompareLine label="2回目" current={form.sprint20m_2} baseline={baseline?.sprint20m_2 ?? null} />
             <div className="mt-3">
               <FieldLabel>レーンアジリティ(秒・2回)</FieldLabel>
               <div className="flex gap-2">
@@ -310,6 +366,8 @@ export default function SportsTestPage() {
                 />
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
+              <CompareLine label="1回目" current={form.lane_agility_1} baseline={baseline?.lane_agility_1 ?? null} />
+              <CompareLine label="2回目" current={form.lane_agility_2} baseline={baseline?.lane_agility_2 ?? null} />
             </div>
             <div className="mt-3">
               <FieldLabel>反復横跳び(点・2回)</FieldLabel>
@@ -331,6 +389,8 @@ export default function SportsTestPage() {
                   onChange={(e) => setField("side_step_2", e.target.value)}
                 />
               </div>
+              <CompareLine label="1回目" current={form.side_step_1} baseline={baseline?.side_step_1 ?? null} />
+              <CompareLine label="2回目" current={form.side_step_2} baseline={baseline?.side_step_2 ?? null} />
             </div>
             <div className="mt-3">
               <FieldLabel>20m三往復(秒)</FieldLabel>
@@ -343,6 +403,7 @@ export default function SportsTestPage() {
                 onChange={(e) => setField("shuttle_20m_x3", e.target.value)}
               />
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
+              <CompareLine current={form.shuttle_20m_x3} baseline={baseline?.shuttle_20m_x3 ?? null} />
             </div>
           </Card>
 
@@ -370,6 +431,8 @@ export default function SportsTestPage() {
               />
             </div>
             <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
+            <CompareLine label="1回目" current={form.long_jump_1} baseline={baseline?.long_jump_1 ?? null} />
+            <CompareLine label="2回目" current={form.long_jump_2} baseline={baseline?.long_jump_2 ?? null} />
             <div className="mt-3">
               <FieldLabel>ボール投げ(m・2回)</FieldLabel>
               <div className="flex gap-2">
@@ -393,6 +456,8 @@ export default function SportsTestPage() {
                 />
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
+              <CompareLine label="1回目" current={form.ball_throw_1} baseline={baseline?.ball_throw_1 ?? null} />
+              <CompareLine label="2回目" current={form.ball_throw_2} baseline={baseline?.ball_throw_2 ?? null} />
             </div>
           </Card>
 
@@ -417,6 +482,8 @@ export default function SportsTestPage() {
                 onChange={(e) => setField("back_fist_left", e.target.value)}
               />
             </div>
+            <CompareLine label="右上" current={form.back_fist_right} baseline={baseline?.back_fist_right ?? null} />
+            <CompareLine label="左上" current={form.back_fist_left} baseline={baseline?.back_fist_left ?? null} />
           </Card>
 
           <SectionLabel>シュート・持久力(独自項目)</SectionLabel>
@@ -430,6 +497,7 @@ export default function SportsTestPage() {
               value={form.ft_golf}
               onChange={(e) => setField("ft_golf", e.target.value)}
             />
+            <CompareLine current={form.ft_golf} baseline={baseline?.ft_golf ?? null} />
             <div className="mt-3">
               <FieldLabel>20mシャトルラン(回)</FieldLabel>
               <input
@@ -439,6 +507,7 @@ export default function SportsTestPage() {
                 value={form.beep_test_reps}
                 onChange={(e) => setField("beep_test_reps", e.target.value)}
               />
+              <CompareLine current={form.beep_test_reps} baseline={baseline?.beep_test_reps ?? null} />
             </div>
           </Card>
           </div>
