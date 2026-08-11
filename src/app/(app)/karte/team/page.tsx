@@ -153,7 +153,7 @@ export default function KarteTeamPage() {
           <button
             type="button"
             onClick={() => setGameRankingMode((v) => !v)}
-            className={`flex-none text-center px-3 py-1.5 rounded-[10px] font-bold text-[12px] border ${
+            className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
               gameRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
             }`}
           >
@@ -176,14 +176,14 @@ export default function KarteTeamPage() {
                 <table className="border-collapse text-[11.5px] w-full">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 bg-paper z-30 text-left px-2.5 py-2 border-b border-line whitespace-nowrap">
+                      <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                         選手
                       </th>
                       {GAME_COLUMNS.map((c) => (
                         <th
                           key={c.key}
                           onClick={() => gameRankingMode && setSortKey(c.key)}
-                          className={`sticky top-0 bg-paper z-20 w-[50px] min-w-[50px] px-1 py-2 border-b border-line font-bold whitespace-nowrap text-center ${
+                          className={`sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
                             gameRankingMode ? "cursor-pointer" : ""
                           } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
                         >
@@ -191,21 +191,21 @@ export default function KarteTeamPage() {
                         </th>
                       ))}
                     </tr>
-                  </thead>
-                  <tbody>
                     <tr className="bg-paper">
-                      <td className="sticky left-0 bg-paper z-10 px-2.5 py-2 font-bold whitespace-nowrap border-b border-line">
+                      <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                         チーム平均
-                      </td>
+                      </th>
                       {GAME_COLUMNS.map((c) => (
-                        <td
+                        <th
                           key={c.key}
-                          className="w-[50px] min-w-[50px] px-1 py-2 text-center font-mono font-bold border-b border-line"
+                          className="sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line"
                         >
                           {teamAverages[c.key]}
-                        </td>
+                        </th>
                       ))}
                     </tr>
+                  </thead>
+                  <tbody>
                     {rows.map(({ player: p, averages }) => (
                       <tr key={p.id}>
                         <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
