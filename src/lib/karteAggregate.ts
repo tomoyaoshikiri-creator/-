@@ -173,20 +173,20 @@ export const SPORTS_TEST_RANKING_METRICS: {
   extract: (r: SportsTestRecord) => number | null;
 }[] = [
   {
+    value: "wingspan_cm",
+    label: "ウイングスパン",
+    abbrLines: ["ウイング", "スパン"],
+    unit: "cm",
+    direction: "desc",
+    extract: (r) => r.wingspan_cm,
+  },
+  {
     value: "sprint20m",
     label: "20mスプリント",
     abbrLines: ["20mス", "プリント"],
     unit: "秒",
     direction: "asc",
     extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
-  },
-  {
-    value: "long_jump",
-    label: "立ち幅跳び",
-    abbrLines: ["立ち幅", "跳び"],
-    unit: "cm",
-    direction: "desc",
-    extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
   },
   {
     value: "lane_agility",
@@ -211,6 +211,14 @@ export const SPORTS_TEST_RANKING_METRICS: {
     unit: "秒",
     direction: "asc",
     extract: (r) => r.shuttle_20m_x3,
+  },
+  {
+    value: "long_jump",
+    label: "立ち幅跳び",
+    abbrLines: ["立ち幅", "跳び"],
+    unit: "cm",
+    direction: "desc",
+    extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
   },
   {
     value: "ball_throw",
@@ -251,13 +259,5 @@ export const SPORTS_TEST_RANKING_METRICS: {
     unit: "回",
     direction: "desc",
     extract: (r) => r.beep_test_reps,
-  },
-  {
-    value: "wingspan_cm",
-    label: "ウイングスパン",
-    abbrLines: ["ウイング", "スパン"],
-    unit: "cm",
-    direction: "desc",
-    extract: (r) => r.wingspan_cm,
   },
 ];
