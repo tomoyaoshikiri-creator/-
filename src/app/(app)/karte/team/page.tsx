@@ -36,8 +36,8 @@ export default function KarteTeamPage() {
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-bold text-[15px]">試合スタッツ</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとの試合スタッツをチーム全体で比較する</div>
+              <div className="font-bold text-[15px]">スタッツ</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとの試合スタッツ</div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
@@ -49,7 +49,7 @@ export default function KarteTeamPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">スポーツテスト</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとのスポーツテスト結果をチーム全体で比較する</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとのスポーツテスト結果</div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
