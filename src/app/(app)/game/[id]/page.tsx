@@ -8,8 +8,10 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
+import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canRecordGames } from "@/lib/permissions";
+import { scheduleMeta } from "@/lib/format";
 import type { GameMatch, Schedule } from "@/lib/database.types";
 
 export default function GameDetailPage() {
@@ -162,6 +164,14 @@ export default function GameDetailPage() {
         <EmptyState>試合が見つかりません</EmptyState>
       ) : (
         <>
+          <Card>
+            <div className="font-bold text-[14.5px]">
+              <TypeTag type={game.type} gameCategory={game.game_category} />
+              {game.title}
+            </div>
+            <div className="text-xs text-ink-soft mt-1">{scheduleMeta(game)}</div>
+          </Card>
+
           <div className="mt-1">
             <FieldLabel>何試合目</FieldLabel>
             {matchesLoading ? (
