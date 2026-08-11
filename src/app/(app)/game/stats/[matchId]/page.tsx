@@ -193,6 +193,8 @@ export default function GameStatsPage() {
     if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
 
+  // タップ直後の即時表示用の暫定加算。確定値はRPCの戻り値(team_score/opponent_score)で
+  // 必ず上書きする(setTeamScoreValue/setOpponentScoreValue)ため、ここでズレても後で補正される。
   function adjustTeamScore(pointsDelta: number) {
     if (pointsDelta === 0) return;
     setMatch((prev) => (prev ? { ...prev, team_score: Math.max(0, (prev.team_score ?? 0) + pointsDelta) } : prev));
@@ -203,6 +205,16 @@ export default function GameStatsPage() {
     setMatch((prev) =>
       prev ? { ...prev, opponent_score: Math.max(0, (prev.opponent_score ?? 0) + pointsDelta) } : prev,
     );
+  }
+
+  // サーバー側でスタッツの合計から作り直した確定値。楽観的なadjustTeamScore/adjustOpponentScoreの
+  // ズレをRPCのレスポンスが返るたびに解消する。
+  function setTeamScoreValue(value: number) {
+    setMatch((prev) => (prev ? { ...prev, team_score: value } : prev));
+  }
+
+  function setOpponentScoreValue(value: number) {
+    setMatch((prev) => (prev ? { ...prev, opponent_score: value } : prev));
   }
 
   async function saveRecord(newStarters: string[], newSubs: string[]) {
@@ -315,6 +327,7 @@ export default function GameStatsPage() {
     const result = data?.[0];
     if (result) {
       setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+      setTeamScoreValue(result.team_score);
       setStatEvents((prev) => [
         {
           id: result.event_id,
@@ -350,6 +363,7 @@ export default function GameStatsPage() {
     const result = data?.[0];
     if (result) {
       setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+      setOpponentScoreValue(result.opponent_score);
       setOpponentStatEvents((prev) => [
         {
           id: result.event_id,
@@ -387,6 +401,7 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+        setTeamScoreValue(result.team_score);
         setStatEvents((prev) => [
           {
             id: result.event_id,
@@ -411,6 +426,7 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+        setTeamScoreValue(result.team_score);
         setStatEvents((prev) => [
           {
             id: result.event_id,
@@ -447,6 +463,7 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+        setOpponentScoreValue(result.opponent_score);
         setOpponentStatEvents((prev) => [
           {
             id: result.event_id,
@@ -471,6 +488,7 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+        setOpponentScoreValue(result.opponent_score);
         setOpponentStatEvents((prev) => [
           {
             id: result.event_id,
@@ -524,7 +542,7 @@ export default function GameStatsPage() {
     const target = statEvents.find((e) => e.id === eventId);
     if (!target) return;
     const supabase = createClient();
-    const { error } = await deleteGameStatEvent(supabase, eventId);
+    const { data, error } = await deleteGameStatEvent(supabase, eventId);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
@@ -535,7 +553,7 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    adjustTeamScore(-statEventPoints(target.event, target.delta));
+    if (typeof data === "number") setTeamScoreValue(data);
     toast("記録を削除しました");
   }
 
@@ -554,7 +572,7 @@ export default function GameStatsPage() {
     const target = opponentStatEvents.find((e) => e.id === eventId);
     if (!target) return;
     const supabase = createClient();
-    const { error } = await deleteOpponentGameStatEvent(supabase, eventId);
+    const { data, error } = await deleteOpponentGameStatEvent(supabase, eventId);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
@@ -565,7 +583,7 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.opponent_player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    adjustOpponentScore(-statEventPoints(target.event, target.delta));
+    if (typeof data === "number") setOpponentScoreValue(data);
     toast("記録を削除しました");
   }
 
