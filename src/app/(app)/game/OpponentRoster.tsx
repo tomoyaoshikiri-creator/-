@@ -22,6 +22,7 @@ export function OpponentRoster({
   const toast = useToast();
   const [newNumber, setNewNumber] = useState("");
   const [adding, setAdding] = useState(false);
+  const [addingTemplate, setAddingTemplate] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function handleAdd() {
@@ -49,6 +50,32 @@ export function OpponentRoster({
     }
   }
 
+  // 4〜18番は日本のミニバスケットボールでよく使われる背番号の範囲。
+  // 手動入力とは別に、まとめて登録できるテンプレートを用意する。
+  async function handleAddTemplate() {
+    const existing = new Set(opponentPlayers.map((p) => p.number));
+    const numbers = Array.from({ length: 15 }, (_, i) => String(i + 4)).filter((n) => !existing.has(n));
+    if (numbers.length === 0) {
+      toast("4〜18番はすべて登録済みです");
+      return;
+    }
+    setAddingTemplate(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("game_opponent_players")
+      .insert(numbers.map((number) => ({ team_id: teamId, match_id: matchId, number })))
+      .select();
+    setAddingTemplate(false);
+    if (error) {
+      toast(`一括登録に失敗しました: ${error.message}`);
+      return;
+    }
+    if (data) {
+      onChange([...opponentPlayers, ...data]);
+      toast(`${data.length}件登録しました`);
+    }
+  }
+
   async function handleRemove(id: string) {
     setRemovingId(id);
     const supabase = createClient();
@@ -60,6 +87,10 @@ export function OpponentRoster({
     }
     onChange(opponentPlayers.filter((p) => p.id !== id));
   }
+
+  const sortedPlayers = [...opponentPlayers].sort(
+    (a, b) => Number(a.number) - Number(b.number) || a.number.localeCompare(b.number),
+  );
 
   return (
     <div className="mt-3">
@@ -83,11 +114,19 @@ export function OpponentRoster({
             追加
           </button>
         </div>
+        <button
+          type="button"
+          onClick={handleAddTemplate}
+          disabled={addingTemplate}
+          className="w-full mt-1.5 py-1.5 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-paper disabled:opacity-50"
+        >
+          {addingTemplate ? "登録中…" : "4〜18番を一括登録"}
+        </button>
         {opponentPlayers.length === 0 ? (
           <div className="text-xs text-ink-soft mt-2.5">まだ背番号が登録されていません</div>
         ) : (
           <div className="flex gap-1.5 flex-wrap mt-2.5">
-            {opponentPlayers.map((p) => (
+            {sortedPlayers.map((p) => (
               <button
                 key={p.id}
                 type="button"
