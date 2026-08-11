@@ -98,75 +98,85 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   return (
     <>
       <SectionLabel>実施メニュー</SectionLabel>
-      {menus.map((m, idx) => (
-        <Card
-          key={m.id}
-          className={canManage ? "cursor-pointer" : ""}
-          onClick={canManage ? () => setExpandedId(expandedId === m.id ? null : m.id) : undefined}
-        >
-          {editingId === m.id ? (
-            <div onClick={(e) => e.stopPropagation()}>
-              <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={inputClass()} />
-              <div className="flex gap-2 mt-2">
-                <SubmitButton onClick={() => handleEditSave(m.id)} disabled={savingEdit} className="flex-1">
-                  {savingEdit ? "保存中…" : "保存する"}
-                </SubmitButton>
-                <button
-                  type="button"
-                  onClick={() => setEditingId(null)}
-                  className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                >
-                  キャンセル
-                </button>
+      <Card>
+        {menus.map((m, idx) => (
+          <div
+            key={m.id}
+            className="border-b border-line pb-2.5 mb-2.5 last:border-b-0 last:mb-0 last:pb-0"
+          >
+            {editingId === m.id ? (
+              <div>
+                <input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  className={inputClass()}
+                />
+                <div className="flex gap-2 mt-2">
+                  <SubmitButton onClick={() => handleEditSave(m.id)} disabled={savingEdit} className="flex-1 mt-0">
+                    {savingEdit ? "保存中…" : "保存する"}
+                  </SubmitButton>
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(null)}
+                    className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                  >
+                    キャンセル
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2">
-              <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
-              <div className="flex-1 text-[13.5px] font-bold">{m.theme}</div>
-            </div>
-          )}
-          {canManage && expandedId === m.id && editingId !== m.id && (
-            <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(m.id);
-                  setEditValue(m.theme ?? "");
-                }}
-                className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
+            ) : (
+              <div
+                className={canManage ? "cursor-pointer" : ""}
+                onClick={canManage ? () => setExpandedId(expandedId === m.id ? null : m.id) : undefined}
               >
-                編集
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(m.id)}
-                className={`flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border ${
-                  deleteConfirmId === m.id
-                    ? "border-danger text-danger bg-danger/8"
-                    : "border-line text-ink-soft bg-paper"
-                }`}
-              >
-                {deleteConfirmId === m.id ? "もう一度タップで削除" : "削除"}
-              </button>
-            </div>
-          )}
-        </Card>
-      ))}
-      {canManage && (
-        <Card>
-          <FieldLabel>入力欄</FieldLabel>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className={inputClass()}
-            placeholder="例: シュート強化"
-          />
-          <SubmitButton onClick={handleAdd} disabled={saving || !input.trim()}>
-            {saving ? "保存中…" : "保存する"}
-          </SubmitButton>
-        </Card>
-      )}
+                <div className="flex items-start gap-2">
+                  <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
+                  <div className="flex-1 text-[13.5px] font-bold">{m.theme}</div>
+                </div>
+                {canManage && expandedId === m.id && (
+                  <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(m.id);
+                        setEditValue(m.theme ?? "");
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
+                    >
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(m.id)}
+                      className={`flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border ${
+                        deleteConfirmId === m.id
+                          ? "border-danger text-danger bg-danger/8"
+                          : "border-line text-ink-soft bg-paper"
+                      }`}
+                    >
+                      {deleteConfirmId === m.id ? "もう一度タップで削除" : "削除"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+        {canManage && (
+          <div>
+            <FieldLabel>入力欄</FieldLabel>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className={inputClass()}
+              placeholder="例: シュート強化"
+            />
+            <SubmitButton onClick={handleAdd} disabled={saving || !input.trim()}>
+              {saving ? "保存中…" : "保存する"}
+            </SubmitButton>
+          </div>
+        )}
+      </Card>
     </>
   );
 }
