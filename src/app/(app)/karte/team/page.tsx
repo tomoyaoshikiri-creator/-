@@ -134,20 +134,32 @@ export default function KarteTeamPage() {
         </SegButton>
       </div>
 
-      <FieldLabel>年度</FieldLabel>
-      <div className="relative inline-block mb-3">
-        <select
-          className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-          value={fiscalYear}
-          onChange={(e) => setFiscalYear(Number(e.target.value))}
-        >
-          {FISCAL_YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>
-              {y}年度
-            </option>
-          ))}
-        </select>
-        <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative inline-block">
+          <select
+            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            value={fiscalYear}
+            onChange={(e) => setFiscalYear(Number(e.target.value))}
+          >
+            {FISCAL_YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>
+                {y}年度
+              </option>
+            ))}
+          </select>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+        </div>
+        {category === "game" && (
+          <button
+            type="button"
+            onClick={() => setGameRankingMode((v) => !v)}
+            className={`flex-none text-center px-3 py-1.5 rounded-[10px] font-bold text-[12px] border ${
+              gameRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+            }`}
+          >
+            {gameRankingMode ? "ランキング中" : "ランキングで見る"}
+          </button>
+        )}
       </div>
 
       {category === "game" ? (
@@ -155,29 +167,23 @@ export default function KarteTeamPage() {
           <EmptyState>読み込み中…</EmptyState>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={() => setGameRankingMode((v) => !v)}
-              className={`w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border ${
-                gameRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
-              }`}
-            >
-              {gameRankingMode ? "ランキング表示中(項目名をタップで並び替え)" : "ランキングで見る"}
-            </button>
+            {gameRankingMode && (
+              <div className="text-[11px] text-ink-soft mb-1.5">項目名をタップすると、その項目順に並び替わります</div>
+            )}
 
             <div className="bg-white border border-line rounded-2xl overflow-hidden mb-2.5">
               <div className="overflow-x-auto">
                 <table className="border-collapse text-[11.5px] w-full">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 bg-paper z-10 text-left px-2.5 py-2 border-b border-line whitespace-nowrap">
+                      <th className="sticky left-0 top-0 bg-paper z-30 text-left px-2.5 py-2 border-b border-line whitespace-nowrap">
                         選手
                       </th>
                       {GAME_COLUMNS.map((c) => (
                         <th
                           key={c.key}
                           onClick={() => gameRankingMode && setSortKey(c.key)}
-                          className={`px-2 py-2 border-b border-line font-bold whitespace-nowrap text-center ${
+                          className={`sticky top-0 bg-paper z-20 w-[50px] min-w-[50px] px-1 py-2 border-b border-line font-bold whitespace-nowrap text-center ${
                             gameRankingMode ? "cursor-pointer" : ""
                           } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
                         >
@@ -194,7 +200,7 @@ export default function KarteTeamPage() {
                       {GAME_COLUMNS.map((c) => (
                         <td
                           key={c.key}
-                          className="px-2 py-2 text-center font-mono font-bold border-b border-line"
+                          className="w-[50px] min-w-[50px] px-1 py-2 text-center font-mono font-bold border-b border-line"
                         >
                           {teamAverages[c.key]}
                         </td>
@@ -210,7 +216,7 @@ export default function KarteTeamPage() {
                         {GAME_COLUMNS.map((c) => (
                           <td
                             key={c.key}
-                            className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0"
+                            className="w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
                           >
                             {averages[c.key]}
                           </td>
