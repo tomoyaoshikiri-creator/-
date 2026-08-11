@@ -7,12 +7,14 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { StatPad } from "../StatPad";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
-import type { AttendanceStatus, GameMatch, Player, Schedule } from "@/lib/database.types";
+import { emptyStatLine, applyStatEventLocally, isStatEventAllowed, recordGameStat, type StatEvent } from "@/lib/gameStats";
+import type { AttendanceStatus, GameMatch, GamePlayerStatLine, Player, Schedule } from "@/lib/database.types";
 
 function PlayerCheckRow({
   player,
@@ -70,6 +72,7 @@ export default function GameDetailPage() {
   const [starters, setStarters] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
   const [recordId, setRecordId] = useState<string | null>(null);
+  const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
   const [memberEditing, setMemberEditing] = useState(false);
   const [memberExpanded, setMemberExpanded] = useState(false);
   const [deleteRecordConfirm, setDeleteRecordConfirm] = useState(false);
@@ -164,9 +167,45 @@ export default function GameDetailPage() {
     loadRecord(selectedMatchId, quarter);
   }, [selectedMatchId, quarter, loadRecord]);
 
+  const loadStatLines = useCallback(async (matchId: string) => {
+    if (!matchId) {
+      setStatLines({});
+      return;
+    }
+    const supabase = createClient();
+    const { data } = await supabase.from("game_player_stat_lines").select("*").eq("match_id", matchId);
+    const map: Record<string, GamePlayerStatLine> = {};
+    (data ?? []).forEach((row) => {
+      map[row.player_id] = row;
+    });
+    setStatLines(map);
+  }, []);
+
+  useEffect(() => {
+    loadStatLines(selectedMatchId);
+  }, [selectedMatchId, loadStatLines]);
+
   useEffect(() => {
     if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
+
+  async function handleStatTap(playerId: string, event: StatEvent, delta: number) {
+    if (!selectedMatchId) return;
+    const prevRow = statLines[playerId] ?? emptyStatLine(teamId, selectedMatchId, playerId);
+    if (!isStatEventAllowed(prevRow, event, delta)) return;
+    const nextRow = applyStatEventLocally(prevRow, event, delta);
+    setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
+    const supabase = createClient();
+    const { data, error } = await recordGameStat(supabase, selectedMatchId, playerId, event, delta);
+    if (error) {
+      toast(`スタッツの記録に失敗しました: ${error.message}`);
+      setStatLines((prev) => ({ ...prev, [playerId]: prevRow }));
+      return;
+    }
+    if (data) {
+      setStatLines((prev) => ({ ...prev, [playerId]: data }));
+    }
+  }
 
   function toggleStarter(id: string) {
     const isActive = starters.includes(id);
@@ -533,6 +572,13 @@ export default function GameDetailPage() {
                 </button>
               )}
             </>
+          )}
+
+          {selectedMatch && players.length > 0 && (
+            <div className="mt-4">
+              <SectionLabel>スタッツ入力</SectionLabel>
+              <StatPad players={players} statLines={statLines} onTap={handleStatTap} />
+            </div>
           )}
         </>
       )}
