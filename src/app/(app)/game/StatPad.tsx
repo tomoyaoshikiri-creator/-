@@ -5,8 +5,6 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { FreeThrowModal } from "./FreeThrowModal";
 import {
   STAT_BUTTONS,
-  fgPct,
-  ftPct,
   statEventCount,
   isStatEventAllowed,
   type StatEvent,
@@ -122,14 +120,7 @@ export function StatPad({
         <EmptyState>{emptyMessage}</EmptyState>
       ) : (
         <Card className="mt-2">
-          <div className="flex gap-3 text-[10.5px] text-ink-soft font-mono">
-            <span>FG {fgPct(row)}</span>
-            <span>FT {ftPct(row)}</span>
-            <span>REB {row?.reb ?? 0}</span>
-            <span>EFF {row?.eff ?? 0}</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 mt-3">
+          <div className="grid grid-cols-2 gap-1.5">
             {GRID_CELLS.map((cell) => {
               if (cell.type === "ft") {
                 return (
