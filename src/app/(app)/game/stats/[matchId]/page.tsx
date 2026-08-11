@@ -24,6 +24,7 @@ import {
   recordOpponentGameStat,
   deleteGameStatEvent,
   deleteOpponentGameStatEvent,
+  resetMatchStats,
   statEventPoints,
   type StatEvent,
 } from "@/lib/gameStats";
@@ -57,6 +58,8 @@ export default function GameStatsPage() {
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
   const [opponentStatEvents, setOpponentStatEvents] = useState<GameOpponentStatEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -275,6 +278,29 @@ export default function GameStatsPage() {
     toast("記録を削除しました");
   }
 
+  async function handleResetStats() {
+    if (!resetConfirm) {
+      setResetConfirm(true);
+      setTimeout(() => setResetConfirm(false), 3000);
+      return;
+    }
+    setResetConfirm(false);
+    setResetting(true);
+    const supabase = createClient();
+    const { error } = await resetMatchStats(supabase, matchId);
+    setResetting(false);
+    if (error) {
+      toast(`リセットに失敗しました: ${error.message}`);
+      return;
+    }
+    setStatLines({});
+    setStatEvents([]);
+    setOpponentStatLines({});
+    setOpponentStatEvents([]);
+    setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
+    toast("この試合のスタッツをリセットしました");
+  }
+
   const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
@@ -337,6 +363,16 @@ export default function GameStatsPage() {
               </div>
             </div>
           </Card>
+
+          <button
+            type="button"
+            onClick={handleResetStats}
+            disabled={resetting}
+            className="w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white"
+            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          >
+            {resetting ? "リセット中…" : resetConfirm ? "もう一度タップでこの試合のスタッツを全てリセット" : "この試合のスタッツをオールリセット"}
+          </button>
 
           <div className="mt-3">
             <FieldLabel>クォーター</FieldLabel>

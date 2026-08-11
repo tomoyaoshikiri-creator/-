@@ -750,6 +750,10 @@ export interface Database {
         Args: { p_event_id: string };
         Returns: void;
       };
+      reset_match_stats: {
+        Args: { p_match_id: string };
+        Returns: void;
+      };
     };
   };
 }

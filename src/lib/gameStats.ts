@@ -237,6 +237,10 @@ export function deleteOpponentGameStatEvent(supabase: SupabaseClient<Database>, 
   return supabase.rpc("delete_opponent_game_stat_event", { p_event_id: eventId });
 }
 
+export function resetMatchStats(supabase: SupabaseClient<Database>, matchId: string) {
+  return supabase.rpc("reset_match_stats", { p_match_id: matchId });
+}
+
 export function statEventLabel(event: StatEvent): string {
   return STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
 }
