@@ -11,7 +11,7 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mb-2.5 flex items-center gap-2">
+    <div className="font-mono text-[13px] font-bold tracking-widest uppercase text-ink mb-2.5 flex items-center gap-2">
       <span>{children}</span>
       <span className="flex-1 h-px bg-line" />
     </div>

@@ -260,20 +260,20 @@ export default function PlayerDetailPage() {
         <>
           <SectionLabel>基本情報</SectionLabel>
           <Card>
-            <div className="text-xs text-ink-soft">
+            <div className="text-[13.5px] text-ink">
               {player.sei_kana ?? ""}
               {player.mei_kana ?? ""}
             </div>
-            <div className="text-xs text-ink-soft mt-1">
+            <div className="text-[13.5px] text-ink mt-1">
               背番号 {player.number ?? "-"} /{" "}
               {player.status === "OB・OG" ? obogCohortLabel(player.grade) : gradeLabel(player.grade)}
             </div>
-            <div className="text-xs text-ink-soft mt-1">
+            <div className="text-[13.5px] text-ink mt-1">
               {player.positions.length > 0 ? player.positions.join("・") : "ポジション未設定"}
             </div>
-            <div className="text-xs text-ink-soft mt-1">ステータス: {player.status}</div>
+            <div className="text-[13.5px] text-ink mt-1">ステータス: {player.status}</div>
             {player.birthday && (
-              <div className="text-xs text-ink-soft mt-1">誕生日: {formatFullDateLabel(player.birthday)}</div>
+              <div className="text-[13.5px] text-ink mt-1">誕生日: {formatFullDateLabel(player.birthday)}</div>
             )}
           </Card>
 
