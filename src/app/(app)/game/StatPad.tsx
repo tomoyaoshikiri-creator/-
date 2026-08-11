@@ -118,15 +118,17 @@ export function StatPad({
             <span>EFF {row?.eff ?? 0}</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setFtModalOpen(true)}
-            className="w-full mt-3 py-2 rounded-[10px] font-bold text-[13px] border border-orange text-orange bg-orange/8"
-          >
-            FT (フリースロー)
-          </button>
-
           <div className="grid grid-cols-2 gap-1.5 mt-3">
+            <button
+              type="button"
+              onClick={() => setFtModalOpen(true)}
+              className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-orange bg-orange/8"
+            >
+              <div className="text-[11px] font-bold text-orange">FT(フリースロー)</div>
+              <div className="font-mono text-[13px] font-bold text-orange">
+                {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
+              </div>
+            </button>
             {GRID_STAT_BUTTONS.map(({ event, label }) => {
               const count = statEventCount(row, event);
               const canMinus = row ? isStatEventAllowed(row, event, -1) : false;
