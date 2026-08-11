@@ -13,6 +13,7 @@ import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { LineupSection } from "../../LineupSection";
 import { OpponentRoster } from "../../OpponentRoster";
+import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import {
@@ -50,16 +51,21 @@ export default function GameStatsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [attendanceStatus, setAttendanceStatus] = useState<Record<string, AttendanceStatus>>({});
   const [quarter, setQuarter] = useState(1);
-  const [onCourtIds, setOnCourtIds] = useState<string[]>([]);
+  const [starters, setStarters] = useState<string[]>([]);
+  const [subs, setSubs] = useState<string[]>([]);
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [savingStarters, setSavingStarters] = useState(false);
+  const [ownMemberModalOpen, setOwnMemberModalOpen] = useState(false);
   const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
   const [statEvents, setStatEvents] = useState<GameStatEvent[]>([]);
   const [opponentPlayers, setOpponentPlayers] = useState<GameOpponentPlayer[]>([]);
+  const [opponentOnCourtIds, setOpponentOnCourtIds] = useState<string[]>([]);
+  const [opponentMemberModalOpen, setOpponentMemberModalOpen] = useState(false);
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
   const [opponentStatEvents, setOpponentStatEvents] = useState<GameOpponentStatEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -85,10 +91,39 @@ export default function GameStatsPage() {
         });
         setAttendanceStatus(map);
         setOpponentPlayers(op ?? []);
+        setOpponentOnCourtIds((op ?? []).map((x) => x.id));
       }
       setLoading(false);
     })();
   }, [matchId]);
+
+  // 新しく登録された相手選手はデフォルトで出場中扱いにする(既存の出場状態は保持する)。
+  useEffect(() => {
+    setOpponentOnCourtIds((prev) => {
+      const prevSet = new Set(prev);
+      const newIds = opponentPlayers.filter((p) => !prevSet.has(p.id)).map((p) => p.id);
+      const stillExisting = prev.filter((id) => opponentPlayers.some((p) => p.id === id));
+      return newIds.length > 0 || stillExisting.length !== prev.length ? [...stillExisting, ...newIds] : prev;
+    });
+  }, [opponentPlayers]);
+
+  const loadRecord = useCallback(async () => {
+    if (!matchId) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("game_records")
+      .select("*")
+      .eq("match_id", matchId)
+      .eq("quarter", quarter)
+      .maybeSingle();
+    setStarters(data?.starter_player_ids ?? []);
+    setSubs(data?.sub_player_ids ?? []);
+    setRecordId(data?.id ?? null);
+  }, [matchId, quarter]);
+
+  useEffect(() => {
+    loadRecord();
+  }, [loadRecord]);
 
   const loadStatLines = useCallback(async () => {
     if (!matchId) return;
@@ -156,6 +191,66 @@ export default function GameStatsPage() {
     if (pointsDelta === 0) return;
     setMatch((prev) =>
       prev ? { ...prev, opponent_score: Math.max(0, (prev.opponent_score ?? 0) + pointsDelta) } : prev,
+    );
+  }
+
+  async function saveRecord(newStarters: string[], newSubs: string[]) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("game_records")
+      .upsert(
+        {
+          team_id: teamId,
+          match_id: matchId,
+          quarter,
+          starter_player_ids: newStarters,
+          sub_player_ids: newSubs,
+        },
+        { onConflict: "match_id,quarter" },
+      )
+      .select()
+      .single();
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return false;
+    }
+    setStarters(newStarters);
+    setSubs(newSubs);
+    setRecordId(data?.id ?? null);
+    return true;
+  }
+
+  async function handleSaveStarters(newStarters: string[]) {
+    setSavingStarters(true);
+    const ok = await saveRecord(newStarters, subs);
+    setSavingStarters(false);
+    if (ok) toast(`${quarter}Qのスターティングを登録しました`);
+  }
+
+  async function handleDeleteRecord() {
+    if (!recordId) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("game_records").delete().eq("id", recordId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setStarters([]);
+    setSubs([]);
+    setRecordId(null);
+    toast(`${quarter}Qの登録を削除しました`);
+  }
+
+  // メンバーチェンジ: スタメン以外の選手を出場中(途中出場)にオン/オフする。
+  async function handleToggleSub(playerId: string) {
+    if (starters.includes(playerId)) return;
+    const nextSubs = subs.includes(playerId) ? subs.filter((x) => x !== playerId) : [...subs, playerId];
+    await saveRecord(starters, nextSubs);
+  }
+
+  function handleToggleOpponentOnCourt(opponentPlayerId: string) {
+    setOpponentOnCourtIds((prev) =>
+      prev.includes(opponentPlayerId) ? prev.filter((x) => x !== opponentPlayerId) : [...prev, opponentPlayerId],
     );
   }
 
@@ -318,19 +413,34 @@ export default function GameStatsPage() {
     setStatEvents([]);
     setOpponentStatLines({});
     setOpponentStatEvents([]);
-    setOnCourtIds([]);
-    setResetKey((k) => k + 1);
+    setStarters([]);
+    setSubs([]);
+    setRecordId(null);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
     toast("この試合のスタッツ・スタメンをリセットしました");
   }
 
+  const onCourtIds = Array.from(new Set([...starters, ...subs]));
   const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
     number: p.number,
     name: playerFullName(p),
   }));
-  const opponentEntrants: StatEntrant[] = opponentPlayers.map((p) => ({ id: p.id, number: p.number, name: null }));
+  const onCourtOpponents = opponentPlayers.filter((p) => opponentOnCourtIds.includes(p.id));
+  const opponentEntrants: StatEntrant[] = onCourtOpponents.map((p) => ({ id: p.id, number: p.number, name: null }));
+
+  const ownMemberOptions: MemberOption[] = players.map((p) => ({
+    id: p.id,
+    label: `${p.number ? `#${p.number} ` : ""}${playerFullName(p)}`,
+    checked: onCourtIds.includes(p.id),
+    disabled: starters.includes(p.id),
+  }));
+  const opponentMemberOptions: MemberOption[] = opponentPlayers.map((p) => ({
+    id: p.id,
+    label: `#${p.number}`,
+    checked: opponentOnCourtIds.includes(p.id),
+  }));
 
   const ownLog: StatLogEntry[] = statEvents.map((e) => {
     const p = players.find((pl) => pl.id === e.player_id);
@@ -413,13 +523,13 @@ export default function GameStatsPage() {
           </div>
 
           <LineupSection
-            key={resetKey}
-            matchId={matchId}
-            teamId={teamId}
-            quarter={quarter}
+            starters={starters}
+            recordId={recordId}
+            saving={savingStarters}
             players={players}
             attendanceStatus={attendanceStatus}
-            onChange={setOnCourtIds}
+            onSaveStarters={handleSaveStarters}
+            onDeleteRecord={handleDeleteRecord}
           />
 
           <div className="mt-4">
@@ -429,7 +539,8 @@ export default function GameStatsPage() {
               statLines={statLines}
               onTap={handleStatTap}
               onUndo={handleStatUndo}
-              emptyMessage="この試合のスタメン・途中出場を登録してください"
+              onOpenMemberChange={() => setOwnMemberModalOpen(true)}
+              emptyMessage="スタメンを登録するか、メンバーチェンジで選手を選んでください"
             />
           </div>
           <GameStatLog
@@ -453,6 +564,7 @@ export default function GameStatsPage() {
               statLines={opponentStatLines}
               onTap={handleOpponentStatTap}
               onUndo={handleOpponentStatUndo}
+              onOpenMemberChange={() => setOpponentMemberModalOpen(true)}
               emptyMessage="相手選手の背番号を登録してください"
             />
           </div>
@@ -461,6 +573,21 @@ export default function GameStatsPage() {
             events={opponentLog}
             onChangeQuarter={handleChangeOpponentStatEventQuarter}
             onDelete={handleDeleteOpponentStatEvent}
+          />
+
+          <MemberChangeModal
+            open={ownMemberModalOpen}
+            onClose={() => setOwnMemberModalOpen(false)}
+            title="メンバーチェンジ"
+            options={ownMemberOptions}
+            onToggle={handleToggleSub}
+          />
+          <MemberChangeModal
+            open={opponentMemberModalOpen}
+            onClose={() => setOpponentMemberModalOpen(false)}
+            title="メンバーチェンジ(相手チーム)"
+            options={opponentMemberOptions}
+            onToggle={handleToggleOpponentOnCourt}
           />
         </>
       )}
