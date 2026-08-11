@@ -32,10 +32,12 @@ interface StatLineWithDate extends GamePlayerStatLine {
 
 // 得点・FG成功・FT成功・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・ターンオーバー・EFFの順。
 // スマホ幅に収まらないため、列見出しはExcelと同じ英字略称にしている。
+const PERCENT_COLUMNS = new Set<keyof SeasonStatAverages>(["fgPct", "ftPct"]);
+
 const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "pts", abbr: "PTS" },
-  { key: "fgMade", abbr: "FG" },
-  { key: "ftMade", abbr: "FT" },
+  { key: "fgPct", abbr: "FG" },
+  { key: "ftPct", abbr: "FT" },
   { key: "ast", abbr: "AST" },
   { key: "rebOff", abbr: "OREB" },
   { key: "rebDef", abbr: "DREB" },
@@ -104,9 +106,10 @@ export default function KarteTeamPage() {
     player: p,
     averages: computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)),
   }));
+  const sortValue = (a: SeasonStatAverages) => (a[sortKey] as number | null) ?? -Infinity;
   const rows =
     gameRankingMode
-      ? [...playerAverages].sort((a, b) => (b.averages[sortKey] as number) - (a.averages[sortKey] as number))
+      ? [...playerAverages].sort((a, b) => sortValue(b.averages) - sortValue(a.averages))
       : playerAverages;
 
   const testMetricInfo = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === testMetric)!;
@@ -194,16 +197,19 @@ export default function KarteTeamPage() {
                       <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                         チーム平均
                       </th>
-                      {GAME_COLUMNS.map((c) => (
-                        <th
-                          key={c.key}
-                          className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
-                            c.key === "eff" && (teamAverages[c.key] as number) < 0 ? "text-danger" : ""
-                          }`}
-                        >
-                          {teamAverages[c.key]}
-                        </th>
-                      ))}
+                      {GAME_COLUMNS.map((c) => {
+                        const v = teamAverages[c.key] as number | null;
+                        return (
+                          <th
+                            key={c.key}
+                            className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            }`}
+                          >
+                            {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
@@ -214,16 +220,19 @@ export default function KarteTeamPage() {
                             #{p.number ?? "-"} {playerFullName(p)}
                           </Link>
                         </td>
-                        {GAME_COLUMNS.map((c) => (
-                          <td
-                            key={c.key}
-                            className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
-                              c.key === "eff" && (averages[c.key] as number) < 0 ? "text-danger" : ""
-                            }`}
-                          >
-                            {averages[c.key]}
-                          </td>
-                        ))}
+                        {GAME_COLUMNS.map((c) => {
+                          const v = averages[c.key] as number | null;
+                          return (
+                            <td
+                              key={c.key}
+                              className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
+                                c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                              }`}
+                            >
+                              {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
