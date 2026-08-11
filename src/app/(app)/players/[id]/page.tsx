@@ -294,6 +294,8 @@ export default function PlayerDetailPage() {
             </>
           )}
 
+          <PlayerGrowthCard playerId={player.id} teamId={player.team_id} />
+
           <SectionLabel>スポーツテスト</SectionLabel>
           <Link href={`/players/${player.id}/sports-test`}>
             <Card className="cursor-pointer">
@@ -303,8 +305,6 @@ export default function PlayerDetailPage() {
               </div>
             </Card>
           </Link>
-
-          <PlayerGrowthCard playerId={player.id} teamId={player.team_id} />
 
           {isStaff && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
