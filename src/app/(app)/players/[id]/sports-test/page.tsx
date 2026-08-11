@@ -94,12 +94,21 @@ function fmtDiff(diff: number): string {
   return r > 0 ? `+${fmtNum(r)}` : fmtNum(r);
 }
 
-function CompareLine({ current, baseline }: { current: string; baseline: number | null }) {
+function CompareLine({
+  current,
+  baseline,
+  baselineQuarter,
+}: {
+  current: string;
+  baseline: number | null;
+  baselineQuarter?: number;
+}) {
   if (baseline === null) return null;
   const cur = current.trim() === "" ? null : Number(current);
   if (cur === null) return null;
   return (
     <div className="text-[10.5px] text-navy font-bold mt-1">
+      {baselineQuarter ? `Q${baselineQuarter}: ` : ""}
       {fmtNum(baseline)} → {fmtNum(cur)} ({fmtDiff(cur - baseline)})
     </div>
   );
@@ -305,7 +314,7 @@ export default function SportsTestPage() {
               value={form.wingspan_cm}
               onChange={(e) => setField("wingspan_cm", e.target.value)}
             />
-            <CompareLine current={form.wingspan_cm} baseline={baseline?.wingspan_cm ?? null} />
+            <CompareLine current={form.wingspan_cm} baseline={baseline?.wingspan_cm ?? null} baselineQuarter={baseline?.quarter} />
           </Card>
 
           <SectionLabel>スプリント・敏捷性</SectionLabel>
@@ -322,7 +331,7 @@ export default function SportsTestPage() {
                   value={form.sprint20m_1}
                   onChange={(e) => setField("sprint20m_1", e.target.value)}
                 />
-                <CompareLine current={form.sprint20m_1} baseline={baseline?.sprint20m_1 ?? null} />
+                <CompareLine current={form.sprint20m_1} baseline={baseline?.sprint20m_1 ?? null} baselineQuarter={baseline?.quarter} />
               </div>
               <div className="flex-1">
                 <input
@@ -334,7 +343,7 @@ export default function SportsTestPage() {
                   value={form.sprint20m_2}
                   onChange={(e) => setField("sprint20m_2", e.target.value)}
                 />
-                <CompareLine current={form.sprint20m_2} baseline={baseline?.sprint20m_2 ?? null} />
+                <CompareLine current={form.sprint20m_2} baseline={baseline?.sprint20m_2 ?? null} baselineQuarter={baseline?.quarter} />
               </div>
             </div>
             <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
@@ -351,7 +360,7 @@ export default function SportsTestPage() {
                     value={form.lane_agility_1}
                     onChange={(e) => setField("lane_agility_1", e.target.value)}
                   />
-                  <CompareLine current={form.lane_agility_1} baseline={baseline?.lane_agility_1 ?? null} />
+                  <CompareLine current={form.lane_agility_1} baseline={baseline?.lane_agility_1 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
                 <div className="flex-1">
                   <input
@@ -363,7 +372,7 @@ export default function SportsTestPage() {
                     value={form.lane_agility_2}
                     onChange={(e) => setField("lane_agility_2", e.target.value)}
                   />
-                  <CompareLine current={form.lane_agility_2} baseline={baseline?.lane_agility_2 ?? null} />
+                  <CompareLine current={form.lane_agility_2} baseline={baseline?.lane_agility_2 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
@@ -380,7 +389,7 @@ export default function SportsTestPage() {
                     value={form.side_step_1}
                     onChange={(e) => setField("side_step_1", e.target.value)}
                   />
-                  <CompareLine current={form.side_step_1} baseline={baseline?.side_step_1 ?? null} />
+                  <CompareLine current={form.side_step_1} baseline={baseline?.side_step_1 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
                 <div className="flex-1">
                   <input
@@ -391,7 +400,7 @@ export default function SportsTestPage() {
                     value={form.side_step_2}
                     onChange={(e) => setField("side_step_2", e.target.value)}
                   />
-                  <CompareLine current={form.side_step_2} baseline={baseline?.side_step_2 ?? null} />
+                  <CompareLine current={form.side_step_2} baseline={baseline?.side_step_2 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
               </div>
             </div>
@@ -406,7 +415,7 @@ export default function SportsTestPage() {
                 onChange={(e) => setField("shuttle_20m_x3", e.target.value)}
               />
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
-              <CompareLine current={form.shuttle_20m_x3} baseline={baseline?.shuttle_20m_x3 ?? null} />
+              <CompareLine current={form.shuttle_20m_x3} baseline={baseline?.shuttle_20m_x3 ?? null} baselineQuarter={baseline?.quarter} />
             </div>
           </Card>
 
@@ -424,7 +433,7 @@ export default function SportsTestPage() {
                   value={form.long_jump_1}
                   onChange={(e) => setField("long_jump_1", e.target.value)}
                 />
-                <CompareLine current={form.long_jump_1} baseline={baseline?.long_jump_1 ?? null} />
+                <CompareLine current={form.long_jump_1} baseline={baseline?.long_jump_1 ?? null} baselineQuarter={baseline?.quarter} />
               </div>
               <div className="flex-1">
                 <input
@@ -436,7 +445,7 @@ export default function SportsTestPage() {
                   value={form.long_jump_2}
                   onChange={(e) => setField("long_jump_2", e.target.value)}
                 />
-                <CompareLine current={form.long_jump_2} baseline={baseline?.long_jump_2 ?? null} />
+                <CompareLine current={form.long_jump_2} baseline={baseline?.long_jump_2 ?? null} baselineQuarter={baseline?.quarter} />
               </div>
             </div>
             <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
@@ -453,7 +462,7 @@ export default function SportsTestPage() {
                     value={form.ball_throw_1}
                     onChange={(e) => setField("ball_throw_1", e.target.value)}
                   />
-                  <CompareLine current={form.ball_throw_1} baseline={baseline?.ball_throw_1 ?? null} />
+                  <CompareLine current={form.ball_throw_1} baseline={baseline?.ball_throw_1 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
                 <div className="flex-1">
                   <input
@@ -465,7 +474,7 @@ export default function SportsTestPage() {
                     value={form.ball_throw_2}
                     onChange={(e) => setField("ball_throw_2", e.target.value)}
                   />
-                  <CompareLine current={form.ball_throw_2} baseline={baseline?.ball_throw_2 ?? null} />
+                  <CompareLine current={form.ball_throw_2} baseline={baseline?.ball_throw_2 ?? null} baselineQuarter={baseline?.quarter} />
                 </div>
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
@@ -485,7 +494,7 @@ export default function SportsTestPage() {
                   value={form.back_fist_right}
                   onChange={(e) => setField("back_fist_right", e.target.value)}
                 />
-                <CompareLine current={form.back_fist_right} baseline={baseline?.back_fist_right ?? null} />
+                <CompareLine current={form.back_fist_right} baseline={baseline?.back_fist_right ?? null} baselineQuarter={baseline?.quarter} />
               </div>
               <div className="flex-1">
                 <input
@@ -496,7 +505,7 @@ export default function SportsTestPage() {
                   value={form.back_fist_left}
                   onChange={(e) => setField("back_fist_left", e.target.value)}
                 />
-                <CompareLine current={form.back_fist_left} baseline={baseline?.back_fist_left ?? null} />
+                <CompareLine current={form.back_fist_left} baseline={baseline?.back_fist_left ?? null} baselineQuarter={baseline?.quarter} />
               </div>
             </div>
           </Card>
@@ -512,7 +521,7 @@ export default function SportsTestPage() {
               value={form.ft_golf}
               onChange={(e) => setField("ft_golf", e.target.value)}
             />
-            <CompareLine current={form.ft_golf} baseline={baseline?.ft_golf ?? null} />
+            <CompareLine current={form.ft_golf} baseline={baseline?.ft_golf ?? null} baselineQuarter={baseline?.quarter} />
             <div className="mt-3">
               <FieldLabel>20mシャトルラン(回)</FieldLabel>
               <input
@@ -522,7 +531,7 @@ export default function SportsTestPage() {
                 value={form.beep_test_reps}
                 onChange={(e) => setField("beep_test_reps", e.target.value)}
               />
-              <CompareLine current={form.beep_test_reps} baseline={baseline?.beep_test_reps ?? null} />
+              <CompareLine current={form.beep_test_reps} baseline={baseline?.beep_test_reps ?? null} baselineQuarter={baseline?.quarter} />
             </div>
           </Card>
           </div>
