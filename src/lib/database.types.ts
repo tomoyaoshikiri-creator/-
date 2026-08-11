@@ -324,6 +324,25 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      notice_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          notice_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          notice_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       game_matches: {
         Row: {
           id: string;
@@ -542,6 +561,7 @@ export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type PlayerNoteReaction = Database["public"]["Tables"]["player_note_reactions"]["Row"];
+export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];

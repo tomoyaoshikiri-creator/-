@@ -9,17 +9,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
-
-const REACTIONS: { type: ReactionType; src: string; alt: string }[] = [
-  { type: "thumbs_up", src: "/emoji/thumbs-up.svg", alt: "👍" },
-  { type: "ok_gesture", src: "/emoji/ok-gesture.svg", alt: "🙆‍♂️" },
-  { type: "bow", src: "/emoji/bow.svg", alt: "🙇" },
-  { type: "pray", src: "/emoji/pray.svg", alt: "🙏" },
-];
 
 export default function PlayerNotesPage() {
   const params = useParams<{ id: string }>();
@@ -237,30 +231,11 @@ export default function PlayerNotesPage() {
                     {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
-                  <div className="flex gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                    {REACTIONS.map(({ type, src, alt }) => {
-                      const forNote = reactions.filter((r) => r.note_id === n.id && r.reaction_type === type);
-                      const mine = forNote.some((r) => r.profile_id === userId);
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => toggleReaction(n.id, type)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-full border ${
-                            mine ? "border-orange bg-orange/8" : "border-line bg-paper"
-                          }`}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={src} alt={alt} className="w-4 h-4" />
-                          {forNote.length > 0 && (
-                            <span className={`text-[10.5px] font-bold ${mine ? "text-orange" : "text-ink-soft"}`}>
-                              {forNote.length}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <ReactionButtons
+                    reactions={reactions.filter((r) => r.note_id === n.id)}
+                    userId={userId}
+                    onToggle={(type) => toggleReaction(n.id, type)}
+                  />
                   {expandedNoteId === n.id && (
                     <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
                       <button

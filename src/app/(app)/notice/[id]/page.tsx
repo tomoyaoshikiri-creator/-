@@ -9,11 +9,19 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { ReactionButtons } from "@/components/ReactionButtons";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
-import type { AttachmentKind, Notice, NoticeAttachment, NoticeAudience } from "@/lib/database.types";
+import type {
+  AttachmentKind,
+  Notice,
+  NoticeAttachment,
+  NoticeAudience,
+  NoticeReaction,
+  ReactionType,
+} from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null };
 
@@ -28,10 +36,11 @@ const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "役員以上"
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { teamId, role } = useSession();
+  const { teamId, role, userId } = useSession();
   const toast = useToast();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
+  const [reactions, setReactions] = useState<NoticeReaction[]>([]);
   const [senderName, setSenderName] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -65,6 +74,8 @@ export default function NoticeDetailPage() {
         }),
       );
       setAttachments(withUrls);
+      const { data: r } = await supabase.from("notice_reactions").select("*").eq("notice_id", n.id);
+      setReactions(r ?? []);
     }
     setLoading(false);
   }, [params.id]);
@@ -72,6 +83,38 @@ export default function NoticeDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function loadReactions() {
+    if (!notice) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("notice_reactions").select("*").eq("notice_id", notice.id);
+    setReactions(data ?? []);
+  }
+
+  async function toggleReaction(type: ReactionType) {
+    if (!notice) return;
+    const supabase = createClient();
+    const existing = reactions.find((r) => r.reaction_type === type && r.profile_id === userId);
+    if (existing) {
+      const { error } = await supabase.from("notice_reactions").delete().eq("id", existing.id);
+      if (error) {
+        toast(`取り消しに失敗しました: ${error.message}`);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("notice_reactions").insert({
+        team_id: teamId,
+        notice_id: notice.id,
+        profile_id: userId,
+        reaction_type: type,
+      });
+      if (error) {
+        toast(`スタンプに失敗しました: ${error.message}`);
+        return;
+      }
+    }
+    loadReactions();
+  }
 
   function startEdit() {
     if (!notice) return;
@@ -368,6 +411,8 @@ export default function NoticeDetailPage() {
               </Card>
             </>
           )}
+
+          <ReactionButtons reactions={reactions} userId={userId} onToggle={toggleReaction} />
 
           {canWriteNotice(role) && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
