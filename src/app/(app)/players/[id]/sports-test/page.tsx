@@ -266,6 +266,7 @@ export default function SportsTestPage() {
                 onChange={(e) => setField("sprint20m_2", e.target.value)}
               />
             </div>
+            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
             <div className="mt-3">
               <FieldLabel>レーンアジリティ(秒・2回)</FieldLabel>
               <div className="flex gap-2">
@@ -288,6 +289,7 @@ export default function SportsTestPage() {
                   onChange={(e) => setField("lane_agility_2", e.target.value)}
                 />
               </div>
+              <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
             </div>
             <div className="mt-3">
               <FieldLabel>反復横跳び(点・2回)</FieldLabel>
@@ -320,6 +322,7 @@ export default function SportsTestPage() {
                 value={form.shuttle_20m_x3}
                 onChange={(e) => setField("shuttle_20m_x3", e.target.value)}
               />
+              <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
             </div>
           </Card>
 
@@ -329,6 +332,7 @@ export default function SportsTestPage() {
             <div className="flex gap-2">
               <input
                 type="number"
+                step="0.1"
                 min={0}
                 className={inputClass()}
                 placeholder="1回目"
@@ -337,6 +341,7 @@ export default function SportsTestPage() {
               />
               <input
                 type="number"
+                step="0.1"
                 min={0}
                 className={inputClass()}
                 placeholder="2回目"
@@ -344,6 +349,7 @@ export default function SportsTestPage() {
                 onChange={(e) => setField("long_jump_2", e.target.value)}
               />
             </div>
+            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
             <div className="mt-3">
               <FieldLabel>ボール投げ(m・2回)</FieldLabel>
               <div className="flex gap-2">
@@ -366,6 +372,7 @@ export default function SportsTestPage() {
                   onChange={(e) => setField("ball_throw_2", e.target.value)}
                 />
               </div>
+              <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
             </div>
           </Card>
 
