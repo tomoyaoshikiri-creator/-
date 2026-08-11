@@ -16,6 +16,7 @@ export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
+export type ReactionType = "thumbs_up" | "ok_gesture" | "bow";
 
 export interface Database {
   public: {
@@ -304,6 +305,25 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      player_note_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       game_matches: {
         Row: {
           id: string;
@@ -521,6 +541,7 @@ export type Report = Database["public"]["Tables"]["reports"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
+export type PlayerNoteReaction = Database["public"]["Tables"]["player_note_reactions"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];

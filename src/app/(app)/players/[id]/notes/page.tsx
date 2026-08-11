@@ -9,10 +9,17 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { BowIcon, OkGestureIcon, ThumbsUpIcon } from "@/components/icons";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
-import type { Player, PlayerNote } from "@/lib/database.types";
+import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
+
+const REACTIONS: { type: ReactionType; Icon: typeof ThumbsUpIcon }[] = [
+  { type: "thumbs_up", Icon: ThumbsUpIcon },
+  { type: "ok_gesture", Icon: OkGestureIcon },
+  { type: "bow", Icon: BowIcon },
+];
 
 export default function PlayerNotesPage() {
   const params = useParams<{ id: string }>();
@@ -21,6 +28,7 @@ export default function PlayerNotesPage() {
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [notes, setNotes] = useState<PlayerNote[]>([]);
+  const [reactions, setReactions] = useState<PlayerNoteReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [noteBody, setNoteBody] = useState("");
@@ -46,8 +54,50 @@ export default function PlayerNotesPage() {
     setPlayer(p ?? null);
     setNotes(n ?? []);
     setProfiles(profMap);
+    const noteIds = (n ?? []).map((note) => note.id);
+    if (noteIds.length > 0) {
+      const { data: r } = await supabase.from("player_note_reactions").select("*").in("note_id", noteIds);
+      setReactions(r ?? []);
+    } else {
+      setReactions([]);
+    }
     setLoading(false);
   }, [params.id]);
+
+  async function loadReactions() {
+    const noteIds = notes.map((n) => n.id);
+    if (noteIds.length === 0) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("player_note_reactions").select("*").in("note_id", noteIds);
+    setReactions(data ?? []);
+  }
+
+  async function toggleReaction(noteId: string, type: ReactionType) {
+    if (!player) return;
+    const supabase = createClient();
+    const existing = reactions.find(
+      (r) => r.note_id === noteId && r.reaction_type === type && r.profile_id === userId,
+    );
+    if (existing) {
+      const { error } = await supabase.from("player_note_reactions").delete().eq("id", existing.id);
+      if (error) {
+        toast(`取り消しに失敗しました: ${error.message}`);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("player_note_reactions").insert({
+        team_id: player.team_id,
+        note_id: noteId,
+        profile_id: userId,
+        reaction_type: type,
+      });
+      if (error) {
+        toast(`スタンプに失敗しました: ${error.message}`);
+        return;
+      }
+    }
+    loadReactions();
+  }
 
   useEffect(() => {
     load();
@@ -187,6 +237,25 @@ export default function PlayerNotesPage() {
                     {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+                  <div className="flex gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+                    {REACTIONS.map(({ type, Icon }) => {
+                      const forNote = reactions.filter((r) => r.note_id === n.id && r.reaction_type === type);
+                      const mine = forNote.some((r) => r.profile_id === userId);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleReaction(n.id, type)}
+                          className={`flex items-center gap-1 px-2 py-1 rounded-full border ${
+                            mine ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {forNote.length > 0 && <span className="text-[10.5px] font-bold">{forNote.length}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                   {expandedNoteId === n.id && (
                     <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
                       <button
