@@ -26,8 +26,8 @@ export interface SeasonStatAverages {
 // ターンオーバー・EFFの順。チームカルテ・選手カルテの表で共通して使う列定義。
 export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "pts", abbr: "PTS" },
-  { key: "fgPct", abbr: "FG" },
-  { key: "ftPct", abbr: "FT" },
+  { key: "fgPct", abbr: "FG%" },
+  { key: "ftPct", abbr: "FT%" },
   { key: "ast", abbr: "AST" },
   { key: "rebOff", abbr: "OREB" },
   { key: "rebDef", abbr: "DREB" },
@@ -37,13 +37,22 @@ export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "eff", abbr: "EFF" },
 ];
 
-// FG/FTは「成功数/試投数」の分数表示にする(成功率だけでなく分母も見えるように)。
-// それ以外の列は数値をそのまま表示する。
-export function formatGameStatValue(key: keyof SeasonStatAverages, a: SeasonStatAverages): string {
-  if (key === "fgPct") return a.fgAttTotal > 0 ? `${a.fgMadeTotal}/${a.fgAttTotal}` : "-";
-  if (key === "ftPct") return a.ftAttTotal > 0 ? `${a.ftMadeTotal}/${a.ftAttTotal}` : "-";
+export interface GameStatCellParts {
+  primary: string;
+  // FG/FTだけは分母(試投数)も併記するため、成功率の下に「成功数/試投数」を2段目として持たせる。
+  secondary?: string;
+}
+
+export function gameStatCellParts(key: keyof SeasonStatAverages, a: SeasonStatAverages): GameStatCellParts {
+  if (key === "fgPct" || key === "ftPct") {
+    const madeTotal = key === "fgPct" ? a.fgMadeTotal : a.ftMadeTotal;
+    const attTotal = key === "fgPct" ? a.fgAttTotal : a.ftAttTotal;
+    const pct = a[key];
+    if (attTotal === 0 || pct === null) return { primary: "-" };
+    return { primary: `${pct}%`, secondary: `${madeTotal}/${attTotal}` };
+  }
   const v = a[key] as number | null;
-  return v === null ? "-" : `${v}`;
+  return { primary: v === null ? "-" : `${v}` };
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10;

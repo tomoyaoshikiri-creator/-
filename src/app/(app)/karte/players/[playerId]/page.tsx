@@ -12,9 +12,9 @@ import { NumChip } from "@/components/ui/Pill";
 import { FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
-  formatGameStatValue,
   GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
@@ -178,7 +178,7 @@ export default function KartePlayerPage() {
                         c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                       }`}
                     >
-                      {formatGameStatValue(c.key, seasonAverages)}
+                      <StatCell statKey={c.key} averages={seasonAverages} />
                     </th>
                   );
                 })}
@@ -199,7 +199,7 @@ export default function KartePlayerPage() {
                           c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                         }`}
                       >
-                        {formatGameStatValue(c.key, row.averages)}
+                        <StatCell statKey={c.key} averages={row.averages} />
                       </td>
                     );
                   })}

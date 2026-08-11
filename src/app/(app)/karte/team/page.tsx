@@ -11,10 +11,10 @@ import { EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
   computeTeamAverages,
-  formatGameStatValue,
   GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
@@ -235,7 +235,7 @@ export default function KarteTeamPage() {
                             c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                           }`}
                         >
-                          {formatGameStatValue(c.key, teamAverages)}
+                          <StatCell statKey={c.key} averages={teamAverages} />
                         </th>
                       );
                     })}
@@ -258,7 +258,7 @@ export default function KarteTeamPage() {
                               c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                             }`}
                           >
-                            {formatGameStatValue(c.key, averages)}
+                            <StatCell statKey={c.key} averages={averages} />
                           </td>
                         );
                       })}
@@ -270,8 +270,8 @@ export default function KarteTeamPage() {
 
             <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
               <li>PTS:得点</li>
-              <li>FG:フィールドゴール成功数/試投数</li>
-              <li>FT:フリースロー成功数/試投数</li>
+              <li>FG%:フィールドゴール成功率(下段は成功数/試投数)</li>
+              <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
               <li>AST:アシスト</li>
               <li>OREB:オフェンスリバウンド</li>
               <li>DREB:ディフェンスリバウンド</li>
