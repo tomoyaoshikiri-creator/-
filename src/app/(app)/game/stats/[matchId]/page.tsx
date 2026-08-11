@@ -245,7 +245,13 @@ export default function GameStatsPage() {
 
   // メンバーチェンジ: 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表す。
   // スタメンは選択解除するとベンチ扱い(benchedStarterIds)にし、記録上のスタメンそのものは変更しない。
+  // 出場中は常に5人までとし、既に5人いる状態で新たに選ぼうとした場合は先に誰かを外してもらう。
   async function handleToggleOwnMember(playerId: string) {
+    const isOnCourt = onCourtIds.includes(playerId);
+    if (!isOnCourt && onCourtIds.length >= 5) {
+      toast("出場は5人までです。先に交代する選手を外してください");
+      return;
+    }
     if (starters.includes(playerId)) {
       setBenchedStarterIds((prev) =>
         prev.includes(playerId) ? prev.filter((x) => x !== playerId) : [...prev, playerId],
@@ -257,6 +263,11 @@ export default function GameStatsPage() {
   }
 
   function handleToggleOpponentOnCourt(opponentPlayerId: string) {
+    const isOnCourt = opponentOnCourtIds.includes(opponentPlayerId);
+    if (!isOnCourt && opponentOnCourtIds.length >= 5) {
+      toast("出場は5人までです。先に交代する選手を外してください");
+      return;
+    }
     setOpponentOnCourtIds((prev) =>
       prev.includes(opponentPlayerId) ? prev.filter((x) => x !== opponentPlayerId) : [...prev, opponentPlayerId],
     );
