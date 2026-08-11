@@ -606,7 +606,7 @@ export default function GameStatsPage() {
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
     number: p.number,
-    name: playerFullName(p),
+    name: p.mei,
   }));
   const opponentOnCourtIds = Array.from(
     new Set([...opponentStarters.filter((id) => !benchedOpponentStarterIds.includes(id)), ...opponentSubs]),
