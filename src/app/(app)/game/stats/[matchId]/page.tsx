@@ -249,7 +249,6 @@ export default function GameStatsPage() {
   async function handleToggleOwnMember(playerId: string) {
     const isOnCourt = onCourtIds.includes(playerId);
     if (!isOnCourt && onCourtIds.length >= 5) {
-      toast("出場は5人までです。先に交代する選手を外してください");
       return;
     }
     if (starters.includes(playerId)) {
@@ -265,7 +264,6 @@ export default function GameStatsPage() {
   function handleToggleOpponentOnCourt(opponentPlayerId: string) {
     const isOnCourt = opponentOnCourtIds.includes(opponentPlayerId);
     if (!isOnCourt && opponentOnCourtIds.length >= 5) {
-      toast("出場は5人までです。先に交代する選手を外してください");
       return;
     }
     setOpponentOnCourtIds((prev) =>
