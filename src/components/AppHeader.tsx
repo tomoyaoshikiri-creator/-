@@ -30,11 +30,6 @@ export function AppHeader({
     <div className={`${bg} text-white px-4.5 pt-4 pb-4.5`}>
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 min-w-0">
-          {backHref && (
-            <Link href={backHref} aria-label="戻る" className="opacity-95 flex-shrink-0">
-              <BackIcon className="w-5 h-5" />
-            </Link>
-          )}
           {teamLogoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={teamLogoUrl} alt="" className="w-6 h-6 rounded object-contain bg-white/20 flex-shrink-0" />
@@ -45,7 +40,7 @@ export function AppHeader({
         </span>
         <CurrentUserBadge />
       </div>
-      <h1 className="flex items-center flex-wrap gap-2 font-sans font-medium text-[26px] mt-2.5 mb-3 leading-tight break-words tracking-wide">
+      <h1 className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-2.5 mb-1.5 leading-tight break-words tracking-wide">
         {title}
         {accessBadge && (
           <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 tracking-wide">
@@ -53,6 +48,12 @@ export function AppHeader({
           </span>
         )}
       </h1>
+      {backHref && (
+        <Link href={backHref} aria-label="戻る" className="inline-flex items-center gap-1 opacity-90 mb-1.5">
+          <BackIcon className="w-4 h-4" />
+          <span className="text-[12px] font-bold">戻る</span>
+        </Link>
+      )}
       {searchPlaceholder && (
         <div className="bg-white/22 rounded-[10px] px-3 py-1 flex items-center gap-1.5">
           <SearchIcon className="w-3.5 h-3.5 opacity-80 flex-shrink-0" />
