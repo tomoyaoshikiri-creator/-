@@ -1,61 +1,82 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { AppHeader } from "@/components/AppHeader";
+import { PageShell } from "@/components/PageShell";
+import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { formatDateLabel, todayDateStr } from "@/lib/format";
-import type { PlayerGrowthRecord } from "@/lib/database.types";
+import { formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
+import type { Player, PlayerGrowthRecord } from "@/lib/database.types";
 
-export function PlayerGrowthCard({ playerId, teamId }: { playerId: string; teamId: string }) {
+export default function PlayerGrowthPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { userId, role } = useSession();
   const toast = useToast();
 
-  const [canAccess, setCanAccess] = useState(false);
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [records, setRecords] = useState<PlayerGrowthRecord[]>([]);
   const [measuredOn, setMeasuredOn] = useState(todayDateStr());
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.from("players").select("*").eq("id", params.id).single();
+      setPlayer(data ?? null);
+    })();
+  }, [params.id]);
+
+  useEffect(() => {
+    (async () => {
+      const isStaff = role === "指導者" || role === "管理者";
+      if (isStaff) {
+        setAuthorized(true);
+        return;
+      }
+      const supabase = createClient();
+      const { data: link } = await supabase
+        .from("player_guardians")
+        .select("id")
+        .eq("player_id", params.id)
+        .eq("profile_id", userId)
+        .maybeSingle();
+      if (link) {
+        setAuthorized(true);
+      } else {
+        setAuthorized(false);
+        router.replace("/players");
+      }
+    })();
+  }, [role, userId, params.id, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const isStaff = role === "指導者" || role === "管理者";
-    let allowed = isStaff;
-    if (!isStaff) {
-      const { data: link } = await supabase
-        .from("player_guardians")
-        .select("id")
-        .eq("player_id", playerId)
-        .eq("profile_id", userId)
-        .maybeSingle();
-      allowed = !!link;
-    }
-    setCanAccess(allowed);
-    if (!allowed) {
-      setLoading(false);
-      return;
-    }
     const { data } = await supabase
       .from("player_growth_records")
       .select("*")
-      .eq("player_id", playerId)
+      .eq("player_id", params.id)
       .order("measured_on", { ascending: false });
     setRecords(data ?? []);
     setLoading(false);
-  }, [playerId, userId, role]);
+  }, [params.id]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (authorized) load();
+  }, [authorized, load]);
 
   async function handleSave() {
+    if (!player) return;
     if (!heightCm.trim() && !weightKg.trim()) {
       toast("身長か体重のどちらかを入力してください");
       return;
@@ -64,8 +85,8 @@ export function PlayerGrowthCard({ playerId, teamId }: { playerId: string; teamI
     const supabase = createClient();
     const { error } = await supabase.from("player_growth_records").upsert(
       {
-        team_id: teamId,
-        player_id: playerId,
+        team_id: player.team_id,
+        player_id: params.id,
         measured_on: measuredOn,
         height_cm: heightCm.trim() ? Number(heightCm) : null,
         weight_kg: weightKg.trim() ? Number(weightKg) : null,
@@ -100,21 +121,20 @@ export function PlayerGrowthCard({ playerId, teamId }: { playerId: string; teamI
     load();
   }
 
-  if (loading || !canAccess) return null;
-
-  const latest = records[0];
+  if (!authorized) return null;
 
   return (
-    <>
-      <SectionLabel>身長・体重(週次)</SectionLabel>
+    <PageShell
+      header={
+        <AppHeader
+          title={player ? `${playerFullName(player)} / 身長・体重` : "身長・体重"}
+          variant="detail"
+          backHref={`/players/${params.id}`}
+        />
+      }
+    >
+      <SectionLabel>記録を追加</SectionLabel>
       <Card>
-        {latest && (
-          <div className="text-[13px] text-ink-soft mb-3">
-            直近: {formatDateLabel(latest.measured_on)} 　身長 {latest.height_cm ?? "-"}cm 　体重{" "}
-            {latest.weight_kg ?? "-"}kg
-          </div>
-        )}
-
         <FieldLabel>測定日</FieldLabel>
         <input
           type="date"
@@ -149,44 +169,40 @@ export function PlayerGrowthCard({ playerId, teamId }: { playerId: string; teamI
         <SubmitButton onClick={handleSave} disabled={saving}>
           {saving ? "保存中…" : "記録する"}
         </SubmitButton>
-
-        {records.length > 0 && (
-          <>
-            <button
-              type="button"
-              onClick={() => setHistoryOpen((v) => !v)}
-              className="text-[12px] font-bold text-orange mt-3"
-            >
-              {historyOpen ? "過去の記録を閉じる" : `過去の記録を見る(${records.length}件)`}
-            </button>
-            {historyOpen && (
-              <div className="mt-2.5">
-                {records.map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-center justify-between border-b border-line py-2 last:border-b-0"
-                  >
-                    <div className="text-[12.5px]">
-                      {formatDateLabel(r.measured_on)} 　身長 {r.height_cm ?? "-"}cm 　体重 {r.weight_kg ?? "-"}kg
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(r.id)}
-                      className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-[8px] text-[11px] font-bold border ${
-                        deleteConfirmId === r.id
-                          ? "border-danger text-danger bg-danger/8"
-                          : "border-line text-ink-soft bg-paper"
-                      }`}
-                    >
-                      {deleteConfirmId === r.id ? "削除確定" : "削除"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </Card>
-    </>
+
+      <SectionLabel>これまでの記録</SectionLabel>
+      {loading ? (
+        <EmptyState>読み込み中…</EmptyState>
+      ) : records.length === 0 ? (
+        <EmptyState>まだ記録がありません</EmptyState>
+      ) : (
+        <Card>
+          {records.map((r, idx) => (
+            <div
+              key={r.id}
+              className={`flex items-center justify-between py-2 ${
+                idx < records.length - 1 ? "border-b border-line" : ""
+              }`}
+            >
+              <div className="text-[12.5px]">
+                {formatDateLabel(r.measured_on)} 　身長 {r.height_cm ?? "-"}cm 　体重 {r.weight_kg ?? "-"}kg
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(r.id)}
+                className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-[8px] text-[11px] font-bold border ${
+                  deleteConfirmId === r.id
+                    ? "border-danger text-danger bg-danger/8"
+                    : "border-line text-ink-soft bg-paper"
+                }`}
+              >
+                {deleteConfirmId === r.id ? "削除確定" : "削除"}
+              </button>
+            </div>
+          ))}
+        </Card>
+      )}
+    </PageShell>
   );
 }

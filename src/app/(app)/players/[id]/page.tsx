@@ -15,7 +15,6 @@ import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
 import { BirthdaySelect } from "../BirthdaySelect";
-import { PlayerGrowthCard } from "../PlayerGrowthCard";
 import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
@@ -294,13 +293,21 @@ export default function PlayerDetailPage() {
             </>
           )}
 
-          <PlayerGrowthCard playerId={player.id} teamId={player.team_id} />
+          <SectionLabel>身長・体重(週次)</SectionLabel>
+          <Link href={`/players/${player.id}/growth`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">記録を入力する・閲覧する</div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
 
           <SectionLabel>スポーツテスト</SectionLabel>
           <Link href={`/players/${player.id}/sports-test`}>
             <Card className="cursor-pointer">
               <div className="flex items-center justify-between">
-                <div className="font-bold text-[13.5px]">記録を見る・入力する</div>
+                <div className="font-bold text-[13.5px]">記録を入力する・閲覧する</div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
             </Card>
