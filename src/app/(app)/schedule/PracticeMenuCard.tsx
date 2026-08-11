@@ -31,7 +31,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
       .from("practice_menus")
       .select("*")
       .eq("schedule_id", scheduleId)
-      .order("created_at", { ascending: true });
+      .order("updated_at", { ascending: true });
     setMenus(data ?? []);
     setLoading(false);
   }, [scheduleId]);
