@@ -450,7 +450,7 @@ export interface Database {
           event: StatEvent;
           delta: number;
         };
-        Update: Record<string, never>;
+        Update: { quarter?: number };
         Relationships: [];
       };
       practice_menus: {
@@ -549,7 +549,7 @@ export interface Database {
           event: StatEvent;
           delta: number;
         };
-        Update: Record<string, never>;
+        Update: { quarter?: number };
         Relationships: [];
       };
       sports_test_records: {
@@ -741,6 +741,14 @@ export interface Database {
           eff: number;
           updated_at: string;
         };
+      };
+      delete_game_stat_event: {
+        Args: { p_event_id: string };
+        Returns: void;
+      };
+      delete_opponent_game_stat_event: {
+        Args: { p_event_id: string };
+        Returns: void;
       };
     };
   };

@@ -22,6 +22,8 @@ import {
   isStatEventAllowed,
   recordGameStat,
   recordOpponentGameStat,
+  deleteGameStatEvent,
+  deleteOpponentGameStatEvent,
   statEventPoints,
   type StatEvent,
 } from "@/lib/gameStats";
@@ -213,6 +215,66 @@ export default function GameStatsPage() {
     ]);
   }
 
+  async function handleChangeStatEventQuarter(eventId: string, newQuarter: number) {
+    const supabase = createClient();
+    const { error } = await supabase.from("game_stat_events").update({ quarter: newQuarter }).eq("id", eventId);
+    if (error) {
+      toast(`修正に失敗しました: ${error.message}`);
+      return;
+    }
+    setStatEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, quarter: newQuarter } : e)));
+    toast("クォーターを修正しました");
+  }
+
+  async function handleDeleteStatEvent(eventId: string) {
+    const target = statEvents.find((e) => e.id === eventId);
+    if (!target) return;
+    const supabase = createClient();
+    const { error } = await deleteGameStatEvent(supabase, eventId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setStatEvents((prev) => prev.filter((e) => e.id !== eventId));
+    setStatLines((prev) => {
+      const row = prev[target.player_id];
+      if (!row) return prev;
+      return { ...prev, [target.player_id]: applyStatEventLocally(row, target.event, -target.delta) };
+    });
+    adjustTeamScore(-statEventPoints(target.event, target.delta));
+    toast("記録を削除しました");
+  }
+
+  async function handleChangeOpponentStatEventQuarter(eventId: string, newQuarter: number) {
+    const supabase = createClient();
+    const { error } = await supabase.from("game_opponent_stat_events").update({ quarter: newQuarter }).eq("id", eventId);
+    if (error) {
+      toast(`修正に失敗しました: ${error.message}`);
+      return;
+    }
+    setOpponentStatEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, quarter: newQuarter } : e)));
+    toast("クォーターを修正しました");
+  }
+
+  async function handleDeleteOpponentStatEvent(eventId: string) {
+    const target = opponentStatEvents.find((e) => e.id === eventId);
+    if (!target) return;
+    const supabase = createClient();
+    const { error } = await deleteOpponentGameStatEvent(supabase, eventId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setOpponentStatEvents((prev) => prev.filter((e) => e.id !== eventId));
+    setOpponentStatLines((prev) => {
+      const row = prev[target.opponent_player_id];
+      if (!row) return prev;
+      return { ...prev, [target.opponent_player_id]: applyStatEventLocally(row, target.event, -target.delta) };
+    });
+    adjustOpponentScore(-statEventPoints(target.event, target.delta));
+    toast("記録を削除しました");
+  }
+
   const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
@@ -305,7 +367,12 @@ export default function GameStatsPage() {
               emptyMessage="この試合のスタメン・途中出場を登録してください"
             />
           </div>
-          <GameStatLog title="自チームの記録ログ" events={ownLog} />
+          <GameStatLog
+            title="自チームの記録ログ"
+            events={ownLog}
+            onChangeQuarter={handleChangeStatEventQuarter}
+            onDelete={handleDeleteStatEvent}
+          />
 
           <OpponentRoster
             matchId={matchId}
@@ -323,7 +390,12 @@ export default function GameStatsPage() {
               emptyMessage="相手選手の背番号を登録してください"
             />
           </div>
-          <GameStatLog title="相手チームの記録ログ" events={opponentLog} />
+          <GameStatLog
+            title="相手チームの記録ログ"
+            events={opponentLog}
+            onChangeQuarter={handleChangeOpponentStatEventQuarter}
+            onDelete={handleDeleteOpponentStatEvent}
+          />
         </>
       )}
     </PageShell>

@@ -229,6 +229,14 @@ export function recordOpponentGameStat(
   });
 }
 
+export function deleteGameStatEvent(supabase: SupabaseClient<Database>, eventId: string) {
+  return supabase.rpc("delete_game_stat_event", { p_event_id: eventId });
+}
+
+export function deleteOpponentGameStatEvent(supabase: SupabaseClient<Database>, eventId: string) {
+  return supabase.rpc("delete_opponent_game_stat_event", { p_event_id: eventId });
+}
+
 export function statEventLabel(event: StatEvent): string {
   return STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
 }
