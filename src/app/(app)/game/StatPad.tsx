@@ -30,11 +30,10 @@ function statCell(event: StatEvent): GridCell {
   return { type: "stat", event, label };
 }
 
-// アシストがあった位置にFTを入れ、アシストはFTの元の位置(先頭)に置く。
 const GRID_CELLS: GridCell[] = [
-  statCell("ast"),
   statCell("fg_make"),
   statCell("fg_miss"),
+  statCell("ast"),
   { type: "ft" },
   statCell("fouls"),
   statCell("tov"),
