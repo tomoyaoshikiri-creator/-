@@ -175,7 +175,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "sprint20m",
     label: "20mスプリント",
-    abbrLines: ["20m", "走"],
+    abbrLines: ["20mス", "プリント"],
     unit: "秒",
     direction: "asc",
     extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
@@ -183,7 +183,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "long_jump",
     label: "立ち幅跳び",
-    abbrLines: ["立幅", "跳び"],
+    abbrLines: ["立ち幅", "跳び"],
     unit: "cm",
     direction: "desc",
     extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
@@ -191,7 +191,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "lane_agility",
     label: "レーンアジリティ",
-    abbrLines: ["レーン", "アジリ"],
+    abbrLines: ["レーンア", "ジリティ"],
     unit: "秒",
     direction: "asc",
     extract: (r) => bestOf(r.lane_agility_1, r.lane_agility_2, "asc"),
@@ -247,7 +247,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   {
     value: "beep_test_reps",
     label: "20mシャトルラン",
-    abbrLines: ["20m", "シャトル"],
+    abbrLines: ["20シャ", "トルラン"],
     unit: "回",
     direction: "desc",
     extract: (r) => r.beep_test_reps,
