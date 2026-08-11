@@ -577,7 +577,7 @@ export default function GameDetailPage() {
           {selectedMatch && players.length > 0 && (
             <div className="mt-4">
               <SectionLabel>スタッツ入力</SectionLabel>
-              <StatPad players={players} statLines={statLines} onTap={handleStatTap} />
+              <StatPad key={selectedMatchId} players={players} statLines={statLines} onTap={handleStatTap} />
             </div>
           )}
         </>

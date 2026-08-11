@@ -19,13 +19,13 @@ export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "fg_miss", label: "FG失敗" },
   { event: "ft_make", label: "FT成功" },
   { event: "ft_miss", label: "FT失敗" },
+  { event: "ast", label: "アシスト" },
+  { event: "fouls", label: "ファウル" },
+  { event: "tov", label: "ターンオーバー" },
+  { event: "blk", label: "ブロック" },
+  { event: "stl", label: "スティール" },
   { event: "reb_off", label: "OFFリバウンド" },
   { event: "reb_def", label: "DEFリバウンド" },
-  { event: "ast", label: "アシスト" },
-  { event: "stl", label: "スティール" },
-  { event: "blk", label: "ブロック" },
-  { event: "tov", label: "ターンオーバー" },
-  { event: "fouls", label: "ファウル" },
 ];
 
 export function statEventCount(row: GamePlayerStatLine | undefined, event: StatEvent): number {
