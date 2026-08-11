@@ -399,6 +399,7 @@ export interface Database {
           back_fist_left: number | null;
           ft_golf: number | null;
           beep_test_reps: number | null;
+          not_conducted: boolean;
           recorded_by: string | null;
           updated_at: string;
         };
@@ -408,6 +409,7 @@ export interface Database {
           player_id: string;
           fiscal_year: number;
           quarter: number;
+          not_conducted?: boolean;
           wingspan_cm?: number | null;
           sprint20m_1?: number | null;
           sprint20m_2?: number | null;

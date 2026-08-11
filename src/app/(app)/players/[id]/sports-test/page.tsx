@@ -94,6 +94,7 @@ export default function SportsTestPage() {
   const [quarter, setQuarter] = useState<number>(1);
   const [record, setRecord] = useState<SportsTestRecord | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [notConducted, setNotConducted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -121,6 +122,7 @@ export default function SportsTestPage() {
       .maybeSingle();
     setRecord(data ?? null);
     setForm(recordToForm(data ?? null));
+    setNotConducted(data?.not_conducted ?? false);
     setLoading(false);
   }, [params.id, fiscalYear, quarter]);
 
@@ -143,22 +145,23 @@ export default function SportsTestPage() {
           player_id: params.id,
           fiscal_year: fiscalYear,
           quarter,
-          wingspan_cm: numOrNull(form.wingspan_cm),
-          sprint20m_1: numOrNull(form.sprint20m_1),
-          sprint20m_2: numOrNull(form.sprint20m_2),
-          long_jump_1: numOrNull(form.long_jump_1),
-          long_jump_2: numOrNull(form.long_jump_2),
-          lane_agility_1: numOrNull(form.lane_agility_1),
-          lane_agility_2: numOrNull(form.lane_agility_2),
-          side_step_1: numOrNull(form.side_step_1),
-          side_step_2: numOrNull(form.side_step_2),
-          shuttle_20m_x3: numOrNull(form.shuttle_20m_x3),
-          ball_throw_1: numOrNull(form.ball_throw_1),
-          ball_throw_2: numOrNull(form.ball_throw_2),
-          back_fist_right: numOrNull(form.back_fist_right),
-          back_fist_left: numOrNull(form.back_fist_left),
-          ft_golf: numOrNull(form.ft_golf),
-          beep_test_reps: numOrNull(form.beep_test_reps),
+          not_conducted: notConducted,
+          wingspan_cm: notConducted ? null : numOrNull(form.wingspan_cm),
+          sprint20m_1: notConducted ? null : numOrNull(form.sprint20m_1),
+          sprint20m_2: notConducted ? null : numOrNull(form.sprint20m_2),
+          long_jump_1: notConducted ? null : numOrNull(form.long_jump_1),
+          long_jump_2: notConducted ? null : numOrNull(form.long_jump_2),
+          lane_agility_1: notConducted ? null : numOrNull(form.lane_agility_1),
+          lane_agility_2: notConducted ? null : numOrNull(form.lane_agility_2),
+          side_step_1: notConducted ? null : numOrNull(form.side_step_1),
+          side_step_2: notConducted ? null : numOrNull(form.side_step_2),
+          shuttle_20m_x3: notConducted ? null : numOrNull(form.shuttle_20m_x3),
+          ball_throw_1: notConducted ? null : numOrNull(form.ball_throw_1),
+          ball_throw_2: notConducted ? null : numOrNull(form.ball_throw_2),
+          back_fist_right: notConducted ? null : numOrNull(form.back_fist_right),
+          back_fist_left: notConducted ? null : numOrNull(form.back_fist_left),
+          ft_golf: notConducted ? null : numOrNull(form.ft_golf),
+          beep_test_reps: notConducted ? null : numOrNull(form.beep_test_reps),
           recorded_by: userId,
         },
         { onConflict: "player_id,fiscal_year,quarter" },
@@ -209,12 +212,24 @@ export default function SportsTestPage() {
             ))}
           </div>
         </div>
+        <div className="mt-3">
+          <FieldLabel>実施状況</FieldLabel>
+          <div className="flex gap-1.5">
+            <SegButton active={!notConducted} onClick={() => setNotConducted(false)}>
+              実施
+            </SegButton>
+            <SegButton active={notConducted} onClick={() => setNotConducted(true)}>
+              未実施
+            </SegButton>
+          </div>
+        </div>
       </Card>
 
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : (
         <>
+          <div className={notConducted ? "opacity-40 pointer-events-none" : ""}>
           <SectionLabel>身体測定</SectionLabel>
           <Card>
             <FieldLabel>ウイングスパン(cm)</FieldLabel>
@@ -399,6 +414,7 @@ export default function SportsTestPage() {
               />
             </div>
           </Card>
+          </div>
 
           <SubmitButton onClick={handleSave} disabled={saving}>
             {saving ? "保存中…" : record ? "更新する" : "保存する"}
