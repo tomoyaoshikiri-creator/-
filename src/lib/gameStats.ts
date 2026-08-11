@@ -23,10 +23,10 @@ export interface StatTotals {
 }
 
 export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
-  { event: "fg_make", label: "シュート成功" },
-  { event: "fg_miss", label: "シュート失敗" },
-  { event: "ft_make", label: "フリースロー成功" },
-  { event: "ft_miss", label: "フリースロー失敗" },
+  { event: "fg_make", label: "FG成功" },
+  { event: "fg_miss", label: "FG失敗" },
+  { event: "ft_make", label: "FT成功" },
+  { event: "ft_miss", label: "FT失敗" },
   { event: "ast", label: "アシスト" },
   { event: "fouls", label: "ファウル" },
   { event: "tov", label: "ターンオーバー" },
