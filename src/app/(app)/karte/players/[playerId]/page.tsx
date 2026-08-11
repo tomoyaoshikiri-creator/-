@@ -9,10 +9,15 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
-import { FieldLabel, SegButton } from "@/components/ui/SegButton";
+import { FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
-import { computeSeasonAverages } from "@/lib/karteAggregate";
+import {
+  computeSeasonAverages,
+  GAME_COLUMNS,
+  PERCENT_COLUMNS,
+  SPORTS_TEST_RANKING_METRICS,
+} from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, gradeLabel, playerFullName, todayDateStr } from "@/lib/format";
 import type { GamePlayerStatLine, Player, PlayerGrowthRecord, SportsTestRecord } from "@/lib/database.types";
 
@@ -21,27 +26,8 @@ const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_Y
 const QUARTERS = [1, 2, 3, 4] as const;
 
 interface StatLineWithDate extends GamePlayerStatLine {
-  game_matches: { schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
-
-const SPORTS_TEST_FIELDS: { key: keyof SportsTestRecord; label: string; unit: string }[] = [
-  { key: "wingspan_cm", label: "ウイングスパン", unit: "cm" },
-  { key: "sprint20m_1", label: "20mスプリント①", unit: "秒" },
-  { key: "sprint20m_2", label: "20mスプリント②", unit: "秒" },
-  { key: "long_jump_1", label: "立ち幅跳び①", unit: "cm" },
-  { key: "long_jump_2", label: "立ち幅跳び②", unit: "cm" },
-  { key: "lane_agility_1", label: "レーンアジリティ①", unit: "秒" },
-  { key: "lane_agility_2", label: "レーンアジリティ②", unit: "秒" },
-  { key: "side_step_1", label: "反復横跳び①", unit: "点" },
-  { key: "side_step_2", label: "反復横跳び②", unit: "点" },
-  { key: "shuttle_20m_x3", label: "20m三往復", unit: "秒" },
-  { key: "ball_throw_1", label: "ボール投げ①", unit: "m" },
-  { key: "ball_throw_2", label: "ボール投げ②", unit: "m" },
-  { key: "back_fist_right", label: "背中こぶし合わせ(右上)", unit: "cm" },
-  { key: "back_fist_left", label: "背中こぶし合わせ(左上)", unit: "cm" },
-  { key: "ft_golf", label: "FTゴルフ", unit: "/10" },
-  { key: "beep_test_reps", label: "20mシャトルラン", unit: "回" },
-];
 
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
@@ -50,9 +36,8 @@ export default function KartePlayerPage() {
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
-  const [quarter, setQuarter] = useState<number>(1);
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
-  const [sportsTestRecord, setSportsTestRecord] = useState<SportsTestRecord | null>(null);
+  const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,20 +48,18 @@ export default function KartePlayerPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: lines }, { data: test }, { data: growth }] = await Promise.all([
+    const [{ data: p }, { data: lines }, { data: tests }, { data: growth }] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.playerId).single(),
       supabase
         .from("game_player_stat_lines")
-        .select("*, game_matches(schedules(date, fiscal_year_override))")
+        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
         .eq("player_id", params.playerId)
         .returns<StatLineWithDate[]>(),
       supabase
         .from("sports_test_records")
         .select("*")
         .eq("player_id", params.playerId)
-        .eq("fiscal_year", fiscalYear)
-        .eq("quarter", quarter)
-        .maybeSingle(),
+        .eq("fiscal_year", fiscalYear),
       supabase
         .from("player_growth_records")
         .select("*")
@@ -86,21 +69,27 @@ export default function KartePlayerPage() {
     ]);
     setPlayer(p ?? null);
     setStatLines(lines ?? []);
-    setSportsTestRecord(test ?? null);
+    setSportsTestRecords(tests ?? []);
     setGrowthRecords(growth ?? []);
     setLoading(false);
-  }, [params.playerId, fiscalYear, quarter]);
+  }, [params.playerId, fiscalYear]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const seasonLines = statLines.filter((l) => {
-    const date = l.game_matches?.schedules?.date;
-    if (!date) return false;
-    return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
-  });
-  const averages = computeSeasonAverages(seasonLines);
+  const seasonLines = statLines
+    .filter((l) => {
+      const date = l.game_matches?.schedules?.date;
+      if (!date) return false;
+      return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
+    })
+    .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
+  const seasonAverages = computeSeasonAverages(seasonLines);
+  const gameRows = seasonLines.map((l) => ({
+    label: `${formatDateLabel(l.game_matches?.schedules?.date ?? "")} vs ${l.game_matches?.opponent ?? "-"}`,
+    averages: computeSeasonAverages([l]),
+  }));
 
   if (loading) {
     return (
@@ -150,75 +139,123 @@ export default function KartePlayerPage() {
         </div>
       </div>
 
-      <SectionLabel>試合スタッツ(シーズン平均)</SectionLabel>
-      <Card>
-        {averages.gp === 0 ? (
+      <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
+      {gameRows.length === 0 ? (
+        <Card>
           <EmptyState>この年度の出場記録がありません</EmptyState>
-        ) : (
-          <>
-            <div className="text-[12px] font-bold text-ink-soft mb-2">GP {averages.gp}試合</div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "PTS", value: averages.pts },
-                { label: "REB", value: averages.reb },
-                { label: "AST", value: averages.ast },
-                { label: "STL", value: averages.stl },
-                { label: "BLK", value: averages.blk },
-                { label: "TOV", value: averages.tov },
-                { label: "FOUL", value: averages.fouls },
-                { label: "EFF", value: averages.eff },
-                { label: "FG%", value: averages.fgPct ?? "-" },
-                { label: "FT%", value: averages.ftPct ?? "-" },
-              ].map((item) => (
-                <div key={item.label} className="text-center bg-paper rounded-[10px] py-2">
-                  <div className="text-[10px] font-bold text-ink-soft">{item.label}</div>
-                  <div
-                    className={`font-mono text-[15px] font-bold mt-0.5 ${
-                      item.label === "EFF" && typeof item.value === "number" && item.value < 0 ? "text-danger" : ""
-                    }`}
+        </Card>
+      ) : (
+        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+          <table className="border-collapse text-[11.5px] w-full">
+            <thead>
+              <tr>
+                <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                  試合
+                </th>
+                {GAME_COLUMNS.map((c) => (
+                  <th
+                    key={c.key}
+                    className="sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
                   >
-                    {item.value}
-                  </div>
-                </div>
+                    {c.abbr}
+                  </th>
+                ))}
+              </tr>
+              <tr className="bg-paper">
+                <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  シーズン平均
+                </th>
+                {GAME_COLUMNS.map((c) => {
+                  const v = seasonAverages[c.key] as number | null;
+                  return (
+                    <th
+                      key={c.key}
+                      className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                        c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                      }`}
+                    >
+                      {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {gameRows.map((row, i) => (
+                <tr key={i}>
+                  <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                    {row.label}
+                  </td>
+                  {GAME_COLUMNS.map((c) => {
+                    const v = row.averages[c.key] as number | null;
+                    return (
+                      <td
+                        key={c.key}
+                        className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                        }`}
+                      >
+                        {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
+                      </td>
+                    );
+                  })}
+                </tr>
               ))}
-            </div>
-          </>
-        )}
-      </Card>
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      <SectionLabel>スポーツテスト</SectionLabel>
-      <div className="flex gap-1.5 mb-2">
-        {QUARTERS.map((q) => (
-          <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
-            Q{q}
-          </SegButton>
-        ))}
-      </div>
-      <Card>
-        {!sportsTestRecord || sportsTestRecord.not_conducted ? (
-          <EmptyState>{sportsTestRecord?.not_conducted ? "未実施" : "この四半期の記録がありません"}</EmptyState>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-            {SPORTS_TEST_FIELDS.map((f) => {
-              const v = sportsTestRecord[f.key];
+      <SectionLabel>スポーツテスト(四半期ごと)</SectionLabel>
+      <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+        <table className="border-collapse text-[11.5px] w-full">
+          <thead>
+            <tr>
+              <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                四半期
+              </th>
+              {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                <th
+                  key={m.value}
+                  className="sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight text-ink-soft"
+                >
+                  <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
+                  <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {QUARTERS.map((q) => {
+              const record = sportsTestRecords.find((r) => r.quarter === q);
               return (
-                <div key={f.key} className="flex items-baseline justify-between">
-                  <span className="text-[11px] text-ink-soft">{f.label}</span>
-                  <span className="font-mono text-[13px] font-bold ml-1">
-                    {v === null || v === undefined ? "-" : `${v}${f.unit}`}
-                  </span>
-                </div>
+                <tr key={q}>
+                  <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
+                    Q{q}
+                  </td>
+                  {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                    const v = record && !record.not_conducted ? m.extract(record) : null;
+                    return (
+                      <td
+                        key={m.value}
+                        className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                      >
+                        {v === null ? "-" : v}
+                      </td>
+                    );
+                  })}
+                </tr>
               );
             })}
-          </div>
-        )}
-        <Link
-          href={`/players/${player.id}/sports-test`}
-          className="block mt-3 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-paper"
-        >
-          記録を入力・編集する
-        </Link>
-      </Card>
+          </tbody>
+        </table>
+      </div>
+      <Link
+        href={`/players/${player.id}/sports-test`}
+        className="block mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+      >
+        スポーツテストを入力・編集する
+      </Link>
 
       <SectionLabel>身長・体重(週次)</SectionLabel>
       <Card>

@@ -18,6 +18,23 @@ export interface SeasonStatAverages {
   ftPct: number | null;
 }
 
+// 得点・FG成功率・FT成功率・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・
+// ターンオーバー・EFFの順。チームカルテ・選手カルテの表で共通して使う列定義。
+export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
+  { key: "pts", abbr: "PTS" },
+  { key: "fgPct", abbr: "FG%" },
+  { key: "ftPct", abbr: "FT%" },
+  { key: "ast", abbr: "AST" },
+  { key: "rebOff", abbr: "OREB" },
+  { key: "rebDef", abbr: "DREB" },
+  { key: "stl", abbr: "STL" },
+  { key: "blk", abbr: "BLK" },
+  { key: "tov", abbr: "TO" },
+  { key: "eff", abbr: "EFF" },
+];
+
+export const PERCENT_COLUMNS = new Set<keyof SeasonStatAverages>(["fgPct", "ftPct"]);
+
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 // 出場した試合(この選手のstat_lineが1行でも存在する試合)だけをGPとして数える。

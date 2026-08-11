@@ -14,6 +14,8 @@ import { canViewKarte } from "@/lib/permissions";
 import {
   computeSeasonAverages,
   computeTeamAverages,
+  GAME_COLUMNS,
+  PERCENT_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
   type SportsTestMetric,
@@ -28,23 +30,6 @@ const QUARTERS = [1, 2, 3, 4] as const;
 interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
-
-// 得点・FG成功・FT成功・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・ターンオーバー・EFFの順。
-// スマホ幅に収まらないため、列見出しはExcelと同じ英字略称にしている。
-const PERCENT_COLUMNS = new Set<keyof SeasonStatAverages>(["fgPct", "ftPct"]);
-
-const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
-  { key: "pts", abbr: "PTS" },
-  { key: "fgPct", abbr: "FG%" },
-  { key: "ftPct", abbr: "FT%" },
-  { key: "ast", abbr: "AST" },
-  { key: "rebOff", abbr: "OREB" },
-  { key: "rebDef", abbr: "DREB" },
-  { key: "stl", abbr: "STL" },
-  { key: "blk", abbr: "BLK" },
-  { key: "tov", abbr: "TO" },
-  { key: "eff", abbr: "EFF" },
-];
 
 type SportsTestValues = Partial<Record<SportsTestMetric, number | null>>;
 
