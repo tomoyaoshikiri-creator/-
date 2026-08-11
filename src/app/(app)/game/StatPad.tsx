@@ -47,6 +47,7 @@ function ChipRow({
   statLines,
   active,
   activeColor = "orange",
+  showName = false,
   onSelect,
   onOpenMemberChange,
 }: {
@@ -54,6 +55,7 @@ function ChipRow({
   statLines: Record<string, StatTotals>;
   active: (id: string) => boolean;
   activeColor?: "orange" | "navy";
+  showName?: boolean;
   onSelect: (id: string) => void;
   onOpenMemberChange?: () => void;
 }) {
@@ -68,11 +70,20 @@ function ChipRow({
             key={e.id}
             type="button"
             onClick={() => onSelect(e.id)}
-            className={`flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border font-bold ${
+            className={`flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-[12px] border font-bold ${
               isActive ? activeClass : "border-line bg-white text-ink"
             }`}
           >
-            <span className="text-[15px] leading-none">{e.number ?? "-"}</span>
+            {showName && e.name && (
+              <span
+                className={`w-full px-0.5 text-[8px] leading-none truncate text-center ${
+                  isActive ? "text-white/85" : "text-ink-soft"
+                }`}
+              >
+                {e.name}
+              </span>
+            )}
+            <span className="text-[15px] leading-none mt-0.5">{e.number ?? "-"}</span>
             <span className={`text-[9.5px] mt-0.5 leading-none ${isActive ? "text-white/85" : "text-ink-soft"}`}>
               {r?.pts ?? 0}pts
             </span>
@@ -163,6 +174,7 @@ export function StatPad({
         entrants={ownEntrants}
         statLines={ownStatLines}
         active={(id) => selected?.side === "own" && selected.id === id}
+        showName
         onSelect={(id) => setSelected({ side: "own", id })}
         onOpenMemberChange={onOpenOwnMemberChange}
       />
