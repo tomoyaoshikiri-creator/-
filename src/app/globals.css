@@ -36,7 +36,7 @@
   */
   --font-display: var(--font-display-serif), Meiryo, "メイリオ", var(--font-noto-sans-jp);
   --font-sans: Meiryo, "メイリオ", var(--font-noto-sans-jp);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-mono: var(--font-roboto-mono);
 }
 
 html,

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant, Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
+import { Cormorant, Noto_Sans_JP, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
 const cormorant = Cormorant({
@@ -14,8 +14,8 @@ const notoSansJP = Noto_Sans_JP({
   weight: ["400", "500", "700", "900"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
   weight: ["500", "700"],
 });
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
-      className={`${cormorant.variable} ${notoSansJP.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${cormorant.variable} ${notoSansJP.variable} ${robotoMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>
