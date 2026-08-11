@@ -25,11 +25,13 @@ export function StatPad({
   entrants,
   statLines,
   onTap,
+  onUndo,
   emptyMessage = "選手がいません",
 }: {
   entrants: StatEntrant[];
   statLines: Record<string, StatTotals>;
-  onTap: (entrantId: string, event: StatEvent, delta: number) => void;
+  onTap: (entrantId: string, event: StatEvent) => void;
+  onUndo: (entrantId: string, event: StatEvent) => void;
   emptyMessage?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function StatPad({
               >
                 <button
                   type="button"
-                  onClick={() => canMinus && onTap(selected.id, event, -1)}
+                  onClick={() => canMinus && onUndo(selected.id, event)}
                   disabled={!canMinus}
                   className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
                 >
@@ -109,7 +111,7 @@ export function StatPad({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onTap(selected.id, event, 1)}
+                  onClick={() => onTap(selected.id, event)}
                   className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
                 >
                   ＋

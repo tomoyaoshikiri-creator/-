@@ -19,7 +19,6 @@ import {
   emptyStatLine,
   emptyOpponentStatLine,
   applyStatEventLocally,
-  isStatEventAllowed,
   recordGameStat,
   recordOpponentGameStat,
   deleteGameStatEvent,
@@ -160,10 +159,10 @@ export default function GameStatsPage() {
     );
   }
 
-  async function handleStatTap(playerId: string, event: StatEvent, delta: number) {
+  async function handleStatTap(playerId: string, event: StatEvent) {
     if (!matchId) return;
+    const delta = 1;
     const prevRow = statLines[playerId] ?? emptyStatLine(teamId, matchId, playerId);
-    if (!isStatEventAllowed(prevRow, event, delta)) return;
     const nextRow = applyStatEventLocally(prevRow, event, delta);
     setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
     const pointsDelta = statEventPoints(event, delta);
@@ -185,10 +184,10 @@ export default function GameStatsPage() {
     ]);
   }
 
-  async function handleOpponentStatTap(opponentPlayerId: string, event: StatEvent, delta: number) {
+  async function handleOpponentStatTap(opponentPlayerId: string, event: StatEvent) {
     if (!matchId) return;
+    const delta = 1;
     const prevRow = opponentStatLines[opponentPlayerId] ?? emptyOpponentStatLine(teamId, matchId, opponentPlayerId);
-    if (!isStatEventAllowed(prevRow, event, delta)) return;
     const nextRow = applyStatEventLocally(prevRow, event, delta);
     setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: nextRow }));
     const pointsDelta = statEventPoints(event, delta);
@@ -217,6 +216,27 @@ export default function GameStatsPage() {
       },
       ...prev,
     ]);
+  }
+
+  // 「−」タップは新たに取消イベントを積み上げるのではなく、直近の該当タップそのものを削除する。
+  async function handleStatUndo(playerId: string, event: StatEvent) {
+    const target = statEvents.find((e) => e.player_id === playerId && e.event === event && e.delta > 0);
+    if (!target) {
+      toast("取り消せる記録が見つかりませんでした");
+      return;
+    }
+    await handleDeleteStatEvent(target.id);
+  }
+
+  async function handleOpponentStatUndo(opponentPlayerId: string, event: StatEvent) {
+    const target = opponentStatEvents.find(
+      (e) => e.opponent_player_id === opponentPlayerId && e.event === event && e.delta > 0,
+    );
+    if (!target) {
+      toast("取り消せる記録が見つかりませんでした");
+      return;
+    }
+    await handleDeleteOpponentStatEvent(target.id);
   }
 
   async function handleChangeStatEventQuarter(eventId: string, newQuarter: number) {
@@ -408,6 +428,7 @@ export default function GameStatsPage() {
               entrants={ownEntrants}
               statLines={statLines}
               onTap={handleStatTap}
+              onUndo={handleStatUndo}
               emptyMessage="この試合のスタメン・途中出場を登録してください"
             />
           </div>
@@ -431,6 +452,7 @@ export default function GameStatsPage() {
               entrants={opponentEntrants}
               statLines={opponentStatLines}
               onTap={handleOpponentStatTap}
+              onUndo={handleOpponentStatUndo}
               emptyMessage="相手選手の背番号を登録してください"
             />
           </div>
