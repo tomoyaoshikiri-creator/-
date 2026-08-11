@@ -229,6 +229,11 @@ export default function KarteTeamPage() {
                   </tbody>
                 </table>
             </div>
+
+            <div className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5">
+              PTS:得点 / FG:FG成功数 / FT:FT成功数 / AST:アシスト / OREB:オフェンスリバウンド / DREB:ディフェンスリバウンド /
+              STL:スティール / BLK:ブロック / TO:ターンオーバー / EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)
+            </div>
           </>
         )
       ) : (
