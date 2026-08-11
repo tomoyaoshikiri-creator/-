@@ -354,13 +354,23 @@ export default function GameStatsPage() {
       adjustTeamScore(-pointsDelta);
       return;
     }
-    if (data) {
-      setStatLines((prev) => ({ ...prev, [playerId]: data }));
+    const result = data?.[0];
+    if (result) {
+      setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+      setStatEvents((prev) => [
+        {
+          id: result.event_id,
+          team_id: teamId,
+          match_id: matchId,
+          player_id: playerId,
+          quarter,
+          event,
+          delta,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
     }
-    setStatEvents((prev) => [
-      { id: crypto.randomUUID(), team_id: teamId, match_id: matchId, player_id: playerId, quarter, event, delta, created_at: new Date().toISOString() },
-      ...prev,
-    ]);
   }
 
   async function handleOpponentStatTap(opponentPlayerId: string, event: StatEvent) {
@@ -379,22 +389,23 @@ export default function GameStatsPage() {
       adjustOpponentScore(-pointsDelta);
       return;
     }
-    if (data) {
-      setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: data }));
+    const result = data?.[0];
+    if (result) {
+      setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+      setOpponentStatEvents((prev) => [
+        {
+          id: result.event_id,
+          team_id: teamId,
+          match_id: matchId,
+          opponent_player_id: opponentPlayerId,
+          quarter,
+          event,
+          delta,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
     }
-    setOpponentStatEvents((prev) => [
-      {
-        id: crypto.randomUUID(),
-        team_id: teamId,
-        match_id: matchId,
-        opponent_player_id: opponentPlayerId,
-        quarter,
-        event,
-        delta,
-        created_at: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
   }
 
   // フリースローは1本/2本のトリップ単位で結果をまとめて記録する。ローカルの合計は一括で
@@ -415,20 +426,23 @@ export default function GameStatsPage() {
         toast(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
-      if (data) setStatLines((prev) => ({ ...prev, [playerId]: data }));
-      setStatEvents((prev) => [
-        {
-          id: crypto.randomUUID(),
-          team_id: teamId,
-          match_id: matchId,
-          player_id: playerId,
-          quarter,
-          event: "ft_make",
-          delta: 1,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const result = data?.[0];
+      if (result) {
+        setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+        setStatEvents((prev) => [
+          {
+            id: result.event_id,
+            team_id: teamId,
+            match_id: matchId,
+            player_id: playerId,
+            quarter,
+            event: "ft_make",
+            delta: 1,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      }
     }
     for (let i = 0; i < misses; i++) {
       const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_miss", 1);
@@ -436,20 +450,23 @@ export default function GameStatsPage() {
         toast(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
-      if (data) setStatLines((prev) => ({ ...prev, [playerId]: data }));
-      setStatEvents((prev) => [
-        {
-          id: crypto.randomUUID(),
-          team_id: teamId,
-          match_id: matchId,
-          player_id: playerId,
-          quarter,
-          event: "ft_miss",
-          delta: 1,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const result = data?.[0];
+      if (result) {
+        setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
+        setStatEvents((prev) => [
+          {
+            id: result.event_id,
+            team_id: teamId,
+            match_id: matchId,
+            player_id: playerId,
+            quarter,
+            event: "ft_miss",
+            delta: 1,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      }
     }
   }
 
@@ -469,20 +486,23 @@ export default function GameStatsPage() {
         toast(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
-      if (data) setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: data }));
-      setOpponentStatEvents((prev) => [
-        {
-          id: crypto.randomUUID(),
-          team_id: teamId,
-          match_id: matchId,
-          opponent_player_id: opponentPlayerId,
-          quarter,
-          event: "ft_make",
-          delta: 1,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const result = data?.[0];
+      if (result) {
+        setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+        setOpponentStatEvents((prev) => [
+          {
+            id: result.event_id,
+            team_id: teamId,
+            match_id: matchId,
+            opponent_player_id: opponentPlayerId,
+            quarter,
+            event: "ft_make",
+            delta: 1,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      }
     }
     for (let i = 0; i < misses; i++) {
       const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_miss", 1);
@@ -490,20 +510,23 @@ export default function GameStatsPage() {
         toast(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
-      if (data) setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: data }));
-      setOpponentStatEvents((prev) => [
-        {
-          id: crypto.randomUUID(),
-          team_id: teamId,
-          match_id: matchId,
-          opponent_player_id: opponentPlayerId,
-          quarter,
-          event: "ft_miss",
-          delta: 1,
-          created_at: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      const result = data?.[0];
+      if (result) {
+        setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
+        setOpponentStatEvents((prev) => [
+          {
+            id: result.event_id,
+            team_id: teamId,
+            match_id: matchId,
+            opponent_player_id: opponentPlayerId,
+            quarter,
+            event: "ft_miss",
+            delta: 1,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
+      }
     }
   }
 
@@ -755,13 +778,6 @@ export default function GameStatsPage() {
             onDelete={handleDeleteStatEvent}
           />
 
-          <OpponentRoster
-            matchId={matchId}
-            teamId={teamId}
-            opponentPlayers={opponentPlayers}
-            onChange={setOpponentPlayers}
-          />
-
           <OpponentLineupSection
             opponentPlayers={opponentPlayers}
             starters={opponentStarters}
@@ -769,6 +785,13 @@ export default function GameStatsPage() {
             saving={savingOpponentStarters}
             onSaveStarters={handleSaveOpponentStarters}
             onDeleteRecord={handleDeleteOpponentRecord}
+          />
+
+          <OpponentRoster
+            matchId={matchId}
+            teamId={teamId}
+            opponentPlayers={opponentPlayers}
+            onChange={setOpponentPlayers}
           />
 
           <div className="mt-4">
