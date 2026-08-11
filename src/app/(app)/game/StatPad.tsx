@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FreeThrowModal } from "./FreeThrowModal";
 import {
   STAT_BUTTONS,
@@ -17,10 +17,11 @@ export interface StatEntrant {
   name: string | null;
 }
 
-// 選手チップ(横スクロール)とスタッツパッドを常に同時に表示し、
-// 「選手を選ぶ→スクロールしてボタンを探す」という手間をなくして試合中の速さに合わせている。
-// 自チーム(選手名あり)・対戦相手(背番号のみ)のどちらでも使える。
-// チップの末尾に「交代」ボタンを置き、試合中に発生する途中交代をその場で反映できるようにする。
+type Side = "own" | "opponent";
+
+// 自チーム・相手チームで別々のスタッツパッドを持たせず、選手チップ(上=自チーム/下=相手チーム)で
+// スタッツボタンを挟み込み、1つのボタン列を両チーム共有にする。
+// タップされたチップ(どちらのチームか)に応じて、共有ボタンの加算先だけが切り替わる。
 type GridCell = { type: "ft" } | { type: "stat"; event: StatEvent; label: string };
 
 function statCell(event: StatEvent): GridCell {
@@ -41,83 +42,130 @@ const GRID_CELLS: GridCell[] = [
   statCell("reb_def"),
 ];
 
-export function StatPad({
+function ChipRow({
   entrants,
   statLines,
-  onTap,
-  onUndo,
+  active,
+  onSelect,
   onOpenMemberChange,
-  onFreeThrowTrip,
-  emptyMessage = "選手がいません",
 }: {
   entrants: StatEntrant[];
   statLines: Record<string, StatTotals>;
-  onTap: (entrantId: string, event: StatEvent) => void;
-  onUndo: (entrantId: string, event: StatEvent) => void;
+  active: (id: string) => boolean;
+  onSelect: (id: string) => void;
   onOpenMemberChange?: () => void;
-  onFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  emptyMessage?: string;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  return (
+    <div className="flex gap-1.5 overflow-x-auto pb-1">
+      {entrants.map((e) => {
+        const r = statLines[e.id];
+        const isActive = active(e.id);
+        return (
+          <button
+            key={e.id}
+            type="button"
+            onClick={() => onSelect(e.id)}
+            className={`flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border font-bold ${
+              isActive ? "border-orange bg-orange text-white" : "border-line bg-white text-ink"
+            }`}
+          >
+            <span className="text-[15px] leading-none">{e.number ?? "-"}</span>
+            <span className={`text-[9.5px] mt-0.5 leading-none ${isActive ? "text-white/85" : "text-ink-soft"}`}>
+              {r?.pts ?? 0}pts
+            </span>
+          </button>
+        );
+      })}
+      {onOpenMemberChange && (
+        <button
+          type="button"
+          onClick={onOpenMemberChange}
+          className="flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border border-dashed border-line text-ink-soft font-bold"
+        >
+          <span className="text-[16px] leading-none">⇄</span>
+          <span className="text-[9px] mt-0.5 leading-none">交代</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function StatPad({
+  ownEntrants,
+  ownStatLines,
+  onOwnTap,
+  onOwnUndo,
+  onOwnFreeThrowTrip,
+  onOpenOwnMemberChange,
+  opponentEntrants,
+  opponentStatLines,
+  onOpponentTap,
+  onOpponentUndo,
+  onOpponentFreeThrowTrip,
+  onOpenOpponentMemberChange,
+}: {
+  ownEntrants: StatEntrant[];
+  ownStatLines: Record<string, StatTotals>;
+  onOwnTap: (entrantId: string, event: StatEvent) => void;
+  onOwnUndo: (entrantId: string, event: StatEvent) => void;
+  onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
+  onOpenOwnMemberChange: () => void;
+  opponentEntrants: StatEntrant[];
+  opponentStatLines: Record<string, StatTotals>;
+  onOpponentTap: (entrantId: string, event: StatEvent) => void;
+  onOpponentUndo: (entrantId: string, event: StatEvent) => void;
+  onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
+  onOpenOpponentMemberChange: () => void;
+}) {
+  const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
 
   useEffect(() => {
-    if (entrants.length === 0) return;
-    if (!selectedId || !entrants.some((e) => e.id === selectedId)) {
-      setSelectedId(entrants[0].id);
+    if (selected) {
+      const list = selected.side === "own" ? ownEntrants : opponentEntrants;
+      if (list.some((e) => e.id === selected.id)) return;
     }
-  }, [entrants, selectedId]);
+    if (ownEntrants.length > 0) {
+      setSelected({ side: "own", id: ownEntrants[0].id });
+    } else if (opponentEntrants.length > 0) {
+      setSelected({ side: "opponent", id: opponentEntrants[0].id });
+    } else {
+      setSelected(null);
+    }
+  }, [ownEntrants, opponentEntrants, selected]);
 
   useEffect(() => {
     setFtModalOpen(false);
-  }, [selectedId]);
+  }, [selected]);
 
-  const selected = entrants.find((e) => e.id === selectedId) ?? entrants[0];
-  const row = selected ? statLines[selected.id] : undefined;
+  const entrants = selected?.side === "own" ? ownEntrants : opponentEntrants;
+  const selectedEntrant = selected ? entrants.find((e) => e.id === selected.id) : undefined;
+  const statLines = selected?.side === "own" ? ownStatLines : opponentStatLines;
+  const row = selectedEntrant ? statLines[selectedEntrant.id] : undefined;
+  const onTap = selected?.side === "own" ? onOwnTap : onOpponentTap;
+  const onUndo = selected?.side === "own" ? onOwnUndo : onOpponentUndo;
+  const onFreeThrowTrip = selected?.side === "own" ? onOwnFreeThrowTrip : onOpponentFreeThrowTrip;
 
   function handleSaveFreeThrows(results: boolean[]) {
-    if (!selected) return;
+    if (!selectedEntrant) return;
     const makes = results.filter(Boolean).length;
-    onFreeThrowTrip(selected.id, makes, results.length);
+    onFreeThrowTrip(selectedEntrant.id, makes, results.length);
     setFtModalOpen(false);
   }
 
   return (
     <>
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        {entrants.map((e) => {
-          const r = statLines[e.id];
-          const active = selected?.id === e.id;
-          return (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => setSelectedId(e.id)}
-              className={`flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border font-bold ${
-                active ? "border-orange bg-orange text-white" : "border-line bg-white text-ink"
-              }`}
-            >
-              <span className="text-[15px] leading-none">{e.number ?? "-"}</span>
-              <span className={`text-[9.5px] mt-0.5 leading-none ${active ? "text-white/85" : "text-ink-soft"}`}>
-                {r?.pts ?? 0}pts
-              </span>
-            </button>
-          );
-        })}
-        {onOpenMemberChange && (
-          <button
-            type="button"
-            onClick={onOpenMemberChange}
-            className="flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border border-dashed border-line text-ink-soft font-bold"
-          >
-            <span className="text-[16px] leading-none">⇄</span>
-            <span className="text-[9px] mt-0.5 leading-none">交代</span>
-          </button>
-        )}
-      </div>
+      <SectionLabel>自チームのスタッツ</SectionLabel>
+      <ChipRow
+        entrants={ownEntrants}
+        statLines={ownStatLines}
+        active={(id) => selected?.side === "own" && selected.id === id}
+        onSelect={(id) => setSelected({ side: "own", id })}
+        onOpenMemberChange={onOpenOwnMemberChange}
+      />
 
-      {!selected ? (
-        <EmptyState>{emptyMessage}</EmptyState>
+      {!selectedEntrant ? (
+        <EmptyState>スタメンを登録するか、メンバーチェンジで選手を選んでください</EmptyState>
       ) : (
         <Card className="mt-2">
           <div className="grid grid-cols-2 gap-1.5">
@@ -147,7 +195,7 @@ export function StatPad({
                 >
                   <button
                     type="button"
-                    onClick={() => canMinus && onUndo(selected.id, event)}
+                    onClick={() => canMinus && onUndo(selectedEntrant.id, event)}
                     disabled={!canMinus}
                     className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
                   >
@@ -159,7 +207,7 @@ export function StatPad({
                   </div>
                   <button
                     type="button"
-                    onClick={() => onTap(selected.id, event)}
+                    onClick={() => onTap(selectedEntrant.id, event)}
                     className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
                   >
                     ＋
@@ -171,11 +219,22 @@ export function StatPad({
         </Card>
       )}
 
-      {selected && (
+      <div className="mt-2">
+        <SectionLabel>相手チームのスタッツ</SectionLabel>
+        <ChipRow
+          entrants={opponentEntrants}
+          statLines={opponentStatLines}
+          active={(id) => selected?.side === "opponent" && selected.id === id}
+          onSelect={(id) => setSelected({ side: "opponent", id })}
+          onOpenMemberChange={onOpenOpponentMemberChange}
+        />
+      </div>
+
+      {selectedEntrant && (
         <FreeThrowModal
           open={ftModalOpen}
           onClose={() => setFtModalOpen(false)}
-          entrantLabel={`#${selected.number ?? "-"}${selected.name ? ` ${selected.name}` : ""}`}
+          entrantLabel={`#${selectedEntrant.number ?? "-"}${selectedEntrant.name ? ` ${selectedEntrant.name}` : ""}`}
           onSave={handleSaveFreeThrows}
         />
       )}

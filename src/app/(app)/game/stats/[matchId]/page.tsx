@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { Card, EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
@@ -706,23 +706,21 @@ export default function GameStatsPage() {
           </div>
 
           <div className="mt-4">
-            <SectionLabel>自チームのスタッツ</SectionLabel>
             <StatPad
-              entrants={ownEntrants}
-              statLines={statLines}
-              onTap={handleStatTap}
-              onUndo={handleStatUndo}
-              onFreeThrowTrip={handleFreeThrowTrip}
-              onOpenMemberChange={() => setOwnMemberModalOpen(true)}
-              emptyMessage="スタメンを登録するか、メンバーチェンジで選手を選んでください"
+              ownEntrants={ownEntrants}
+              ownStatLines={statLines}
+              onOwnTap={handleStatTap}
+              onOwnUndo={handleStatUndo}
+              onOwnFreeThrowTrip={handleFreeThrowTrip}
+              onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
+              opponentEntrants={opponentEntrants}
+              opponentStatLines={opponentStatLines}
+              onOpponentTap={handleOpponentStatTap}
+              onOpponentUndo={handleOpponentStatUndo}
+              onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
+              onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
             />
           </div>
-          <GameStatLog
-            title="自チームの記録ログ"
-            events={ownLog}
-            onChangeQuarter={handleChangeStatEventQuarter}
-            onDelete={handleDeleteStatEvent}
-          />
 
           <OpponentRoster
             matchId={matchId}
@@ -731,18 +729,12 @@ export default function GameStatsPage() {
             onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
           />
 
-          <div className="mt-4">
-            <SectionLabel>相手チームのスタッツ</SectionLabel>
-            <StatPad
-              entrants={opponentEntrants}
-              statLines={opponentStatLines}
-              onTap={handleOpponentStatTap}
-              onUndo={handleOpponentStatUndo}
-              onFreeThrowTrip={handleOpponentFreeThrowTrip}
-              onOpenMemberChange={() => setOpponentMemberModalOpen(true)}
-              emptyMessage="相手スタメンを登録するか、メンバーチェンジで選手を選んでください"
-            />
-          </div>
+          <GameStatLog
+            title="自チームの記録ログ"
+            events={ownLog}
+            onChangeQuarter={handleChangeStatEventQuarter}
+            onDelete={handleDeleteStatEvent}
+          />
           <GameStatLog
             title="相手チームの記録ログ"
             events={opponentLog}
