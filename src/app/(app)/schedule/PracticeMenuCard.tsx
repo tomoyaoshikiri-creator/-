@@ -7,7 +7,14 @@ import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManagePracticeMenus } from "@/lib/permissions";
+import { formatDateLabel } from "@/lib/format";
 import type { PracticeMenu } from "@/lib/database.types";
+
+interface CopyTarget {
+  id: string;
+  date: string;
+  title: string;
+}
 
 export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   const { teamId, userId, role } = useSession();
@@ -23,6 +30,10 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   const [editValue, setEditValue] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [copyTargets, setCopyTargets] = useState<CopyTarget[]>([]);
+  const [copyTargetId, setCopyTargetId] = useState("");
+  const [copying, setCopying] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,6 +101,41 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
     setDeleteConfirmId(null);
     setExpandedId(null);
     load();
+  }
+
+  async function openCopy() {
+    setCopyOpen(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("schedules")
+      .select("id, date, title")
+      .eq("type", "practice")
+      .neq("id", scheduleId)
+      .order("date", { ascending: false })
+      .limit(50);
+    setCopyTargets(data ?? []);
+  }
+
+  async function handleCopy() {
+    if (!copyTargetId) return;
+    setCopying(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("practice_menus").insert(
+      menus.map((m) => ({
+        team_id: teamId,
+        schedule_id: copyTargetId,
+        theme: m.theme,
+        created_by: userId,
+      })),
+    );
+    setCopying(false);
+    if (error) {
+      toast(`コピーに失敗しました: ${error.message}`);
+      return;
+    }
+    toast("コピーしました");
+    setCopyOpen(false);
+    setCopyTargetId("");
   }
 
   if (loading) return null;
@@ -162,6 +208,46 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
             )}
           </div>
         ))}
+        {canManage && menus.length > 0 && (
+          <div className="border-b border-line pb-2.5 mb-2.5">
+            {!copyOpen ? (
+              <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange">
+                他の練習日にコピー
+              </button>
+            ) : (
+              <div>
+                <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
+                <select
+                  className={inputClass()}
+                  value={copyTargetId}
+                  onChange={(e) => setCopyTargetId(e.target.value)}
+                >
+                  <option value="">選択してください</option>
+                  {copyTargets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {formatDateLabel(s.date)} {s.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2 mt-2">
+                  <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="flex-1 mt-0">
+                    {copying ? "コピー中…" : "コピーする"}
+                  </SubmitButton>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCopyOpen(false);
+                      setCopyTargetId("");
+                    }}
+                    className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                  >
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {canManage && (
           <div>
             <FieldLabel>入力欄</FieldLabel>
