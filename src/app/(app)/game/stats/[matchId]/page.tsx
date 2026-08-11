@@ -330,6 +330,116 @@ export default function GameStatsPage() {
     ]);
   }
 
+  // フリースローは1本/2本のトリップ単位で結果をまとめて記録する。ローカルの合計は一括で
+  // 計算してから、個々のショットを順番にRPCへ送って記録ログに1本ずつ残す。
+  async function handleFreeThrowTrip(playerId: string, makes: number, attempts: number) {
+    if (!matchId) return;
+    const misses = attempts - makes;
+    const prevRow = statLines[playerId] ?? emptyStatLine(teamId, matchId, playerId);
+    let nextRow = prevRow;
+    for (let i = 0; i < makes; i++) nextRow = applyStatEventLocally(nextRow, "ft_make", 1);
+    for (let i = 0; i < misses; i++) nextRow = applyStatEventLocally(nextRow, "ft_miss", 1);
+    setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
+    adjustTeamScore(makes);
+    const supabase = createClient();
+    for (let i = 0; i < makes; i++) {
+      const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_make", 1);
+      if (error) {
+        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        continue;
+      }
+      if (data) setStatLines((prev) => ({ ...prev, [playerId]: data }));
+      setStatEvents((prev) => [
+        {
+          id: crypto.randomUUID(),
+          team_id: teamId,
+          match_id: matchId,
+          player_id: playerId,
+          quarter,
+          event: "ft_make",
+          delta: 1,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+    for (let i = 0; i < misses; i++) {
+      const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_miss", 1);
+      if (error) {
+        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        continue;
+      }
+      if (data) setStatLines((prev) => ({ ...prev, [playerId]: data }));
+      setStatEvents((prev) => [
+        {
+          id: crypto.randomUUID(),
+          team_id: teamId,
+          match_id: matchId,
+          player_id: playerId,
+          quarter,
+          event: "ft_miss",
+          delta: 1,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+  }
+
+  async function handleOpponentFreeThrowTrip(opponentPlayerId: string, makes: number, attempts: number) {
+    if (!matchId) return;
+    const misses = attempts - makes;
+    const prevRow = opponentStatLines[opponentPlayerId] ?? emptyOpponentStatLine(teamId, matchId, opponentPlayerId);
+    let nextRow = prevRow;
+    for (let i = 0; i < makes; i++) nextRow = applyStatEventLocally(nextRow, "ft_make", 1);
+    for (let i = 0; i < misses; i++) nextRow = applyStatEventLocally(nextRow, "ft_miss", 1);
+    setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: nextRow }));
+    adjustOpponentScore(makes);
+    const supabase = createClient();
+    for (let i = 0; i < makes; i++) {
+      const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_make", 1);
+      if (error) {
+        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        continue;
+      }
+      if (data) setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: data }));
+      setOpponentStatEvents((prev) => [
+        {
+          id: crypto.randomUUID(),
+          team_id: teamId,
+          match_id: matchId,
+          opponent_player_id: opponentPlayerId,
+          quarter,
+          event: "ft_make",
+          delta: 1,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+    for (let i = 0; i < misses; i++) {
+      const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_miss", 1);
+      if (error) {
+        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        continue;
+      }
+      if (data) setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: data }));
+      setOpponentStatEvents((prev) => [
+        {
+          id: crypto.randomUUID(),
+          team_id: teamId,
+          match_id: matchId,
+          opponent_player_id: opponentPlayerId,
+          quarter,
+          event: "ft_miss",
+          delta: 1,
+          created_at: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+    }
+  }
+
   // 「−」タップは新たに取消イベントを積み上げるのではなく、直近の該当タップそのものを削除する。
   async function handleStatUndo(playerId: string, event: StatEvent) {
     const target = statEvents.find((e) => e.player_id === playerId && e.event === event && e.delta > 0);
@@ -558,6 +668,7 @@ export default function GameStatsPage() {
               statLines={statLines}
               onTap={handleStatTap}
               onUndo={handleStatUndo}
+              onFreeThrowTrip={handleFreeThrowTrip}
               onOpenMemberChange={() => setOwnMemberModalOpen(true)}
               emptyMessage="スタメンを登録するか、メンバーチェンジで選手を選んでください"
             />
@@ -583,6 +694,7 @@ export default function GameStatsPage() {
               statLines={opponentStatLines}
               onTap={handleOpponentStatTap}
               onUndo={handleOpponentStatUndo}
+              onFreeThrowTrip={handleOpponentFreeThrowTrip}
               onOpenMemberChange={() => setOpponentMemberModalOpen(true)}
               emptyMessage="相手選手の背番号を登録してください"
             />
