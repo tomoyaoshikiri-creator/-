@@ -94,21 +94,12 @@ function fmtDiff(diff: number): string {
   return r > 0 ? `+${fmtNum(r)}` : fmtNum(r);
 }
 
-function CompareLine({
-  label,
-  current,
-  baseline,
-}: {
-  label?: string;
-  current: string;
-  baseline: number | null;
-}) {
+function CompareLine({ current, baseline }: { current: string; baseline: number | null }) {
   if (baseline === null) return null;
   const cur = current.trim() === "" ? null : Number(current);
   if (cur === null) return null;
   return (
     <div className="text-[10.5px] text-navy font-bold mt-1">
-      {label ? `${label}: ` : ""}
       {fmtNum(baseline)} → {fmtNum(cur)} ({fmtDiff(cur - baseline)})
     </div>
   );
@@ -321,76 +312,88 @@ export default function SportsTestPage() {
           <Card>
             <FieldLabel>20mスプリント(秒・2回)</FieldLabel>
             <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                className={inputClass()}
-                placeholder="1回目"
-                value={form.sprint20m_1}
-                onChange={(e) => setField("sprint20m_1", e.target.value)}
-              />
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                className={inputClass()}
-                placeholder="2回目"
-                value={form.sprint20m_2}
-                onChange={(e) => setField("sprint20m_2", e.target.value)}
-              />
-            </div>
-            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
-            <CompareLine label="1回目" current={form.sprint20m_1} baseline={baseline?.sprint20m_1 ?? null} />
-            <CompareLine label="2回目" current={form.sprint20m_2} baseline={baseline?.sprint20m_2 ?? null} />
-            <div className="mt-3">
-              <FieldLabel>レーンアジリティ(秒・2回)</FieldLabel>
-              <div className="flex gap-2">
+              <div className="flex-1">
                 <input
                   type="number"
                   step="0.01"
                   min={0}
                   className={inputClass()}
                   placeholder="1回目"
-                  value={form.lane_agility_1}
-                  onChange={(e) => setField("lane_agility_1", e.target.value)}
+                  value={form.sprint20m_1}
+                  onChange={(e) => setField("sprint20m_1", e.target.value)}
                 />
+                <CompareLine current={form.sprint20m_1} baseline={baseline?.sprint20m_1 ?? null} />
+              </div>
+              <div className="flex-1">
                 <input
                   type="number"
                   step="0.01"
                   min={0}
                   className={inputClass()}
                   placeholder="2回目"
-                  value={form.lane_agility_2}
-                  onChange={(e) => setField("lane_agility_2", e.target.value)}
+                  value={form.sprint20m_2}
+                  onChange={(e) => setField("sprint20m_2", e.target.value)}
                 />
+                <CompareLine current={form.sprint20m_2} baseline={baseline?.sprint20m_2 ?? null} />
+              </div>
+            </div>
+            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
+            <div className="mt-3">
+              <FieldLabel>レーンアジリティ(秒・2回)</FieldLabel>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="1回目"
+                    value={form.lane_agility_1}
+                    onChange={(e) => setField("lane_agility_1", e.target.value)}
+                  />
+                  <CompareLine current={form.lane_agility_1} baseline={baseline?.lane_agility_1 ?? null} />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="2回目"
+                    value={form.lane_agility_2}
+                    onChange={(e) => setField("lane_agility_2", e.target.value)}
+                  />
+                  <CompareLine current={form.lane_agility_2} baseline={baseline?.lane_agility_2 ?? null} />
+                </div>
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
-              <CompareLine label="1回目" current={form.lane_agility_1} baseline={baseline?.lane_agility_1 ?? null} />
-              <CompareLine label="2回目" current={form.lane_agility_2} baseline={baseline?.lane_agility_2 ?? null} />
             </div>
             <div className="mt-3">
               <FieldLabel>反復横跳び(点・2回)</FieldLabel>
               <div className="flex gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass()}
-                  placeholder="1回目"
-                  value={form.side_step_1}
-                  onChange={(e) => setField("side_step_1", e.target.value)}
-                />
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass()}
-                  placeholder="2回目"
-                  value={form.side_step_2}
-                  onChange={(e) => setField("side_step_2", e.target.value)}
-                />
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="1回目"
+                    value={form.side_step_1}
+                    onChange={(e) => setField("side_step_1", e.target.value)}
+                  />
+                  <CompareLine current={form.side_step_1} baseline={baseline?.side_step_1 ?? null} />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="2回目"
+                    value={form.side_step_2}
+                    onChange={(e) => setField("side_step_2", e.target.value)}
+                  />
+                  <CompareLine current={form.side_step_2} baseline={baseline?.side_step_2 ?? null} />
+                </div>
               </div>
-              <CompareLine label="1回目" current={form.side_step_1} baseline={baseline?.side_step_1 ?? null} />
-              <CompareLine label="2回目" current={form.side_step_2} baseline={baseline?.side_step_2 ?? null} />
             </div>
             <div className="mt-3">
               <FieldLabel>20m三往復(秒)</FieldLabel>
@@ -411,53 +414,61 @@ export default function SportsTestPage() {
           <Card>
             <FieldLabel>立ち幅跳び(cm・2回)</FieldLabel>
             <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.1"
-                min={0}
-                className={inputClass()}
-                placeholder="1回目"
-                value={form.long_jump_1}
-                onChange={(e) => setField("long_jump_1", e.target.value)}
-              />
-              <input
-                type="number"
-                step="0.1"
-                min={0}
-                className={inputClass()}
-                placeholder="2回目"
-                value={form.long_jump_2}
-                onChange={(e) => setField("long_jump_2", e.target.value)}
-              />
-            </div>
-            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
-            <CompareLine label="1回目" current={form.long_jump_1} baseline={baseline?.long_jump_1 ?? null} />
-            <CompareLine label="2回目" current={form.long_jump_2} baseline={baseline?.long_jump_2 ?? null} />
-            <div className="mt-3">
-              <FieldLabel>ボール投げ(m・2回)</FieldLabel>
-              <div className="flex gap-2">
+              <div className="flex-1">
                 <input
                   type="number"
                   step="0.1"
                   min={0}
                   className={inputClass()}
                   placeholder="1回目"
-                  value={form.ball_throw_1}
-                  onChange={(e) => setField("ball_throw_1", e.target.value)}
+                  value={form.long_jump_1}
+                  onChange={(e) => setField("long_jump_1", e.target.value)}
                 />
+                <CompareLine current={form.long_jump_1} baseline={baseline?.long_jump_1 ?? null} />
+              </div>
+              <div className="flex-1">
                 <input
                   type="number"
                   step="0.1"
                   min={0}
                   className={inputClass()}
                   placeholder="2回目"
-                  value={form.ball_throw_2}
-                  onChange={(e) => setField("ball_throw_2", e.target.value)}
+                  value={form.long_jump_2}
+                  onChange={(e) => setField("long_jump_2", e.target.value)}
                 />
+                <CompareLine current={form.long_jump_2} baseline={baseline?.long_jump_2 ?? null} />
+              </div>
+            </div>
+            <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
+            <div className="mt-3">
+              <FieldLabel>ボール投げ(m・2回)</FieldLabel>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="1回目"
+                    value={form.ball_throw_1}
+                    onChange={(e) => setField("ball_throw_1", e.target.value)}
+                  />
+                  <CompareLine current={form.ball_throw_1} baseline={baseline?.ball_throw_1 ?? null} />
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    className={inputClass()}
+                    placeholder="2回目"
+                    value={form.ball_throw_2}
+                    onChange={(e) => setField("ball_throw_2", e.target.value)}
+                  />
+                  <CompareLine current={form.ball_throw_2} baseline={baseline?.ball_throw_2 ?? null} />
+                </div>
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">※小数点第1位まで</div>
-              <CompareLine label="1回目" current={form.ball_throw_1} baseline={baseline?.ball_throw_1 ?? null} />
-              <CompareLine label="2回目" current={form.ball_throw_2} baseline={baseline?.ball_throw_2 ?? null} />
             </div>
           </Card>
 
@@ -465,25 +476,29 @@ export default function SportsTestPage() {
           <Card>
             <FieldLabel>背中こぶし合わせ(cm)</FieldLabel>
             <div className="flex gap-2">
-              <input
-                type="number"
-                step="0.1"
-                className={inputClass()}
-                placeholder="右上"
-                value={form.back_fist_right}
-                onChange={(e) => setField("back_fist_right", e.target.value)}
-              />
-              <input
-                type="number"
-                step="0.1"
-                className={inputClass()}
-                placeholder="左上"
-                value={form.back_fist_left}
-                onChange={(e) => setField("back_fist_left", e.target.value)}
-              />
+              <div className="flex-1">
+                <input
+                  type="number"
+                  step="0.1"
+                  className={inputClass()}
+                  placeholder="右上"
+                  value={form.back_fist_right}
+                  onChange={(e) => setField("back_fist_right", e.target.value)}
+                />
+                <CompareLine current={form.back_fist_right} baseline={baseline?.back_fist_right ?? null} />
+              </div>
+              <div className="flex-1">
+                <input
+                  type="number"
+                  step="0.1"
+                  className={inputClass()}
+                  placeholder="左上"
+                  value={form.back_fist_left}
+                  onChange={(e) => setField("back_fist_left", e.target.value)}
+                />
+                <CompareLine current={form.back_fist_left} baseline={baseline?.back_fist_left ?? null} />
+              </div>
             </div>
-            <CompareLine label="右上" current={form.back_fist_right} baseline={baseline?.back_fist_right ?? null} />
-            <CompareLine label="左上" current={form.back_fist_left} baseline={baseline?.back_fist_left ?? null} />
           </Card>
 
           <SectionLabel>シュート・持久力(独自項目)</SectionLabel>
