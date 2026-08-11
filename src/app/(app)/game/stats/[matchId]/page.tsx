@@ -25,7 +25,6 @@ import {
   deleteGameStatEvent,
   deleteOpponentGameStatEvent,
   resetMatchStats,
-  statEventPoints,
   type StatEvent,
 } from "@/lib/gameStats";
 import type {
@@ -193,30 +192,6 @@ export default function GameStatsPage() {
     if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
 
-  // タップ直後の即時表示用の暫定加算。確定値はRPCの戻り値(team_score/opponent_score)で
-  // 必ず上書きする(setTeamScoreValue/setOpponentScoreValue)ため、ここでズレても後で補正される。
-  function adjustTeamScore(pointsDelta: number) {
-    if (pointsDelta === 0) return;
-    setMatch((prev) => (prev ? { ...prev, team_score: Math.max(0, (prev.team_score ?? 0) + pointsDelta) } : prev));
-  }
-
-  function adjustOpponentScore(pointsDelta: number) {
-    if (pointsDelta === 0) return;
-    setMatch((prev) =>
-      prev ? { ...prev, opponent_score: Math.max(0, (prev.opponent_score ?? 0) + pointsDelta) } : prev,
-    );
-  }
-
-  // サーバー側でスタッツの合計から作り直した確定値。楽観的なadjustTeamScore/adjustOpponentScoreの
-  // ズレをRPCのレスポンスが返るたびに解消する。
-  function setTeamScoreValue(value: number) {
-    setMatch((prev) => (prev ? { ...prev, team_score: value } : prev));
-  }
-
-  function setOpponentScoreValue(value: number) {
-    setMatch((prev) => (prev ? { ...prev, opponent_score: value } : prev));
-  }
-
   async function saveRecord(newStarters: string[], newSubs: string[]) {
     const supabase = createClient();
     const { error } = await supabase.from("game_records").upsert(
@@ -314,20 +289,16 @@ export default function GameStatsPage() {
     const prevRow = statLines[playerId] ?? emptyStatLine(teamId, matchId, playerId);
     const nextRow = applyStatEventLocally(prevRow, event, delta);
     setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
-    const pointsDelta = statEventPoints(event, delta);
-    adjustTeamScore(pointsDelta);
     const supabase = createClient();
     const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, event, delta);
     if (error) {
       toast(`スタッツの記録に失敗しました: ${error.message}`);
       setStatLines((prev) => ({ ...prev, [playerId]: prevRow }));
-      adjustTeamScore(-pointsDelta);
       return;
     }
     const result = data?.[0];
     if (result) {
       setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
-      setTeamScoreValue(result.team_score);
       setStatEvents((prev) => [
         {
           id: result.event_id,
@@ -350,20 +321,16 @@ export default function GameStatsPage() {
     const prevRow = opponentStatLines[opponentPlayerId] ?? emptyOpponentStatLine(teamId, matchId, opponentPlayerId);
     const nextRow = applyStatEventLocally(prevRow, event, delta);
     setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: nextRow }));
-    const pointsDelta = statEventPoints(event, delta);
-    adjustOpponentScore(pointsDelta);
     const supabase = createClient();
     const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, event, delta);
     if (error) {
       toast(`スタッツの記録に失敗しました: ${error.message}`);
       setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: prevRow }));
-      adjustOpponentScore(-pointsDelta);
       return;
     }
     const result = data?.[0];
     if (result) {
       setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
-      setOpponentScoreValue(result.opponent_score);
       setOpponentStatEvents((prev) => [
         {
           id: result.event_id,
@@ -390,7 +357,6 @@ export default function GameStatsPage() {
     for (let i = 0; i < makes; i++) nextRow = applyStatEventLocally(nextRow, "ft_make", 1);
     for (let i = 0; i < misses; i++) nextRow = applyStatEventLocally(nextRow, "ft_miss", 1);
     setStatLines((prev) => ({ ...prev, [playerId]: nextRow }));
-    adjustTeamScore(makes);
     const supabase = createClient();
     for (let i = 0; i < makes; i++) {
       const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_make", 1);
@@ -401,7 +367,6 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
-        setTeamScoreValue(result.team_score);
         setStatEvents((prev) => [
           {
             id: result.event_id,
@@ -426,7 +391,6 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setStatLines((prev) => ({ ...prev, [playerId]: result.line }));
-        setTeamScoreValue(result.team_score);
         setStatEvents((prev) => [
           {
             id: result.event_id,
@@ -452,7 +416,6 @@ export default function GameStatsPage() {
     for (let i = 0; i < makes; i++) nextRow = applyStatEventLocally(nextRow, "ft_make", 1);
     for (let i = 0; i < misses; i++) nextRow = applyStatEventLocally(nextRow, "ft_miss", 1);
     setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: nextRow }));
-    adjustOpponentScore(makes);
     const supabase = createClient();
     for (let i = 0; i < makes; i++) {
       const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_make", 1);
@@ -463,7 +426,6 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
-        setOpponentScoreValue(result.opponent_score);
         setOpponentStatEvents((prev) => [
           {
             id: result.event_id,
@@ -488,7 +450,6 @@ export default function GameStatsPage() {
       const result = data?.[0];
       if (result) {
         setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: result.line }));
-        setOpponentScoreValue(result.opponent_score);
         setOpponentStatEvents((prev) => [
           {
             id: result.event_id,
@@ -542,7 +503,7 @@ export default function GameStatsPage() {
     const target = statEvents.find((e) => e.id === eventId);
     if (!target) return;
     const supabase = createClient();
-    const { data, error } = await deleteGameStatEvent(supabase, eventId);
+    const { error } = await deleteGameStatEvent(supabase, eventId);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
@@ -553,7 +514,6 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    if (typeof data === "number") setTeamScoreValue(data);
     toast("記録を削除しました");
   }
 
@@ -572,7 +532,7 @@ export default function GameStatsPage() {
     const target = opponentStatEvents.find((e) => e.id === eventId);
     if (!target) return;
     const supabase = createClient();
-    const { data, error } = await deleteOpponentGameStatEvent(supabase, eventId);
+    const { error } = await deleteOpponentGameStatEvent(supabase, eventId);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
@@ -583,7 +543,6 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.opponent_player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    if (typeof data === "number") setOpponentScoreValue(data);
     toast("記録を削除しました");
   }
 
@@ -613,7 +572,6 @@ export default function GameStatsPage() {
     setOpponentSubs([]);
     setBenchedOpponentStarterIds([]);
     setOpponentPlayers([]);
-    setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
     toast("この試合のスタッツ・スタメン・相手選手の登録をリセットしました");
   }
 
@@ -664,6 +622,12 @@ export default function GameStatsPage() {
     };
   });
 
+  // スタッツから記録された得点の集計。試合結果一覧などで使う公式スコア(game_matches.team_score/
+  // opponent_score)とは別物として扱い、ここでは書き込まない(手入力の得点と混ざって二重計上に
+  // ならないようにするため)。公式スコアの編集は試合詳細画面で行う。
+  const liveTeamScore = Object.values(statLines).reduce((sum, l) => sum + l.pts, 0);
+  const liveOpponentScore = Object.values(opponentStatLines).reduce((sum, l) => sum + l.pts, 0);
+
   return (
     <PageShell
       header={
@@ -688,13 +652,16 @@ export default function GameStatsPage() {
             <div className="flex items-center justify-center gap-8 mt-2">
               <div className="text-center">
                 <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                <div className="font-mono text-[32px] font-bold text-orange leading-tight">{match.team_score ?? 0}</div>
+                <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
               </div>
               <div className="text-ink-soft font-bold text-[18px]">-</div>
               <div className="text-center">
                 <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
-                <div className="font-mono text-[32px] font-bold leading-tight">{match.opponent_score ?? 0}</div>
+                <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
               </div>
+            </div>
+            <div className="text-[10px] text-ink-soft text-center mt-1.5">
+              スタッツの記録から集計した得点です。試合結果の得点は試合詳細画面で編集してください
             </div>
           </Card>
 

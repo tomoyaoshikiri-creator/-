@@ -734,7 +734,6 @@ export interface Database {
             updated_at: string;
           };
           event_id: string;
-          team_score: number;
         }[];
       };
       record_opponent_game_stat: {
@@ -768,16 +767,15 @@ export interface Database {
             updated_at: string;
           };
           event_id: string;
-          opponent_score: number;
         }[];
       };
       delete_game_stat_event: {
         Args: { p_event_id: string };
-        Returns: number;
+        Returns: void;
       };
       delete_opponent_game_stat_event: {
         Args: { p_event_id: string };
-        Returns: number;
+        Returns: void;
       };
       reset_match_stats: {
         Args: { p_match_id: string };
