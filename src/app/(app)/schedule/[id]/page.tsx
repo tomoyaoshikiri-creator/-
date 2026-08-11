@@ -256,6 +256,8 @@ export default function ScheduleDetailPage() {
             />
           ))}
 
+          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
+
           {role === "管理者" && proxyPlayers.length > 0 && (
             <>
               <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
@@ -318,8 +320,6 @@ export default function ScheduleDetailPage() {
               )}
             </>
           )}
-
-          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
         </>
       )}
     </PageShell>
