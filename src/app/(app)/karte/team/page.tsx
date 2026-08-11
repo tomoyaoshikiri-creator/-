@@ -181,6 +181,17 @@ export default function KarteTeamPage() {
             {gameRankingMode ? "ランキング中" : "ランキングで見る"}
           </button>
         )}
+        {category === "sportsTest" && (
+          <button
+            type="button"
+            onClick={() => setSportsTestRankingMode((v) => !v)}
+            className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
+              sportsTestRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+            }`}
+          >
+            {sportsTestRankingMode ? "ランキング中" : "ランキングで見る"}
+          </button>
+        )}
       </div>
 
       {category === "game" ? (
@@ -274,23 +285,12 @@ export default function KarteTeamPage() {
       ) : (
         <>
           <FieldLabel>四半期</FieldLabel>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="flex gap-1.5">
-              {QUARTERS.map((q) => (
-                <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
-                  Q{q}
-                </SegButton>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setSportsTestRankingMode((v) => !v)}
-              className={`flex-none text-center px-4 py-2 rounded-[10px] font-bold text-[13px] border ${
-                sportsTestRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
-              }`}
-            >
-              {sportsTestRankingMode ? "ランキング中" : "ランキングで見る"}
-            </button>
+          <div className="flex gap-1.5 mb-3">
+            {QUARTERS.map((q) => (
+              <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
+                Q{q}
+              </SegButton>
+            ))}
           </div>
 
           {loading ? (
