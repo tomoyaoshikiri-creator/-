@@ -230,10 +230,18 @@ export default function KarteTeamPage() {
                 </table>
             </div>
 
-            <div className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5">
-              PTS:得点 / FG:FG成功数 / FT:FT成功数 / AST:アシスト / OREB:オフェンスリバウンド / DREB:ディフェンスリバウンド /
-              STL:スティール / BLK:ブロック / TO:ターンオーバー / EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)
-            </div>
+            <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
+              <li>PTS:得点</li>
+              <li>FG:FG成功数</li>
+              <li>FT:FT成功数</li>
+              <li>AST:アシスト</li>
+              <li>OREB:オフェンスリバウンド</li>
+              <li>DREB:ディフェンスリバウンド</li>
+              <li>STL:スティール</li>
+              <li>BLK:ブロック</li>
+              <li>TO:ターンオーバー</li>
+              <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
+            </ul>
           </>
         )
       ) : (
