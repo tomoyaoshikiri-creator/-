@@ -7,18 +7,22 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { Card, EmptyState } from "@/components/ui/Card";
+import { FieldLabel } from "@/components/ui/SegButton";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { canAccessTab } from "@/lib/permissions";
-import { obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
+import { fiscalYearOf, obogGraduationFiscalYear, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
+
+const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function ObogPage() {
   const router = useRouter();
   const { role } = useSession();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
   useEffect(() => {
     if (!canAccessTab(role, "players")) router.replace("/schedule");
@@ -34,20 +38,12 @@ export default function ObogPage() {
     })();
   }, []);
 
-  const groups = new Map<string, Player[]>();
-  for (const p of players) {
-    const key = p.grade ?? "unknown";
-    const list = groups.get(key) ?? [];
-    list.push(p);
-    groups.set(key, list);
-  }
-  const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
-    const na = parseInt(a, 10);
-    const nb = parseInt(b, 10);
-    if (isNaN(na)) return 1;
-    if (isNaN(nb)) return -1;
-    return na - nb;
-  });
+  const withYear = players
+    .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, CURRENT_FISCAL_YEAR) }))
+    .filter((v): v is { player: Player; year: number } => v.year !== null);
+  const years = Array.from(new Set(withYear.map((v) => v.year))).sort((a, b) => b - a);
+  const year = selectedYear ?? years[0] ?? CURRENT_FISCAL_YEAR - 1;
+  const yearMembers = withYear.filter((v) => v.year === year).map((v) => v.player);
 
   return (
     <PageShell header={<AppHeader title="OB・OG" variant="detail" backHref="/players" accessBadge="coach" />}>
@@ -56,11 +52,28 @@ export default function ObogPage() {
       ) : players.length === 0 ? (
         <EmptyState>OB・OGはいません</EmptyState>
       ) : (
-        sortedKeys.map((key) => (
-          <div key={key}>
-            <SectionLabel>{obogCohortLabel(key === "unknown" ? null : key)}</SectionLabel>
-            <Card>
-              {groups.get(key)!.map((p) => (
+        <>
+          <FieldLabel>卒業年度</FieldLabel>
+          <div className="relative inline-block mb-3">
+            <select
+              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              value={year}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
+
+          <Card>
+            {yearMembers.length === 0 ? (
+              <EmptyState>この年度に卒団した選手はいません</EmptyState>
+            ) : (
+              yearMembers.map((p) => (
                 <Link
                   key={p.id}
                   href={`/players/${p.id}`}
@@ -73,10 +86,10 @@ export default function ObogPage() {
                   </div>
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </Link>
-              ))}
-            </Card>
-          </div>
-        ))
+              ))
+            )}
+          </Card>
+        </>
       )}
     </PageShell>
   );

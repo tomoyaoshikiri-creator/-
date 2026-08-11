@@ -76,6 +76,15 @@ export function obogCohortLabel(grade: string | null): string {
   return years === 0 ? "卒団したて" : `卒団${years}年目`;
 }
 
+// gradeはOB・OG化した年に6のまま固定され、以後advance_academic_yearが実行されるたびに+1される
+// (卒団からの経過年数)。よって現在の年度から逆算すると、実際に卒団した年度(6年生として
+// 過ごした最後の年度)が求まる。
+export function obogGraduationFiscalYear(grade: string | null, currentFiscalYear: number): number | null {
+  const g = grade !== null ? parseInt(grade, 10) : NaN;
+  if (isNaN(g) || g < 6) return null;
+  return currentFiscalYear - 1 - (g - 6);
+}
+
 export function sortPlayers<T extends { grade: string | null; number: string | null }>(
   list: T[],
 ): T[] {
