@@ -245,7 +245,13 @@ export default function KarteTeamPage() {
           <FieldLabel>項目</FieldLabel>
           <div className="flex gap-1.5 flex-wrap mb-3">
             {SPORTS_TEST_RANKING_METRICS.map((m) => (
-              <SegButton key={m.value} active={testMetric === m.value} onClick={() => setTestMetric(m.value)}>
+              <SegButton
+                key={m.value}
+                variant="small"
+                active={testMetric === m.value}
+                onClick={() => setTestMetric(m.value)}
+                className="flex-none px-3"
+              >
                 {m.label}
               </SegButton>
             ))}
