@@ -165,7 +165,9 @@ $$;
 
 grant execute on function public.record_opponent_game_stat(uuid, uuid, int, text, int) to authenticated;
 
-create or replace function public.delete_game_stat_event(p_event_id uuid)
+drop function if exists public.delete_game_stat_event(uuid);
+
+create function public.delete_game_stat_event(p_event_id uuid)
 returns int
 language plpgsql
 security definer
@@ -213,7 +215,9 @@ $$;
 
 grant execute on function public.delete_game_stat_event(uuid) to authenticated;
 
-create or replace function public.delete_opponent_game_stat_event(p_event_id uuid)
+drop function if exists public.delete_opponent_game_stat_event(uuid);
+
+create function public.delete_opponent_game_stat_event(p_event_id uuid)
 returns int
 language plpgsql
 security definer
