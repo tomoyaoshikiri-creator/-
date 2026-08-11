@@ -176,10 +176,10 @@ export function StatPad({
                     key="ft"
                     type="button"
                     onClick={() => setFtModalOpen(true)}
-                    className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-orange bg-orange/8"
+                    className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-line bg-paper"
                   >
-                    <div className="text-[11px] font-bold text-orange">FT(フリースロー)</div>
-                    <div className="font-mono text-[13px] font-bold text-orange">
+                    <div className="text-[11px] font-bold">FT(フリースロー)</div>
+                    <div className="font-mono text-[13px] font-bold">
                       {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
                     </div>
                   </button>
