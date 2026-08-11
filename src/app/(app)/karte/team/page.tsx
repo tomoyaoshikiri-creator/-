@@ -232,8 +232,8 @@ export default function KarteTeamPage() {
 
             <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
               <li>PTS:得点</li>
-              <li>FG:FG成功数</li>
-              <li>FT:FT成功数</li>
+              <li>FG:フィールドゴール成功率</li>
+              <li>FT:フリースロー成功率</li>
               <li>AST:アシスト</li>
               <li>OREB:オフェンスリバウンド</li>
               <li>DREB:ディフェンスリバウンド</li>
