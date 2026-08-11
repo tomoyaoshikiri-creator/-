@@ -7,8 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
-import { NumChip } from "@/components/ui/Pill";
+import { EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
@@ -19,7 +18,7 @@ import {
   type SeasonStatAverages,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
-import { effectiveFiscalYear, fiscalYearOf, gradeLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import { effectiveFiscalYear, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { GamePlayerStatLine, Player, SportsTestRecord } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
@@ -47,6 +46,8 @@ const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "eff", abbr: "EFF" },
 ];
 
+type SportsTestValues = Partial<Record<SportsTestMetric, number | null>>;
+
 export default function KarteTeamPage() {
   const router = useRouter();
   const { role } = useSession();
@@ -58,7 +59,8 @@ export default function KarteTeamPage() {
   const [quarter, setQuarter] = useState<number>(1);
   const [gameRankingMode, setGameRankingMode] = useState(false);
   const [sortKey, setSortKey] = useState<keyof SeasonStatAverages>("pts");
-  const [testMetric, setTestMetric] = useState<SportsTestMetric>("sprint20m");
+  const [sportsTestRankingMode, setSportsTestRankingMode] = useState(false);
+  const [sportsTestSortKey, setSportsTestSortKey] = useState<SportsTestMetric>("sprint20m");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -107,24 +109,40 @@ export default function KarteTeamPage() {
     averages: computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)),
   }));
   const sortValue = (a: SeasonStatAverages) => (a[sortKey] as number | null) ?? -Infinity;
-  const rows =
+  const gameRows =
     gameRankingMode
       ? [...playerAverages].sort((a, b) => sortValue(b.averages) - sortValue(a.averages))
       : playerAverages;
 
-  const testMetricInfo = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === testMetric)!;
-  const testRanked = players
-    .map((p) => {
-      const record = sportsTestRecords.find((r) => r.player_id === p.id);
-      const value = record ? testMetricInfo.extract(record) : null;
-      return { player: p, value, sub: `${fiscalYear}年度 Q${quarter}` };
-    })
-    .filter((r) => r.value !== null)
-    .sort((a, b) =>
-      testMetricInfo.direction === "asc"
-        ? (a.value as number) - (b.value as number)
-        : (b.value as number) - (a.value as number),
-    );
+  const sportsTestValues: { player: Player; values: SportsTestValues }[] = players.map((p) => {
+    const record = sportsTestRecords.find((r) => r.player_id === p.id);
+    const values: SportsTestValues = {};
+    SPORTS_TEST_RANKING_METRICS.forEach((m) => {
+      values[m.value] = record ? m.extract(record) : null;
+    });
+    return { player: p, values };
+  });
+  const sportsTestTeamAverages: SportsTestValues = {};
+  SPORTS_TEST_RANKING_METRICS.forEach((m) => {
+    const nums = sportsTestValues
+      .map((v) => v.values[m.value])
+      .filter((v): v is number => v !== null && v !== undefined);
+    sportsTestTeamAverages[m.value] =
+      nums.length > 0 ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : null;
+  });
+  const sportsTestSortInfo = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === sportsTestSortKey)!;
+  const sportsTestSortValue = (v: SportsTestValues) => {
+    const val = v[sportsTestSortKey];
+    if (val === null || val === undefined) return sportsTestSortInfo.direction === "asc" ? Infinity : -Infinity;
+    return val;
+  };
+  const sportsTestRows = sportsTestRankingMode
+    ? [...sportsTestValues].sort((a, b) =>
+        sportsTestSortInfo.direction === "asc"
+          ? sportsTestSortValue(a.values) - sportsTestSortValue(b.values)
+          : sportsTestSortValue(b.values) - sportsTestSortValue(a.values),
+      )
+    : sportsTestValues;
 
   return (
     <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge="coach" />}>
@@ -177,66 +195,66 @@ export default function KarteTeamPage() {
             <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
               <table className="border-collapse text-[11.5px] w-full">
                 <thead>
-                    <tr>
-                      <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
-                        選手
+                  <tr>
+                    <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                      選手
+                    </th>
+                    {GAME_COLUMNS.map((c) => (
+                      <th
+                        key={c.key}
+                        onClick={() => gameRankingMode && setSortKey(c.key)}
+                        className={`sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                          gameRankingMode ? "cursor-pointer" : ""
+                        } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
+                      >
+                        {c.abbr}
                       </th>
-                      {GAME_COLUMNS.map((c) => (
+                    ))}
+                  </tr>
+                  <tr className="bg-paper">
+                    <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                      チーム平均
+                    </th>
+                    {GAME_COLUMNS.map((c) => {
+                      const v = teamAverages[c.key] as number | null;
+                      return (
                         <th
                           key={c.key}
-                          onClick={() => gameRankingMode && setSortKey(c.key)}
-                          className={`sticky top-0 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
-                            gameRankingMode ? "cursor-pointer" : ""
-                          } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
+                          className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                            c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          }`}
                         >
-                          {c.abbr}
+                          {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
                         </th>
-                      ))}
-                    </tr>
-                    <tr className="bg-paper">
-                      <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                        チーム平均
-                      </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {gameRows.map(({ player: p, averages }) => (
+                    <tr key={p.id}>
+                      <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                        <Link href={`/karte/players/${p.id}`} className="font-bold">
+                          #{p.number ?? "-"} {playerFullName(p)}
+                        </Link>
+                      </td>
                       {GAME_COLUMNS.map((c) => {
-                        const v = teamAverages[c.key] as number | null;
+                        const v = averages[c.key] as number | null;
                         return (
-                          <th
+                          <td
                             key={c.key}
-                            className={`sticky top-9 h-9 bg-paper z-20 w-[50px] min-w-[50px] px-1 text-center font-mono font-bold border-b border-line ${
+                            className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
                               c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                             }`}
                           >
                             {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
-                          </th>
+                          </td>
                         );
                       })}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map(({ player: p, averages }) => (
-                      <tr key={p.id}>
-                        <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
-                          <Link href={`/karte/players/${p.id}`} className="font-bold">
-                            #{p.number ?? "-"} {playerFullName(p)}
-                          </Link>
-                        </td>
-                        {GAME_COLUMNS.map((c) => {
-                          const v = averages[c.key] as number | null;
-                          return (
-                            <td
-                              key={c.key}
-                              className={`w-[50px] min-w-[50px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 ${
-                                c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
-                              }`}
-                            >
-                              {v === null ? "-" : `${v}${PERCENT_COLUMNS.has(c.key) ? "%" : ""}`}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
@@ -256,59 +274,104 @@ export default function KarteTeamPage() {
       ) : (
         <>
           <FieldLabel>四半期</FieldLabel>
-          <div className="flex gap-1.5 mb-3">
-            {QUARTERS.map((q) => (
-              <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
-                Q{q}
-              </SegButton>
-            ))}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex gap-1.5">
+              {QUARTERS.map((q) => (
+                <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
+                  Q{q}
+                </SegButton>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSportsTestRankingMode((v) => !v)}
+              className={`flex-none text-center px-4 py-2 rounded-[10px] font-bold text-[13px] border ${
+                sportsTestRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+              }`}
+            >
+              {sportsTestRankingMode ? "ランキング中" : "ランキングで見る"}
+            </button>
           </div>
 
-          <FieldLabel>項目</FieldLabel>
-          <div className="flex gap-1.5 flex-wrap mb-3">
-            {SPORTS_TEST_RANKING_METRICS.map((m) => (
-              <SegButton
-                key={m.value}
-                variant="small"
-                active={testMetric === m.value}
-                onClick={() => setTestMetric(m.value)}
-                className="flex-none px-3"
-              >
-                {m.label}
-              </SegButton>
-            ))}
-          </div>
+          {loading ? (
+            <EmptyState>読み込み中…</EmptyState>
+          ) : (
+            <>
+              {sportsTestRankingMode && (
+                <div className="text-[11px] text-ink-soft mb-1.5">項目名をタップすると、その項目順に並び替わります</div>
+              )}
 
-          <Card>
-            {loading ? (
-              <EmptyState>読み込み中…</EmptyState>
-            ) : testRanked.length === 0 ? (
-              <EmptyState>この四半期の記録がありません</EmptyState>
-            ) : (
-              testRanked.map((r, i) => (
-                <Link
-                  key={r.player.id}
-                  href={`/karte/players/${r.player.id}`}
-                  className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-                >
-                  <div className="font-mono font-bold text-[13px] text-ink-soft w-5 flex-shrink-0 text-center">
-                    {i + 1}
-                  </div>
-                  <NumChip num={r.player.number ?? "-"} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[13.5px]">{playerFullName(r.player)}</div>
-                    <div className="text-[11px] text-ink-soft mt-0.5">
-                      {gradeLabel(r.player.grade)}・{r.sub}
-                    </div>
-                  </div>
-                  <div className="font-mono font-bold text-[15px] flex-shrink-0">
-                    {r.value}
-                    {testMetricInfo.unit}
-                  </div>
-                </Link>
-              ))
-            )}
-          </Card>
+              <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+                <table className="border-collapse text-[11.5px] w-full">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                        選手
+                      </th>
+                      {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                        <th
+                          key={m.value}
+                          onClick={() => sportsTestRankingMode && setSportsTestSortKey(m.value)}
+                          className={`sticky top-0 h-9 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                            sportsTestRankingMode ? "cursor-pointer" : ""
+                          } ${sportsTestRankingMode && sportsTestSortKey === m.value ? "text-orange" : "text-ink-soft"}`}
+                        >
+                          {m.abbr}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr className="bg-paper">
+                      <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                        チーム平均
+                      </th>
+                      {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                        const v = sportsTestTeamAverages[m.value];
+                        return (
+                          <th
+                            key={m.value}
+                            className="sticky top-9 h-9 bg-paper z-20 w-[54px] min-w-[54px] px-1 text-center font-mono font-bold border-b border-line"
+                          >
+                            {v === null || v === undefined ? "-" : v}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sportsTestRows.map(({ player: p, values }) => (
+                      <tr key={p.id}>
+                        <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                          <Link href={`/karte/players/${p.id}`} className="font-bold">
+                            #{p.number ?? "-"} {playerFullName(p)}
+                          </Link>
+                        </td>
+                        {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                          const v = values[m.value];
+                          return (
+                            <td
+                              key={m.value}
+                              className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                            >
+                              {v === null || v === undefined ? "-" : v}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
+                {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                  <li key={m.value}>
+                    {m.abbr}:{m.label}
+                    {m.unit ? `(${m.unit})` : ""}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       )}
     </PageShell>
