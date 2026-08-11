@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
+import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
@@ -19,7 +20,7 @@ export default function KarteTopPage() {
   }, [role, router]);
 
   return (
-    <PageShell header={<AppHeader title="カルテ" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="カルテ" rightSlot={<CurrentUserBadge />} accessBadge="coach" />}>
       <Link href="/karte/team">
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">
