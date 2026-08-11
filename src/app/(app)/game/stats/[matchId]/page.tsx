@@ -53,6 +53,7 @@ export default function GameStatsPage() {
   const [quarter, setQuarter] = useState(1);
   const [starters, setStarters] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
+  const [benchedStarterIds, setBenchedStarterIds] = useState<string[]>([]);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [savingStarters, setSavingStarters] = useState(false);
   const [ownMemberModalOpen, setOwnMemberModalOpen] = useState(false);
@@ -118,6 +119,7 @@ export default function GameStatsPage() {
       .maybeSingle();
     setStarters(data?.starter_player_ids ?? []);
     setSubs(data?.sub_player_ids ?? []);
+    setBenchedStarterIds([]);
     setRecordId(data?.id ?? null);
   }, [matchId, quarter]);
 
@@ -241,9 +243,15 @@ export default function GameStatsPage() {
     toast(`${quarter}Qの登録を削除しました`);
   }
 
-  // メンバーチェンジ: スタメン以外の選手を出場中(途中出場)にオン/オフする。
-  async function handleToggleSub(playerId: string) {
-    if (starters.includes(playerId)) return;
+  // メンバーチェンジ: 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表す。
+  // スタメンは選択解除するとベンチ扱い(benchedStarterIds)にし、記録上のスタメンそのものは変更しない。
+  async function handleToggleOwnMember(playerId: string) {
+    if (starters.includes(playerId)) {
+      setBenchedStarterIds((prev) =>
+        prev.includes(playerId) ? prev.filter((x) => x !== playerId) : [...prev, playerId],
+      );
+      return;
+    }
     const nextSubs = subs.includes(playerId) ? subs.filter((x) => x !== playerId) : [...subs, playerId];
     await saveRecord(starters, nextSubs);
   }
@@ -415,12 +423,15 @@ export default function GameStatsPage() {
     setOpponentStatEvents([]);
     setStarters([]);
     setSubs([]);
+    setBenchedStarterIds([]);
     setRecordId(null);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
     toast("この試合のスタッツ・スタメンをリセットしました");
   }
 
-  const onCourtIds = Array.from(new Set([...starters, ...subs]));
+  const onCourtIds = Array.from(
+    new Set([...starters.filter((id) => !benchedStarterIds.includes(id)), ...subs]),
+  );
   const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
@@ -434,7 +445,6 @@ export default function GameStatsPage() {
     id: p.id,
     label: `${p.number ? `#${p.number} ` : ""}${playerFullName(p)}`,
     checked: onCourtIds.includes(p.id),
-    disabled: starters.includes(p.id),
   }));
   const opponentMemberOptions: MemberOption[] = opponentPlayers.map((p) => ({
     id: p.id,
@@ -580,7 +590,7 @@ export default function GameStatsPage() {
             onClose={() => setOwnMemberModalOpen(false)}
             title="メンバーチェンジ"
             options={ownMemberOptions}
-            onToggle={handleToggleSub}
+            onToggle={handleToggleOwnMember}
           />
           <MemberChangeModal
             open={opponentMemberModalOpen}

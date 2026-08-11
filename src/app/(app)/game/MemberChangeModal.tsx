@@ -6,10 +6,10 @@ export interface MemberOption {
   id: string;
   label: string;
   checked: boolean;
-  disabled?: boolean;
 }
 
 // 試合中に発生する途中交代を、スタッツ入力画面からその場で反映するための選手選択モーダル。
+// 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表現する。
 export function MemberChangeModal({
   open,
   onClose,
@@ -32,20 +32,12 @@ export function MemberChangeModal({
           <button
             key={o.id}
             type="button"
-            onClick={() => !o.disabled && onToggle(o.id)}
-            disabled={o.disabled}
-            className={`w-full flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 text-left ${
-              o.disabled ? "opacity-40" : ""
+            onClick={() => onToggle(o.id)}
+            className={`w-full flex items-center py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
+              o.checked ? "bg-orange/10" : ""
             }`}
           >
-            <span
-              className={`w-[22px] h-[22px] rounded-md border flex items-center justify-center flex-shrink-0 font-bold text-[13px] ${
-                o.checked ? "bg-orange border-orange text-white" : "border-line"
-              }`}
-            >
-              {o.checked ? "✓" : ""}
-            </span>
-            <span className="font-bold text-[13.5px]">{o.label}</span>
+            <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
           </button>
         ))
       )}
