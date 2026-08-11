@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, EmptyState } from "@/components/ui/Card";
+import { FreeThrowModal } from "./FreeThrowModal";
 import {
   STAT_BUTTONS,
   fgPct,
@@ -42,7 +43,7 @@ export function StatPad({
   emptyMessage?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [ftTripCount, setFtTripCount] = useState<1 | 2 | null>(null);
+  const [ftModalOpen, setFtModalOpen] = useState(false);
 
   useEffect(() => {
     if (entrants.length === 0) return;
@@ -52,16 +53,17 @@ export function StatPad({
   }, [entrants, selectedId]);
 
   useEffect(() => {
-    setFtTripCount(null);
+    setFtModalOpen(false);
   }, [selectedId]);
 
   const selected = entrants.find((e) => e.id === selectedId) ?? entrants[0];
   const row = selected ? statLines[selected.id] : undefined;
 
-  function pickFreeThrowOutcome(makes: number, attempts: number) {
+  function handleSaveFreeThrows(results: boolean[]) {
     if (!selected) return;
-    onFreeThrowTrip(selected.id, makes, attempts);
-    setFtTripCount(null);
+    const makes = results.filter(Boolean).length;
+    onFreeThrowTrip(selected.id, makes, results.length);
+    setFtModalOpen(false);
   }
 
   return (
@@ -116,82 +118,13 @@ export function StatPad({
             <span>EFF {row?.eff ?? 0}</span>
           </div>
 
-          <div className="mt-3">
-            <div className="text-[10.5px] font-bold text-ink-soft mb-1">フリースロー</div>
-            {ftTripCount === null ? (
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setFtTripCount(1)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink bg-paper"
-                >
-                  1本
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFtTripCount(2)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink bg-paper"
-                >
-                  2本
-                </button>
-              </div>
-            ) : ftTripCount === 1 ? (
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => pickFreeThrowOutcome(1, 1)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-orange bg-orange text-white"
-                >
-                  成功
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pickFreeThrowOutcome(0, 1)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink bg-white"
-                >
-                  失敗
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFtTripCount(null)}
-                  className="flex-none px-3 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink-soft bg-white"
-                >
-                  戻る
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => pickFreeThrowOutcome(2, 2)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-orange bg-orange text-white"
-                >
-                  2/2
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pickFreeThrowOutcome(1, 2)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink bg-white"
-                >
-                  1/2
-                </button>
-                <button
-                  type="button"
-                  onClick={() => pickFreeThrowOutcome(0, 2)}
-                  className="flex-1 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink bg-white"
-                >
-                  0/2
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFtTripCount(null)}
-                  className="flex-none px-3 py-1.5 rounded-[8px] font-bold text-[12px] border border-line text-ink-soft bg-white"
-                >
-                  戻る
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setFtModalOpen(true)}
+            className="w-full mt-3 py-2 rounded-[10px] font-bold text-[13px] border border-orange text-orange bg-orange/8"
+          >
+            FT (フリースロー)
+          </button>
 
           <div className="grid grid-cols-2 gap-1.5 mt-3">
             {GRID_STAT_BUTTONS.map(({ event, label }) => {
@@ -226,6 +159,15 @@ export function StatPad({
             })}
           </div>
         </Card>
+      )}
+
+      {selected && (
+        <FreeThrowModal
+          open={ftModalOpen}
+          onClose={() => setFtModalOpen(false)}
+          entrantLabel={`#${selected.number ?? "-"}${selected.name ? ` ${selected.name}` : ""}`}
+          onSave={handleSaveFreeThrows}
+        />
       )}
     </>
   );
