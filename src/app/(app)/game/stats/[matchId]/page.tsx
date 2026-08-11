@@ -11,9 +11,8 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
-import { LineupSection } from "../../LineupSection";
 import { OpponentRoster } from "../../OpponentRoster";
-import { OpponentLineupSection } from "../../OpponentLineupSection";
+import { StartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers, sortOpponentPlayers } from "@/lib/format";
@@ -55,16 +54,15 @@ export default function GameStatsPage() {
   const [starters, setStarters] = useState<string[]>([]);
   const [subs, setSubs] = useState<string[]>([]);
   const [benchedStarterIds, setBenchedStarterIds] = useState<string[]>([]);
-  const [recordId, setRecordId] = useState<string | null>(null);
   const [savingStarters, setSavingStarters] = useState(false);
   const [ownMemberModalOpen, setOwnMemberModalOpen] = useState(false);
+  const [startingLineupModalOpen, setStartingLineupModalOpen] = useState(false);
   const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
   const [statEvents, setStatEvents] = useState<GameStatEvent[]>([]);
   const [opponentPlayers, setOpponentPlayers] = useState<GameOpponentPlayer[]>([]);
   const [opponentStarters, setOpponentStarters] = useState<string[]>([]);
   const [opponentSubs, setOpponentSubs] = useState<string[]>([]);
   const [benchedOpponentStarterIds, setBenchedOpponentStarterIds] = useState<string[]>([]);
-  const [opponentRecordId, setOpponentRecordId] = useState<string | null>(null);
   const [savingOpponentStarters, setSavingOpponentStarters] = useState(false);
   const [opponentMemberModalOpen, setOpponentMemberModalOpen] = useState(false);
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
@@ -114,7 +112,6 @@ export default function GameStatsPage() {
     setStarters(data?.starter_player_ids ?? []);
     setSubs(data?.sub_player_ids ?? []);
     setBenchedStarterIds([]);
-    setRecordId(data?.id ?? null);
   }, [matchId, quarter]);
 
   useEffect(() => {
@@ -133,7 +130,6 @@ export default function GameStatsPage() {
     setOpponentStarters(data?.starter_opponent_player_ids ?? []);
     setOpponentSubs(data?.sub_opponent_player_ids ?? []);
     setBenchedOpponentStarterIds([]);
-    setOpponentRecordId(data?.id ?? null);
   }, [matchId, quarter]);
 
   useEffect(() => {
@@ -211,27 +207,22 @@ export default function GameStatsPage() {
 
   async function saveRecord(newStarters: string[], newSubs: string[]) {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("game_records")
-      .upsert(
-        {
-          team_id: teamId,
-          match_id: matchId,
-          quarter,
-          starter_player_ids: newStarters,
-          sub_player_ids: newSubs,
-        },
-        { onConflict: "match_id,quarter" },
-      )
-      .select()
-      .single();
+    const { error } = await supabase.from("game_records").upsert(
+      {
+        team_id: teamId,
+        match_id: matchId,
+        quarter,
+        starter_player_ids: newStarters,
+        sub_player_ids: newSubs,
+      },
+      { onConflict: "match_id,quarter" },
+    );
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
       return false;
     }
     setStarters(newStarters);
     setSubs(newSubs);
-    setRecordId(data?.id ?? null);
     return true;
   }
 
@@ -242,43 +233,24 @@ export default function GameStatsPage() {
     if (ok) toast(`${quarter}Qのスターティングを登録しました`);
   }
 
-  async function handleDeleteRecord() {
-    if (!recordId) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("game_records").delete().eq("id", recordId);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setStarters([]);
-    setSubs([]);
-    setRecordId(null);
-    toast(`${quarter}Qの登録を削除しました`);
-  }
-
   async function saveOpponentRecord(newStarters: string[], newSubs: string[]) {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("game_opponent_records")
-      .upsert(
-        {
-          team_id: teamId,
-          match_id: matchId,
-          quarter,
-          starter_opponent_player_ids: newStarters,
-          sub_opponent_player_ids: newSubs,
-        },
-        { onConflict: "match_id,quarter" },
-      )
-      .select()
-      .single();
+    const { error } = await supabase.from("game_opponent_records").upsert(
+      {
+        team_id: teamId,
+        match_id: matchId,
+        quarter,
+        starter_opponent_player_ids: newStarters,
+        sub_opponent_player_ids: newSubs,
+      },
+      { onConflict: "match_id,quarter" },
+    );
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
       return false;
     }
     setOpponentStarters(newStarters);
     setOpponentSubs(newSubs);
-    setOpponentRecordId(data?.id ?? null);
     return true;
   }
 
@@ -287,20 +259,6 @@ export default function GameStatsPage() {
     const ok = await saveOpponentRecord(newStarters, opponentSubs);
     setSavingOpponentStarters(false);
     if (ok) toast(`${quarter}Qの相手スターティングを登録しました`);
-  }
-
-  async function handleDeleteOpponentRecord() {
-    if (!opponentRecordId) return;
-    const supabase = createClient();
-    const { error } = await supabase.from("game_opponent_records").delete().eq("id", opponentRecordId);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setOpponentStarters([]);
-    setOpponentSubs([]);
-    setOpponentRecordId(null);
-    toast(`${quarter}Qの登録を削除しました`);
   }
 
   // メンバーチェンジ: 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表す。
@@ -633,11 +591,9 @@ export default function GameStatsPage() {
     setStarters([]);
     setSubs([]);
     setBenchedStarterIds([]);
-    setRecordId(null);
     setOpponentStarters([]);
     setOpponentSubs([]);
     setBenchedOpponentStarterIds([]);
-    setOpponentRecordId(null);
     setOpponentPlayers([]);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
     toast("この試合のスタッツ・スタメン・相手選手の登録をリセットしました");
@@ -749,16 +705,6 @@ export default function GameStatsPage() {
             </div>
           </div>
 
-          <LineupSection
-            starters={starters}
-            recordId={recordId}
-            saving={savingStarters}
-            players={players}
-            attendanceStatus={attendanceStatus}
-            onSaveStarters={handleSaveStarters}
-            onDeleteRecord={handleDeleteRecord}
-          />
-
           <div className="mt-4">
             <SectionLabel>自チームのスタッツ</SectionLabel>
             <StatPad
@@ -776,15 +722,6 @@ export default function GameStatsPage() {
             events={ownLog}
             onChangeQuarter={handleChangeStatEventQuarter}
             onDelete={handleDeleteStatEvent}
-          />
-
-          <OpponentLineupSection
-            opponentPlayers={opponentPlayers}
-            starters={opponentStarters}
-            recordId={opponentRecordId}
-            saving={savingOpponentStarters}
-            onSaveStarters={handleSaveOpponentStarters}
-            onDeleteRecord={handleDeleteOpponentRecord}
           />
 
           <OpponentRoster
@@ -813,6 +750,14 @@ export default function GameStatsPage() {
             onDelete={handleDeleteOpponentStatEvent}
           />
 
+          <button
+            type="button"
+            onClick={() => setStartingLineupModalOpen(true)}
+            className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+          >
+            スターティングの編集
+          </button>
+
           <MemberChangeModal
             open={ownMemberModalOpen}
             onClose={() => setOwnMemberModalOpen(false)}
@@ -826,6 +771,19 @@ export default function GameStatsPage() {
             title="メンバーチェンジ(相手チーム)"
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}
+          />
+          <StartingLineupModal
+            open={startingLineupModalOpen}
+            onClose={() => setStartingLineupModalOpen(false)}
+            starters={starters}
+            savingStarters={savingStarters}
+            players={players}
+            attendanceStatus={attendanceStatus}
+            onSaveStarters={handleSaveStarters}
+            opponentPlayers={opponentPlayers}
+            opponentStarters={opponentStarters}
+            savingOpponentStarters={savingOpponentStarters}
+            onSaveOpponentStarters={handleSaveOpponentStarters}
           />
         </>
       )}
