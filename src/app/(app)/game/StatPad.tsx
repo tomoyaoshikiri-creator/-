@@ -23,7 +23,26 @@ export interface StatEntrant {
 // 「選手を選ぶ→スクロールしてボタンを探す」という手間をなくして試合中の速さに合わせている。
 // 自チーム(選手名あり)・対戦相手(背番号のみ)のどちらでも使える。
 // チップの末尾に「交代」ボタンを置き、試合中に発生する途中交代をその場で反映できるようにする。
-const GRID_STAT_BUTTONS = STAT_BUTTONS.filter((b) => b.event !== "ft_make" && b.event !== "ft_miss");
+type GridCell = { type: "ft" } | { type: "stat"; event: StatEvent; label: string };
+
+function statCell(event: StatEvent): GridCell {
+  const label = STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
+  return { type: "stat", event, label };
+}
+
+// アシストがあった位置にFTを入れ、アシストはFTの元の位置(先頭)に置く。
+const GRID_CELLS: GridCell[] = [
+  statCell("ast"),
+  statCell("fg_make"),
+  statCell("fg_miss"),
+  { type: "ft" },
+  statCell("fouls"),
+  statCell("tov"),
+  statCell("blk"),
+  statCell("stl"),
+  statCell("reb_off"),
+  statCell("reb_def"),
+];
 
 export function StatPad({
   entrants,
@@ -119,17 +138,23 @@ export function StatPad({
           </div>
 
           <div className="grid grid-cols-2 gap-1.5 mt-3">
-            <button
-              type="button"
-              onClick={() => setFtModalOpen(true)}
-              className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-orange bg-orange/8"
-            >
-              <div className="text-[11px] font-bold text-orange">FT(フリースロー)</div>
-              <div className="font-mono text-[13px] font-bold text-orange">
-                {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
-              </div>
-            </button>
-            {GRID_STAT_BUTTONS.map(({ event, label }) => {
+            {GRID_CELLS.map((cell) => {
+              if (cell.type === "ft") {
+                return (
+                  <button
+                    key="ft"
+                    type="button"
+                    onClick={() => setFtModalOpen(true)}
+                    className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-orange bg-orange/8"
+                  >
+                    <div className="text-[11px] font-bold text-orange">FT(フリースロー)</div>
+                    <div className="font-mono text-[13px] font-bold text-orange">
+                      {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
+                    </div>
+                  </button>
+                );
+              }
+              const { event, label } = cell;
               const count = statEventCount(row, event);
               const canMinus = row ? isStatEventAllowed(row, event, -1) : false;
               return (
