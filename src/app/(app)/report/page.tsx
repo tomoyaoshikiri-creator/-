@@ -7,7 +7,6 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
@@ -157,7 +156,7 @@ export default function ReportPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="練習日報" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell header={<AppHeader title="練習日報" />}>
       <SectionLabel>日報を書く</SectionLabel>
       <Card>
         <FieldLabel>日付</FieldLabel>

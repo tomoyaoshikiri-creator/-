@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
@@ -48,7 +47,7 @@ export default function GameListPage() {
   const filteredGames = category === "all" ? games : games.filter((g) => g.game_category === category);
 
   return (
-    <PageShell header={<AppHeader title="試合記録" rightSlot={<CurrentUserBadge />} accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="試合記録" accessBadge="coach" />}>
       <Link
         href="/game/results"
         className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"

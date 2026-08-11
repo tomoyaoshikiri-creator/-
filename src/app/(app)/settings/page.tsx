@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canManageSettings } from "@/lib/permissions";
@@ -23,7 +22,7 @@ export default function SettingsPage() {
   const canManageTeam = canManageSettings(role);
 
   return (
-    <PageShell header={<AppHeader title="設定" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell header={<AppHeader title="設定" />}>
       <SectionLabel>アカウント</SectionLabel>
       <Card>
         <SettingsRow href="/settings/name" label="表示名の変更" />

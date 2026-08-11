@@ -7,7 +7,6 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
@@ -198,7 +197,7 @@ export default function UsersPage() {
   const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
 
   return (
-    <PageShell header={<AppHeader title="ユーザー管理" rightSlot={<CurrentUserBadge />} />}>
+    <PageShell header={<AppHeader title="ユーザー管理" />}>
       <SectionLabel>招待リンクを発行</SectionLabel>
       <Card>
         <div className="flex gap-2">

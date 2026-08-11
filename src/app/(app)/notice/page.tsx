@@ -7,7 +7,6 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
@@ -105,7 +104,6 @@ export default function NoticePage() {
           searchPlaceholder="検索"
           searchValue={query}
           onSearchChange={setQuery}
-          rightSlot={<CurrentUserBadge />}
         />
       }
       fab={

@@ -8,7 +8,6 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
@@ -112,7 +111,7 @@ export default function PlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手一覧" rightSlot={<CurrentUserBadge />} accessBadge="coach" />}
+      header={<AppHeader title="選手一覧" accessBadge="coach" />}
       fab={
         <>
           <Fab onClick={() => setModalOpen(true)} />

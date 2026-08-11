@@ -7,7 +7,6 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
@@ -76,7 +75,6 @@ export default function SchedulePage() {
           searchPlaceholder="検索"
           searchValue={query}
           onSearchChange={setQuery}
-          rightSlot={<CurrentUserBadge />}
         />
       }
       fab={

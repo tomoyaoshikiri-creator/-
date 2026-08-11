@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
@@ -92,7 +91,6 @@ export default function GameResultsPage() {
           title="試合結果一覧"
           variant={canRecordGames(role) ? "detail" : "list"}
           backHref={canRecordGames(role) ? "/game" : undefined}
-          rightSlot={canRecordGames(role) ? undefined : <CurrentUserBadge />}
         />
       }
     >
