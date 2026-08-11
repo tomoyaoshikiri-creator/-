@@ -23,7 +23,6 @@ export function OpponentRoster({
   const [newNumber, setNewNumber] = useState("");
   const [adding, setAdding] = useState(false);
   const [addingTemplate, setAddingTemplate] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function handleAdd() {
     const number = newNumber.trim();
@@ -76,22 +75,6 @@ export function OpponentRoster({
     }
   }
 
-  async function handleRemove(id: string) {
-    setRemovingId(id);
-    const supabase = createClient();
-    const { error } = await supabase.from("game_opponent_players").delete().eq("id", id);
-    setRemovingId(null);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    onChange(opponentPlayers.filter((p) => p.id !== id));
-  }
-
-  const sortedPlayers = [...opponentPlayers].sort(
-    (a, b) => Number(a.number) - Number(b.number) || a.number.localeCompare(b.number),
-  );
-
   return (
     <div className="mt-3">
       <FieldLabel>相手選手の背番号</FieldLabel>
@@ -122,23 +105,6 @@ export function OpponentRoster({
         >
           {addingTemplate ? "登録中…" : "4〜18番を一括登録"}
         </button>
-        {opponentPlayers.length === 0 ? (
-          <div className="text-xs text-ink-soft mt-2.5">まだ背番号が登録されていません</div>
-        ) : (
-          <div className="flex gap-1.5 flex-wrap mt-2.5">
-            {sortedPlayers.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleRemove(p.id)}
-                disabled={removingId === p.id}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-line bg-paper font-mono text-[12.5px] font-bold"
-              >
-                #{p.number} <span className="text-ink-soft">×</span>
-              </button>
-            ))}
-          </div>
-        )}
       </Card>
     </div>
   );

@@ -40,30 +40,23 @@ function PlayerCheckRow({
 // スタッツ入力画面の「メンバーチェンジ」から行う(試合中に発生するため)。
 export function LineupSection({
   starters,
-  recordId,
   saving,
   players,
   attendanceStatus,
   onSaveStarters,
-  onDeleteRecord,
 }: {
   starters: string[];
-  recordId: string | null;
   saving: boolean;
   players: Player[];
   attendanceStatus: Record<string, AttendanceStatus>;
   onSaveStarters: (starters: string[]) => void;
-  onDeleteRecord: () => void;
 }) {
   const toast = useToast();
-  const [editing, setEditing] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [draft, setDraft] = useState<string[]>(starters);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    if (!editing) setDraft(starters);
-  }, [starters, editing]);
+    setDraft(starters);
+  }, [starters]);
 
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);
@@ -76,60 +69,9 @@ export function LineupSection({
 
   function handleSave() {
     onSaveStarters(draft);
-    setEditing(false);
   }
 
-  function handleDelete() {
-    if (!deleteConfirm) {
-      setDeleteConfirm(true);
-      setTimeout(() => setDeleteConfirm(false), 3000);
-      return;
-    }
-    setDeleteConfirm(false);
-    setExpanded(false);
-    onDeleteRecord();
-  }
-
-  return recordId && !editing ? (
-    <div className="mt-3">
-      <FieldLabel>登録済みスタメン</FieldLabel>
-      <Card className="cursor-pointer" onClick={() => setExpanded((v) => !v)}>
-        <div className="text-[13px] font-bold">
-          {starters.length > 0 ? (
-            starters
-              .map((id) => players.find((p) => p.id === id))
-              .filter((p): p is Player => Boolean(p))
-              .map((p) => (
-                <div key={p.id}>
-                  <span className="font-mono text-ink-soft">{p.number ?? "-"}</span> {playerFullName(p)}
-                </div>
-              ))
-          ) : (
-            <div>未登録</div>
-          )}
-        </div>
-        {expanded && (
-          <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="flex-1 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
-            >
-              編集
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="flex-1 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-            >
-              {deleteConfirm ? "もう一度タップで削除確定" : "削除"}
-            </button>
-          </div>
-        )}
-      </Card>
-    </div>
-  ) : (
+  return (
     <>
       <div className="mt-3">
         <FieldLabel>スターティング(最大5人)</FieldLabel>
@@ -154,19 +96,6 @@ export function LineupSection({
       <SubmitButton onClick={handleSave} disabled={saving || players.length === 0}>
         {saving ? "登録中…" : "スターティングを登録する"}
       </SubmitButton>
-      {editing && (
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(starters);
-            setEditing(false);
-          }}
-          disabled={saving}
-          className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
-        >
-          キャンセル
-        </button>
-      )}
     </>
   );
 }
