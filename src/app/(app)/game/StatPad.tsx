@@ -220,7 +220,6 @@ export function StatPad({
       )}
 
       <div className="mt-2">
-        <SectionLabel>相手チームのスタッツ</SectionLabel>
         <ChipRow
           entrants={opponentEntrants}
           statLines={opponentStatLines}
@@ -228,6 +227,7 @@ export function StatPad({
           onSelect={(id) => setSelected({ side: "opponent", id })}
           onOpenMemberChange={onOpenOpponentMemberChange}
         />
+        <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
       </div>
 
       {selectedEntrant && (

@@ -9,11 +9,28 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
   );
 }
 
-export function SectionLabel({ children }: { children: React.ReactNode }) {
+export function SectionLabel({
+  children,
+  align = "left",
+}: {
+  children: React.ReactNode;
+  align?: "left" | "right";
+}) {
+  const line = <span className="flex-1 h-px bg-line" />;
+  const label = <span>{children}</span>;
   return (
     <div className="font-mono text-[13px] font-bold tracking-widest uppercase text-ink mb-2.5 flex items-center gap-2">
-      <span>{children}</span>
-      <span className="flex-1 h-px bg-line" />
+      {align === "right" ? (
+        <>
+          {line}
+          {label}
+        </>
+      ) : (
+        <>
+          {label}
+          {line}
+        </>
+      )}
     </div>
   );
 }
