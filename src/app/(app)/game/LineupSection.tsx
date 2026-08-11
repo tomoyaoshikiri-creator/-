@@ -12,11 +12,13 @@ function PlayerCheckRow({
   player,
   checked,
   absent,
+  dimmed,
   onToggle,
 }: {
   player: Player;
   checked: boolean;
   absent?: boolean;
+  dimmed?: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -24,7 +26,7 @@ function PlayerCheckRow({
       type="button"
       onClick={onToggle}
       className={`w-full flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-lg border-b border-line last:border-b-0 text-left ${
-        absent ? "opacity-40" : ""
+        absent || dimmed ? "opacity-40" : ""
       } ${checked ? "bg-orange/10" : ""}`}
     >
       <NumChip num={player.number ?? "-"} />
@@ -141,6 +143,7 @@ export function LineupSection({
                 player={p}
                 checked={draft.includes(p.id)}
                 absent={attendanceStatus[p.id] === "欠席"}
+                dimmed={draft.length >= 5 && !draft.includes(p.id)}
                 onToggle={() => toggleDraft(p.id)}
               />
             ))

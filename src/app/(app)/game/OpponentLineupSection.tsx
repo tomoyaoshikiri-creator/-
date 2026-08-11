@@ -9,10 +9,12 @@ import type { GameOpponentPlayer } from "@/lib/database.types";
 function OpponentCheckRow({
   opponentPlayer,
   checked,
+  dimmed,
   onToggle,
 }: {
   opponentPlayer: GameOpponentPlayer;
   checked: boolean;
+  dimmed?: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -20,8 +22,8 @@ function OpponentCheckRow({
       type="button"
       onClick={onToggle}
       className={`w-full flex items-center gap-2.5 py-2 px-2 -mx-2 rounded-lg border-b border-line last:border-b-0 text-left ${
-        checked ? "bg-orange/10" : ""
-      }`}
+        dimmed ? "opacity-40" : ""
+      } ${checked ? "bg-orange/10" : ""}`}
     >
       <div className={`font-mono font-bold text-[13.5px] ${checked ? "text-orange" : ""}`}>
         #{opponentPlayer.number}
@@ -130,6 +132,7 @@ export function OpponentLineupSection({
                 key={p.id}
                 opponentPlayer={p}
                 checked={draft.includes(p.id)}
+                dimmed={draft.length >= 5 && !draft.includes(p.id)}
                 onToggle={() => toggleDraft(p.id)}
               />
             ))

@@ -23,23 +23,28 @@ export function MemberChangeModal({
   options: MemberOption[];
   onToggle: (id: string) => void;
 }) {
+  const checkedCount = options.filter((o) => o.checked).length;
+
   return (
     <Modal open={open} onClose={onClose} title={title}>
       {options.length === 0 ? (
         <div className="text-xs text-ink-soft py-3">選手がいません</div>
       ) : (
-        options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => onToggle(o.id)}
-            className={`w-full flex items-center py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
-              o.checked ? "bg-orange/10" : ""
-            }`}
-          >
-            <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
-          </button>
-        ))
+        options.map((o) => {
+          const dimmed = checkedCount >= 5 && !o.checked;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onToggle(o.id)}
+              className={`w-full flex items-center py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
+                dimmed ? "opacity-40" : ""
+              } ${o.checked ? "bg-orange/10" : ""}`}
+            >
+              <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
+            </button>
+          );
+        })
       )}
     </Modal>
   );
