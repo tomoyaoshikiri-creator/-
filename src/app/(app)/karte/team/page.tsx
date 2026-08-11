@@ -14,9 +14,9 @@ import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import {
   computeSeasonAverages,
-  RANKING_METRICS,
+  computeTeamGameAverages,
   SPORTS_TEST_RANKING_METRICS,
-  type RankingMetric,
+  type SeasonStatAverages,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, gradeLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
@@ -30,7 +30,22 @@ interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
 
-export default function KarteRankingPage() {
+// 得点・FG成功・FT成功・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・ターンオーバー・EFFの順。
+// スマホ幅に収まらないため、列見出しはExcelと同じ英字略称にしている。
+const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
+  { key: "pts", abbr: "PTS" },
+  { key: "fgMade", abbr: "FG" },
+  { key: "ftMade", abbr: "FT" },
+  { key: "ast", abbr: "AST" },
+  { key: "rebOff", abbr: "OREB" },
+  { key: "rebDef", abbr: "DREB" },
+  { key: "stl", abbr: "STL" },
+  { key: "blk", abbr: "BLK" },
+  { key: "tov", abbr: "TO" },
+  { key: "eff", abbr: "EFF" },
+];
+
+export default function KarteTeamPage() {
   const router = useRouter();
   const { role } = useSession();
   const [category, setCategory] = useState<"game" | "sportsTest">("game");
@@ -39,7 +54,8 @@ export default function KarteRankingPage() {
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [quarter, setQuarter] = useState<number>(1);
-  const [metric, setMetric] = useState<RankingMetric>("pts");
+  const [gameRankingMode, setGameRankingMode] = useState(false);
+  const [sortKey, setSortKey] = useState<keyof SeasonStatAverages>("pts");
   const [testMetric, setTestMetric] = useState<SportsTestMetric>("sprint20m");
   const [loading, setLoading] = useState(true);
 
@@ -83,14 +99,15 @@ export default function KarteRankingPage() {
     return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
   });
 
-  const gameRanked = players
-    .map((p) => {
-      const lines = linesForYear.filter((l) => l.player_id === p.id);
-      const averages = computeSeasonAverages(lines);
-      return { player: p, gp: averages.gp, value: averages[metric], sub: `GP ${averages.gp}` };
-    })
-    .filter((r) => r.gp > 0 && r.value !== null)
-    .sort((a, b) => (b.value as number) - (a.value as number));
+  const teamAverages = computeTeamGameAverages(linesForYear);
+  const playerAverages = players.map((p) => ({
+    player: p,
+    averages: computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)),
+  }));
+  const rows =
+    gameRankingMode
+      ? [...playerAverages].sort((a, b) => (b.averages[sortKey] as number) - (a.averages[sortKey] as number))
+      : playerAverages;
 
   const testMetricInfo = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === testMetric)!;
   const testRanked = players
@@ -105,9 +122,6 @@ export default function KarteRankingPage() {
         ? (a.value as number) - (b.value as number)
         : (b.value as number) - (a.value as number),
     );
-
-  const ranked = category === "game" ? gameRanked : testRanked;
-  const unit = category === "game" ? RANKING_METRICS.find((m) => m.value === metric)!.unit : testMetricInfo.unit;
 
   return (
     <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" />}>
@@ -136,7 +150,80 @@ export default function KarteRankingPage() {
         <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
       </div>
 
-      {category === "sportsTest" && (
+      {category === "game" ? (
+        loading ? (
+          <EmptyState>読み込み中…</EmptyState>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setGameRankingMode((v) => !v)}
+              className={`w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border ${
+                gameRankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+              }`}
+            >
+              {gameRankingMode ? "ランキング表示中(項目名をタップで並び替え)" : "ランキングで見る"}
+            </button>
+
+            <div className="bg-white border border-line rounded-2xl overflow-hidden mb-2.5">
+              <div className="overflow-x-auto">
+                <table className="border-collapse text-[11.5px] w-full">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 bg-paper z-10 text-left px-2.5 py-2 border-b border-line whitespace-nowrap">
+                        選手
+                      </th>
+                      {GAME_COLUMNS.map((c) => (
+                        <th
+                          key={c.key}
+                          onClick={() => gameRankingMode && setSortKey(c.key)}
+                          className={`px-2 py-2 border-b border-line font-bold whitespace-nowrap text-center ${
+                            gameRankingMode ? "cursor-pointer" : ""
+                          } ${gameRankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
+                        >
+                          {c.abbr}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-paper">
+                      <td className="sticky left-0 bg-paper z-10 px-2.5 py-2 font-bold whitespace-nowrap border-b border-line">
+                        チーム平均
+                      </td>
+                      {GAME_COLUMNS.map((c) => (
+                        <td
+                          key={c.key}
+                          className="px-2 py-2 text-center font-mono font-bold border-b border-line"
+                        >
+                          {teamAverages[c.key]}
+                        </td>
+                      ))}
+                    </tr>
+                    {rows.map(({ player: p, averages }) => (
+                      <tr key={p.id}>
+                        <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                          <Link href={`/karte/players/${p.id}`} className="font-bold">
+                            #{p.number ?? "-"} {playerFullName(p)}
+                          </Link>
+                        </td>
+                        {GAME_COLUMNS.map((c) => (
+                          <td
+                            key={c.key}
+                            className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0"
+                          >
+                            {averages[c.key]}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )
+      ) : (
         <>
           <FieldLabel>四半期</FieldLabel>
           <div className="flex gap-1.5 mb-3">
@@ -146,58 +233,48 @@ export default function KarteRankingPage() {
               </SegButton>
             ))}
           </div>
+
+          <FieldLabel>項目</FieldLabel>
+          <div className="flex gap-1.5 flex-wrap mb-3">
+            {SPORTS_TEST_RANKING_METRICS.map((m) => (
+              <SegButton key={m.value} active={testMetric === m.value} onClick={() => setTestMetric(m.value)}>
+                {m.label}
+              </SegButton>
+            ))}
+          </div>
+
+          <Card>
+            {loading ? (
+              <EmptyState>読み込み中…</EmptyState>
+            ) : testRanked.length === 0 ? (
+              <EmptyState>この四半期の記録がありません</EmptyState>
+            ) : (
+              testRanked.map((r, i) => (
+                <Link
+                  key={r.player.id}
+                  href={`/karte/players/${r.player.id}`}
+                  className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
+                >
+                  <div className="font-mono font-bold text-[13px] text-ink-soft w-5 flex-shrink-0 text-center">
+                    {i + 1}
+                  </div>
+                  <NumChip num={r.player.number ?? "-"} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[13.5px]">{playerFullName(r.player)}</div>
+                    <div className="text-[11px] text-ink-soft mt-0.5">
+                      {gradeLabel(r.player.grade)}・{r.sub}
+                    </div>
+                  </div>
+                  <div className="font-mono font-bold text-[15px] flex-shrink-0">
+                    {r.value}
+                    {testMetricInfo.unit}
+                  </div>
+                </Link>
+              ))
+            )}
+          </Card>
         </>
       )}
-
-      <FieldLabel>項目</FieldLabel>
-      {category === "game" ? (
-        <div className="flex gap-1.5 flex-wrap mb-3">
-          {RANKING_METRICS.map((m) => (
-            <SegButton key={m.value} active={metric === m.value} onClick={() => setMetric(m.value)}>
-              {m.label}
-            </SegButton>
-          ))}
-        </div>
-      ) : (
-        <div className="flex gap-1.5 flex-wrap mb-3">
-          {SPORTS_TEST_RANKING_METRICS.map((m) => (
-            <SegButton key={m.value} active={testMetric === m.value} onClick={() => setTestMetric(m.value)}>
-              {m.label}
-            </SegButton>
-          ))}
-        </div>
-      )}
-
-      <Card>
-        {loading ? (
-          <EmptyState>読み込み中…</EmptyState>
-        ) : ranked.length === 0 ? (
-          <EmptyState>{category === "game" ? "この年度の出場記録がありません" : "この四半期の記録がありません"}</EmptyState>
-        ) : (
-          ranked.map((r, i) => (
-            <Link
-              key={r.player.id}
-              href={`/karte/players/${r.player.id}`}
-              className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-            >
-              <div className="font-mono font-bold text-[13px] text-ink-soft w-5 flex-shrink-0 text-center">
-                {i + 1}
-              </div>
-              <NumChip num={r.player.number ?? "-"} />
-              <div className="flex-1 min-w-0">
-                <div className="font-bold text-[13.5px]">{playerFullName(r.player)}</div>
-                <div className="text-[11px] text-ink-soft mt-0.5">
-                  {gradeLabel(r.player.grade)}・{r.sub}
-                </div>
-              </div>
-              <div className="font-mono font-bold text-[15px] flex-shrink-0">
-                {r.value}
-                {unit}
-              </div>
-            </Link>
-          ))
-        )}
-      </Card>
     </PageShell>
   );
 }

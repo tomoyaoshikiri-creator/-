@@ -3,6 +3,8 @@ import type { GamePlayerStatLine, SportsTestRecord } from "@/lib/database.types"
 export interface SeasonStatAverages {
   gp: number;
   pts: number;
+  fgMade: number;
+  ftMade: number;
   reb: number;
   rebOff: number;
   rebDef: number;
@@ -25,6 +27,8 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
     return {
       gp: 0,
       pts: 0,
+      fgMade: 0,
+      ftMade: 0,
       reb: 0,
       rebOff: 0,
       rebDef: 0,
@@ -75,6 +79,8 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
   return {
     gp,
     pts: round1(sum.pts / gp),
+    fgMade: round1(sum.fgMade / gp),
+    ftMade: round1(sum.ftMade / gp),
     reb: round1(sum.reb / gp),
     rebOff: round1(sum.rebOff / gp),
     rebDef: round1(sum.rebDef / gp),
@@ -87,6 +93,40 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
     fgPct: sum.fgAtt > 0 ? round1((sum.fgMade / sum.fgAtt) * 100) : null,
     ftPct: sum.ftAtt > 0 ? round1((sum.ftMade / sum.ftAtt) * 100) : null,
   };
+}
+
+// チームとしてのシーズン平均は、選手個人の平均の平均ではなく、
+// 試合ごとに全選手のスタッツを合算した「チームの1試合分」を作ってから平均する。
+export function computeTeamGameAverages(lines: GamePlayerStatLine[]): SeasonStatAverages {
+  const byMatch = new Map<string, GamePlayerStatLine[]>();
+  for (const l of lines) {
+    const group = byMatch.get(l.match_id) ?? [];
+    group.push(l);
+    byMatch.set(l.match_id, group);
+  }
+  const teamLines = Array.from(byMatch.values()).map((group) =>
+    group.reduce(
+      (acc, l) => ({
+        ...acc,
+        fg_made: acc.fg_made + l.fg_made,
+        fg_att: acc.fg_att + l.fg_att,
+        ft_made: acc.ft_made + l.ft_made,
+        ft_att: acc.ft_att + l.ft_att,
+        pts: acc.pts + l.pts,
+        reb_off: acc.reb_off + l.reb_off,
+        reb_def: acc.reb_def + l.reb_def,
+        reb: acc.reb + l.reb,
+        ast: acc.ast + l.ast,
+        blk: acc.blk + l.blk,
+        stl: acc.stl + l.stl,
+        tov: acc.tov + l.tov,
+        fouls: acc.fouls + l.fouls,
+        eff: acc.eff + l.eff,
+      }),
+      { ...group[0] },
+    ),
+  );
+  return computeSeasonAverages(teamLines);
 }
 
 export type RankingMetric = "pts" | "reb" | "ast" | "stl" | "blk" | "eff" | "fgPct" | "ftPct";
