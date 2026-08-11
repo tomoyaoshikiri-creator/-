@@ -16,7 +16,7 @@ export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
-export type ReactionType = "thumbs_up" | "ok_gesture" | "bow";
+export type ReactionType = "thumbs_up" | "ok_gesture" | "bow" | "pray";
 
 export interface Database {
   public: {
