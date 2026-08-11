@@ -16,7 +16,6 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
 
   const [menu, setMenu] = useState<PracticeMenu | null>(null);
   const [theme, setTheme] = useState("");
-  const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -30,7 +29,6 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
       .maybeSingle();
     setMenu(data ?? null);
     setTheme(data?.theme ?? "");
-    setContent(data?.content ?? "");
     setLoading(false);
   }, [scheduleId]);
 
@@ -48,7 +46,6 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
           team_id: teamId,
           schedule_id: scheduleId,
           theme: theme.trim() || null,
-          content: content.trim() || null,
           created_by: userId,
         },
         { onConflict: "schedule_id" },
@@ -65,7 +62,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   }
 
   if (loading) return null;
-  if (!canManage && !menu?.theme && !menu?.content) return null;
+  if (!canManage && !menu?.theme) return null;
 
   return (
     <>
@@ -73,33 +70,19 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
       <Card>
         {canManage ? (
           <>
-            <FieldLabel>テーマ</FieldLabel>
+            <FieldLabel>タイトル</FieldLabel>
             <input
               value={theme}
               onChange={(e) => setTheme(e.target.value)}
               className={inputClass()}
               placeholder="例: シュート強化"
             />
-            <div className="mt-3">
-              <FieldLabel>内容</FieldLabel>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className={inputClass("min-h-[100px]")}
-                placeholder="ドリル内容・時間配分など"
-              />
-            </div>
             <SubmitButton onClick={handleSave} disabled={saving}>
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>
           </>
         ) : (
-          <>
-            {menu?.theme && <div className="font-bold text-[13.5px]">{menu.theme}</div>}
-            {menu?.content && (
-              <div className="text-[13px] text-ink whitespace-pre-wrap mt-1.5">{menu.content}</div>
-            )}
-          </>
+          <div className="font-bold text-[13.5px]">{menu?.theme}</div>
         )}
       </Card>
     </>

@@ -239,8 +239,6 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
-          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
-
           {excludedLinkedCount > 0 && (
             <div className="text-xs text-ink-soft text-center mt-1 mb-2">
               ※この予定の対象学年外のため、出欠登録の対象外のお子さまがいます
@@ -320,6 +318,8 @@ export default function ScheduleDetailPage() {
               )}
             </>
           )}
+
+          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
         </>
       )}
     </PageShell>
