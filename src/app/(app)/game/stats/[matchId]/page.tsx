@@ -13,6 +13,7 @@ import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { LineupSection } from "../../LineupSection";
 import { OpponentRoster } from "../../OpponentRoster";
+import { OpponentLineupSection } from "../../OpponentLineupSection";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers } from "@/lib/format";
@@ -60,7 +61,11 @@ export default function GameStatsPage() {
   const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
   const [statEvents, setStatEvents] = useState<GameStatEvent[]>([]);
   const [opponentPlayers, setOpponentPlayers] = useState<GameOpponentPlayer[]>([]);
-  const [opponentOnCourtIds, setOpponentOnCourtIds] = useState<string[]>([]);
+  const [opponentStarters, setOpponentStarters] = useState<string[]>([]);
+  const [opponentSubs, setOpponentSubs] = useState<string[]>([]);
+  const [benchedOpponentStarterIds, setBenchedOpponentStarterIds] = useState<string[]>([]);
+  const [opponentRecordId, setOpponentRecordId] = useState<string | null>(null);
+  const [savingOpponentStarters, setSavingOpponentStarters] = useState(false);
   const [opponentMemberModalOpen, setOpponentMemberModalOpen] = useState(false);
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
   const [opponentStatEvents, setOpponentStatEvents] = useState<GameOpponentStatEvent[]>([]);
@@ -92,21 +97,10 @@ export default function GameStatsPage() {
         });
         setAttendanceStatus(map);
         setOpponentPlayers(op ?? []);
-        setOpponentOnCourtIds((op ?? []).map((x) => x.id));
       }
       setLoading(false);
     })();
   }, [matchId]);
-
-  // 新しく登録された相手選手はデフォルトで出場中扱いにする(既存の出場状態は保持する)。
-  useEffect(() => {
-    setOpponentOnCourtIds((prev) => {
-      const prevSet = new Set(prev);
-      const newIds = opponentPlayers.filter((p) => !prevSet.has(p.id)).map((p) => p.id);
-      const stillExisting = prev.filter((id) => opponentPlayers.some((p) => p.id === id));
-      return newIds.length > 0 || stillExisting.length !== prev.length ? [...stillExisting, ...newIds] : prev;
-    });
-  }, [opponentPlayers]);
 
   const loadRecord = useCallback(async () => {
     if (!matchId) return;
@@ -126,6 +120,25 @@ export default function GameStatsPage() {
   useEffect(() => {
     loadRecord();
   }, [loadRecord]);
+
+  const loadOpponentRecord = useCallback(async () => {
+    if (!matchId) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("game_opponent_records")
+      .select("*")
+      .eq("match_id", matchId)
+      .eq("quarter", quarter)
+      .maybeSingle();
+    setOpponentStarters(data?.starter_opponent_player_ids ?? []);
+    setOpponentSubs(data?.sub_opponent_player_ids ?? []);
+    setBenchedOpponentStarterIds([]);
+    setOpponentRecordId(data?.id ?? null);
+  }, [matchId, quarter]);
+
+  useEffect(() => {
+    loadOpponentRecord();
+  }, [loadOpponentRecord]);
 
   const loadStatLines = useCallback(async () => {
     if (!matchId) return;
@@ -243,6 +256,53 @@ export default function GameStatsPage() {
     toast(`${quarter}Qの登録を削除しました`);
   }
 
+  async function saveOpponentRecord(newStarters: string[], newSubs: string[]) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("game_opponent_records")
+      .upsert(
+        {
+          team_id: teamId,
+          match_id: matchId,
+          quarter,
+          starter_opponent_player_ids: newStarters,
+          sub_opponent_player_ids: newSubs,
+        },
+        { onConflict: "match_id,quarter" },
+      )
+      .select()
+      .single();
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return false;
+    }
+    setOpponentStarters(newStarters);
+    setOpponentSubs(newSubs);
+    setOpponentRecordId(data?.id ?? null);
+    return true;
+  }
+
+  async function handleSaveOpponentStarters(newStarters: string[]) {
+    setSavingOpponentStarters(true);
+    const ok = await saveOpponentRecord(newStarters, opponentSubs);
+    setSavingOpponentStarters(false);
+    if (ok) toast(`${quarter}Qの相手スターティングを登録しました`);
+  }
+
+  async function handleDeleteOpponentRecord() {
+    if (!opponentRecordId) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("game_opponent_records").delete().eq("id", opponentRecordId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setOpponentStarters([]);
+    setOpponentSubs([]);
+    setOpponentRecordId(null);
+    toast(`${quarter}Qの登録を削除しました`);
+  }
+
   // メンバーチェンジ: 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表す。
   // スタメンは選択解除するとベンチ扱い(benchedStarterIds)にし、記録上のスタメンそのものは変更しない。
   // 出場中は常に5人までとし、既に5人いる状態で新たに選ぼうとした場合は先に誰かを外してもらう。
@@ -261,14 +321,21 @@ export default function GameStatsPage() {
     await saveRecord(starters, nextSubs);
   }
 
-  function handleToggleOpponentOnCourt(opponentPlayerId: string) {
+  async function handleToggleOpponentMember(opponentPlayerId: string) {
     const isOnCourt = opponentOnCourtIds.includes(opponentPlayerId);
     if (!isOnCourt && opponentOnCourtIds.length >= 5) {
       return;
     }
-    setOpponentOnCourtIds((prev) =>
-      prev.includes(opponentPlayerId) ? prev.filter((x) => x !== opponentPlayerId) : [...prev, opponentPlayerId],
-    );
+    if (opponentStarters.includes(opponentPlayerId)) {
+      setBenchedOpponentStarterIds((prev) =>
+        prev.includes(opponentPlayerId) ? prev.filter((x) => x !== opponentPlayerId) : [...prev, opponentPlayerId],
+      );
+      return;
+    }
+    const nextSubs = opponentSubs.includes(opponentPlayerId)
+      ? opponentSubs.filter((x) => x !== opponentPlayerId)
+      : [...opponentSubs, opponentPlayerId];
+    await saveOpponentRecord(opponentStarters, nextSubs);
   }
 
   async function handleStatTap(playerId: string, event: StatEvent) {
@@ -544,6 +611,10 @@ export default function GameStatsPage() {
     setSubs([]);
     setBenchedStarterIds([]);
     setRecordId(null);
+    setOpponentStarters([]);
+    setOpponentSubs([]);
+    setBenchedOpponentStarterIds([]);
+    setOpponentRecordId(null);
     setMatch((prev) => (prev ? { ...prev, team_score: null, opponent_score: null } : prev));
     toast("この試合のスタッツ・スタメンをリセットしました");
   }
@@ -557,6 +628,9 @@ export default function GameStatsPage() {
     number: p.number,
     name: playerFullName(p),
   }));
+  const opponentOnCourtIds = Array.from(
+    new Set([...opponentStarters.filter((id) => !benchedOpponentStarterIds.includes(id)), ...opponentSubs]),
+  );
   const onCourtOpponents = opponentPlayers.filter((p) => opponentOnCourtIds.includes(p.id));
   const opponentEntrants: StatEntrant[] = onCourtOpponents.map((p) => ({ id: p.id, number: p.number, name: null }));
 
@@ -687,6 +761,15 @@ export default function GameStatsPage() {
             onChange={setOpponentPlayers}
           />
 
+          <OpponentLineupSection
+            opponentPlayers={opponentPlayers}
+            starters={opponentStarters}
+            recordId={opponentRecordId}
+            saving={savingOpponentStarters}
+            onSaveStarters={handleSaveOpponentStarters}
+            onDeleteRecord={handleDeleteOpponentRecord}
+          />
+
           <div className="mt-4">
             <SectionLabel>相手チームのスタッツ</SectionLabel>
             <StatPad
@@ -696,7 +779,7 @@ export default function GameStatsPage() {
               onUndo={handleOpponentStatUndo}
               onFreeThrowTrip={handleOpponentFreeThrowTrip}
               onOpenMemberChange={() => setOpponentMemberModalOpen(true)}
-              emptyMessage="相手選手の背番号を登録してください"
+              emptyMessage="相手スタメンを登録するか、メンバーチェンジで選手を選んでください"
             />
           </div>
           <GameStatLog
@@ -718,7 +801,7 @@ export default function GameStatsPage() {
             onClose={() => setOpponentMemberModalOpen(false)}
             title="メンバーチェンジ(相手チーム)"
             options={opponentMemberOptions}
-            onToggle={handleToggleOpponentOnCourt}
+            onToggle={handleToggleOpponentMember}
           />
         </>
       )}

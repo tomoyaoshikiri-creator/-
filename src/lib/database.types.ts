@@ -399,6 +399,27 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      game_opponent_records: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          quarter: number;
+          starter_opponent_player_ids: string[];
+          sub_opponent_player_ids: string[];
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          quarter: number;
+          starter_opponent_player_ids?: string[];
+          sub_opponent_player_ids?: string[];
+        };
+        Update: Partial<Database["public"]["Tables"]["game_opponent_records"]["Insert"]>;
+        Relationships: [];
+      };
       game_opponent_stat_lines: {
         Row: {
           id: string;
@@ -779,6 +800,7 @@ export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_rec
 export type GamePlayerStatLine = Database["public"]["Tables"]["game_player_stat_lines"]["Row"];
 export type GameStatEvent = Database["public"]["Tables"]["game_stat_events"]["Row"];
 export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_players"]["Row"];
+export type GameOpponentRecord = Database["public"]["Tables"]["game_opponent_records"]["Row"];
 export type GameOpponentStatLine = Database["public"]["Tables"]["game_opponent_stat_lines"]["Row"];
 export type GameOpponentStatEvent = Database["public"]["Tables"]["game_opponent_stat_events"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
