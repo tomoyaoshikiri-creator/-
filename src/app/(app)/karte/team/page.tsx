@@ -13,7 +13,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import {
   computeSeasonAverages,
-  computeTeamGameAverages,
+  computeTeamAverages,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
   type SportsTestMetric,
@@ -107,11 +107,14 @@ export default function KarteTeamPage() {
   const gamePlayers = players.filter(
     (p) => p.status !== "OB・OG" || linesForYear.some((l) => l.player_id === p.id),
   );
-  const teamAverages = computeTeamGameAverages(linesForYear);
   const playerAverages = gamePlayers.map((p) => ({
     player: p,
     averages: computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)),
   }));
+  const teamAverages = computeTeamAverages(
+    playerAverages.map((pa) => pa.averages),
+    linesForYear,
+  );
   const sortValue = (a: SeasonStatAverages) => (a[sortKey] as number | null) ?? -Infinity;
   const gameRows =
     gameRankingMode

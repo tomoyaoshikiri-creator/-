@@ -95,38 +95,46 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
   };
 }
 
-// チームとしてのシーズン平均は、選手個人の平均の平均ではなく、
-// 試合ごとに全選手のスタッツを合算した「チームの1試合分」を作ってから平均する。
-export function computeTeamGameAverages(lines: GamePlayerStatLine[]): SeasonStatAverages {
-  const byMatch = new Map<string, GamePlayerStatLine[]>();
-  for (const l of lines) {
-    const group = byMatch.get(l.match_id) ?? [];
-    group.push(l);
-    byMatch.set(l.match_id, group);
-  }
-  const teamLines = Array.from(byMatch.values()).map((group) =>
-    group.reduce(
-      (acc, l) => ({
-        ...acc,
-        fg_made: acc.fg_made + l.fg_made,
-        fg_att: acc.fg_att + l.fg_att,
-        ft_made: acc.ft_made + l.ft_made,
-        ft_att: acc.ft_att + l.ft_att,
-        pts: acc.pts + l.pts,
-        reb_off: acc.reb_off + l.reb_off,
-        reb_def: acc.reb_def + l.reb_def,
-        reb: acc.reb + l.reb,
-        ast: acc.ast + l.ast,
-        blk: acc.blk + l.blk,
-        stl: acc.stl + l.stl,
-        tov: acc.tov + l.tov,
-        fouls: acc.fouls + l.fouls,
-        eff: acc.eff + l.eff,
-      }),
-      { ...group[0] },
-    ),
+// 元のExcelの「チーム平均」に合わせ、カウント系のスタッツ(得点・リバウンド等)は
+// 出場した各選手の個人平均をそのまま単純平均する(試合数の重み付けはしない)。
+// FG%/FT%だけは全選手・全試合の成功数/試投数を合算した実際の割合を使う
+// (個人の割合を単純平均すると試投数の少ない選手の影響が過大になるため)。
+export function computeTeamAverages(
+  playerAverages: SeasonStatAverages[],
+  lines: GamePlayerStatLine[],
+): SeasonStatAverages {
+  const played = playerAverages.filter((a) => a.gp > 0);
+  const n = played.length;
+  const mean = (key: keyof SeasonStatAverages) =>
+    n > 0 ? round1(played.reduce((sum, a) => sum + (a[key] as number), 0) / n) : 0;
+
+  const totals = lines.reduce(
+    (acc, l) => ({
+      fgMade: acc.fgMade + l.fg_made,
+      fgAtt: acc.fgAtt + l.fg_att,
+      ftMade: acc.ftMade + l.ft_made,
+      ftAtt: acc.ftAtt + l.ft_att,
+    }),
+    { fgMade: 0, fgAtt: 0, ftMade: 0, ftAtt: 0 },
   );
-  return computeSeasonAverages(teamLines);
+
+  return {
+    gp: n,
+    pts: mean("pts"),
+    fgMade: mean("fgMade"),
+    ftMade: mean("ftMade"),
+    reb: mean("reb"),
+    rebOff: mean("rebOff"),
+    rebDef: mean("rebDef"),
+    ast: mean("ast"),
+    stl: mean("stl"),
+    blk: mean("blk"),
+    tov: mean("tov"),
+    fouls: mean("fouls"),
+    eff: mean("eff"),
+    fgPct: totals.fgAtt > 0 ? round1((totals.fgMade / totals.fgAtt) * 100) : null,
+    ftPct: totals.ftAtt > 0 ? round1((totals.ftMade / totals.ftAtt) * 100) : null,
+  };
 }
 
 export type RankingMetric = "pts" | "reb" | "ast" | "stl" | "blk" | "eff" | "fgPct" | "ftPct";
