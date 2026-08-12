@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FreeThrowModal } from "./FreeThrowModal";
-import type { MemberOption } from "./MemberChangeModal";
 import {
   STAT_BUTTONS,
   statEventCount,
@@ -105,36 +104,6 @@ function ChipRow({
   );
 }
 
-// 出場中の選手が誰もいない(スタメン未登録)場合、交代ボタンの奥にあるモーダルまで
-// タップしないと選手を選べないのは分かりにくいため、その場で選べる一覧を直接表示する。
-// スターティングの編集・メンバーチェンジと同じ選手一覧(MemberOption)をそのまま使う。
-function InlineMemberList({ options, onToggle }: { options: MemberOption[]; onToggle: (id: string) => void }) {
-  const checkedCount = options.filter((o) => o.checked).length;
-  return (
-    <Card>
-      {options.length === 0 ? (
-        <EmptyState>選手がいません</EmptyState>
-      ) : (
-        options.map((o) => {
-          const dimmed = checkedCount >= 5 && !o.checked;
-          return (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => onToggle(o.id)}
-              className={`w-full flex items-center py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
-                dimmed ? "opacity-40" : ""
-              } ${o.checked ? "bg-orange/10" : ""}`}
-            >
-              <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
-            </button>
-          );
-        })
-      )}
-    </Card>
-  );
-}
-
 export function StatPad({
   ownEntrants,
   ownStatLines,
@@ -142,16 +111,12 @@ export function StatPad({
   onOwnUndo,
   onOwnFreeThrowTrip,
   onOpenOwnMemberChange,
-  ownMemberOptions,
-  onToggleOwnMember,
   opponentEntrants,
   opponentStatLines,
   onOpponentTap,
   onOpponentUndo,
   onOpponentFreeThrowTrip,
   onOpenOpponentMemberChange,
-  opponentMemberOptions,
-  onToggleOpponentMember,
 }: {
   ownEntrants: StatEntrant[];
   ownStatLines: Record<string, StatTotals>;
@@ -159,16 +124,12 @@ export function StatPad({
   onOwnUndo: (entrantId: string, event: StatEvent) => void;
   onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
   onOpenOwnMemberChange: () => void;
-  ownMemberOptions: MemberOption[];
-  onToggleOwnMember: (id: string) => void;
   opponentEntrants: StatEntrant[];
   opponentStatLines: Record<string, StatTotals>;
   onOpponentTap: (entrantId: string, event: StatEvent) => void;
   onOpponentUndo: (entrantId: string, event: StatEvent) => void;
   onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
   onOpenOpponentMemberChange: () => void;
-  opponentMemberOptions: MemberOption[];
-  onToggleOpponentMember: (id: string) => void;
 }) {
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
@@ -209,21 +170,17 @@ export function StatPad({
   return (
     <>
       <SectionLabel>自チームのスタッツ</SectionLabel>
-      {ownEntrants.length < 5 ? (
-        <InlineMemberList options={ownMemberOptions} onToggle={onToggleOwnMember} />
-      ) : (
-        <ChipRow
-          entrants={ownEntrants}
-          statLines={ownStatLines}
-          active={(id) => selected?.side === "own" && selected.id === id}
-          showName
-          onSelect={(id) => setSelected({ side: "own", id })}
-          onOpenMemberChange={onOpenOwnMemberChange}
-        />
-      )}
+      <ChipRow
+        entrants={ownEntrants}
+        statLines={ownStatLines}
+        active={(id) => selected?.side === "own" && selected.id === id}
+        showName
+        onSelect={(id) => setSelected({ side: "own", id })}
+        onOpenMemberChange={onOpenOwnMemberChange}
+      />
 
       {!selectedEntrant ? (
-        <EmptyState>選手を選ぶとスタッツを記録できます</EmptyState>
+        <EmptyState>スタメンを登録するか、メンバーチェンジで選手を選んでください</EmptyState>
       ) : (
         <Card className="mt-2">
           <div className="grid grid-cols-2 gap-1.5">
@@ -278,18 +235,14 @@ export function StatPad({
       )}
 
       <div className="mt-2">
-        {opponentEntrants.length < 5 ? (
-          <InlineMemberList options={opponentMemberOptions} onToggle={onToggleOpponentMember} />
-        ) : (
-          <ChipRow
-            entrants={opponentEntrants}
-            statLines={opponentStatLines}
-            active={(id) => selected?.side === "opponent" && selected.id === id}
-            activeColor="navy"
-            onSelect={(id) => setSelected({ side: "opponent", id })}
-            onOpenMemberChange={onOpenOpponentMemberChange}
-          />
-        )}
+        <ChipRow
+          entrants={opponentEntrants}
+          statLines={opponentStatLines}
+          active={(id) => selected?.side === "opponent" && selected.id === id}
+          activeColor="navy"
+          onSelect={(id) => setSelected({ side: "opponent", id })}
+          onOpenMemberChange={onOpenOpponentMemberChange}
+        />
         <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
       </div>
 

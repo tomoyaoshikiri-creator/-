@@ -698,16 +698,12 @@ export default function GameStatsPage() {
               onOwnUndo={handleStatUndo}
               onOwnFreeThrowTrip={handleFreeThrowTrip}
               onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
-              ownMemberOptions={ownMemberOptions}
-              onToggleOwnMember={handleToggleOwnMember}
               opponentEntrants={opponentEntrants}
               opponentStatLines={opponentStatLines}
               onOpponentTap={handleOpponentStatTap}
               onOpponentUndo={handleOpponentStatUndo}
               onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
               onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
-              opponentMemberOptions={opponentMemberOptions}
-              onToggleOpponentMember={handleToggleOpponentMember}
             />
           </div>
 
@@ -740,15 +736,19 @@ export default function GameStatsPage() {
           </button>
 
           <MemberChangeModal
-            open={ownMemberModalOpen}
-            onClose={() => setOwnMemberModalOpen(false)}
+            open={ownMemberModalOpen || onCourtIds.length < 5}
+            onClose={() => {
+              if (onCourtIds.length >= 5) setOwnMemberModalOpen(false);
+            }}
             title="メンバーチェンジ"
             options={ownMemberOptions}
             onToggle={handleToggleOwnMember}
           />
           <MemberChangeModal
-            open={opponentMemberModalOpen}
-            onClose={() => setOpponentMemberModalOpen(false)}
+            open={opponentMemberModalOpen || opponentOnCourtIds.length < 5}
+            onClose={() => {
+              if (opponentOnCourtIds.length >= 5) setOpponentMemberModalOpen(false);
+            }}
             title="メンバーチェンジ(相手チーム)"
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}
