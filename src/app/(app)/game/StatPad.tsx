@@ -209,7 +209,7 @@ export function StatPad({
   return (
     <>
       <SectionLabel>自チームのスタッツ</SectionLabel>
-      {ownEntrants.length === 0 ? (
+      {ownEntrants.length < 5 ? (
         <InlineMemberList options={ownMemberOptions} onToggle={onToggleOwnMember} />
       ) : (
         <ChipRow
@@ -278,7 +278,7 @@ export function StatPad({
       )}
 
       <div className="mt-2">
-        {opponentEntrants.length === 0 ? (
+        {opponentEntrants.length < 5 ? (
           <InlineMemberList options={opponentMemberOptions} onToggle={onToggleOpponentMember} />
         ) : (
           <ChipRow
