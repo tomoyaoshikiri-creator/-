@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import holiday_jp from "@holiday-jp/holiday_jp";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
@@ -47,7 +47,13 @@ export function CalendarView({
   const todayStr = useMemo(() => todayDateStr(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
+
+  // 初期表示は当日の予定を選択済みの状態にしておく。
+  useEffect(() => {
+    onSelectDate?.(todayStr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 選択中の日付を再タップしたら選択解除する。
   function selectDate(date: string) {
