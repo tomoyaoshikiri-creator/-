@@ -140,7 +140,7 @@ export function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {cells.map((c, i) => {
-          if (!c.date) return <div key={i} className="aspect-square" />;
+          if (!c.date) return <div key={i} className="aspect-[4/3]" />;
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
           const holiday = holidayKind(c.date, i % 7);
@@ -172,7 +172,7 @@ export function CalendarView({
               key={c.date}
               type="button"
               onClick={() => selectDate(c.date!)}
-              className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs border relative ${
+              className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs border relative ${
                 !isSelected && isToday ? "outline outline-2 outline-green" : ""
               } ${cellCls}`}
             >

@@ -98,10 +98,10 @@ export default function SchedulePage() {
       }
     >
       <div className="flex gap-2 mb-3.5">
-        <SegButton active={view === "calendar"} onClick={() => setView("calendar")}>
+        <SegButton variant="small" active={view === "calendar"} onClick={() => setView("calendar")}>
           カレンダー
         </SegButton>
-        <SegButton active={view === "list"} onClick={() => setView("list")}>
+        <SegButton variant="small" active={view === "list"} onClick={() => setView("list")}>
           一覧
         </SegButton>
       </div>
