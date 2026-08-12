@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
 import type { Player, PlayerGrowthRecord } from "@/lib/database.types";
 
@@ -27,6 +28,8 @@ export default function PlayerGrowthPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  useUnsavedChangesGuard(heightCm.trim() !== "" || weightKg.trim() !== "");
 
   useEffect(() => {
     (async () => {

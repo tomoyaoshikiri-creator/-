@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSportsTests } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
 import type { Player, SportsTestRecord } from "@/lib/database.types";
 
@@ -130,6 +131,11 @@ export default function SportsTestPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+  const savedForm = recordToForm(record);
+  const isDirty =
+    JSON.stringify(form) !== JSON.stringify(savedForm) || notConducted !== (record?.not_conducted ?? false);
+  useUnsavedChangesGuard(!loading && isDirty);
 
   useEffect(() => {
     (async () => {

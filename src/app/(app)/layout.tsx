@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SessionProvider, type SessionInfo } from "@/lib/session-context";
+import { NavigationGuardProvider } from "@/lib/navigationGuard";
 import { ToastProvider } from "@/components/ui/Toast";
 import { TabBar } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
@@ -53,12 +54,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         }}
       >
         <ToastProvider>
-          <InactivityLogout />
-          <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0">
-            <Sidebar role={profile.role} />
-            <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
-          </div>
-          <TabBar role={profile.role} />
+          <NavigationGuardProvider>
+            <InactivityLogout />
+            <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0">
+              <Sidebar role={profile.role} />
+              <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
+            </div>
+            <TabBar role={profile.role} />
+          </NavigationGuardProvider>
         </ToastProvider>
       </SessionProvider>
     </div>

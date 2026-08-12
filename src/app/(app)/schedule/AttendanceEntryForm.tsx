@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttendanceStatus, CarStatus, YesNo } from "@/lib/database.types";
 
 export function AttendanceEntryForm({
@@ -36,6 +37,9 @@ export function AttendanceEntryForm({
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  // statusが選ばれているのにまだ(この内容で)保存されていない状態を「未保存」とみなす。
+  useUnsavedChangesGuard(!loading && status !== null && !registered);
 
   useEffect(() => {
     (async () => {

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
 import { TAB_LABELS, tabHrefForRole, tabsForRole } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 import { useSession } from "@/lib/session-context";
+import { GuardedLink } from "@/components/GuardedLink";
 
 export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname();
@@ -28,7 +28,7 @@ export function Sidebar({ role }: { role: Role }) {
           const href = tabHrefForRole(role, tab);
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
-            <Link
+            <GuardedLink
               key={tab}
               href={href}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-bold ${
@@ -37,7 +37,7 @@ export function Sidebar({ role }: { role: Role }) {
             >
               <Icon className="w-[18px] h-[18px] flex-shrink-0" />
               {TAB_LABELS[tab]}
-            </Link>
+            </GuardedLink>
           );
         })}
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { BackIcon, SearchIcon } from "@/components/icons";
 import { useSession } from "@/lib/session-context";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
+import { GuardedLink } from "@/components/GuardedLink";
 
 export function AppHeader({
   title,
@@ -49,9 +49,9 @@ export function AppHeader({
         )}
       </h1>
       {backHref && (
-        <Link href={backHref} aria-label="戻る" className="inline-flex items-center opacity-90 mt-2.5">
+        <GuardedLink href={backHref} aria-label="戻る" className="inline-flex items-center opacity-90 mt-2.5">
           <BackIcon className="w-6 h-6" />
-        </Link>
+        </GuardedLink>
       )}
       {searchPlaceholder && (
         <div className="bg-white/22 rounded-[10px] px-3 py-1 flex items-center gap-1.5">
