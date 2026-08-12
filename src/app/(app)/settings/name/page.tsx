@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 
 export default function SettingsNamePage() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function SettingsNamePage() {
   const toast = useToast();
   const [name, setName] = useState(sessionName);
   const [saving, setSaving] = useState(false);
+
+  useUnsavedChangesGuard(name !== sessionName);
 
   async function handleSave() {
     const trimmed = name.trim();

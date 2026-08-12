@@ -14,6 +14,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
 import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
 
@@ -39,6 +40,20 @@ export default function PlayerDetailPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [status, setStatus] = useState<PlayerStatus>("在籍");
   const [birthday, setBirthday] = useState("");
+
+  useUnsavedChangesGuard(
+    editing &&
+      player !== null &&
+      (sei !== player.sei ||
+        mei !== player.mei ||
+        seiKana !== (player.sei_kana ?? "") ||
+        meiKana !== (player.mei_kana ?? "") ||
+        grade !== (player.grade ?? "") ||
+        number !== (player.number ?? "") ||
+        JSON.stringify([...positions].sort()) !== JSON.stringify([...player.positions].sort()) ||
+        status !== player.status ||
+        birthday !== (player.birthday ?? "")),
+  );
 
   const load = useCallback(async () => {
     const supabase = createClient();

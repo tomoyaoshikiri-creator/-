@@ -11,6 +11,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canRecordGames } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { scheduleMeta } from "@/lib/format";
 import type { GameMatch, Schedule } from "@/lib/database.types";
 
@@ -147,6 +148,13 @@ export default function GameDetailPage() {
   const selectedMatch = matches.find((m) => m.id === selectedMatchId);
   const teamScoreNum = teamScore.trim() === "" ? null : Number(teamScore);
   const opponentScoreNum = opponentScore.trim() === "" ? null : Number(opponentScore);
+  useUnsavedChangesGuard(
+    selectedMatch !== undefined &&
+      (opponent !== (selectedMatch.opponent ?? "") ||
+        teamScoreNum !== selectedMatch.team_score ||
+        opponentScoreNum !== selectedMatch.opponent_score ||
+        videoUrl !== (selectedMatch.video_url ?? "")),
+  );
   const matchResult =
     teamScoreNum !== null && opponentScoreNum !== null
       ? teamScoreNum > opponentScoreNum

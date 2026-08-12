@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatFullDateLabel } from "@/lib/format";
@@ -67,6 +68,12 @@ export default function ReportPage() {
   const [editBody, setEditBody] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  useUnsavedChangesGuard(body.trim() !== "");
+  const editingReport = reports.find((r) => r.id === editingId);
+  useUnsavedChangesGuard(
+    editingReport !== undefined && (editBody !== editingReport.body || editDateValue !== editingReport.date),
+  );
 
   const load = useCallback(async () => {
     const supabase = createClient();

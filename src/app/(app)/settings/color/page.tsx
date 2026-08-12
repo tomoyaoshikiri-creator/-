@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 
 const DEFAULT_PRIMARY = "#9c8355";
 const DEFAULT_ACCENT = "#22201c";
@@ -21,9 +22,13 @@ export default function SettingsColorPage() {
 
   const [primary, setPrimary] = useState(DEFAULT_PRIMARY);
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
+  const [savedPrimary, setSavedPrimary] = useState(DEFAULT_PRIMARY);
+  const [savedAccent, setSavedAccent] = useState(DEFAULT_ACCENT);
   const [customized, setCustomized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useUnsavedChangesGuard(!loading && (primary !== savedPrimary || accent !== savedAccent));
 
   useEffect(() => {
     if (!canManageSettings(role)) {
@@ -43,6 +48,8 @@ export default function SettingsColorPage() {
         setCustomized(true);
         setPrimary(data.theme_primary ?? DEFAULT_PRIMARY);
         setAccent(data.theme_accent ?? DEFAULT_ACCENT);
+        setSavedPrimary(data.theme_primary ?? DEFAULT_PRIMARY);
+        setSavedAccent(data.theme_accent ?? DEFAULT_ACCENT);
       }
       setLoading(false);
     })();
@@ -61,6 +68,8 @@ export default function SettingsColorPage() {
       return;
     }
     setCustomized(true);
+    setSavedPrimary(primary);
+    setSavedAccent(accent);
     toast("配色を保存しました");
     router.refresh();
   }
@@ -80,6 +89,8 @@ export default function SettingsColorPage() {
     setCustomized(false);
     setPrimary(DEFAULT_PRIMARY);
     setAccent(DEFAULT_ACCENT);
+    setSavedPrimary(DEFAULT_PRIMARY);
+    setSavedAccent(DEFAULT_ACCENT);
     toast("デフォルトの配色に戻しました");
     router.refresh();
   }

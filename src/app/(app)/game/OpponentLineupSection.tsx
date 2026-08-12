@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { SubmitButton, FieldLabel } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { GameOpponentPlayer } from "@/lib/database.types";
 
 function OpponentCheckRow({
@@ -51,6 +52,8 @@ export function OpponentLineupSection({
   useEffect(() => {
     setDraft(starters);
   }, [starters]);
+
+  useUnsavedChangesGuard(JSON.stringify([...draft].sort()) !== JSON.stringify([...starters].sort()));
 
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);

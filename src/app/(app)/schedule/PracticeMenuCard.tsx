@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { formatDateLabel } from "@/lib/format";
 import type { PracticeMenu } from "@/lib/database.types";
@@ -34,6 +35,10 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   const [copyTargets, setCopyTargets] = useState<CopyTarget[]>([]);
   const [copyTargetId, setCopyTargetId] = useState("");
   const [copying, setCopying] = useState(false);
+
+  useUnsavedChangesGuard(input.trim() !== "");
+  const editingMenu = menus.find((m) => m.id === editingId);
+  useUnsavedChangesGuard(editingMenu !== undefined && editValue !== (editingMenu.theme ?? ""));
 
   const load = useCallback(async () => {
     setLoading(true);

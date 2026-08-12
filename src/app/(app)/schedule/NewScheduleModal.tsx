@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule, ScheduleType } from "@/lib/database.types";
 import { MiniCalendarPicker } from "./MiniCalendarPicker";
@@ -53,6 +54,23 @@ export function NewScheduleModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState("");
+
+  const currentSnapshot = JSON.stringify({
+    type,
+    gameCategory,
+    title,
+    dates,
+    startHour,
+    startMin,
+    endHour,
+    endMin,
+    place,
+    toban,
+    targetGradeMin,
+    fiscalYearOverride,
+  });
+  useUnsavedChangesGuard(open && initialSnapshot !== "" && currentSnapshot !== initialSnapshot);
 
   function reset() {
     setType("practice");
@@ -70,30 +88,63 @@ export function NewScheduleModal({
   }
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setInitialSnapshot("");
+      return;
+    }
     setDeleteConfirm(false);
     const source = editSchedule ?? copySource;
+    let fields;
     if (source) {
-      setType(source.type);
-      setGameCategory(source.game_category ?? "練習試合");
-      setTitle(source.title);
-      setDates(editSchedule ? [source.date] : []);
       const [sh, sm] = (source.start_time ?? "").split(":");
-      setStartHour(sh ?? "");
-      setStartMin(sm ?? "");
       const [eh, em] = (source.end_time ?? "").split(":");
-      setEndHour(eh ?? "");
-      setEndMin(em ?? "");
-      setPlace(source.place ?? "");
-      setToban(editSchedule ? (source.toban ?? "") : "");
-      setTargetGradeMin(source.target_grade_min ?? "");
-      setFiscalYearOverride(
-        editSchedule && source.fiscal_year_override != null ? String(source.fiscal_year_override) : "",
-      );
+      fields = {
+        type: source.type,
+        gameCategory: source.game_category ?? ("練習試合" as GameCategory),
+        title: source.title,
+        dates: editSchedule ? [source.date] : [],
+        startHour: sh ?? "",
+        startMin: sm ?? "",
+        endHour: eh ?? "",
+        endMin: em ?? "",
+        place: source.place ?? "",
+        toban: editSchedule ? (source.toban ?? "") : "",
+        targetGradeMin: source.target_grade_min ?? "",
+        fiscalYearOverride:
+          editSchedule && source.fiscal_year_override != null ? String(source.fiscal_year_override) : "",
+      };
+      setType(fields.type);
+      setGameCategory(fields.gameCategory);
+      setTitle(fields.title);
+      setDates(fields.dates);
+      setStartHour(fields.startHour);
+      setStartMin(fields.startMin);
+      setEndHour(fields.endHour);
+      setEndMin(fields.endMin);
+      setPlace(fields.place);
+      setToban(fields.toban);
+      setTargetGradeMin(fields.targetGradeMin);
+      setFiscalYearOverride(fields.fiscalYearOverride);
     } else {
       reset();
-      if (initialDates && initialDates.length > 0) setDates(initialDates);
+      const initialDatesValue = initialDates && initialDates.length > 0 ? initialDates : [];
+      if (initialDatesValue.length > 0) setDates(initialDatesValue);
+      fields = {
+        type: "practice" as ScheduleType,
+        gameCategory: "練習試合" as GameCategory,
+        title: "",
+        dates: initialDatesValue,
+        startHour: "",
+        startMin: "",
+        endHour: "",
+        endMin: "",
+        place: "",
+        toban: "",
+        targetGradeMin: "",
+        fiscalYearOverride: "",
+      };
     }
+    setInitialSnapshot(JSON.stringify(fields));
   }, [open, editSchedule, copySource, initialDates]);
 
   function toggleDate(d: string) {

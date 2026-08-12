@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { GRADES, POSITIONS } from "@/lib/playerOptions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "./BirthdaySelect";
 import type { Grade, Position } from "@/lib/database.types";
 
@@ -32,6 +33,18 @@ export function NewPlayerModal({
   const [positions, setPositions] = useState<Position[]>([]);
   const [birthday, setBirthday] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useUnsavedChangesGuard(
+    open &&
+      (sei.trim() !== "" ||
+        mei.trim() !== "" ||
+        seiKana.trim() !== "" ||
+        meiKana.trim() !== "" ||
+        grade !== "" ||
+        number.trim() !== "" ||
+        positions.length > 0 ||
+        birthday !== ""),
+  );
 
   function reset() {
     setSei("");

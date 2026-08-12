@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
@@ -53,6 +54,16 @@ export default function NoticeDetailPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  useUnsavedChangesGuard(
+    editing &&
+      notice !== null &&
+      (title !== notice.title ||
+        body !== (notice.body ?? "") ||
+        audience !== notice.audience ||
+        targetGradeMin !== (notice.target_grade_min ?? "") ||
+        Object.keys(newFiles).length > 0),
+  );
 
   const load = useCallback(async () => {
     const supabase = createClient();

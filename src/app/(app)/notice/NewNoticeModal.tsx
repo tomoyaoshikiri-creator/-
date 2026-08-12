@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
@@ -36,6 +37,15 @@ export function NewNoticeModal({
   const [targetGradeMin, setTargetGradeMin] = useState("");
   const [files, setFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
   const [saving, setSaving] = useState(false);
+
+  useUnsavedChangesGuard(
+    open &&
+      (title.trim() !== "" ||
+        body.trim() !== "" ||
+        audience !== "全員" ||
+        targetGradeMin !== "" ||
+        Object.keys(files).length > 0),
+  );
 
   function reset() {
     setTitle("");

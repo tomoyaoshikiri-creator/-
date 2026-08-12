@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -32,6 +33,10 @@ export default function PlayerNotesPage() {
   const [editNoteBody, setEditNoteBody] = useState("");
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+
+  useUnsavedChangesGuard(noteBody.trim() !== "");
+  const editingNote = notes.find((n) => n.id === editingNoteId);
+  useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
 
   const load = useCallback(async () => {
     const supabase = createClient();

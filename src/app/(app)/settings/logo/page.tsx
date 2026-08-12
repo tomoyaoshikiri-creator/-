@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { teamLogoUrl } from "@/lib/teamLogo";
 import { safeExt } from "@/lib/storagePath";
 
@@ -21,11 +22,14 @@ export default function SettingsLogoPage() {
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [teamName, setTeamName] = useState("");
+  const [savedTeamName, setSavedTeamName] = useState("");
   const [slug, setSlug] = useState("");
   const [origin, setOrigin] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
+
+  useUnsavedChangesGuard(!loading && teamName !== savedTeamName);
 
   useEffect(() => {
     if (!canManageSettings(role)) {
@@ -43,6 +47,7 @@ export default function SettingsLogoPage() {
       const { data } = await supabase.from("teams").select("logo_path, name, slug").eq("id", teamId).single();
       setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
       setTeamName(data?.name ?? "");
+      setSavedTeamName(data?.name ?? "");
       setSlug(data?.slug ?? "");
       setLoading(false);
     })();
@@ -63,6 +68,7 @@ export default function SettingsLogoPage() {
       return;
     }
     setTeamName(trimmed);
+    setSavedTeamName(trimmed);
     toast("チーム名を更新しました");
     router.refresh();
   }

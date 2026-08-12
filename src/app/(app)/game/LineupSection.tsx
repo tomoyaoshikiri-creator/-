@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SubmitButton, FieldLabel } from "@/components/ui/SegButton";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { playerFullName } from "@/lib/format";
 import type { AttendanceStatus, Player } from "@/lib/database.types";
 
@@ -57,6 +58,8 @@ export function LineupSection({
   useEffect(() => {
     setDraft(starters);
   }, [starters]);
+
+  useUnsavedChangesGuard(JSON.stringify([...draft].sort()) !== JSON.stringify([...starters].sort()));
 
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);
