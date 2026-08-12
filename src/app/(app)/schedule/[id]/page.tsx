@@ -113,7 +113,7 @@ export default function ScheduleDetailPage() {
       );
 
       const [{ data: guardianProfiles }, { data: allLinks }] = await Promise.all([
-        supabase.from("profiles").select("id, name, role").in("role", ["一般", "役員"]).order("name"),
+        supabase.from("profiles").select("id, name, role").in("role", ["一般", "運営"]).order("name"),
         supabase.from("player_guardians").select("profile_id"),
       ]);
       const linkedIds = new Set((allLinks ?? []).map((l) => l.profile_id));

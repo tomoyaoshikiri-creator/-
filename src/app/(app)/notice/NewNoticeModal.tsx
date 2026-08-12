@@ -7,7 +7,6 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
-import { audienceLabel } from "@/lib/format";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
@@ -17,7 +16,7 @@ const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "その他", emoji: "📎" },
 ];
 
-const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "役員以上", "学年指定"];
+const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "運営以上", "学年指定"];
 
 export function NewNoticeModal({
   open,
@@ -147,7 +146,7 @@ export function NewNoticeModal({
         <div className="flex gap-1.5 flex-wrap">
           {AUDIENCES.map((a) => (
             <SegButton key={a} variant="small" active={audience === a} onClick={() => setAudience(a)} className="flex-none px-3">
-              {audienceLabel(a)}
+              {a}
             </SegButton>
           ))}
         </div>

@@ -75,7 +75,7 @@ export default function PlayerDetailPage() {
     load();
   }, [load]);
 
-  // playersテーブルは一般・役員にもチーム全選手のselectを開放しているため、
+  // playersテーブルは一般・運営にもチーム全選手のselectを開放しているため、
   // 選手一覧側のグレーアウトを迂回してURL直打ちされた場合に備え、ここでも
   // 「自分の子どもかどうか」を確認して、そうでなければ一覧に戻す。
   useEffect(() => {

@@ -13,7 +13,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { audienceLabel, formatDateLabel } from "@/lib/format";
+import { formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
 import type {
   AttachmentKind,
@@ -32,7 +32,7 @@ const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "その他", emoji: "📎" },
 ];
 
-const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "役員以上", "学年指定"];
+const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "運営以上", "学年指定"];
 
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
@@ -268,7 +268,7 @@ export default function NoticeDetailPage() {
                     onClick={() => setAudience(a)}
                     className="flex-none px-3"
                   >
-                    {audienceLabel(a)}
+                    {a}
                   </SegButton>
                 ))}
               </div>
@@ -382,7 +382,7 @@ export default function NoticeDetailPage() {
               <SectionLabel>公開範囲</SectionLabel>
               <Card>
                 <div className="text-xs text-ink-soft">
-                  {audienceLabel(notice.audience)}
+                  {notice.audience}
                   {notice.audience === "学年指定" && notice.target_grade_min
                     ? `(${notice.target_grade_min}年生以上)`
                     : ""}

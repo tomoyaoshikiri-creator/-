@@ -10,11 +10,11 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
-import { formatDateLabel, playerFullName, roleLabel } from "@/lib/format";
+import { formatDateLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
-const ROLE_OPTIONS: Role[] = ["一般", "役員", "指導者", "管理者"];
-const ROLE_SORT_ORDER: Record<Role, number> = { 管理者: 0, 指導者: 1, 役員: 2, 一般: 3 };
+const ROLE_OPTIONS: Role[] = ["一般", "運営", "指導者", "管理者"];
+const ROLE_SORT_ORDER: Record<Role, number> = { 管理者: 0, 指導者: 1, 運営: 2, 一般: 3 };
 const STATUS_OPTIONS: UserStatus[] = ["アクティブ", "休止"];
 
 export default function UsersPage() {
@@ -58,7 +58,7 @@ export default function UsersPage() {
       });
       setGuardianLinks(linkMap);
     } else {
-      // 役員は保護者用(role='一般')の招待リンクしか見えない(RLSでも絞っている)。
+      // 運営は保護者用(role='一般')の招待リンクしか見えない(RLSでも絞っている)。
       const { data: inv } = await supabase.from("invites").select("*").order("created_at", { ascending: false });
       setInvites(inv ?? []);
     }
@@ -193,7 +193,7 @@ export default function UsersPage() {
   // 招待リンクは複数人が使い回せるため、一度使われたかどうかではなく有効期限だけで表示を絞る
   const visibleInvites = invites.filter((inv) => new Date(inv.expires_at) > new Date());
 
-  // 権限(管理者→指導者→役員→一般)でグループ分けして表示する。同じ権限内では登録順(RPCの並び)を保つ。
+  // 権限(管理者→指導者→運営→一般)でグループ分けして表示する。同じ権限内では登録順(RPCの並び)を保つ。
   const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
 
   return (
@@ -279,7 +279,7 @@ export default function UsersPage() {
                   >
                     {ROLE_OPTIONS.map((r) => (
                       <option key={r} value={r}>
-                        {roleLabel(r)}
+                        {r}
                       </option>
                     ))}
                   </select>

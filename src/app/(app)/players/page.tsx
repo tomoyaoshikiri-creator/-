@@ -93,7 +93,7 @@ export default function PlayersPage() {
     } else {
       setNoteCounts({});
     }
-    // 保護者(一般・役員)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにするため、
+    // 保護者(一般・運営)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにするため、
     // 自分の紐付け(player_guardians)だけ別途取得しておく。
     if (!isStaff) {
       const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);

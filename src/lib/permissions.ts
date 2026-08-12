@@ -47,14 +47,14 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
 // 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
-// 「試合記録」タブは一般・役員にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
-// 操作できるため、一般・役員がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
-// 「選手一覧」タブは一般・役員(保護者)にも見せる。この2ロールはチーム全選手を閲覧できるが、
+// 「試合記録」タブは一般・運営にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
+// 操作できるため、一般・運営がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
+// 「選手一覧」タブは一般・運営(保護者)にも見せる。この2ロールはチーム全選手を閲覧できるが、
 // 選手一覧画面側でplayer_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
 // (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
   一般: ["schedule", "notice", "report", "players", "game", "settings"],
-  役員: ["schedule", "notice", "report", "players", "game", "users", "settings"],
+  運営: ["schedule", "notice", "report", "players", "game", "users", "settings"],
   指導者: ["schedule", "notice", "report", "players", "game", "karte", "settings"],
   管理者: ["schedule", "notice", "report", "players", "game", "karte", "users", "settings"],
 };
@@ -68,7 +68,7 @@ export function canAccessTab(role: Role, tab: TabKey): boolean {
 }
 
 // 「試合記録」タブのリンク先。指導者・管理者はスタメン登録などができる一覧画面(/game)へ、
-// 一般・役員は結果を見るだけの/game/resultsへ直接飛ばす。
+// 一般・運営は結果を見るだけの/game/resultsへ直接飛ばす。
 export function tabHrefForRole(role: Role, tab: TabKey): string {
   if (tab === "game" && !canRecordGames(role)) return "/game/results";
   return TAB_PATHS[tab];
@@ -80,15 +80,15 @@ export function canRecordGames(role: Role): boolean {
 }
 
 export function canWriteSchedule(role: Role): boolean {
-  return role === "一般" || role === "役員" || role === "指導者" || role === "管理者";
+  return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }
 
 export function canWriteNotice(role: Role): boolean {
-  return role === "一般" || role === "役員" || role === "指導者" || role === "管理者";
+  return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }
 
 export function canWriteReport(role: Role): boolean {
-  return role === "一般" || role === "役員" || role === "指導者" || role === "管理者";
+  return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }
 
 export function canManagePlayers(role: Role): boolean {
@@ -119,5 +119,5 @@ export function canManageSettings(role: Role): boolean {
 }
 
 export function canIssueInvite(role: Role): boolean {
-  return role === "役員" || role === "指導者" || role === "管理者";
+  return role === "運営" || role === "指導者" || role === "管理者";
 }

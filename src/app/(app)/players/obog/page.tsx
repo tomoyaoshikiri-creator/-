@@ -36,7 +36,7 @@ export default function ObogPage() {
       setLoading(true);
       const { data } = await supabase.from("players").select("*").eq("status", "OB・OG");
       setPlayers(sortPlayers(data ?? []));
-      // 保護者(一般・役員)は一覧にチーム全OB・OGが出るが、自分の子ども以外は選べないようにする。
+      // 保護者(一般・運営)は一覧にチーム全OB・OGが出るが、自分の子ども以外は選べないようにする。
       if (!isStaff) {
         const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
         setOwnPlayerIds(new Set((pg ?? []).map((g) => g.player_id)));

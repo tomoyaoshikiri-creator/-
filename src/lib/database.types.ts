@@ -1,12 +1,12 @@
 // supabase/migrations/0001_init.sql のスキーマに対応する手書きの型定義
 // (実プロジェクト作成後は `supabase gen types typescript` で自動生成した内容に置き換えてよい)
 
-export type Role = "一般" | "役員" | "指導者" | "管理者";
+export type Role = "一般" | "運営" | "指導者" | "管理者";
 export type UserStatus = "アクティブ" | "休止";
 export type ScheduleType = "practice" | "game" | "event";
 // 種別が"game"の予定にのみ意味を持つ区分。試合記録・試合結果一覧の絞り込みにも使う。
 export type GameCategory = "練習試合" | "公式戦";
-export type NoticeAudience = "全員" | "指導者のみ" | "役員以上" | "学年指定";
+export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
 export type AttendanceStatus = "出席" | "欠席";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";

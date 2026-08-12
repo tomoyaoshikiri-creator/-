@@ -1,15 +1,4 @@
-import type { NoticeAudience, Role } from "@/lib/database.types";
-
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-
-// DB上のロール値("役員")は変えず、画面表示だけ「運営」にする。
-export function roleLabel(role: Role): string {
-  return role === "役員" ? "運営" : role;
-}
-
-export function audienceLabel(audience: NoticeAudience): string {
-  return audience === "役員以上" ? "運営以上" : audience;
-}
 
 export function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
