@@ -72,7 +72,7 @@ export function FreeThrowModal({
             onClick={() => changeShotCount(n as 1 | 2 | 3)}
             className="flex-1"
           >
-            {n}
+            {n}shot
           </SegButton>
         ))}
       </div>
