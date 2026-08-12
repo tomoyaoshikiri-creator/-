@@ -14,7 +14,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   schedule: "スケジュール",
   notice: "お知らせ",
   report: "日報",
-  players: "選手一覧",
+  players: "選手",
   game: "試合記録",
   karte: "カルテ",
   users: "管理",
