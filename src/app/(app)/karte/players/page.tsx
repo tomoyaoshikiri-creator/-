@@ -11,7 +11,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
-import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
+import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 
 function PlayerRow({ player }: { player: Player }) {
@@ -21,12 +21,7 @@ function PlayerRow({ player }: { player: Player }) {
       className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
     >
       <NumChip num={player.number ?? "-"} />
-      <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
-        <div className="text-[11px] text-ink-soft mt-0.5">
-          {gradeLabel(player.grade)}・{player.positions.join("/")}
-        </div>
-      </div>
+      <div className="flex-1 min-w-0 font-bold text-[13.5px]">{playerFullName(player)}</div>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </Link>
   );
