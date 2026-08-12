@@ -13,7 +13,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { formatDateLabel } from "@/lib/format";
+import { audienceLabel, formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
 import type {
   AttachmentKind,
@@ -268,7 +268,7 @@ export default function NoticeDetailPage() {
                     onClick={() => setAudience(a)}
                     className="flex-none px-3"
                   >
-                    {a}
+                    {audienceLabel(a)}
                   </SegButton>
                 ))}
               </div>
@@ -382,7 +382,7 @@ export default function NoticeDetailPage() {
               <SectionLabel>公開範囲</SectionLabel>
               <Card>
                 <div className="text-xs text-ink-soft">
-                  {notice.audience}
+                  {audienceLabel(notice.audience)}
                   {notice.audience === "学年指定" && notice.target_grade_min
                     ? `(${notice.target_grade_min}年生以上)`
                     : ""}

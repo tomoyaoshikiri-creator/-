@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
-import { formatDateLabel, playerFullName } from "@/lib/format";
+import { formatDateLabel, playerFullName, roleLabel } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
 const ROLE_OPTIONS: Role[] = ["一般", "役員", "指導者", "管理者"];
@@ -279,7 +279,7 @@ export default function UsersPage() {
                   >
                     {ROLE_OPTIONS.map((r) => (
                       <option key={r} value={r}>
-                        {r}
+                        {roleLabel(r)}
                       </option>
                     ))}
                   </select>

@@ -12,7 +12,7 @@ import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { formatDateLabel } from "@/lib/format";
+import { audienceLabel, formatDateLabel } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
@@ -134,7 +134,7 @@ export default function NoticePage() {
             <div className="font-bold text-[14.5px]">
               {n.audience !== "全員" && (
                 <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
-                  {n.audience}
+                  {audienceLabel(n.audience)}
                 </span>
               )}
               {n.title}

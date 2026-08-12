@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { audienceLabel } from "@/lib/format";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
@@ -146,7 +147,7 @@ export function NewNoticeModal({
         <div className="flex gap-1.5 flex-wrap">
           {AUDIENCES.map((a) => (
             <SegButton key={a} variant="small" active={audience === a} onClick={() => setAudience(a)} className="flex-none px-3">
-              {a}
+              {audienceLabel(a)}
             </SegButton>
           ))}
         </div>
