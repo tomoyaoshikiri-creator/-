@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
-import { Card } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import type { GameOpponentPlayer } from "@/lib/database.types";
 
@@ -20,6 +20,7 @@ export function OpponentRoster({
   onChange: (players: GameOpponentPlayer[]) => void;
 }) {
   const toast = useToast();
+  const [open, setOpen] = useState(false);
   const [newNumber, setNewNumber] = useState("");
   const [adding, setAdding] = useState(false);
   const [addingTemplate, setAddingTemplate] = useState(false);
@@ -78,7 +79,15 @@ export function OpponentRoster({
   return (
     <div className="mt-3">
       <FieldLabel>相手選手の背番号</FieldLabel>
-      <Card>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full py-2.5 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-white"
+      >
+        背番号新規登録
+      </button>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="背番号を登録">
         <div className="flex gap-1.5">
           <input
             className={inputClass("flex-1")}
@@ -105,7 +114,17 @@ export function OpponentRoster({
         >
           {addingTemplate ? "登録中…" : "4〜18番を一括登録"}
         </button>
-      </Card>
+
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="px-4 py-2 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
+          >
+            閉じる
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
