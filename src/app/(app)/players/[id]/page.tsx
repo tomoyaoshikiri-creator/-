@@ -334,6 +334,16 @@ export default function PlayerDetailPage() {
             </>
           )}
 
+          <SectionLabel>スタッツ・スポーツテスト</SectionLabel>
+          <Link href={`/karte/players/${player.id}`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">個人カルテ(表)で見る</div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
+
           <SectionLabel>身長・体重(週次)</SectionLabel>
           <Link href={`/players/${player.id}/growth`}>
             <Card className="cursor-pointer">

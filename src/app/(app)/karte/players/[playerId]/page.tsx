@@ -36,7 +36,8 @@ interface StatLineWithDate extends GamePlayerStatLine {
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
+  const isStaff = canViewKarte(role);
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -44,10 +45,32 @@ export default function KartePlayerPage() {
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
+  // 通常のカルテタブは指導者・管理者専用だが、このページ自体は選手一覧から保護者が
+  // 自分の子ども個人の表(スタッツ・スポーツテスト)を見る用途にも使うため、
+  // 自分の子どもと紐付いている場合はスタッフでなくても閲覧できるようにする。
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
+    if (isStaff) {
+      setAuthorized(true);
+      return;
+    }
+    (async () => {
+      const supabase = createClient();
+      const { data: link } = await supabase
+        .from("player_guardians")
+        .select("id")
+        .eq("player_id", params.playerId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+      if (link) {
+        setAuthorized(true);
+      } else {
+        setAuthorized(false);
+        router.replace("/players");
+      }
+    })();
+  }, [isStaff, userId, params.playerId, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,9 +118,13 @@ export default function KartePlayerPage() {
     averages: computeSeasonAverages([l]),
   }));
 
-  if (loading) {
+  const backHref = isStaff ? "/karte/players" : `/players/${params.playerId}`;
+
+  if (loading || !authorized) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+      <PageShell
+        header={<AppHeader title="カルテ" variant="detail" backHref={backHref} accessBadge={isStaff ? "coach" : undefined} />}
+      >
         <EmptyState>読み込み中…</EmptyState>
       </PageShell>
     );
@@ -105,14 +132,25 @@ export default function KartePlayerPage() {
 
   if (!player) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+      <PageShell
+        header={<AppHeader title="カルテ" variant="detail" backHref={backHref} accessBadge={isStaff ? "coach" : undefined} />}
+      >
         <EmptyState>選手が見つかりません</EmptyState>
       </PageShell>
     );
   }
 
   return (
-    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+    <PageShell
+      header={
+        <AppHeader
+          title={`${playerFullName(player)} / カルテ`}
+          variant="detail"
+          backHref={backHref}
+          accessBadge={isStaff ? "coach" : undefined}
+        />
+      }
+    >
       <Card>
         <div className="flex items-center gap-2.5">
           <NumChip num={player.number ?? "-"} />
