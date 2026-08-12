@@ -156,6 +156,7 @@ export function CalendarView({
                 : null;
           const isSelected = selectedDate === c.date;
           const isToday = c.date === todayStr;
+          const isColored = isSelected || dayColor !== null;
           const cellCls = isSelected
             ? "bg-navy/10 border-navy font-bold"
             : dayColor === "danger"
@@ -172,9 +173,9 @@ export function CalendarView({
               key={c.date}
               type="button"
               onClick={() => selectDate(c.date!)}
-              className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs border relative ${
-                !isSelected && isToday ? "outline outline-2 outline-green" : ""
-              } ${cellCls}`}
+              className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs relative ${
+                isColored ? "border-2" : "border"
+              } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
               <span className={holiday ? HOLIDAY_TEXT_CLASS[holiday] : ""}>{c.day}</span>
