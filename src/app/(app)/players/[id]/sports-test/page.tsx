@@ -11,6 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSportsTests } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { SPORTS_TEST_RANKING_METRICS } from "@/lib/karteAggregate";
 import { fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
 import type { Player, SportsTestRecord } from "@/lib/database.types";
 
@@ -137,6 +138,8 @@ export default function SportsTestPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [viewMode, setViewMode] = useState<"input" | "table">("input");
+  const [yearRecords, setYearRecords] = useState<SportsTestRecord[]>([]);
 
   const savedForm = recordToForm(record);
   const isDirty =
@@ -209,6 +212,22 @@ export default function SportsTestPage() {
     load();
   }, [load]);
 
+  // 「表で見る」表示用に、選択中の年度の四半期ごとの記録をまとめて取得しておく
+  // (入力フォーム側は四半期を1つずつ切り替えて編集する作りのため別読み込みにしている)。
+  const loadYearRecords = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("sports_test_records")
+      .select("*")
+      .eq("player_id", params.id)
+      .eq("fiscal_year", fiscalYear);
+    setYearRecords(data ?? []);
+  }, [params.id, fiscalYear]);
+
+  useEffect(() => {
+    loadYearRecords();
+  }, [loadYearRecords]);
+
   function setField(key: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -253,6 +272,7 @@ export default function SportsTestPage() {
       return;
     }
     setRecord(data);
+    loadYearRecords();
     toast("スポーツテスト記録を保存しました");
   }
 
@@ -268,53 +288,127 @@ export default function SportsTestPage() {
         />
       }
     >
-      <SectionLabel>年度・四半期</SectionLabel>
-      <Card>
-        <FieldLabel>年度</FieldLabel>
-        <select
-          className={inputClass()}
-          value={fiscalYear}
-          onChange={(e) => setFiscalYear(Number(e.target.value))}
-        >
-          {FISCAL_YEAR_OPTIONS.map((y) => (
-            <option key={y} value={y}>
-              {y}年度
-            </option>
-          ))}
-        </select>
-        <div className="mt-3">
-          <FieldLabel>四半期</FieldLabel>
-          <div className="flex gap-1.5">
-            {QUARTERS.map((q) => (
-              <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
-                Q{q}
-              </SegButton>
-            ))}
-          </div>
-        </div>
-        <div className="mt-3">
-          <FieldLabel>実施状況</FieldLabel>
-          <div className="flex gap-1.5">
-            <SegButton active={!notConducted} onClick={() => setNotConducted(false)}>
-              実施
-            </SegButton>
-            <SegButton active={notConducted} onClick={() => setNotConducted(true)}>
-              未実施
-            </SegButton>
-          </div>
-        </div>
-        {baseline && (
-          <div className="text-[11px] text-ink-soft mt-3">
-            Q{baseline.quarter}(初回実績)との比較を各項目に表示しています
-          </div>
-        )}
-      </Card>
+      <div className="flex gap-1.5 mb-3">
+        <SegButton active={viewMode === "input"} onClick={() => setViewMode("input")}>
+          入力する
+        </SegButton>
+        <SegButton active={viewMode === "table"} onClick={() => setViewMode("table")}>
+          表で見る
+        </SegButton>
+      </div>
 
-      {loading ? (
-        <EmptyState>読み込み中…</EmptyState>
+      {viewMode === "table" ? (
+        <>
+          <SectionLabel>年度</SectionLabel>
+          <Card>
+            <FieldLabel>年度</FieldLabel>
+            <select
+              className={inputClass()}
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(Number(e.target.value))}
+            >
+              {FISCAL_YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+          </Card>
+
+          <SectionLabel>四半期ごとの記録</SectionLabel>
+          <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+            <table className="border-collapse text-[11.5px] w-full">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                    四半期
+                  </th>
+                  {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                    <th
+                      key={m.value}
+                      className="sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight text-ink-soft"
+                    >
+                      <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
+                      <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {QUARTERS.map((q) => {
+                  const r = yearRecords.find((x) => x.quarter === q);
+                  return (
+                    <tr key={q}>
+                      <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
+                        Q{q}
+                      </td>
+                      {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                        const v = r && !r.not_conducted ? m.extract(r) : null;
+                        return (
+                          <td
+                            key={m.value}
+                            className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                          >
+                            {v === null ? "-" : v}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
         <>
-          <div className={notConducted ? "opacity-40 pointer-events-none" : ""}>
+          <SectionLabel>年度・四半期</SectionLabel>
+          <Card>
+            <FieldLabel>年度</FieldLabel>
+            <select
+              className={inputClass()}
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(Number(e.target.value))}
+            >
+              {FISCAL_YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+            <div className="mt-3">
+              <FieldLabel>四半期</FieldLabel>
+              <div className="flex gap-1.5">
+                {QUARTERS.map((q) => (
+                  <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
+                    Q{q}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+            <div className="mt-3">
+              <FieldLabel>実施状況</FieldLabel>
+              <div className="flex gap-1.5">
+                <SegButton active={!notConducted} onClick={() => setNotConducted(false)}>
+                  実施
+                </SegButton>
+                <SegButton active={notConducted} onClick={() => setNotConducted(true)}>
+                  未実施
+                </SegButton>
+              </div>
+            </div>
+            {baseline && (
+              <div className="text-[11px] text-ink-soft mt-3">
+                Q{baseline.quarter}(初回実績)との比較を各項目に表示しています
+              </div>
+            )}
+          </Card>
+
+          {loading ? (
+            <EmptyState>読み込み中…</EmptyState>
+          ) : (
+            <>
+              <div className={notConducted ? "opacity-40 pointer-events-none" : ""}>
           <SectionLabel>身体測定</SectionLabel>
           <Card>
             <FieldLabel>ウイングスパン(cm)</FieldLabel>
@@ -566,6 +660,8 @@ export default function SportsTestPage() {
           <SubmitButton onClick={handleSave} disabled={saving}>
             {saving ? "保存中…" : record ? "更新する" : "保存する"}
           </SubmitButton>
+            </>
+          )}
         </>
       )}
     </PageShell>
