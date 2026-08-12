@@ -14,7 +14,7 @@ export const TAB_LABELS: Record<TabKey, string> = {
   schedule: "スケジュール",
   notice: "お知らせ",
   report: "日報",
-  players: "選手",
+  players: "選手一覧",
   game: "試合記録",
   karte: "カルテ",
   users: "管理",
@@ -49,12 +49,12 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
 // 「試合記録」タブは一般・役員にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
 // 操作できるため、一般・役員がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
-// 「選手一覧」タブは一般(保護者)にも見せる。ただしplayersテーブルのRLS(0015_players_select_own_child)
-// により、一般ロールが実際にselectできるのはplayer_guardiansで紐付いた自分の子どもの行だけなので、
-// 画面側で絞り込まなくても一覧には自動的に自分の子どもしか出てこない。
+// 「選手一覧」タブは一般・役員(保護者)にも見せる。この2ロールはチーム全選手を閲覧できるが、
+// 選手一覧画面側でplayer_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
+// (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
   一般: ["schedule", "notice", "report", "players", "game", "settings"],
-  役員: ["schedule", "notice", "report", "game", "users", "settings"],
+  役員: ["schedule", "notice", "report", "players", "game", "users", "settings"],
   指導者: ["schedule", "notice", "report", "players", "game", "karte", "settings"],
   管理者: ["schedule", "notice", "report", "players", "game", "karte", "users", "settings"],
 };

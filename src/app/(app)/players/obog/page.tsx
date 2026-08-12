@@ -19,9 +19,10 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function ObogPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
@@ -35,9 +36,14 @@ export default function ObogPage() {
       setLoading(true);
       const { data } = await supabase.from("players").select("*").eq("status", "OB・OG");
       setPlayers(sortPlayers(data ?? []));
+      // 保護者(一般・役員)は一覧にチーム全OB・OGが出るが、自分の子ども以外は選べないようにする。
+      if (!isStaff) {
+        const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
+        setOwnPlayerIds(new Set((pg ?? []).map((g) => g.player_id)));
+      }
       setLoading(false);
     })();
-  }, []);
+  }, [isStaff, userId]);
 
   const withYear = players
     .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, CURRENT_FISCAL_YEAR) }))
@@ -78,20 +84,35 @@ export default function ObogPage() {
             {yearMembers.length === 0 ? (
               <EmptyState>この年度に卒団した選手はいません</EmptyState>
             ) : (
-              yearMembers.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/players/${p.id}`}
-                  className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-                >
-                  <NumChip num={p.number ?? "-"} muted />
-                  <div className="flex-1">
-                    <div className="font-bold text-[13.5px]">{playerFullName(p)}</div>
-                    <div className="text-[11px] text-ink-soft mt-0.5">{p.positions.join("/")}</div>
+              yearMembers.map((p) => {
+                const selectable = isStaff || ownPlayerIds.has(p.id);
+                const content = (
+                  <>
+                    <NumChip num={p.number ?? "-"} muted />
+                    <div className="flex-1">
+                      <div className="font-bold text-[13.5px]">{playerFullName(p)}</div>
+                      <div className="text-[11px] text-ink-soft mt-0.5">{p.positions.join("/")}</div>
+                    </div>
+                    {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
+                  </>
+                );
+                return selectable ? (
+                  <Link
+                    key={p.id}
+                    href={`/players/${p.id}`}
+                    className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 opacity-40"
+                  >
+                    {content}
                   </div>
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                </Link>
-              ))
+                );
+              })
             )}
           </Card>
         </>

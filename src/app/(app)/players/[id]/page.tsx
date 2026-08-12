@@ -21,12 +21,13 @@ import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,6 +74,31 @@ export default function PlayerDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // playersテーブルは一般・役員にもチーム全選手のselectを開放しているため、
+  // 選手一覧側のグレーアウトを迂回してURL直打ちされた場合に備え、ここでも
+  // 「自分の子どもかどうか」を確認して、そうでなければ一覧に戻す。
+  useEffect(() => {
+    if (isStaff) {
+      setAuthorized(true);
+      return;
+    }
+    (async () => {
+      const supabase = createClient();
+      const { data: link } = await supabase
+        .from("player_guardians")
+        .select("id")
+        .eq("player_id", params.id)
+        .eq("profile_id", userId)
+        .maybeSingle();
+      if (link) {
+        setAuthorized(true);
+      } else {
+        setAuthorized(false);
+        router.replace("/players");
+      }
+    })();
+  }, [isStaff, userId, params.id, router]);
 
   function startEdit() {
     if (!player) return;
@@ -152,7 +178,7 @@ export default function PlayerDetailPage() {
         />
       }
     >
-      {loading ? (
+      {loading || !authorized ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !player ? (
         <EmptyState>選手が見つかりません</EmptyState>

@@ -17,14 +17,26 @@ import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
-function PlayerRow({ player, noteCount, showNotes }: { player: Player; noteCount: number; showNotes: boolean }) {
+function PlayerRow({
+  player,
+  noteCount,
+  showNotes,
+  selectable,
+}: {
+  player: Player;
+  noteCount: number;
+  showNotes: boolean;
+  selectable: boolean;
+}) {
   const router = useRouter();
   const isObog = player.status === "OB・OG";
   const hasNotes = noteCount > 0;
   return (
     <div
-      onClick={() => router.push(`/players/${player.id}`)}
-      className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 cursor-pointer"
+      onClick={selectable ? () => router.push(`/players/${player.id}`) : undefined}
+      className={`flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 ${
+        selectable ? "cursor-pointer" : "opacity-40"
+      }`}
     >
       <NumChip num={player.number ?? "-"} muted={isObog} />
       <div className="flex-1 min-w-0 flex items-center gap-2.5">
@@ -46,18 +58,19 @@ function PlayerRow({ player, noteCount, showNotes }: { player: Player; noteCount
           </Link>
         )}
       </div>
-      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+      {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
     </div>
   );
 }
 
 export default function PlayersPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [yearConfirm, setYearConfirm] = useState(false);
@@ -80,8 +93,16 @@ export default function PlayersPage() {
     } else {
       setNoteCounts({});
     }
+    // 保護者(一般・役員)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにするため、
+    // 自分の紐付け(player_guardians)だけ別途取得しておく。
+    if (!isStaff) {
+      const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
+      setOwnPlayerIds(new Set((pg ?? []).map((g) => g.player_id)));
+    } else {
+      setOwnPlayerIds(new Set());
+    }
     setLoading(false);
-  }, [isStaff]);
+  }, [isStaff, userId]);
 
   useEffect(() => {
     load();
@@ -155,7 +176,13 @@ export default function PlayersPage() {
           <EmptyState>選手がいません</EmptyState>
         ) : (
           activeList.map((p) => (
-            <PlayerRow key={p.id} player={p} noteCount={noteCounts[p.id] ?? 0} showNotes={isStaff} />
+            <PlayerRow
+              key={p.id}
+              player={p}
+              noteCount={noteCounts[p.id] ?? 0}
+              showNotes={isStaff}
+              selectable={isStaff || ownPlayerIds.has(p.id)}
+            />
           ))
         )}
       </Card>
