@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useRef, useSt
 import { useRouter } from "next/navigation";
 
 const CONFIRM_MESSAGE = "保存されていない変更があります。このまま移動しますか？";
+export const CONFIRM_CLOSE_MESSAGE = "保存されていない変更があります。破棄して閉じますか？";
 
 interface NavigationGuardContextValue {
   isDirty: boolean;

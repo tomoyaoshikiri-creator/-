@@ -1,5 +1,7 @@
 "use client";
 
+import { CONFIRM_CLOSE_MESSAGE, useNavigationGuard } from "@/lib/navigationGuard";
+
 export function Modal({
   open,
   onClose,
@@ -11,12 +13,22 @@ export function Modal({
   title: string;
   children: React.ReactNode;
 }) {
+  // モーダルを閉じる操作(背景タップなど)はページ遷移を伴わないため<GuardedLink>では捕まえられない。
+  // ここで直接、未保存の変更が無いか確認してから閉じる。
+  const { isDirty } = useNavigationGuard();
+
   if (!open) return null;
+
+  function handleClose() {
+    if (isDirty && !window.confirm(CONFIRM_CLOSE_MESSAGE)) return;
+    onClose();
+  }
+
   return (
     <div
       className="fixed inset-0 bg-navy/50 flex items-end z-40"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="bg-white w-full rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
