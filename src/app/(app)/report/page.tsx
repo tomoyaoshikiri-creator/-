@@ -9,10 +9,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { ReactionButtons } from "@/components/ReactionButtons";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatFullDateLabel } from "@/lib/format";
-import type { Report } from "@/lib/database.types";
+import type { Report, ReportReaction, ReactionType } from "@/lib/database.types";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -53,6 +54,7 @@ export default function ReportPage() {
   const { userId, teamId, role } = useSession();
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
+  const [reactions, setReactions] = useState<ReportReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
   const [dateValue, setDateValue] = useState(todayValue);
@@ -75,6 +77,18 @@ export default function ReportPage() {
     ]);
     setReports(r ?? []);
     setProfiles(profMap);
+    if (r && r.length > 0) {
+      const { data: rc } = await supabase
+        .from("report_reactions")
+        .select("*")
+        .in(
+          "report_id",
+          r.map((x) => x.id),
+        );
+      setReactions(rc ?? []);
+    } else {
+      setReactions([]);
+    }
     setLoading(false);
   }, []);
 
@@ -85,6 +99,40 @@ export default function ReportPage() {
   useEffect(() => {
     if (!canAccessTab(role, "report")) router.replace("/schedule");
   }, [role, router]);
+
+  async function loadReactions() {
+    const reportIds = reports.map((r) => r.id);
+    if (reportIds.length === 0) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
+    setReactions(data ?? []);
+  }
+
+  async function toggleReaction(reportId: string, type: ReactionType) {
+    const supabase = createClient();
+    const existing = reactions.find(
+      (r) => r.report_id === reportId && r.reaction_type === type && r.profile_id === userId,
+    );
+    if (existing) {
+      const { error } = await supabase.from("report_reactions").delete().eq("id", existing.id);
+      if (error) {
+        toast(`取り消しに失敗しました: ${error.message}`);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("report_reactions").insert({
+        team_id: teamId,
+        report_id: reportId,
+        profile_id: userId,
+        reaction_type: type,
+      });
+      if (error) {
+        toast(`スタンプに失敗しました: ${error.message}`);
+        return;
+      }
+    }
+    loadReactions();
+  }
 
   async function handleSubmit() {
     if (!body.trim()) {
@@ -226,6 +274,11 @@ export default function ReportPage() {
               <div className="text-xs text-ink-soft mt-1.5">
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}
               </div>
+              <ReactionButtons
+                reactions={reactions.filter((rc) => rc.report_id === r.id)}
+                userId={userId}
+                onToggle={(type) => toggleReaction(r.id, type)}
+              />
               {expandedId === r.id && (
                 <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
                   <button

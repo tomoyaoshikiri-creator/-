@@ -243,6 +243,25 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      report_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          report_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          report_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       players: {
         Row: {
           id: string;
@@ -793,6 +812,7 @@ export type Attendance = Database["public"]["Tables"]["attendances"]["Row"];
 export type Notice = Database["public"]["Tables"]["notices"]["Row"];
 export type NoticeAttachment = Database["public"]["Tables"]["notice_attachments"]["Row"];
 export type Report = Database["public"]["Tables"]["reports"]["Row"];
+export type ReportReaction = Database["public"]["Tables"]["report_reactions"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
