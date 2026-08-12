@@ -12,12 +12,12 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
-import { canAccessTab } from "@/lib/permissions";
+import { canAccessTab, canManagePlayers } from "@/lib/permissions";
 import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
-function PlayerRow({ player, noteCount }: { player: Player; noteCount: number }) {
+function PlayerRow({ player, noteCount, showNotes }: { player: Player; noteCount: number; showNotes: boolean }) {
   const router = useRouter();
   const isObog = player.status === "OB・OG";
   const hasNotes = noteCount > 0;
@@ -34,15 +34,17 @@ function PlayerRow({ player, noteCount }: { player: Player; noteCount: number })
             {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
           </div>
         </div>
-        <Link
-          href={`/players/${player.id}/notes`}
-          onClick={(e) => e.stopPropagation()}
-          className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
-          }`}
-        >
-          {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
-        </Link>
+        {showNotes && (
+          <Link
+            href={`/players/${player.id}/notes`}
+            onClick={(e) => e.stopPropagation()}
+            className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
+            }`}
+          >
+            {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
+          </Link>
+        )}
       </div>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </div>
@@ -52,6 +54,7 @@ function PlayerRow({ player, noteCount }: { player: Player; noteCount: number })
 export default function PlayersPage() {
   const router = useRouter();
   const { role } = useSession();
+  const isStaff = canManagePlayers(role);
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
@@ -66,7 +69,8 @@ export default function PlayersPage() {
     const { data: p } = await supabase.from("players").select("*");
     const list = sortPlayers(p ?? []);
     setPlayers(list);
-    if (list.length > 0) {
+    // メモは指導者・管理者専用の情報なので、それ以外のロール(保護者)では取得しない。
+    if (list.length > 0 && isStaff) {
       const { data: notes } = await supabase.from("player_notes").select("player_id");
       const counts: Record<string, number> = {};
       (notes ?? []).forEach((n) => {
@@ -77,7 +81,7 @@ export default function PlayersPage() {
       setNoteCounts({});
     }
     setLoading(false);
-  }, []);
+  }, [isStaff]);
 
   useEffect(() => {
     load();
@@ -111,20 +115,22 @@ export default function PlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手一覧" accessBadge="coach" />}
+      header={<AppHeader title="選手一覧" accessBadge={isStaff ? "coach" : undefined} />}
       fab={
-        <>
-          <Fab onClick={() => setModalOpen(true)} />
-          <NewPlayerModal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-            onCreated={() => {
-              setModalOpen(false);
-              load();
-              toast("選手を登録しました");
-            }}
-          />
-        </>
+        isStaff && (
+          <>
+            <Fab onClick={() => setModalOpen(true)} />
+            <NewPlayerModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onCreated={() => {
+                setModalOpen(false);
+                load();
+                toast("選手を登録しました");
+              }}
+            />
+          </>
+        )
       }
     >
       <div className="flex items-center justify-between mb-2.5">
@@ -148,7 +154,9 @@ export default function PlayersPage() {
         ) : activeList.length === 0 ? (
           <EmptyState>選手がいません</EmptyState>
         ) : (
-          activeList.map((p) => <PlayerRow key={p.id} player={p} noteCount={noteCounts[p.id] ?? 0} />)
+          activeList.map((p) => (
+            <PlayerRow key={p.id} player={p} noteCount={noteCounts[p.id] ?? 0} showNotes={isStaff} />
+          ))
         )}
       </Card>
 

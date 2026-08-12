@@ -11,7 +11,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/SegButton";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
-import { canAccessTab } from "@/lib/permissions";
+import { canAccessTab, canManagePlayers } from "@/lib/permissions";
 import { fiscalYearOf, obogGraduationFiscalYear, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 
@@ -20,6 +20,7 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 export default function ObogPage() {
   const router = useRouter();
   const { role } = useSession();
+  const isStaff = canManagePlayers(role);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -46,7 +47,11 @@ export default function ObogPage() {
   const yearMembers = withYear.filter((v) => v.year === year).map((v) => v.player);
 
   return (
-    <PageShell header={<AppHeader title="OB・OG" variant="detail" backHref="/players" accessBadge="coach" />}>
+    <PageShell
+      header={
+        <AppHeader title="OB・OG" variant="detail" backHref="/players" accessBadge={isStaff ? "coach" : undefined} />
+      }
+    >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : players.length === 0 ? (
