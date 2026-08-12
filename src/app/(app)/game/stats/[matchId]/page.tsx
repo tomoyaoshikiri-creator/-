@@ -698,12 +698,16 @@ export default function GameStatsPage() {
               onOwnUndo={handleStatUndo}
               onOwnFreeThrowTrip={handleFreeThrowTrip}
               onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
+              ownMemberOptions={ownMemberOptions}
+              onToggleOwnMember={handleToggleOwnMember}
               opponentEntrants={opponentEntrants}
               opponentStatLines={opponentStatLines}
               onOpponentTap={handleOpponentStatTap}
               onOpponentUndo={handleOpponentStatUndo}
               onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
               onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
+              opponentMemberOptions={opponentMemberOptions}
+              onToggleOpponentMember={handleToggleOpponentMember}
             />
           </div>
 
