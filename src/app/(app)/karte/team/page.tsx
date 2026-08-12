@@ -55,6 +55,18 @@ export default function KarteTeamPage() {
           </div>
         </Card>
       </Link>
+
+      <Link href="/karte/team/workout">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">ワークアウト</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">いつどんな練習をしたかの履歴</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
     </PageShell>
   );
 }
