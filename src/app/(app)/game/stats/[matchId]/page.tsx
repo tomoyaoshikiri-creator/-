@@ -590,6 +590,12 @@ export default function GameStatsPage() {
   const onCourtOpponents = opponentPlayers.filter((p) => opponentOnCourtIds.includes(p.id));
   const opponentEntrants: StatEntrant[] = onCourtOpponents.map((p) => ({ id: p.id, number: p.number, name: null }));
 
+  // 自チームのスタメンが揃うまでは自チームのメンバーチェンジを、揃った後は相手チームの
+  // 背番号登録が済んでいる場合に限り相手チームのメンバーチェンジを自動的に開く。
+  // 両方を同時に開くと画面が二重に重なってしまうため、常にどちらか一方だけにする。
+  const ownLineupIncomplete = onCourtIds.length < 5;
+  const opponentLineupIncomplete = opponentPlayers.length > 0 && opponentOnCourtIds.length < 5;
+
   const ownMemberOptions: MemberOption[] = players.map((p) => ({
     id: p.id,
     label: `${p.number ? `#${p.number} ` : ""}${playerFullName(p)}`,
@@ -736,18 +742,18 @@ export default function GameStatsPage() {
           </button>
 
           <MemberChangeModal
-            open={ownMemberModalOpen || onCourtIds.length < 5}
+            open={ownMemberModalOpen || ownLineupIncomplete}
             onClose={() => {
-              if (onCourtIds.length >= 5) setOwnMemberModalOpen(false);
+              if (!ownLineupIncomplete) setOwnMemberModalOpen(false);
             }}
             title="メンバーチェンジ"
             options={ownMemberOptions}
             onToggle={handleToggleOwnMember}
           />
           <MemberChangeModal
-            open={opponentMemberModalOpen || opponentOnCourtIds.length < 5}
+            open={!ownLineupIncomplete && (opponentMemberModalOpen || opponentLineupIncomplete)}
             onClose={() => {
-              if (opponentOnCourtIds.length >= 5) setOpponentMemberModalOpen(false);
+              if (!opponentLineupIncomplete) setOpponentMemberModalOpen(false);
             }}
             title="メンバーチェンジ(相手チーム)"
             options={opponentMemberOptions}
