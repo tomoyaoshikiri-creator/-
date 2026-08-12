@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
+import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
@@ -14,6 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
 import {
+  buildKarteAnalysisText,
   computeSeasonAverages,
   GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
@@ -37,6 +39,7 @@ export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
   const { role } = useSession();
+  const toast = useToast();
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -95,6 +98,24 @@ export default function KartePlayerPage() {
     averages: computeSeasonAverages([l]),
   }));
 
+  async function handleCopyAnalysis() {
+    if (!player) return;
+    const text = buildKarteAnalysisText({
+      player,
+      fiscalYear,
+      seasonAverages,
+      gameRows,
+      sportsTestRecords,
+      growthRecords,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("分析用テキストをコピーしました");
+    } catch {
+      toast("コピーに失敗しました");
+    }
+  }
+
   if (loading) {
     return (
       <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
@@ -142,6 +163,16 @@ export default function KartePlayerPage() {
           <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
         </div>
       </div>
+
+      {role === "管理者" && (
+        <button
+          type="button"
+          onClick={handleCopyAnalysis}
+          className="w-full mb-3 px-3 py-2 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
+        >
+          分析用出力(AIに貼り付け用にコピー)
+        </button>
+      )}
 
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
       {gameRows.length === 0 ? (

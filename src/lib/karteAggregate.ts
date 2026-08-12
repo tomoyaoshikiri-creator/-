@@ -1,4 +1,5 @@
-import type { GamePlayerStatLine, SportsTestRecord } from "@/lib/database.types";
+import type { GamePlayerStatLine, Player, PlayerGrowthRecord, SportsTestRecord } from "@/lib/database.types";
+import { fiscalYearLabel, formatDateLabel, gradeLabel, playerFullName } from "@/lib/format";
 
 export interface SeasonStatAverages {
   gp: number;
@@ -318,3 +319,79 @@ export const SPORTS_TEST_RANKING_METRICS: {
     extract: (r) => r.beep_test_reps,
   },
 ];
+
+const ANALYSIS_QUARTERS = [1, 2, 3, 4] as const;
+
+// 選手カルテの数値を、外部のAIチャットに貼り付けて分析してもらうためのプレーンテキストに整形する。
+// アプリ内ではAI APIを呼び出さず、手元のAIツールへのコピペ用テキストを作るだけに留める。
+export function buildKarteAnalysisText(params: {
+  player: Player;
+  fiscalYear: number;
+  seasonAverages: SeasonStatAverages;
+  gameRows: { label: string; averages: SeasonStatAverages }[];
+  sportsTestRecords: SportsTestRecord[];
+  growthRecords: PlayerGrowthRecord[];
+}): string {
+  const { player, fiscalYear, seasonAverages, gameRows, sportsTestRecords, growthRecords } = params;
+  const lines: string[] = [];
+
+  lines.push("以下はバスケットボール選手のスタッツ・スポーツテストのデータです。伸びている点と今後の課題を教えてください。");
+  lines.push("");
+  lines.push("■ 選手情報");
+  lines.push(`氏名: ${playerFullName(player)}`);
+  lines.push(`学年: ${gradeLabel(player.grade)}`);
+  lines.push(`ポジション: ${player.positions.join("/") || "-"}`);
+  lines.push(`対象年度: ${fiscalYearLabel(fiscalYear)}`);
+  lines.push("");
+
+  lines.push(`■ シーズン平均スタッツ(試合数: ${seasonAverages.gp})`);
+  if (seasonAverages.gp === 0) {
+    lines.push("この年度の出場記録はありません");
+  } else {
+    GAME_COLUMNS.forEach((c) => {
+      const parts = gameStatCellParts(c.key, seasonAverages);
+      lines.push(`${c.abbr}: ${parts.primary}${parts.secondary ? `(${parts.secondary})` : ""}`);
+    });
+  }
+  lines.push("");
+
+  lines.push("■ 試合ごとの記録");
+  if (gameRows.length === 0) {
+    lines.push("記録なし");
+  } else {
+    gameRows.forEach((row) => {
+      const summary = GAME_COLUMNS.map((c) => {
+        const parts = gameStatCellParts(c.key, row.averages);
+        return `${c.abbr} ${parts.primary}`;
+      }).join(" / ");
+      lines.push(`${row.label}: ${summary}`);
+    });
+  }
+  lines.push("");
+
+  lines.push("■ スポーツテスト(四半期ごと)");
+  let anyTest = false;
+  ANALYSIS_QUARTERS.forEach((q) => {
+    const record = sportsTestRecords.find((r) => r.quarter === q);
+    if (!record || record.not_conducted) return;
+    anyTest = true;
+    const values = SPORTS_TEST_RANKING_METRICS.map((m) => {
+      const v = m.extract(record);
+      return `${m.label} ${v === null ? "-" : `${v}${m.unit}`}`;
+    }).join(" / ");
+    lines.push(`Q${q}: ${values}`);
+  });
+  if (!anyTest) lines.push("記録なし");
+  lines.push("");
+
+  lines.push("■ 身長・体重(直近)");
+  if (growthRecords.length === 0) {
+    lines.push("記録なし");
+  } else {
+    growthRecords.forEach((g) => {
+      lines.push(`${formatDateLabel(g.measured_on)}: ${g.height_cm ?? "-"}cm / ${g.weight_kg ?? "-"}kg`);
+    });
+  }
+
+  return lines.join("\n");
+}
