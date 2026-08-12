@@ -164,13 +164,13 @@ export default function GameDetailPage() {
         <EmptyState>試合が見つかりません</EmptyState>
       ) : (
         <>
-          <Card>
+          <div className="mb-3">
             <div className="font-bold text-[14.5px]">
               <TypeTag type={game.type} gameCategory={game.game_category} />
               {game.title}
             </div>
             <div className="text-xs text-ink-soft mt-1">{scheduleMeta(game)}</div>
-          </Card>
+          </div>
 
           <div className="mt-1">
             <FieldLabel>何試合目</FieldLabel>
