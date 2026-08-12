@@ -127,6 +127,7 @@ export function AttendanceEntryForm({
           <>
             <div className="flex gap-2">
               <SegButton
+                variant="small"
                 active={status === "出席"}
                 onClick={() => {
                   setStatus("出席");
@@ -136,6 +137,7 @@ export function AttendanceEntryForm({
                 出席
               </SegButton>
               <SegButton
+                variant="small"
                 active={status === "欠席"}
                 onClick={() => {
                   setStatus("欠席");
@@ -252,7 +254,11 @@ export function AttendanceEntryForm({
               />
             </div>
 
-            <SubmitButton onClick={handleSubmit} disabled={saving} className={registered ? "opacity-45" : ""}>
+            <SubmitButton
+              onClick={handleSubmit}
+              disabled={saving}
+              className={`!py-2 !text-[12px] ${registered ? "opacity-45" : ""}`}
+            >
               {saving ? "登録中…" : registered ? "登録済み(この内容で更新する)" : "この内容で登録する"}
             </SubmitButton>
 

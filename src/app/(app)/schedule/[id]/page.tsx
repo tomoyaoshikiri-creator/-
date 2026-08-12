@@ -172,12 +172,12 @@ export default function ScheduleDetailPage() {
 
           <SectionLabel>予定の内容</SectionLabel>
           <Card>
-            <div className="font-bold text-[14.5px]">
+            <div className="font-bold text-[16.5px]">
               <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
               {schedule.title}
             </div>
-            <div className="text-xs text-ink-soft mt-1">{scheduleMeta(schedule)}</div>
-            {schedule.toban && <div className="text-xs text-ink-soft mt-1">当番:{schedule.toban}</div>}
+            <div className="text-[14.5px] text-ink-soft mt-1.5">{scheduleMeta(schedule)}</div>
+            {schedule.toban && <div className="text-[14.5px] text-ink-soft mt-1.5">当番:{schedule.toban}</div>}
           </Card>
 
           {canWriteSchedule(role) && (
