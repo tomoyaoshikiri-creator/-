@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -596,6 +596,27 @@ export default function GameStatsPage() {
   const ownLineupIncomplete = onCourtIds.length < 5;
   const opponentLineupIncomplete = opponentPlayers.length > 0 && opponentOnCourtIds.length < 5;
 
+  // 未登録状態になったタイミング(初回表示・オールリセット直後など)で自動的に開く。
+  // 閉じるボタンで明示的に閉じた後は、再び未登録状態になるまで自動では開き直さない。
+  useEffect(() => {
+    if (ownLineupIncomplete) setOwnMemberModalOpen(true);
+  }, [ownLineupIncomplete]);
+
+  useEffect(() => {
+    if (!ownLineupIncomplete && opponentLineupIncomplete) setOpponentMemberModalOpen(true);
+  }, [ownLineupIncomplete, opponentLineupIncomplete]);
+
+  // 自チームのスタメンが揃った直後、相手選手の背番号が1件も登録されていなければ
+  // 登録フォームまでスクロールして、次にやることを示す。
+  const opponentRosterRef = useRef<HTMLDivElement>(null);
+  const wasOwnLineupIncompleteRef = useRef(ownLineupIncomplete);
+  useEffect(() => {
+    if (wasOwnLineupIncompleteRef.current && !ownLineupIncomplete && opponentPlayers.length === 0) {
+      opponentRosterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    wasOwnLineupIncompleteRef.current = ownLineupIncomplete;
+  }, [ownLineupIncomplete, opponentPlayers.length]);
+
   const ownMemberOptions: MemberOption[] = players.map((p) => ({
     id: p.id,
     label: `${p.number ? `#${p.number} ` : ""}${playerFullName(p)}`,
@@ -713,12 +734,14 @@ export default function GameStatsPage() {
             />
           </div>
 
-          <OpponentRoster
-            matchId={matchId}
-            teamId={teamId}
-            opponentPlayers={opponentPlayers}
-            onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
-          />
+          <div ref={opponentRosterRef}>
+            <OpponentRoster
+              matchId={matchId}
+              teamId={teamId}
+              opponentPlayers={opponentPlayers}
+              onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
+            />
+          </div>
 
           <GameStatLog
             title="自チームの記録ログ"
@@ -742,19 +765,15 @@ export default function GameStatsPage() {
           </button>
 
           <MemberChangeModal
-            open={ownMemberModalOpen || ownLineupIncomplete}
-            onClose={() => {
-              if (!ownLineupIncomplete) setOwnMemberModalOpen(false);
-            }}
+            open={ownMemberModalOpen}
+            onClose={() => setOwnMemberModalOpen(false)}
             title="メンバーチェンジ"
             options={ownMemberOptions}
             onToggle={handleToggleOwnMember}
           />
           <MemberChangeModal
-            open={!ownLineupIncomplete && (opponentMemberModalOpen || opponentLineupIncomplete)}
-            onClose={() => {
-              if (!opponentLineupIncomplete) setOpponentMemberModalOpen(false);
-            }}
+            open={!ownLineupIncomplete && opponentMemberModalOpen}
+            onClose={() => setOpponentMemberModalOpen(false)}
             title="メンバーチェンジ(相手チーム)"
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}

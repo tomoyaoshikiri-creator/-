@@ -46,6 +46,15 @@ export function MemberChangeModal({
           );
         })
       )}
+      <div className="flex justify-end mt-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
+        >
+          閉じる
+        </button>
+      </div>
     </Modal>
   );
 }
