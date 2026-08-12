@@ -41,7 +41,7 @@ export function CalendarView({
   schedules: Schedule[];
   birthdays?: Birthday[];
   // 選択中の日付が変わるたびに呼ばれる。「予定を追加」で選択日を初期値として渡すのに使う。
-  onSelectDate?: (date: string) => void;
+  onSelectDate?: (date: string | null) => void;
 }) {
   const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(() => todayDateStr(), []);
@@ -49,9 +49,11 @@ export function CalendarView({
   const [month, setMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  // 選択中の日付を再タップしたら選択解除する。
   function selectDate(date: string) {
-    setSelectedDate(date);
-    onSelectDate?.(date);
+    const next = selectedDate === date ? null : date;
+    setSelectedDate(next);
+    onSelectDate?.(next);
   }
 
   const eventsByDate = useMemo(() => {
