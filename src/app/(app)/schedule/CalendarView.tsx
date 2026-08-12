@@ -156,8 +156,9 @@ export function CalendarView({
                 : null;
           const isSelected = selectedDate === c.date;
           const isToday = c.date === todayStr;
-          const cellCls =
-            dayColor === "danger"
+          const cellCls = isSelected
+            ? "bg-navy/10 border-navy font-bold"
+            : dayColor === "danger"
               ? "bg-danger/22 border-danger font-bold"
               : dayColor === "sky"
                 ? "bg-sky/18 border-sky font-bold"
@@ -172,7 +173,7 @@ export function CalendarView({
               type="button"
               onClick={() => selectDate(c.date!)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs border relative ${
-                isSelected ? "outline outline-2 outline-navy" : isToday ? "outline outline-2 outline-green" : ""
+                !isSelected && isToday ? "outline outline-2 outline-green" : ""
               } ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
