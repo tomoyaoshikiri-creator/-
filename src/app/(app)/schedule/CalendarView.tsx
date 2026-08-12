@@ -5,7 +5,7 @@ import Link from "next/link";
 import holiday_jp from "@holiday-jp/holiday_jp";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
-import { scheduleMeta } from "@/lib/format";
+import { scheduleMeta, todayDateStr } from "@/lib/format";
 import { scheduleTypeColor } from "@/lib/scheduleColor";
 import type { Schedule } from "@/lib/database.types";
 
@@ -44,6 +44,7 @@ export function CalendarView({
   onSelectDate?: (date: string) => void;
 }) {
   const now = useMemo(() => new Date(), []);
+  const todayStr = useMemo(() => todayDateStr(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -152,6 +153,7 @@ export function CalendarView({
                 ? "orange"
                 : null;
           const isSelected = selectedDate === c.date;
+          const isToday = c.date === todayStr;
           const cellCls =
             dayColor === "danger"
               ? "bg-danger/22 border-danger font-bold"
@@ -168,7 +170,7 @@ export function CalendarView({
               type="button"
               onClick={() => selectDate(c.date!)}
               className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs border relative ${
-                isSelected ? "outline outline-2 outline-navy" : ""
+                isSelected ? "outline outline-2 outline-navy" : isToday ? "outline outline-2 outline-green" : ""
               } ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
