@@ -596,14 +596,15 @@ export default function GameStatsPage() {
   const ownLineupIncomplete = onCourtIds.length < 5;
   const opponentLineupIncomplete = opponentPlayers.length > 0 && opponentOnCourtIds.length < 5;
 
-  // 未登録状態になったタイミング(初回表示・オールリセット直後など)で自動的に開く。
-  // 閉じるボタンで明示的に閉じた後は、再び未登録状態になるまで自動では開き直さない。
+  // 未登録状態になったタイミング(初回表示・オールリセット直後など)で自動的に開き、
+  // 5人揃ったタイミングで自動的に閉じる。閉じるボタンで明示的に閉じた後は、
+  // 人数が変わらない限り自動では開き直さない。
   useEffect(() => {
-    if (ownLineupIncomplete) setOwnMemberModalOpen(true);
+    setOwnMemberModalOpen(ownLineupIncomplete);
   }, [ownLineupIncomplete]);
 
   useEffect(() => {
-    if (!ownLineupIncomplete && opponentLineupIncomplete) setOpponentMemberModalOpen(true);
+    if (!ownLineupIncomplete) setOpponentMemberModalOpen(opponentLineupIncomplete);
   }, [ownLineupIncomplete, opponentLineupIncomplete]);
 
   // 自チームのスタメンが揃った直後、相手選手の背番号が1件も登録されていなければ
