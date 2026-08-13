@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -12,7 +13,7 @@ import { SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
-import { formatDateLabel, playerFullName } from "@/lib/format";
+import { formatDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
 
@@ -22,6 +23,8 @@ export default function PlayerNotesPage() {
   const { role, userId } = useSession();
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
+  const [prevId, setPrevId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null>(null);
   const [notes, setNotes] = useState<PlayerNote[]>([]);
   const [reactions, setReactions] = useState<PlayerNoteReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
@@ -51,6 +54,19 @@ export default function PlayerNotesPage() {
       loadProfilesMap(supabase),
     ]);
     setPlayer(p ?? null);
+    if (p) {
+      const { data: siblings } = await supabase
+        .from("players")
+        .select("id, grade, number")
+        .eq("status", p.status);
+      const ordered = sortPlayers(siblings ?? []);
+      const idx = ordered.findIndex((s) => s.id === p.id);
+      setPrevId(idx > 0 ? ordered[idx - 1].id : null);
+      setNextId(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null);
+    } else {
+      setPrevId(null);
+      setNextId(null);
+    }
     setNotes(n ?? []);
     setProfiles(profMap);
     const noteIds = (n ?? []).map((note) => note.id);
@@ -191,6 +207,35 @@ export default function PlayerNotesPage() {
         <EmptyState>選手が見つかりません</EmptyState>
       ) : (
         <>
+          <div className="flex items-center justify-between mb-3">
+            {prevId ? (
+              <Link
+                href={`/players/${prevId}/notes`}
+                aria-label="前の選手"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ‹
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ‹
+              </span>
+            )}
+            {nextId ? (
+              <Link
+                href={`/players/${nextId}/notes`}
+                aria-label="次の選手"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ›
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ›
+              </span>
+            )}
+          </div>
+
           <SectionLabel>これまでのメモ</SectionLabel>
           {notes.length === 0 ? (
             <Card>

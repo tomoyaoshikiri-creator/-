@@ -582,7 +582,21 @@ export default function KartePlayerPage() {
         </Link>
       </Card>
 
-      <SectionLabel>選手分析メモ</SectionLabel>
+      {canManagePlayers(role) && (
+        <>
+          <SectionLabel>選手メモ</SectionLabel>
+          <Link href={`/players/${player.id}/notes`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">メモを見る・編集する</div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
+        </>
+      )}
+
+      <SectionLabel>選手分析フィードバック</SectionLabel>
       {analysisNotes.length === 0 ? (
         <Card>
           <div className="text-xs text-ink-soft">まだメモがありません</div>
