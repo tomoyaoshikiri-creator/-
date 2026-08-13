@@ -191,6 +191,15 @@ export default function KartePlayersPage() {
         </div>
       )}
 
+      <Link href="/karte/players/notes">
+        <Card className="cursor-pointer mb-3">
+          <div className="flex items-center justify-between">
+            <div className="font-bold text-[13.5px]">選手メモ</div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
       <Card>
         {loading ? (
           <EmptyState>読み込み中…</EmptyState>
