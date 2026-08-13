@@ -25,7 +25,15 @@ import {
   GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
-import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, gradeLabel, playerFullName, todayDateStr } from "@/lib/format";
+import {
+  effectiveFiscalYear,
+  fiscalYearOf,
+  formatDateLabel,
+  gradeLabel,
+  playerFullName,
+  sortPlayers,
+  todayDateStr,
+} from "@/lib/format";
 import type {
   GamePlayerStatLine,
   Player,
@@ -56,6 +64,8 @@ export default function KartePlayerPage() {
   const toast = useToast();
 
   const [player, setPlayer] = useState<Player | null>(null);
+  const [prevId, setPrevId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
@@ -116,6 +126,19 @@ export default function KartePlayerPage() {
         loadProfilesMap(supabase),
       ]);
     setPlayer(p ?? null);
+    if (p) {
+      const { data: siblings } = await supabase
+        .from("players")
+        .select("id, grade, number")
+        .eq("status", p.status);
+      const ordered = sortPlayers(siblings ?? []);
+      const idx = ordered.findIndex((s) => s.id === p.id);
+      setPrevId(idx > 0 ? ordered[idx - 1].id : null);
+      setNextId(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null);
+    } else {
+      setPrevId(null);
+      setNextId(null);
+    }
     setStatLines(lines ?? []);
     setSportsTestRecords(tests ?? []);
     setGrowthRecords(growth ?? []);
@@ -324,6 +347,35 @@ export default function KartePlayerPage() {
 
   return (
     <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+      <div className="flex items-center justify-between mb-3">
+        {prevId ? (
+          <Link
+            href={`/karte/players/${prevId}`}
+            aria-label="前の選手"
+            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+          >
+            ‹
+          </Link>
+        ) : (
+          <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+            ‹
+          </span>
+        )}
+        {nextId ? (
+          <Link
+            href={`/karte/players/${nextId}`}
+            aria-label="次の選手"
+            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+          >
+            ›
+          </Link>
+        ) : (
+          <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+            ›
+          </span>
+        )}
+      </div>
+
       <Card>
         <div className="flex items-center gap-2.5">
           <NumChip num={player.number ?? "-"} />

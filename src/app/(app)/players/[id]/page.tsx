@@ -12,7 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
-import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName } from "@/lib/format";
+import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
@@ -26,6 +26,8 @@ export default function PlayerDetailPage() {
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
+  const [prevId, setPrevId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [editing, setEditing] = useState(false);
@@ -68,6 +70,20 @@ export default function PlayerDetailPage() {
     ]);
     setPlayer(p ?? null);
     setNoteCount(count ?? 0);
+
+    if (p) {
+      const { data: siblings } = await supabase
+        .from("players")
+        .select("id, grade, number")
+        .eq("status", p.status);
+      const ordered = sortPlayers(siblings ?? []);
+      const idx = ordered.findIndex((s) => s.id === p.id);
+      setPrevId(idx > 0 ? ordered[idx - 1].id : null);
+      setNextId(idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null);
+    } else {
+      setPrevId(null);
+      setNextId(null);
+    }
     setLoading(false);
   }, [params.id]);
 
@@ -182,7 +198,38 @@ export default function PlayerDetailPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : !player ? (
         <EmptyState>選手が見つかりません</EmptyState>
-      ) : editing ? (
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            {prevId ? (
+              <Link
+                href={`/players/${prevId}`}
+                aria-label="前の選手"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ‹
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ‹
+              </span>
+            )}
+            {nextId ? (
+              <Link
+                href={`/players/${nextId}`}
+                aria-label="次の選手"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+              >
+                ›
+              </Link>
+            ) : (
+              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+                ›
+              </span>
+            )}
+          </div>
+
+          {editing ? (
         <>
           <SectionLabel>選手情報を編集</SectionLabel>
           <Card>
@@ -365,6 +412,8 @@ export default function PlayerDetailPage() {
           </Link>
 
           {isStaff && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
+        </>
+      )}
         </>
       )}
     </PageShell>
