@@ -283,7 +283,6 @@ export default function ReportPage() {
               </div>
               <ReactionButtons
                 reactions={reactions.filter((rc) => rc.report_id === r.id)}
-                userId={userId}
                 onToggle={(type) => toggleReaction(r.id, type)}
               />
               {expandedId === r.id && (

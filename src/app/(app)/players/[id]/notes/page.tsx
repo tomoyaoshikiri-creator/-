@@ -238,7 +238,6 @@ export default function PlayerNotesPage() {
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   <ReactionButtons
                     reactions={reactions.filter((r) => r.note_id === n.id)}
-                    userId={userId}
                     onToggle={(type) => toggleReaction(n.id, type)}
                   />
                   {expandedNoteId === n.id && (

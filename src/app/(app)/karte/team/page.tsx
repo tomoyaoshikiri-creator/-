@@ -453,7 +453,6 @@ export default function KarteTeamPage() {
               <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
               <ReactionButtons
                 reactions={noteReactions.filter((r) => r.note_id === n.id)}
-                userId={userId}
                 onToggle={(type) => toggleNoteReaction(n.id, type)}
               />
               {canManagePlayers(role) && expandedNoteId === n.id && (

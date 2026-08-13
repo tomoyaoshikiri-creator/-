@@ -157,7 +157,6 @@ export default function NoticePage() {
             ) : null}
             <ReactionButtons
               reactions={reactions.filter((r) => r.notice_id === n.id)}
-              userId={userId}
               onToggle={(type) => toggleReaction(n.id, type)}
             />
           </Card>

@@ -423,7 +423,7 @@ export default function NoticeDetailPage() {
             </>
           )}
 
-          <ReactionButtons reactions={reactions} userId={userId} onToggle={toggleReaction} />
+          <ReactionButtons reactions={reactions} onToggle={toggleReaction} />
 
           {canWriteNotice(role) && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
