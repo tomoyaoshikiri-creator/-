@@ -5,14 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
+import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
-import { playerFullName, sortPlayers } from "@/lib/format";
-import type { Player } from "@/lib/database.types";
+import {
+  buildBulkKarteAnalysisText,
+  computeSeasonAverages,
+  DEFAULT_KARTE_ANALYSIS_PROMPT,
+  type PlayerKarteBodyParams,
+} from "@/lib/karteAggregate";
+import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import type { GamePlayerStatLine, Player, PlayerGrowthRecord, PracticeMenu, SportsTestRecord } from "@/lib/database.types";
+
+const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
+
+interface StatLineWithDate extends GamePlayerStatLine {
+  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+}
 
 function PlayerRow({ player }: { player: Player }) {
   return (
@@ -30,8 +45,14 @@ function PlayerRow({ player }: { player: Player }) {
 export default function KartePlayersPage() {
   const router = useRouter();
   const { role } = useSession();
+  const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisPlayersData, setAnalysisPlayersData] = useState<PlayerKarteBodyParams[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -49,10 +70,127 @@ export default function KartePlayersPage() {
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");
 
+  async function handleOpenAnalysis() {
+    setAnalysisOpen(true);
+    if (analysisPlayersData !== null) return;
+    setAnalysisLoading(true);
+    const supabase = createClient();
+    const activePlayerIds = activeList.map((p) => p.id);
+
+    const [{ data: statLines }, { data: sportsTests }, { data: growth }, { data: practiceSchedules }] = await Promise.all([
+      supabase
+        .from("game_player_stat_lines")
+        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+        .in("player_id", activePlayerIds)
+        .returns<StatLineWithDate[]>(),
+      supabase.from("sports_test_records").select("*").in("player_id", activePlayerIds).eq("fiscal_year", CURRENT_FISCAL_YEAR),
+      supabase
+        .from("player_growth_records")
+        .select("*")
+        .in("player_id", activePlayerIds)
+        .order("measured_on", { ascending: false }),
+      supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
+    ]);
+
+    const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === CURRENT_FISCAL_YEAR);
+    const practiceIds = yearPractices.map((s) => s.id);
+
+    let menus: PracticeMenu[] = [];
+    let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
+    if (practiceIds.length > 0) {
+      const [{ data: m }, { data: a }] = await Promise.all([
+        supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
+        supabase
+          .from("attendances")
+          .select("schedule_id, player_id")
+          .in("schedule_id", practiceIds)
+          .in("player_id", activePlayerIds)
+          .eq("status", "出席"),
+      ]);
+      menus = m ?? [];
+      attendanceRows = a ?? [];
+    }
+
+    const playersData = activeList.map((player) => {
+      const seasonLines = (statLines ?? [])
+        .filter((l) => l.player_id === player.id)
+        .filter((l) => {
+          const date = l.game_matches?.schedules?.date;
+          if (!date) return false;
+          return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === CURRENT_FISCAL_YEAR;
+        })
+        .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
+      const seasonAverages = computeSeasonAverages(seasonLines);
+      const gameRows = seasonLines.map((l) => ({
+        label: `${formatDateLabel(l.game_matches?.schedules?.date ?? "")} vs ${l.game_matches?.opponent ?? "-"}`,
+        averages: computeSeasonAverages([l]),
+      }));
+
+      const sportsTestRecords: SportsTestRecord[] = (sportsTests ?? []).filter((r) => r.player_id === player.id);
+      const growthRecords: PlayerGrowthRecord[] = (growth ?? []).filter((g) => g.player_id === player.id).slice(0, 6);
+
+      const attendedScheduleIds = new Set(
+        attendanceRows.filter((a) => a.player_id === player.id).map((a) => a.schedule_id),
+      );
+      const workoutTallyMap = new Map<string, number>();
+      menus
+        .filter((m) => attendedScheduleIds.has(m.schedule_id))
+        .forEach((m) => {
+          const theme = (m.theme ?? "").trim();
+          if (!theme) return;
+          workoutTallyMap.set(theme, (workoutTallyMap.get(theme) ?? 0) + 1);
+        });
+      const workoutTallies = Array.from(workoutTallyMap.entries())
+        .map(([theme, count]) => ({ theme, count }))
+        .sort((a, b) => b.count - a.count);
+
+      return {
+        player,
+        fiscalYear: CURRENT_FISCAL_YEAR,
+        seasonAverages,
+        gameRows,
+        sportsTestRecords,
+        growthRecords,
+        workoutTallies,
+        attendedPracticeCount: attendedScheduleIds.size,
+      };
+    });
+
+    setAnalysisPlayersData(playersData);
+    setAnalysisLoading(false);
+  }
+
+  async function handleCopyAnalysis() {
+    if (analysisPlayersData === null) return;
+    const text = buildBulkKarteAnalysisText({
+      promptText: analysisPrompt,
+      players: analysisPlayersData,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("分析用テキストをコピーしました");
+      setAnalysisOpen(false);
+    } catch {
+      toast("コピーに失敗しました");
+    }
+  }
+
   return (
     <PageShell
       header={<AppHeader title="選手カルテ" variant="detail" backHref="/karte" accessBadge="coach" />}
     >
+      {role === "管理者" && (
+        <div className="flex items-center justify-end mb-2">
+          <button
+            type="button"
+            onClick={handleOpenAnalysis}
+            className="flex-none px-3 py-1.5 rounded-[10px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
+          >
+            分析用抽出〈一括〉
+          </button>
+        </div>
+      )}
+
       <Card>
         {loading ? (
           <EmptyState>読み込み中…</EmptyState>
@@ -72,6 +210,31 @@ export default function KartePlayersPage() {
             </div>
           </Card>
         </Link>
+      )}
+
+      {role === "管理者" && (
+        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出〈一括〉">
+          <FieldLabel>AIへの指示文</FieldLabel>
+          <textarea
+            rows={3}
+            className={inputClass()}
+            value={analysisPrompt}
+            onChange={(e) => setAnalysisPrompt(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
+            className="text-[11px] font-bold text-orange mt-1.5"
+          >
+            デフォルトの文言に戻す
+          </button>
+          <div className="text-xs text-ink-soft mt-2.5">
+            この指示文に続けて、在籍選手全員分のスタッツ・スポーツテスト・身長体重のデータが選手ごとに区切ってコピーされます
+          </div>
+          <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
+            {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
+          </SubmitButton>
+        </Modal>
       )}
     </PageShell>
   );

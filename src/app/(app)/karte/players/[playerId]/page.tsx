@@ -217,13 +217,13 @@ export default function KartePlayerPage() {
             onClick={() => setAnalysisOpen(true)}
             className="flex-none px-3 py-1.5 rounded-[10px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
           >
-            分析用出力
+            分析用抽出
           </button>
         )}
       </div>
 
       {role === "管理者" && (
-        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用出力">
+        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出">
           <FieldLabel>AIへの指示文</FieldLabel>
           <textarea
             rows={3}

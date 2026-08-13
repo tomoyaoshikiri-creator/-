@@ -325,10 +325,7 @@ const ANALYSIS_QUARTERS = [1, 2, 3, 4] as const;
 export const DEFAULT_KARTE_ANALYSIS_PROMPT =
   "以下はミニバスケットボール選手(小学生)のスタッツ・スポーツテストのデータです。伸びている点と今後の課題を分析し、簡潔に示してください。";
 
-// 選手カルテの数値を、外部のAIチャットに貼り付けて分析してもらうためのプレーンテキストに整形する。
-// アプリ内ではAI APIを呼び出さず、手元のAIツールへのコピペ用テキストを作るだけに留める。
-export function buildKarteAnalysisText(params: {
-  promptText: string;
+export interface PlayerKarteBodyParams {
   player: Player;
   fiscalYear: number;
   seasonAverages: SeasonStatAverages;
@@ -337,22 +334,14 @@ export function buildKarteAnalysisText(params: {
   growthRecords: PlayerGrowthRecord[];
   workoutTallies: { theme: string; count: number }[];
   attendedPracticeCount: number;
-}): string {
-  const {
-    promptText,
-    player,
-    fiscalYear,
-    seasonAverages,
-    gameRows,
-    sportsTestRecords,
-    growthRecords,
-    workoutTallies,
-    attendedPracticeCount,
-  } = params;
+}
+
+// 選手1人分の「■ 選手情報」以下のセクションを組み立てる。個人用・一括用のどちらからも使う。
+function formatPlayerKarteBody(params: PlayerKarteBodyParams): string[] {
+  const { player, fiscalYear, seasonAverages, gameRows, sportsTestRecords, growthRecords, workoutTallies, attendedPracticeCount } =
+    params;
   const lines: string[] = [];
 
-  lines.push(promptText.trim() || DEFAULT_KARTE_ANALYSIS_PROMPT);
-  lines.push("");
   lines.push("■ 選手情報");
   lines.push(`氏名: ${playerFullName(player)}`);
   lines.push(`学年: ${gradeLabel(player.grade)}`);
@@ -418,6 +407,115 @@ export function buildKarteAnalysisText(params: {
       lines.push(`${formatDateLabel(g.measured_on)}: ${g.height_cm ?? "-"}cm / ${g.weight_kg ?? "-"}kg`);
     });
   }
+
+  return lines;
+}
+
+// 選手カルテの数値を、外部のAIチャットに貼り付けて分析してもらうためのプレーンテキストに整形する。
+// アプリ内ではAI APIを呼び出さず、手元のAIツールへのコピペ用テキストを作るだけに留める。
+export function buildKarteAnalysisText(
+  params: PlayerKarteBodyParams & { promptText: string },
+): string {
+  const lines = [params.promptText.trim() || DEFAULT_KARTE_ANALYSIS_PROMPT, "", ...formatPlayerKarteBody(params)];
+  return lines.join("\n");
+}
+
+// 在籍選手全員分の分析用テキストを、選手ごとに見出しで区切って1つにまとめる(選手一括抽出用)。
+export function buildBulkKarteAnalysisText(params: {
+  promptText: string;
+  players: PlayerKarteBodyParams[];
+}): string {
+  const { promptText, players } = params;
+  const lines: string[] = [promptText.trim() || DEFAULT_KARTE_ANALYSIS_PROMPT, ""];
+  players.forEach((p) => {
+    lines.push(`━━━━━━━━━━ ${playerFullName(p.player)} ━━━━━━━━━━`);
+    lines.push(...formatPlayerKarteBody(p));
+    lines.push("");
+  });
+  return lines.join("\n").trimEnd();
+}
+
+export const DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT =
+  "以下はミニバスケットボールチーム全体のスタッツ・スポーツテスト・練習状況のデータです。チームとして伸びている点と今後の課題を分析し、簡潔に示してください。";
+
+// スポーツテストの各項目を、指定した記録群(通常は同じ四半期の全選手分)でチーム平均する。
+export function computeSportsTestTeamAverages(
+  records: SportsTestRecord[],
+): Partial<Record<SportsTestMetric, number | null>> {
+  const result: Partial<Record<SportsTestMetric, number | null>> = {};
+  SPORTS_TEST_RANKING_METRICS.forEach((m) => {
+    const nums = records.map((r) => m.extract(r)).filter((v): v is number => v !== null);
+    result[m.value] = nums.length > 0 ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : null;
+  });
+  return result;
+}
+
+// チーム全体の数値を、外部のAIチャットに貼り付けて分析してもらうためのプレーンテキストに整形する(チーム全体抽出用)。
+export function buildTeamKarteAnalysisText(params: {
+  promptText: string;
+  fiscalYear: number;
+  playerCount: number;
+  teamAverages: SeasonStatAverages;
+  sportsTestQuarterAverages: { quarter: number; averages: Partial<Record<SportsTestMetric, number | null>> }[];
+  workoutTallies: { theme: string; count: number }[];
+  practicesHeld: number;
+  averageAttendanceRate: number | null;
+}): string {
+  const {
+    promptText,
+    fiscalYear,
+    playerCount,
+    teamAverages,
+    sportsTestQuarterAverages,
+    workoutTallies,
+    practicesHeld,
+    averageAttendanceRate,
+  } = params;
+  const lines: string[] = [];
+
+  lines.push(promptText.trim() || DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT);
+  lines.push("");
+  lines.push("■ チーム情報");
+  lines.push(`対象年度: ${fiscalYearLabel(fiscalYear)}`);
+  lines.push(`在籍選手数: ${playerCount}名`);
+  lines.push("");
+
+  lines.push(`■ チーム平均スタッツ(出場選手ベース、試合数: ${teamAverages.gp})`);
+  if (teamAverages.gp === 0) {
+    lines.push("この年度の出場記録はありません");
+  } else {
+    GAME_COLUMNS.forEach((c) => {
+      const parts = gameStatCellParts(c.key, teamAverages);
+      lines.push(`${c.abbr}: ${parts.primary}${parts.secondary ? `(${parts.secondary})` : ""}`);
+    });
+  }
+  lines.push("");
+
+  lines.push("■ スポーツテスト チーム平均(四半期ごと)");
+  if (sportsTestQuarterAverages.length === 0) {
+    lines.push("記録なし");
+  } else {
+    sportsTestQuarterAverages.forEach(({ quarter, averages }) => {
+      const values = SPORTS_TEST_RANKING_METRICS.map((m) => {
+        const v = averages[m.value];
+        return `${m.label} ${v === null || v === undefined ? "-" : `${v}${m.unit}`}`;
+      }).join(" / ");
+      lines.push(`Q${quarter}: ${values}`);
+    });
+  }
+  lines.push("");
+
+  lines.push(`■ 実施メニュー(年度内、開催練習: ${practicesHeld}回)`);
+  if (workoutTallies.length === 0) {
+    lines.push("記録なし");
+  } else {
+    workoutTallies.forEach((t) => lines.push(`${t.theme}: ${t.count}回`));
+  }
+  lines.push("");
+
+  lines.push("■ 練習参加状況");
+  lines.push(`開催練習数: ${practicesHeld}回`);
+  lines.push(`在籍選手の平均出席率: ${averageAttendanceRate === null ? "-" : `${averageAttendanceRate}%`}`);
 
   return lines.join("\n");
 }
