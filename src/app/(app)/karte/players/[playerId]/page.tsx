@@ -152,54 +152,56 @@ export default function KartePlayerPage() {
         </div>
       </Card>
 
-      <div className="mt-3">
-        <FieldLabel>年度</FieldLabel>
-        <div className="relative inline-block">
-          <select
-            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-            value={fiscalYear}
-            onChange={(e) => setFiscalYear(Number(e.target.value))}
-          >
-            {FISCAL_YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>
-                {y}年度
-              </option>
-            ))}
-          </select>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+      <div className="mt-3 flex items-end justify-between gap-2">
+        <div>
+          <FieldLabel>年度</FieldLabel>
+          <div className="relative inline-block">
+            <select
+              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(Number(e.target.value))}
+            >
+              {FISCAL_YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
         </div>
-      </div>
-
-      {role === "管理者" && (
-        <>
+        {role === "管理者" && (
           <button
             type="button"
             onClick={() => setAnalysisOpen(true)}
-            className="w-full mb-3 px-3 py-2 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
+            className="flex-none px-3 py-1.5 rounded-[10px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
           >
-            分析用出力(AIに貼り付け用にコピー)
+            分析用出力
           </button>
-          <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用出力">
-            <FieldLabel>AIへの指示文</FieldLabel>
-            <textarea
-              rows={3}
-              className={inputClass()}
-              value={analysisPrompt}
-              onChange={(e) => setAnalysisPrompt(e.target.value)}
-            />
-            <button
-              type="button"
-              onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
-              className="text-[11px] font-bold text-orange mt-1.5"
-            >
-              デフォルトの文言に戻す
-            </button>
-            <div className="text-xs text-ink-soft mt-2.5">
-              この指示文に続けて、選手のスタッツ・スポーツテスト・身長体重のデータがコピーされます
-            </div>
-            <SubmitButton onClick={handleCopyAnalysis}>この内容でコピーする</SubmitButton>
-          </Modal>
-        </>
+        )}
+      </div>
+
+      {role === "管理者" && (
+        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用出力">
+          <FieldLabel>AIへの指示文</FieldLabel>
+          <textarea
+            rows={3}
+            className={inputClass()}
+            value={analysisPrompt}
+            onChange={(e) => setAnalysisPrompt(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
+            className="text-[11px] font-bold text-orange mt-1.5"
+          >
+            デフォルトの文言に戻す
+          </button>
+          <div className="text-xs text-ink-soft mt-2.5">
+            この指示文に続けて、選手のスタッツ・スポーツテスト・身長体重のデータがコピーされます
+          </div>
+          <SubmitButton onClick={handleCopyAnalysis}>この内容でコピーする</SubmitButton>
+        </Modal>
       )}
 
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
