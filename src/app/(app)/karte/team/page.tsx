@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,11 +8,13 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card } from "@/components/ui/Card";
+import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewKarte } from "@/lib/permissions";
+import { canManagePlayers, canViewKarte } from "@/lib/permissions";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { loadProfilesMap } from "@/lib/profiles";
 import {
   buildTeamKarteAnalysisText,
   computeSeasonAverages,
@@ -22,8 +24,8 @@ import {
   type SeasonStatAverages,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
-import { effectiveFiscalYear, fiscalYearOf, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, PracticeMenu } from "@/lib/database.types";
+import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
+import type { GamePlayerStatLine, PracticeMenu, TeamAnalysisNote } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -35,7 +37,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
 
 export default function KarteTeamPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId, teamId } = useSession();
   const toast = useToast();
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -51,9 +53,40 @@ export default function KarteTeamPage() {
   const [practicesHeld, setPracticesHeld] = useState(0);
   const [averageAttendanceRate, setAverageAttendanceRate] = useState<number | null>(null);
 
+  const [analysisNotes, setAnalysisNotes] = useState<TeamAnalysisNote[]>([]);
+  const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [noteBody, setNoteBody] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState("");
+  const [savingNoteEdit, setSavingNoteEdit] = useState(false);
+  const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+
+  useUnsavedChangesGuard(noteBody.trim() !== "");
+  const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
+  useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
+
   useEffect(() => {
     if (!canViewKarte(role)) router.replace("/schedule");
   }, [role, router]);
+
+  const loadNotes = useCallback(async () => {
+    setNotesLoading(true);
+    const supabase = createClient();
+    const [{ data: notes }, profMap] = await Promise.all([
+      supabase.from("team_analysis_notes").select("*").order("created_at", { ascending: false }),
+      loadProfilesMap(supabase),
+    ]);
+    setAnalysisNotes(notes ?? []);
+    setNoteProfiles(profMap);
+    setNotesLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadNotes();
+  }, [loadNotes]);
 
   useEffect(() => {
     if (!analysisOpen) return;
@@ -157,6 +190,69 @@ export default function KarteTeamPage() {
     }
   }
 
+  async function handleAddNote() {
+    if (!noteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNote(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("team_analysis_notes").insert({
+      team_id: teamId,
+      author_id: userId,
+      body: noteBody.trim(),
+    });
+    setSavingNote(false);
+    if (error) {
+      toast(`登録に失敗しました: ${error.message}`);
+      return;
+    }
+    setNoteBody("");
+    toast("メモを登録しました");
+    loadNotes();
+  }
+
+  function startEditNote(n: TeamAnalysisNote) {
+    setEditingNoteId(n.id);
+    setEditNoteBody(n.body);
+  }
+
+  async function handleSaveNoteEdit(noteId: string) {
+    if (!editNoteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNoteEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("team_analysis_notes").update({ body: editNoteBody.trim() }).eq("id", noteId);
+    setSavingNoteEdit(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを更新しました");
+    setEditingNoteId(null);
+    loadNotes();
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    if (deleteNoteConfirmId !== noteId) {
+      setDeleteNoteConfirmId(noteId);
+      setTimeout(() => setDeleteNoteConfirmId((cur) => (cur === noteId ? null : cur)), 3000);
+      return;
+    }
+    setDeleteNoteConfirmId(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("team_analysis_notes").delete().eq("id", noteId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを削除しました");
+    setExpandedNoteId(null);
+    loadNotes();
+  }
+
   return (
     <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge="coach" />}>
       <Link href="/game">
@@ -257,6 +353,93 @@ export default function KarteTeamPage() {
             {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
           </SubmitButton>
         </Modal>
+      )}
+
+      <SectionLabel>チーム分析メモ</SectionLabel>
+      {notesLoading ? (
+        <EmptyState>読み込み中…</EmptyState>
+      ) : analysisNotes.length === 0 ? (
+        <Card>
+          <div className="text-xs text-ink-soft">まだメモがありません</div>
+        </Card>
+      ) : (
+        analysisNotes.map((n) =>
+          editingNoteId === n.id ? (
+            <Card key={n.id}>
+              <textarea
+                rows={3}
+                className={inputClass()}
+                value={editNoteBody}
+                onChange={(e) => setEditNoteBody(e.target.value)}
+              />
+              <div className="flex gap-2 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSaveNoteEdit(n.id)}
+                  disabled={savingNoteEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                >
+                  {savingNoteEdit ? "保存中…" : "保存"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingNoteId(null)}
+                  disabled={savingNoteEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <Card
+              key={n.id}
+              className={canManagePlayers(role) ? "cursor-pointer" : ""}
+              onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
+            >
+              <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                {formatDateLabel(n.created_at.slice(0, 10))}
+                {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+              </div>
+              <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+              {canManagePlayers(role) && expandedNoteId === n.id && (
+                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => startEditNote(n)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                  >
+                    編集
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteNote(n.id)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  >
+                    {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
+                  </button>
+                </div>
+              )}
+            </Card>
+          ),
+        )
+      )}
+
+      {canManagePlayers(role) && (
+        <Card>
+          <FieldLabel>メモを追加</FieldLabel>
+          <textarea
+            rows={3}
+            className={inputClass()}
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+            placeholder="例:AIに分析してもらった内容を貼り付ける"
+          />
+          <SubmitButton onClick={handleAddNote} disabled={savingNote}>
+            {savingNote ? "登録中…" : "メモを登録する"}
+          </SubmitButton>
+        </Card>
       )}
     </PageShell>
   );

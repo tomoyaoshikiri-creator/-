@@ -13,8 +13,10 @@ import { NumChip } from "@/components/ui/Pill";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewKarte } from "@/lib/permissions";
+import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { loadProfilesMap } from "@/lib/profiles";
 import {
   buildKarteAnalysisText,
   computeSeasonAverages,
@@ -23,7 +25,14 @@ import {
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, gradeLabel, playerFullName, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, Player, PlayerGrowthRecord, PracticeMenu, SportsTestRecord } from "@/lib/database.types";
+import type {
+  GamePlayerStatLine,
+  Player,
+  PlayerAnalysisNote,
+  PlayerGrowthRecord,
+  PracticeMenu,
+  SportsTestRecord,
+} from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -40,7 +49,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const toast = useToast();
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -54,6 +63,20 @@ export default function KartePlayerPage() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
 
+  const [analysisNotes, setAnalysisNotes] = useState<PlayerAnalysisNote[]>([]);
+  const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
+  const [noteBody, setNoteBody] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState("");
+  const [savingNoteEdit, setSavingNoteEdit] = useState(false);
+  const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+
+  useUnsavedChangesGuard(noteBody.trim() !== "");
+  const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
+  useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
+
   useEffect(() => {
     if (!canViewKarte(role)) router.replace("/schedule");
   }, [role, router]);
@@ -61,30 +84,39 @@ export default function KartePlayerPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: lines }, { data: tests }, { data: growth }, { data: attendanceRows }] = await Promise.all([
-      supabase.from("players").select("*").eq("id", params.playerId).single(),
-      supabase
-        .from("game_player_stat_lines")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
-        .eq("player_id", params.playerId)
-        .returns<StatLineWithDate[]>(),
-      supabase
-        .from("sports_test_records")
-        .select("*")
-        .eq("player_id", params.playerId)
-        .eq("fiscal_year", fiscalYear),
-      supabase
-        .from("player_growth_records")
-        .select("*")
-        .eq("player_id", params.playerId)
-        .order("measured_on", { ascending: false })
-        .limit(6),
-      supabase.from("attendances").select("schedule_id").eq("player_id", params.playerId).eq("status", "出席"),
-    ]);
+    const [{ data: p }, { data: lines }, { data: tests }, { data: growth }, { data: attendanceRows }, { data: notes }, profMap] =
+      await Promise.all([
+        supabase.from("players").select("*").eq("id", params.playerId).single(),
+        supabase
+          .from("game_player_stat_lines")
+          .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+          .eq("player_id", params.playerId)
+          .returns<StatLineWithDate[]>(),
+        supabase
+          .from("sports_test_records")
+          .select("*")
+          .eq("player_id", params.playerId)
+          .eq("fiscal_year", fiscalYear),
+        supabase
+          .from("player_growth_records")
+          .select("*")
+          .eq("player_id", params.playerId)
+          .order("measured_on", { ascending: false })
+          .limit(6),
+        supabase.from("attendances").select("schedule_id").eq("player_id", params.playerId).eq("status", "出席"),
+        supabase
+          .from("player_analysis_notes")
+          .select("*")
+          .eq("player_id", params.playerId)
+          .order("created_at", { ascending: false }),
+        loadProfilesMap(supabase),
+      ]);
     setPlayer(p ?? null);
     setStatLines(lines ?? []);
     setSportsTestRecords(tests ?? []);
     setGrowthRecords(growth ?? []);
+    setAnalysisNotes(notes ?? []);
+    setNoteProfiles(profMap);
 
     // 出席(status=出席)した予定のうち練習だけに絞り、その練習に紐づく実施メニューを集計する。
     // 「このワークアウトをこれだけこなした」を、出欠に基づいて把握できるようにするため。
@@ -161,6 +193,71 @@ export default function KartePlayerPage() {
     } catch {
       toast("コピーに失敗しました");
     }
+  }
+
+  async function handleAddNote() {
+    if (!player) return;
+    if (!noteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNote(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("player_analysis_notes").insert({
+      team_id: player.team_id,
+      player_id: player.id,
+      author_id: userId,
+      body: noteBody.trim(),
+    });
+    setSavingNote(false);
+    if (error) {
+      toast(`登録に失敗しました: ${error.message}`);
+      return;
+    }
+    setNoteBody("");
+    toast("メモを登録しました");
+    load();
+  }
+
+  function startEditNote(n: PlayerAnalysisNote) {
+    setEditingNoteId(n.id);
+    setEditNoteBody(n.body);
+  }
+
+  async function handleSaveNoteEdit(noteId: string) {
+    if (!editNoteBody.trim()) {
+      toast("メモを入力してください");
+      return;
+    }
+    setSavingNoteEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("player_analysis_notes").update({ body: editNoteBody.trim() }).eq("id", noteId);
+    setSavingNoteEdit(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを更新しました");
+    setEditingNoteId(null);
+    load();
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    if (deleteNoteConfirmId !== noteId) {
+      setDeleteNoteConfirmId(noteId);
+      setTimeout(() => setDeleteNoteConfirmId((cur) => (cur === noteId ? null : cur)), 3000);
+      return;
+    }
+    setDeleteNoteConfirmId(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("player_analysis_notes").delete().eq("id", noteId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("メモを削除しました");
+    setExpandedNoteId(null);
+    load();
   }
 
   if (loading) {
@@ -386,6 +483,91 @@ export default function KartePlayerPage() {
           記録を入力・編集する
         </Link>
       </Card>
+
+      <SectionLabel>選手分析メモ</SectionLabel>
+      {analysisNotes.length === 0 ? (
+        <Card>
+          <div className="text-xs text-ink-soft">まだメモがありません</div>
+        </Card>
+      ) : (
+        analysisNotes.map((n) =>
+          editingNoteId === n.id ? (
+            <Card key={n.id}>
+              <textarea
+                rows={3}
+                className={inputClass()}
+                value={editNoteBody}
+                onChange={(e) => setEditNoteBody(e.target.value)}
+              />
+              <div className="flex gap-2 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSaveNoteEdit(n.id)}
+                  disabled={savingNoteEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                >
+                  {savingNoteEdit ? "保存中…" : "保存"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingNoteId(null)}
+                  disabled={savingNoteEdit}
+                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <Card
+              key={n.id}
+              className={canManagePlayers(role) ? "cursor-pointer" : ""}
+              onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
+            >
+              <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                {formatDateLabel(n.created_at.slice(0, 10))}
+                {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+              </div>
+              <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+              {canManagePlayers(role) && expandedNoteId === n.id && (
+                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => startEditNote(n)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                  >
+                    編集
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteNote(n.id)}
+                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  >
+                    {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
+                  </button>
+                </div>
+              )}
+            </Card>
+          ),
+        )
+      )}
+
+      {canManagePlayers(role) && (
+        <Card>
+          <FieldLabel>メモを追加</FieldLabel>
+          <textarea
+            rows={3}
+            className={inputClass()}
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+            placeholder="例:AIに分析してもらった内容を貼り付ける"
+          />
+          <SubmitButton onClick={handleAddNote} disabled={savingNote}>
+            {savingNote ? "登録中…" : "メモを登録する"}
+          </SubmitButton>
+        </Card>
+      )}
     </PageShell>
   );
 }
