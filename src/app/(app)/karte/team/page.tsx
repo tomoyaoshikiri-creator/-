@@ -26,6 +26,7 @@ import { effectiveFiscalYear, fiscalYearOf, todayDateStr } from "@/lib/format";
 import type { GamePlayerStatLine, PracticeMenu } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
+const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
 const QUARTERS = [1, 2, 3, 4] as const;
 
 interface StatLineWithDate extends GamePlayerStatLine {
@@ -38,9 +39,9 @@ export default function KarteTeamPage() {
   const toast = useToast();
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisFiscalYear, setAnalysisFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT);
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisLoaded, setAnalysisLoaded] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const [teamAverages, setTeamAverages] = useState<SeasonStatAverages | null>(null);
   const [sportsTestQuarterAverages, setSportsTestQuarterAverages] = useState<
@@ -54,87 +55,87 @@ export default function KarteTeamPage() {
     if (!canViewKarte(role)) router.replace("/schedule");
   }, [role, router]);
 
-  async function handleOpenAnalysis() {
-    setAnalysisOpen(true);
-    if (analysisLoaded) return;
-    setAnalysisLoading(true);
-    const supabase = createClient();
+  useEffect(() => {
+    if (!analysisOpen) return;
+    (async () => {
+      setAnalysisLoading(true);
+      const supabase = createClient();
 
-    const [{ data: players }, { data: statLines }, { data: sportsTests }, { data: practiceSchedules }] = await Promise.all([
-      supabase.from("players").select("*").eq("status", "在籍"),
-      supabase
-        .from("game_player_stat_lines")
-        .select("*, game_matches(schedules(date, fiscal_year_override))")
-        .returns<StatLineWithDate[]>(),
-      supabase.from("sports_test_records").select("*").eq("fiscal_year", CURRENT_FISCAL_YEAR).eq("not_conducted", false),
-      supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
-    ]);
-
-    const activePlayers = players ?? [];
-    setPlayerCount(activePlayers.length);
-
-    const linesForYear = (statLines ?? []).filter((l) => {
-      const date = l.game_matches?.schedules?.date;
-      if (!date) return false;
-      return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === CURRENT_FISCAL_YEAR;
-    });
-    const playerAverages = activePlayers.map((p) => computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)));
-    setTeamAverages(computeTeamAverages(playerAverages, linesForYear));
-
-    setSportsTestQuarterAverages(
-      QUARTERS.map((q) => ({ quarter: q, records: (sportsTests ?? []).filter((r) => r.quarter === q) }))
-        .filter((qa) => qa.records.length > 0)
-        .map((qa) => ({ quarter: qa.quarter, averages: computeSportsTestTeamAverages(qa.records) })),
-    );
-
-    const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === CURRENT_FISCAL_YEAR);
-    const practiceIds = yearPractices.map((s) => s.id);
-    setPracticesHeld(yearPractices.length);
-
-    let menus: PracticeMenu[] = [];
-    let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
-    if (practiceIds.length > 0) {
-      const [{ data: m }, { data: a }] = await Promise.all([
-        supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
-        supabase.from("attendances").select("schedule_id, player_id").in("schedule_id", practiceIds).eq("status", "出席"),
+      const [{ data: players }, { data: statLines }, { data: sportsTests }, { data: practiceSchedules }] = await Promise.all([
+        supabase.from("players").select("*").eq("status", "在籍"),
+        supabase
+          .from("game_player_stat_lines")
+          .select("*, game_matches(schedules(date, fiscal_year_override))")
+          .returns<StatLineWithDate[]>(),
+        supabase.from("sports_test_records").select("*").eq("fiscal_year", analysisFiscalYear).eq("not_conducted", false),
+        supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
       ]);
-      menus = m ?? [];
-      attendanceRows = a ?? [];
-    }
 
-    const tallyMap = new Map<string, number>();
-    menus.forEach((m) => {
-      const theme = (m.theme ?? "").trim();
-      if (!theme) return;
-      tallyMap.set(theme, (tallyMap.get(theme) ?? 0) + 1);
-    });
-    setWorkoutTallies(
-      Array.from(tallyMap.entries())
-        .map(([theme, count]) => ({ theme, count }))
-        .sort((a, b) => b.count - a.count),
-    );
+      const activePlayers = players ?? [];
+      setPlayerCount(activePlayers.length);
 
-    if (yearPractices.length > 0 && activePlayers.length > 0) {
-      const countByPlayer = new Map<string, number>();
-      attendanceRows.forEach((a) => {
-        if (!a.player_id) return;
-        countByPlayer.set(a.player_id, (countByPlayer.get(a.player_id) ?? 0) + 1);
+      const linesForYear = (statLines ?? []).filter((l) => {
+        const date = l.game_matches?.schedules?.date;
+        if (!date) return false;
+        return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === analysisFiscalYear;
       });
-      const rates = activePlayers.map((p) => (countByPlayer.get(p.id) ?? 0) / yearPractices.length);
-      setAverageAttendanceRate(Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 1000) / 10);
-    } else {
-      setAverageAttendanceRate(null);
-    }
+      const playerAverages = activePlayers.map((p) => computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)));
+      setTeamAverages(computeTeamAverages(playerAverages, linesForYear));
 
-    setAnalysisLoaded(true);
-    setAnalysisLoading(false);
-  }
+      setSportsTestQuarterAverages(
+        QUARTERS.map((q) => ({ quarter: q, records: (sportsTests ?? []).filter((r) => r.quarter === q) }))
+          .filter((qa) => qa.records.length > 0)
+          .map((qa) => ({ quarter: qa.quarter, averages: computeSportsTestTeamAverages(qa.records) })),
+      );
+
+      const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === analysisFiscalYear);
+      const practiceIds = yearPractices.map((s) => s.id);
+      setPracticesHeld(yearPractices.length);
+
+      let menus: PracticeMenu[] = [];
+      let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
+      if (practiceIds.length > 0) {
+        const [{ data: m }, { data: a }] = await Promise.all([
+          supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
+          supabase.from("attendances").select("schedule_id, player_id").in("schedule_id", practiceIds).eq("status", "出席"),
+        ]);
+        menus = m ?? [];
+        attendanceRows = a ?? [];
+      }
+
+      const tallyMap = new Map<string, number>();
+      menus.forEach((m) => {
+        const theme = (m.theme ?? "").trim();
+        if (!theme) return;
+        tallyMap.set(theme, (tallyMap.get(theme) ?? 0) + 1);
+      });
+      setWorkoutTallies(
+        Array.from(tallyMap.entries())
+          .map(([theme, count]) => ({ theme, count }))
+          .sort((a, b) => b.count - a.count),
+      );
+
+      if (yearPractices.length > 0 && activePlayers.length > 0) {
+        const countByPlayer = new Map<string, number>();
+        attendanceRows.forEach((a) => {
+          if (!a.player_id) return;
+          countByPlayer.set(a.player_id, (countByPlayer.get(a.player_id) ?? 0) + 1);
+        });
+        const rates = activePlayers.map((p) => (countByPlayer.get(p.id) ?? 0) / yearPractices.length);
+        setAverageAttendanceRate(Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 1000) / 10);
+      } else {
+        setAverageAttendanceRate(null);
+      }
+
+      setAnalysisLoading(false);
+    })();
+  }, [analysisOpen, analysisFiscalYear]);
 
   async function handleCopyAnalysis() {
     if (!teamAverages) return;
     const text = buildTeamKarteAnalysisText({
       promptText: analysisPrompt,
-      fiscalYear: CURRENT_FISCAL_YEAR,
+      fiscalYear: analysisFiscalYear,
       playerCount,
       teamAverages,
       sportsTestQuarterAverages,
@@ -204,7 +205,7 @@ export default function KarteTeamPage() {
       {role === "管理者" && (
         <button
           type="button"
-          onClick={handleOpenAnalysis}
+          onClick={() => setAnalysisOpen(true)}
           className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mb-2.5 flex items-center justify-between"
         >
           <div className="font-bold text-[12.5px] text-orange">分析用データ抽出〈全体分〉</div>
@@ -214,6 +215,22 @@ export default function KarteTeamPage() {
 
       {role === "管理者" && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用データ抽出〈全体分〉">
+          <FieldLabel>年度</FieldLabel>
+          <div className="relative inline-block mb-3">
+            <select
+              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              value={analysisFiscalYear}
+              onChange={(e) => setAnalysisFiscalYear(Number(e.target.value))}
+            >
+              {FISCAL_YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
+
           <FieldLabel>AIへの指示文</FieldLabel>
           <textarea
             rows={3}
