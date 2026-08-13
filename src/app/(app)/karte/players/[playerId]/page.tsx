@@ -10,13 +10,15 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
-import { FieldLabel } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
 import {
   buildKarteAnalysisText,
   computeSeasonAverages,
+  DEFAULT_KARTE_ANALYSIS_PROMPT,
   GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
@@ -47,6 +49,8 @@ export default function KartePlayerPage() {
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
 
   useEffect(() => {
     if (!canViewKarte(role)) router.replace("/schedule");
@@ -101,6 +105,7 @@ export default function KartePlayerPage() {
   async function handleCopyAnalysis() {
     if (!player) return;
     const text = buildKarteAnalysisText({
+      promptText: analysisPrompt,
       player,
       fiscalYear,
       seasonAverages,
@@ -111,6 +116,7 @@ export default function KartePlayerPage() {
     try {
       await navigator.clipboard.writeText(text);
       toast("分析用テキストをコピーしました");
+      setAnalysisOpen(false);
     } catch {
       toast("コピーに失敗しました");
     }
@@ -165,13 +171,35 @@ export default function KartePlayerPage() {
       </div>
 
       {role === "管理者" && (
-        <button
-          type="button"
-          onClick={handleCopyAnalysis}
-          className="w-full mb-3 px-3 py-2 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
-        >
-          分析用出力(AIに貼り付け用にコピー)
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setAnalysisOpen(true)}
+            className="w-full mb-3 px-3 py-2 rounded-[10px] border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
+          >
+            分析用出力(AIに貼り付け用にコピー)
+          </button>
+          <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用出力">
+            <FieldLabel>AIへの指示文</FieldLabel>
+            <textarea
+              rows={3}
+              className={inputClass()}
+              value={analysisPrompt}
+              onChange={(e) => setAnalysisPrompt(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
+              className="text-[11px] font-bold text-orange mt-1.5"
+            >
+              デフォルトの文言に戻す
+            </button>
+            <div className="text-xs text-ink-soft mt-2.5">
+              この指示文に続けて、選手のスタッツ・スポーツテスト・身長体重のデータがコピーされます
+            </div>
+            <SubmitButton onClick={handleCopyAnalysis}>この内容でコピーする</SubmitButton>
+          </Modal>
+        </>
       )}
 
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>

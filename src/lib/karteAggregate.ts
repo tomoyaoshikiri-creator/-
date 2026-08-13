@@ -322,9 +322,13 @@ export const SPORTS_TEST_RANKING_METRICS: {
 
 const ANALYSIS_QUARTERS = [1, 2, 3, 4] as const;
 
+export const DEFAULT_KARTE_ANALYSIS_PROMPT =
+  "以下はバスケットボール選手のスタッツ・スポーツテストのデータです。伸びている点と今後の課題を教えてください。";
+
 // 選手カルテの数値を、外部のAIチャットに貼り付けて分析してもらうためのプレーンテキストに整形する。
 // アプリ内ではAI APIを呼び出さず、手元のAIツールへのコピペ用テキストを作るだけに留める。
 export function buildKarteAnalysisText(params: {
+  promptText: string;
   player: Player;
   fiscalYear: number;
   seasonAverages: SeasonStatAverages;
@@ -332,10 +336,10 @@ export function buildKarteAnalysisText(params: {
   sportsTestRecords: SportsTestRecord[];
   growthRecords: PlayerGrowthRecord[];
 }): string {
-  const { player, fiscalYear, seasonAverages, gameRows, sportsTestRecords, growthRecords } = params;
+  const { promptText, player, fiscalYear, seasonAverages, gameRows, sportsTestRecords, growthRecords } = params;
   const lines: string[] = [];
 
-  lines.push("以下はバスケットボール選手のスタッツ・スポーツテストのデータです。伸びている点と今後の課題を教えてください。");
+  lines.push(promptText.trim() || DEFAULT_KARTE_ANALYSIS_PROMPT);
   lines.push("");
   lines.push("■ 選手情報");
   lines.push(`氏名: ${playerFullName(player)}`);
