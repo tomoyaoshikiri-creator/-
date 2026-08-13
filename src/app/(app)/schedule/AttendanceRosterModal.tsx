@@ -66,28 +66,37 @@ function AttendanceGroup({
                     {status ?? "未回答"}
                   </Pill>
                 </div>
-                {r.attendance && (
-                  <div className="text-[11px] text-ink-soft mt-1">
-                    {showAccompany && (
-                      <>
-                        帯同:{" "}
-                        {r.attendance.accompany === "あり"
-                          ? `あり(${r.attendance.accompany_count ?? "-"}名)`
-                          : r.attendance.accompany === "なし"
-                            ? "なし"
-                            : "未回答"}
-                        {" ・ "}
-                      </>
-                    )}
-                    車出し:{" "}
-                    {r.attendance.car === "可"
-                      ? `可(乗車${r.attendance.seats ?? "-"}人)`
-                      : r.attendance.car === "不可"
-                        ? "不可"
-                        : "未回答"}
-                    {r.attendance.note && ` ・ 備考:${r.attendance.note}`}
-                  </div>
-                )}
+                {r.attendance &&
+                  (() => {
+                    const parts: string[] = [];
+                    // 帯同・車出しは試合の出欠でのみ収集しており、練習では常にnullのため、
+                    // 練習の一覧に「未回答」を出し続けないよう試合のときだけ表示する。
+                    if (isGame) {
+                      if (showAccompany) {
+                        parts.push(
+                          `帯同: ${
+                            r.attendance.accompany === "あり"
+                              ? `あり(${r.attendance.accompany_count ?? "-"}名)`
+                              : r.attendance.accompany === "なし"
+                                ? "なし"
+                                : "未回答"
+                          }`,
+                        );
+                      }
+                      parts.push(
+                        `車出し: ${
+                          r.attendance.car === "可"
+                            ? `可(乗車${r.attendance.seats ?? "-"}人)`
+                            : r.attendance.car === "不可"
+                              ? "不可"
+                              : "未回答"
+                        }`,
+                      );
+                    }
+                    if (r.attendance.note) parts.push(`備考:${r.attendance.note}`);
+                    if (parts.length === 0) return null;
+                    return <div className="text-[11px] text-ink-soft mt-1">{parts.join(" ・ ")}</div>;
+                  })()}
               </div>
               {expanded && (
                 <div className="px-3.5 pb-3.5" onClick={(e) => e.stopPropagation()}>
