@@ -19,13 +19,18 @@ import { NewPlayerModal } from "./NewPlayerModal";
 
 function PlayerRow({
   player,
+  noteCount,
+  showNotes,
   selectable,
 }: {
   player: Player;
+  noteCount: number;
+  showNotes: boolean;
   selectable: boolean;
 }) {
   const router = useRouter();
   const isObog = player.status === "OB・OG";
+  const hasNotes = noteCount > 0;
   return (
     <div
       onClick={selectable ? () => router.push(`/players/${player.id}`) : undefined}
@@ -34,11 +39,24 @@ function PlayerRow({
       }`}
     >
       <NumChip num={player.number ?? "-"} muted={isObog} />
-      <div className="flex-1 min-w-0">
-        <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
-        <div className="text-[11px] text-ink-soft mt-0.5">
-          {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
+      <div className="flex-1 min-w-0 flex items-center gap-2.5">
+        <div className="min-w-0">
+          <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+          <div className="text-[11px] text-ink-soft mt-0.5">
+            {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
+          </div>
         </div>
+        {showNotes && (
+          <Link
+            href={`/players/${player.id}/notes`}
+            onClick={(e) => e.stopPropagation()}
+            className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
+            }`}
+          >
+            {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
+          </Link>
+        )}
       </div>
       {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
     </div>
@@ -51,6 +69,7 @@ export default function PlayersPage() {
   const isStaff = canManagePlayers(role);
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -63,6 +82,17 @@ export default function PlayersPage() {
     const { data: p } = await supabase.from("players").select("*");
     const list = sortPlayers(p ?? []);
     setPlayers(list);
+    // メモは指導者・管理者専用の情報なので、それ以外のロール(保護者)では取得しない。
+    if (list.length > 0 && isStaff) {
+      const { data: notes } = await supabase.from("player_notes").select("player_id");
+      const counts: Record<string, number> = {};
+      (notes ?? []).forEach((n) => {
+        counts[n.player_id] = (counts[n.player_id] ?? 0) + 1;
+      });
+      setNoteCounts(counts);
+    } else {
+      setNoteCounts({});
+    }
     // 保護者(一般・運営)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにするため、
     // 自分の紐付け(player_guardians)だけ別途取得しておく。
     if (!isStaff) {
@@ -146,7 +176,13 @@ export default function PlayersPage() {
           <EmptyState>選手がいません</EmptyState>
         ) : (
           activeList.map((p) => (
-            <PlayerRow key={p.id} player={p} selectable={isStaff || ownPlayerIds.has(p.id)} />
+            <PlayerRow
+              key={p.id}
+              player={p}
+              noteCount={noteCounts[p.id] ?? 0}
+              showNotes={isStaff}
+              selectable={isStaff || ownPlayerIds.has(p.id)}
+            />
           ))
         )}
       </Card>
