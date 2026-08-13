@@ -713,6 +713,44 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      team_analysis_note_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      player_analysis_note_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -859,6 +897,8 @@ export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type PlayerNoteReaction = Database["public"]["Tables"]["player_note_reactions"]["Row"];
 export type TeamAnalysisNote = Database["public"]["Tables"]["team_analysis_notes"]["Row"];
 export type PlayerAnalysisNote = Database["public"]["Tables"]["player_analysis_notes"]["Row"];
+export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analysis_note_reactions"]["Row"];
+export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];

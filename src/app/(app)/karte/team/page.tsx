@@ -12,6 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
+import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -25,7 +26,13 @@ import {
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, PracticeMenu, TeamAnalysisNote } from "@/lib/database.types";
+import type {
+  GamePlayerStatLine,
+  PracticeMenu,
+  ReactionType,
+  TeamAnalysisNote,
+  TeamAnalysisNoteReaction,
+} from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -54,6 +61,7 @@ export default function KarteTeamPage() {
   const [averageAttendanceRate, setAverageAttendanceRate] = useState<number | null>(null);
 
   const [analysisNotes, setAnalysisNotes] = useState<TeamAnalysisNote[]>([]);
+  const [noteReactions, setNoteReactions] = useState<TeamAnalysisNoteReaction[]>([]);
   const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState(true);
   const [noteBody, setNoteBody] = useState("");
@@ -81,8 +89,49 @@ export default function KarteTeamPage() {
     ]);
     setAnalysisNotes(notes ?? []);
     setNoteProfiles(profMap);
+    const noteIds = (notes ?? []).map((n) => n.id);
+    if (noteIds.length > 0) {
+      const { data: r } = await supabase.from("team_analysis_note_reactions").select("*").in("note_id", noteIds);
+      setNoteReactions(r ?? []);
+    } else {
+      setNoteReactions([]);
+    }
     setNotesLoading(false);
   }, []);
+
+  async function loadNoteReactions() {
+    const noteIds = analysisNotes.map((n) => n.id);
+    if (noteIds.length === 0) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("team_analysis_note_reactions").select("*").in("note_id", noteIds);
+    setNoteReactions(data ?? []);
+  }
+
+  async function toggleNoteReaction(noteId: string, type: ReactionType) {
+    const supabase = createClient();
+    const existing = noteReactions.find(
+      (r) => r.note_id === noteId && r.reaction_type === type && r.profile_id === userId,
+    );
+    if (existing) {
+      const { error } = await supabase.from("team_analysis_note_reactions").delete().eq("id", existing.id);
+      if (error) {
+        toast(`取り消しに失敗しました: ${error.message}`);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("team_analysis_note_reactions").insert({
+        team_id: teamId,
+        note_id: noteId,
+        profile_id: userId,
+        reaction_type: type,
+      });
+      if (error) {
+        toast(`スタンプに失敗しました: ${error.message}`);
+        return;
+      }
+    }
+    loadNoteReactions();
+  }
 
   useEffect(() => {
     loadNotes();
@@ -402,6 +451,11 @@ export default function KarteTeamPage() {
                 {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
               </div>
               <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+              <ReactionButtons
+                reactions={noteReactions.filter((r) => r.note_id === n.id)}
+                userId={userId}
+                onToggle={(type) => toggleNoteReaction(n.id, type)}
+              />
               {canManagePlayers(role) && expandedNoteId === n.id && (
                 <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
                   <button
@@ -434,7 +488,7 @@ export default function KarteTeamPage() {
             className={inputClass()}
             value={noteBody}
             onChange={(e) => setNoteBody(e.target.value)}
-            placeholder="例:AIに分析してもらった内容を貼り付ける"
+            placeholder="例:分析してもらった内容を貼り付ける"
           />
           <SubmitButton onClick={handleAddNote} disabled={savingNote}>
             {savingNote ? "登録中…" : "メモを登録する"}
