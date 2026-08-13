@@ -335,8 +335,20 @@ export function buildKarteAnalysisText(params: {
   gameRows: { label: string; averages: SeasonStatAverages }[];
   sportsTestRecords: SportsTestRecord[];
   growthRecords: PlayerGrowthRecord[];
+  workoutTallies: { theme: string; count: number }[];
+  attendedPracticeCount: number;
 }): string {
-  const { promptText, player, fiscalYear, seasonAverages, gameRows, sportsTestRecords, growthRecords } = params;
+  const {
+    promptText,
+    player,
+    fiscalYear,
+    seasonAverages,
+    gameRows,
+    sportsTestRecords,
+    growthRecords,
+    workoutTallies,
+    attendedPracticeCount,
+  } = params;
   const lines: string[] = [];
 
   lines.push(promptText.trim() || DEFAULT_KARTE_ANALYSIS_PROMPT);
@@ -386,6 +398,16 @@ export function buildKarteAnalysisText(params: {
     lines.push(`Q${q}: ${values}`);
   });
   if (!anyTest) lines.push("記録なし");
+  lines.push("");
+
+  // 「このワークアウトをこれだけこなした」を出欠(status=出席)に基づいて把握できるように、
+  // 出席した練習に紐づく実施メニューだけをテーマごとに集計する。
+  lines.push(`■ 実施したワークアウト(出席した練習: ${attendedPracticeCount}回)`);
+  if (workoutTallies.length === 0) {
+    lines.push("記録なし");
+  } else {
+    workoutTallies.forEach((t) => lines.push(`${t.theme}: ${t.count}回`));
+  }
   lines.push("");
 
   lines.push("■ 身長・体重(直近)");

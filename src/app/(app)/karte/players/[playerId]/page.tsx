@@ -23,7 +23,7 @@ import {
   SPORTS_TEST_RANKING_METRICS,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, gradeLabel, playerFullName, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, Player, PlayerGrowthRecord, SportsTestRecord } from "@/lib/database.types";
+import type { GamePlayerStatLine, Player, PlayerGrowthRecord, PracticeMenu, SportsTestRecord } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -48,6 +48,8 @@ export default function KartePlayerPage() {
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
+  const [attendedPractices, setAttendedPractices] = useState<{ id: string; date: string }[]>([]);
+  const [attendedPracticeMenus, setAttendedPracticeMenus] = useState<PracticeMenu[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
@@ -59,7 +61,7 @@ export default function KartePlayerPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: lines }, { data: tests }, { data: growth }] = await Promise.all([
+    const [{ data: p }, { data: lines }, { data: tests }, { data: growth }, { data: attendanceRows }] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.playerId).single(),
       supabase
         .from("game_player_stat_lines")
@@ -77,11 +79,34 @@ export default function KartePlayerPage() {
         .eq("player_id", params.playerId)
         .order("measured_on", { ascending: false })
         .limit(6),
+      supabase.from("attendances").select("schedule_id").eq("player_id", params.playerId).eq("status", "出席"),
     ]);
     setPlayer(p ?? null);
     setStatLines(lines ?? []);
     setSportsTestRecords(tests ?? []);
     setGrowthRecords(growth ?? []);
+
+    // 出席(status=出席)した予定のうち練習だけに絞り、その練習に紐づく実施メニューを集計する。
+    // 「このワークアウトをこれだけこなした」を、出欠に基づいて把握できるようにするため。
+    const attendedScheduleIds = Array.from(new Set((attendanceRows ?? []).map((a) => a.schedule_id)));
+    let practices: { id: string; date: string }[] = [];
+    let menus: PracticeMenu[] = [];
+    if (attendedScheduleIds.length > 0) {
+      const { data: schedules } = await supabase
+        .from("schedules")
+        .select("id, date")
+        .in("id", attendedScheduleIds)
+        .eq("type", "practice");
+      practices = schedules ?? [];
+      const practiceIds = practices.map((s) => s.id);
+      if (practiceIds.length > 0) {
+        const { data: m } = await supabase.from("practice_menus").select("*").in("schedule_id", practiceIds);
+        menus = m ?? [];
+      }
+    }
+    setAttendedPractices(practices);
+    setAttendedPracticeMenus(menus);
+
     setLoading(false);
   }, [params.playerId, fiscalYear]);
 
@@ -102,6 +127,20 @@ export default function KartePlayerPage() {
     averages: computeSeasonAverages([l]),
   }));
 
+  const attendedPracticesInYear = attendedPractices.filter((s) => fiscalYearOf(s.date) === fiscalYear);
+  const attendedScheduleIdsInYear = new Set(attendedPracticesInYear.map((s) => s.id));
+  const workoutTallyMap = new Map<string, number>();
+  attendedPracticeMenus
+    .filter((m) => attendedScheduleIdsInYear.has(m.schedule_id))
+    .forEach((m) => {
+      const theme = (m.theme ?? "").trim();
+      if (!theme) return;
+      workoutTallyMap.set(theme, (workoutTallyMap.get(theme) ?? 0) + 1);
+    });
+  const workoutTallies = Array.from(workoutTallyMap.entries())
+    .map(([theme, count]) => ({ theme, count }))
+    .sort((a, b) => b.count - a.count);
+
   async function handleCopyAnalysis() {
     if (!player) return;
     const text = buildKarteAnalysisText({
@@ -112,6 +151,8 @@ export default function KartePlayerPage() {
       gameRows,
       sportsTestRecords,
       growthRecords,
+      workoutTallies,
+      attendedPracticeCount: attendedPracticesInYear.length,
     });
     try {
       await navigator.clipboard.writeText(text);
