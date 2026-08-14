@@ -251,7 +251,6 @@ export function GameStatsLandscape({
         </div>
 
         <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-          <span className="font-mono text-[10px] tracking-widest uppercase text-ink-soft mr-1">Q</span>
           <div className="flex gap-1">
             {[1, 2, 3, 4].map((q) => (
               <button
