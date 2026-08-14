@@ -175,7 +175,7 @@ export function NewScheduleModal({
     const { error } = editSchedule
       ? await supabase
           .from("schedules")
-          .update({ ...base, date: dates[0], updated_at: new Date().toISOString() })
+          .update({ ...base, date: dates[0] })
           .eq("id", editSchedule.id)
       : await supabase
           .from("schedules")

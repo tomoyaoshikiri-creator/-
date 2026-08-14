@@ -2,22 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { isStaffRole, type TabKey } from "@/lib/permissions";
-import type { Role } from "@/lib/database.types";
-import {
-  computeTeamAnalysisUnseen,
-  computeUnseenPlayerAnalysisIds,
-  computeUnseenPlayerNoteIds,
-  computeUnseenScheduleIds,
-} from "@/lib/itemBadges";
+import type { TabKey } from "@/lib/permissions";
+import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 
 // タブアイコンの新着通知(赤丸)。
 // お知らせ・日報は一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
-// (tab_last_seen)との比較。予定・選手メモ・分析フィードバックは一覧の行ごとに新着かどうかを
+// (tab_last_seen)との比較。選手メモ・分析フィードバックは一覧の行ごとに新着かどうかを
 // 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
 export type BadgeTab = "notice" | "report";
 
-export function useTabBadges(userId: string, role: Role, teamId: string): Partial<Record<TabKey, boolean>> {
+export function useTabBadges(userId: string, teamId: string): Partial<Record<TabKey, boolean>> {
   const [badges, setBadges] = useState<Partial<Record<TabKey, boolean>>>({});
 
   const load = useCallback(async () => {
@@ -31,41 +25,31 @@ export function useTabBadges(userId: string, role: Role, teamId: string): Partia
     const now = new Date().toISOString();
     const noticeSeen = seenMap.notice ?? now;
     const reportSeen = seenMap.report ?? now;
-    // 出欠・予定編集の通知は保護者(一般)には出さない。
-    const watchSchedule = isStaffRole(role);
 
-    const [
-      { count: noticeCount },
-      { count: reportCount },
-      unseenSchedules,
-      unseenPlayerNotes,
-      unseenPlayerAnalysis,
-      teamAnalysisUnseen,
-    ] = await Promise.all([
-      supabase
-        .from("notices")
-        .select("id", { count: "exact", head: true })
-        .gt("created_at", noticeSeen)
-        .neq("sender_id", userId),
-      supabase
-        .from("reports")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${reportSeen},updated_at.gt.${reportSeen}`)
-        .neq("author_id", userId),
-      watchSchedule ? computeUnseenScheduleIds(userId) : Promise.resolve(new Set<string>()),
-      computeUnseenPlayerNoteIds(userId),
-      computeUnseenPlayerAnalysisIds(userId),
-      computeTeamAnalysisUnseen(userId, teamId),
-    ]);
+    const [{ count: noticeCount }, { count: reportCount }, unseenPlayerNotes, unseenPlayerAnalysis, teamAnalysisUnseen] =
+      await Promise.all([
+        supabase
+          .from("notices")
+          .select("id", { count: "exact", head: true })
+          .gt("created_at", noticeSeen)
+          .neq("sender_id", userId),
+        supabase
+          .from("reports")
+          .select("id", { count: "exact", head: true })
+          .or(`created_at.gt.${reportSeen},updated_at.gt.${reportSeen}`)
+          .neq("author_id", userId),
+        computeUnseenPlayerNoteIds(userId),
+        computeUnseenPlayerAnalysisIds(userId),
+        computeTeamAnalysisUnseen(userId, teamId),
+      ]);
 
     setBadges({
       notice: (noticeCount ?? 0) > 0,
       report: (reportCount ?? 0) > 0,
-      schedule: unseenSchedules.size > 0,
       players: unseenPlayerNotes.size > 0,
       karte: unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen,
     });
-  }, [userId, role, teamId]);
+  }, [userId, teamId]);
 
   useEffect(() => {
     load();

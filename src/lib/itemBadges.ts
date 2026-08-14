@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 
 // タブ単位のtab_last_seen(tabBadges.ts)とは別に、一覧の中の「どの項目が新着か」を
 // 個別に判定するための仕組み。項目の種類ごとに1件、最後に見た日時を記録する。
-export type ItemType = "schedule" | "player_notes" | "player_analysis" | "team_analysis";
+export type ItemType = "player_notes" | "player_analysis" | "team_analysis";
 
 export async function markItemSeen(userId: string, itemType: ItemType, itemId: string) {
   const supabase = createClient();
@@ -26,24 +26,6 @@ async function loadSeenMap(userId: string, itemType: ItemType): Promise<Map<stri
 
 function isNewer(candidate: string, seenAt: string | undefined): boolean {
   return !seenAt || new Date(candidate) > new Date(seenAt);
-}
-
-// 予定は「予定自体の編集」と「他の人の出欠登録・変更」の両方を新着として扱う。
-export async function computeUnseenScheduleIds(userId: string): Promise<Set<string>> {
-  const supabase = createClient();
-  const [seenMap, { data: schedules }, { data: attendances }] = await Promise.all([
-    loadSeenMap(userId, "schedule"),
-    supabase.from("schedules").select("id, updated_at, created_by"),
-    supabase.from("attendances").select("schedule_id, updated_at, user_id"),
-  ]);
-  const unseen = new Set<string>();
-  (schedules ?? []).forEach((s) => {
-    if (s.created_by !== userId && isNewer(s.updated_at, seenMap.get(s.id))) unseen.add(s.id);
-  });
-  (attendances ?? []).forEach((a) => {
-    if (a.user_id !== userId && isNewer(a.updated_at, seenMap.get(a.schedule_id))) unseen.add(a.schedule_id);
-  });
-  return unseen;
 }
 
 export async function computeUnseenPlayerNoteIds(userId: string): Promise<Set<string>> {
