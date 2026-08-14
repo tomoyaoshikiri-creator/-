@@ -13,7 +13,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 py-5">
+    <nav className="hidden min-[700px]:flex flex-col w-[176px] flex-shrink-0 border-r border-line bg-white px-2.5 py-5">
       <div className="flex items-center gap-1.5 px-1.5 mb-6">
         {teamLogoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -31,7 +31,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
             <GuardedLink
               key={tab}
               href={href}
-              className={`flex items-center gap-2 px-2.5 py-2.5 rounded-[10px] text-[12px] font-bold ${
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-[10px] text-[12px] font-bold ${
                 isActive ? "bg-orange/10 text-orange" : "text-ink-soft"
               }`}
             >
