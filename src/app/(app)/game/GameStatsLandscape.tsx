@@ -42,21 +42,21 @@ function SquareChip({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex-none w-[90px] h-[103px] flex flex-col items-center justify-center rounded-2xl border font-bold ${
+      className={`flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-xl border font-bold ${
         active ? activeClass : "border-line bg-white text-ink"
       }`}
     >
       {showName && entrant.name && (
         <span
-          className={`w-full px-1 text-[11px] font-bold truncate text-center leading-none ${
+          className={`w-full px-1 text-[8.5px] font-bold truncate text-center leading-none ${
             active ? "text-white/85" : "text-ink-soft"
           }`}
         >
           {entrant.name}
         </span>
       )}
-      <span className="font-mono text-[22px] leading-none mt-[3px]">{entrant.number ?? "-"}</span>
-      <span className={`font-mono text-[13px] mt-[3px] leading-none ${active ? "text-white/85" : "text-ink-soft"}`}>
+      <span className="font-mono text-[17px] leading-none mt-[2px]">{entrant.number ?? "-"}</span>
+      <span className={`font-mono text-[10px] mt-[2px] leading-none ${active ? "text-white/85" : "text-ink-soft"}`}>
         {pts}pts
       </span>
     </button>
@@ -322,7 +322,7 @@ export function GameStatsLandscape({
           <button
             type="button"
             onClick={onOpenOwnMemberChange}
-            className="mt-2 w-[90px] py-2 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[11px]"
+            className="mt-2 w-[68px] py-1.5 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[10px]"
           >
             ⇄ 交代
           </button>
@@ -333,7 +333,7 @@ export function GameStatsLandscape({
             type="button"
             disabled={!lastEntry}
             onClick={handleUndo}
-            className={`w-full mb-2 py-2 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[13px] ${
+            className={`w-full mb-2 py-1.5 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[12px] ${
               lastEntry ? "" : "opacity-40"
             }`}
           >
@@ -341,7 +341,7 @@ export function GameStatsLandscape({
           </button>
           <div
             className="grid grid-cols-2 gap-1.5 w-full"
-            style={{ gridAutoRows: "103px" }}
+            style={{ gridAutoRows: "78px" }}
           >
             {GRID_CELLS.map((cell) => {
               if (cell.type === "ft") {
@@ -351,12 +351,12 @@ export function GameStatsLandscape({
                     type="button"
                     disabled={!selected}
                     onClick={() => setFtModalOpen(true)}
-                    className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-1 ${
+                    className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
                       selected ? "" : "opacity-45"
                     }`}
                   >
-                    <span className="text-[17px] font-bold">FT(フリースロー)</span>
-                    <span className="font-mono text-[27px] font-bold">
+                    <span className="text-[13px] font-bold">FT(フリースロー)</span>
+                    <span className="font-mono text-[20px] font-bold">
                       {selectedRow ? `${selectedRow.ft_made}/${selectedRow.ft_att}` : "-"}
                     </span>
                   </button>
@@ -370,12 +370,12 @@ export function GameStatsLandscape({
                   type="button"
                   disabled={!selected}
                   onClick={() => handleTap(event)}
-                  className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-1 ${
+                  className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
                     selected ? "" : "opacity-45"
                   }`}
                 >
-                  <span className="text-[17px] font-bold">{label}</span>
-                  <span className="font-mono text-[27px] font-bold">{count ?? "-"}</span>
+                  <span className="text-[13px] font-bold">{label}</span>
+                  <span className="font-mono text-[20px] font-bold">{count ?? "-"}</span>
                 </button>
               );
             })}
@@ -400,7 +400,7 @@ export function GameStatsLandscape({
           <button
             type="button"
             onClick={onOpenOpponentMemberChange}
-            className="mt-2 w-[90px] py-2 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[11px]"
+            className="mt-2 w-[68px] py-1.5 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[10px]"
           >
             ⇄ 交代
           </button>
