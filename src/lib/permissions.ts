@@ -79,6 +79,11 @@ export function canRecordGames(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// 出欠登録の新着通知バッジなど、保護者(一般)には出さず運営以上にだけ見せたい判定に使う。
+export function isStaffRole(role: Role): boolean {
+  return role === "運営" || role === "指導者" || role === "管理者";
+}
+
 export function canWriteSchedule(role: Role): boolean {
   return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }

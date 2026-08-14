@@ -11,8 +11,9 @@ import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
-import { canWriteSchedule } from "@/lib/permissions";
+import { canWriteSchedule, isStaffRole } from "@/lib/permissions";
 import { playerFullName, todayDateStr } from "@/lib/format";
+import { markTabSeen } from "@/lib/tabBadges";
 import type { Attendance, Schedule } from "@/lib/database.types";
 import type { Birthday } from "./CalendarView";
 import { ScheduleCard } from "./ScheduleCard";
@@ -56,6 +57,10 @@ export default function SchedulePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (isStaffRole(role)) markTabSeen(userId, "attendance");
+  }, [userId, role]);
 
   const today = todayDateStr();
   const upcoming = useMemo(() => schedules.filter((s) => s.date >= today), [schedules, today]);

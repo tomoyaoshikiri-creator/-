@@ -10,7 +10,7 @@ import { TabBar } from "@/components/TabBar";
 // バッジ判定のクエリをそれぞれで発行すると二重になる。ここで1回だけ計算して両方に渡す。
 export function AppNav({ role, children }: { role: Role; children: React.ReactNode }) {
   const { userId } = useSession();
-  const badges = useTabBadges(userId);
+  const badges = useTabBadges(userId, role);
 
   return (
     <>
