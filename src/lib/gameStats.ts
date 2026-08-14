@@ -23,8 +23,8 @@ export interface StatTotals {
 }
 
 export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
-  { event: "fg_make", label: "2P IN" },
-  { event: "fg_miss", label: "2P MISS" },
+  { event: "fg_make", label: "2P in" },
+  { event: "fg_miss", label: "2P miss" },
   { event: "ft_make", label: "FT成功" },
   { event: "ft_miss", label: "FT失敗" },
   { event: "ast", label: "アシスト" },
