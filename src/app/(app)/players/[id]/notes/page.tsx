@@ -15,6 +15,7 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
+import { markTabSeen } from "@/lib/tabBadges";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
 
 export default function PlayerNotesPage() {
@@ -119,6 +120,10 @@ export default function PlayerNotesPage() {
   }, [load]);
 
   useEffect(() => {
+    markTabSeen(userId, "player_notes");
+  }, [userId]);
+
+  useEffect(() => {
     if (!canManagePlayers(role)) router.replace("/players");
   }, [role, router]);
 
@@ -160,7 +165,7 @@ export default function PlayerNotesPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from("player_notes")
-      .update({ body: editNoteBody.trim() })
+      .update({ body: editNoteBody.trim(), updated_at: new Date().toISOString() })
       .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {

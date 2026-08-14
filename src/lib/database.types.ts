@@ -323,6 +323,7 @@ export interface Database {
           author_id: string | null;
           body: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -333,6 +334,7 @@ export interface Database {
         };
         Update: Partial<{
           body: string;
+          updated_at: string;
         }>;
         Relationships: [];
       };
@@ -751,6 +753,22 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      tab_last_seen: {
+        Row: {
+          user_id: string;
+          tab: string;
+          seen_at: string;
+        };
+        Insert: {
+          user_id: string;
+          tab: string;
+          seen_at?: string;
+        };
+        Update: Partial<{
+          seen_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -900,6 +918,7 @@ export type PlayerAnalysisNote = Database["public"]["Tables"]["player_analysis_n
 export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analysis_note_reactions"]["Row"];
 export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];
+export type TabLastSeen = Database["public"]["Tables"]["tab_last_seen"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];

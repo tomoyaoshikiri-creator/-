@@ -2,12 +2,12 @@
 
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { TAB_LABELS, tabHrefForRole, tabsForRole } from "@/lib/permissions";
+import { TAB_LABELS, tabHrefForRole, tabsForRole, type TabKey } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 import { useSession } from "@/lib/session-context";
 import { GuardedLink } from "@/components/GuardedLink";
 
-export function Sidebar({ role }: { role: Role }) {
+export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
   const { teamName, teamLogoUrl } = useSession();
   const tabs = tabsForRole(role);
@@ -35,7 +35,12 @@ export function Sidebar({ role }: { role: Role }) {
                 isActive ? "bg-orange/10 text-orange" : "text-ink-soft"
               }`}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="relative inline-flex flex-shrink-0">
+                <Icon className="w-4 h-4" />
+                {badges[tab] && (
+                  <span className="absolute -top-0.5 -right-0.5 w-[6px] h-[6px] rounded-full bg-danger border border-white" />
+                )}
+              </span>
               {TAB_LABELS[tab]}
             </GuardedLink>
           );

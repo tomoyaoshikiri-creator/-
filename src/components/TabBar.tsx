@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { TAB_LABELS, tabHrefForRole, tabsForRole } from "@/lib/permissions";
+import { TAB_LABELS, tabHrefForRole, tabsForRole, type TabKey } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 import { GuardedLink } from "@/components/GuardedLink";
 
-export function TabBar({ role }: { role: Role }) {
+export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
   const tabs = tabsForRole(role);
   // 管理者はタブ数が8個と最も多く、フルディスプレイのiPhoneでは端の項目が
@@ -31,7 +31,12 @@ export function TabBar({ role }: { role: Role }) {
               isActive ? "text-orange font-bold" : "text-ink-soft"
             }`}
           >
-            <Icon className="w-[19px] h-[19px]" />
+            <span className="relative inline-flex">
+              <Icon className="w-[19px] h-[19px]" />
+              {badges[tab] && (
+                <span className="absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full bg-danger border border-white" />
+              )}
+            </span>
             <span className="whitespace-nowrap">{TAB_LABELS[tab]}</span>
           </GuardedLink>
         );

@@ -12,6 +12,7 @@ import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
+import { markTabSeen } from "@/lib/tabBadges";
 import { formatDateLabel } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
@@ -59,6 +60,10 @@ export default function NoticePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    markTabSeen(userId, "notice");
+  }, [userId]);
 
   async function loadReactions() {
     const noticeIds = notices.map((n) => n.id);
