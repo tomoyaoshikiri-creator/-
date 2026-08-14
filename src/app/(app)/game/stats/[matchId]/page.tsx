@@ -697,7 +697,9 @@ export default function GameStatsPage() {
             type="button"
             onClick={handleResetStats}
             disabled={resetting}
-            className="w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white"
+            className={`w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white ${
+              resetConfirm ? "" : "opacity-50"
+            }`}
             style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
           >
             {resetting
