@@ -62,7 +62,19 @@ function AttendanceGroup({
               >
                 <div className="flex items-center justify-between">
                   <div className="font-bold text-[13px]">{r.name}</div>
-                  <Pill tone={status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending"}>
+                  <Pill
+                    tone={
+                      status === "出席"
+                        ? "ok"
+                        : status === "欠席"
+                          ? "absent"
+                          : status === "遅刻早退"
+                            ? "late"
+                            : status === "見学"
+                              ? "watch"
+                              : "pending"
+                    }
+                  >
                     {status ?? "未回答"}
                   </Pill>
                 </div>
@@ -194,7 +206,9 @@ export function AttendanceRosterModal({
   const allRows = [...playerRows, ...staffRows, ...otherRows];
   const attendingCount = allRows.filter((r) => r.attendance?.status === "出席").length;
   const absentCount = allRows.filter((r) => r.attendance?.status === "欠席").length;
-  const noResponseCount = allRows.length - attendingCount - absentCount;
+  const lateCount = allRows.filter((r) => r.attendance?.status === "遅刻早退").length;
+  const watchCount = allRows.filter((r) => r.attendance?.status === "見学").length;
+  const noResponseCount = allRows.length - attendingCount - absentCount - lateCount - watchCount;
   const totalAccompany = allRows.reduce(
     (sum, r) => sum + (r.attendance?.accompany === "あり" ? (r.attendance.accompany_count ?? 0) : 0),
     0,
@@ -218,6 +232,16 @@ export function AttendanceRosterModal({
             <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-danger/10 text-danger">
               欠席 {absentCount}
             </span>
+            {lateCount > 0 && (
+              <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky/10 text-sky">
+                遅刻早退 {lateCount}
+              </span>
+            )}
+            {watchCount > 0 && (
+              <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-ink-soft/10 text-ink-soft">
+                見学 {watchCount}
+              </span>
+            )}
             <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-orange/10 text-orange">
               未回答 {noResponseCount}
             </span>

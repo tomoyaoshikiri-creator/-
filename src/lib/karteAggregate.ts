@@ -389,9 +389,9 @@ function formatPlayerKarteBody(params: PlayerKarteBodyParams): string[] {
   if (!anyTest) lines.push("記録なし");
   lines.push("");
 
-  // 「このワークアウトをこれだけこなした」を出欠(status=出席)に基づいて把握できるように、
-  // 出席した練習に紐づく実施メニューだけをテーマごとに集計する。
-  lines.push(`■ 実施したワークアウト(出席した練習: ${attendedPracticeCount}回)`);
+  // 「このワークアウトをこれだけこなした」を出欠(出席・遅刻早退。見学・欠席は除く)に基づいて
+  // 把握できるように、出席・遅刻早退した練習に紐づく実施メニューだけをテーマごとに集計する。
+  lines.push(`■ 実施したワークアウト(出席・遅刻早退した練習: ${attendedPracticeCount}回)`);
   if (workoutTallies.length === 0) {
     lines.push("記録なし");
   } else {

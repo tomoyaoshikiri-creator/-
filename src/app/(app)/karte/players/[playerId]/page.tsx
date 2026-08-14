@@ -118,7 +118,11 @@ export default function KartePlayerPage() {
           .eq("player_id", params.playerId)
           .order("measured_on", { ascending: false })
           .limit(6),
-        supabase.from("attendances").select("schedule_id").eq("player_id", params.playerId).eq("status", "出席"),
+        supabase
+          .from("attendances")
+          .select("schedule_id")
+          .eq("player_id", params.playerId)
+          .in("status", ["出席", "遅刻早退"]),
         supabase
           .from("player_analysis_notes")
           .select("*")
@@ -153,7 +157,7 @@ export default function KartePlayerPage() {
       setNoteReactions([]);
     }
 
-    // 出席(status=出席)した予定のうち練習だけに絞り、その練習に紐づく実施メニューを集計する。
+    // 出席・遅刻早退した予定(見学・欠席は除く)のうち練習だけに絞り、その練習に紐づく実施メニューを集計する。
     // 「このワークアウトをこれだけこなした」を、出欠に基づいて把握できるようにするため。
     const attendedScheduleIds = Array.from(new Set((attendanceRows ?? []).map((a) => a.schedule_id)));
     let practices: { id: string; date: string }[] = [];

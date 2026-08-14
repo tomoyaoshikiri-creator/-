@@ -129,7 +129,7 @@ export function AttendanceEntryForm({
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
         ) : (
           <>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <SegButton
                 variant="small"
                 active={status === "出席"}
@@ -150,6 +150,30 @@ export function AttendanceEntryForm({
               >
                 欠席
               </SegButton>
+              {!isGame && (
+                <>
+                  <SegButton
+                    variant="small"
+                    active={status === "遅刻早退"}
+                    onClick={() => {
+                      setStatus("遅刻早退");
+                      setRegistered(false);
+                    }}
+                  >
+                    遅刻早退
+                  </SegButton>
+                  <SegButton
+                    variant="small"
+                    active={status === "見学"}
+                    onClick={() => {
+                      setStatus("見学");
+                      setRegistered(false);
+                    }}
+                  >
+                    見学
+                  </SegButton>
+                </>
+              )}
             </div>
 
             {isGame && (

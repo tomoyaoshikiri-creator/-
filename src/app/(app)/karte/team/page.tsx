@@ -189,7 +189,11 @@ export default function KarteTeamPage() {
       if (practiceIds.length > 0) {
         const [{ data: m }, { data: a }] = await Promise.all([
           supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
-          supabase.from("attendances").select("schedule_id, player_id").in("schedule_id", practiceIds).eq("status", "出席"),
+          supabase
+            .from("attendances")
+            .select("schedule_id, player_id")
+            .in("schedule_id", practiceIds)
+            .in("status", ["出席", "遅刻早退"]),
         ]);
         menus = m ?? [];
         attendanceRows = a ?? [];

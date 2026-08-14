@@ -7,7 +7,8 @@ export type ScheduleType = "practice" | "game" | "event";
 // 種別が"game"の予定にのみ意味を持つ区分。試合記録・試合結果一覧の絞り込みにも使う。
 export type GameCategory = "練習試合" | "公式戦";
 export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
-export type AttendanceStatus = "出席" | "欠席";
+// 練習は4択(出席・欠席・遅刻早退・見学)、試合は画面上は出席・欠席の2択のみ(UI側で制御)。
+export type AttendanceStatus = "出席" | "欠席" | "遅刻早退" | "見学";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
 export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";

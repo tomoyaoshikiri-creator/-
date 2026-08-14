@@ -114,7 +114,7 @@ export default function KartePlayersPage() {
           .select("schedule_id, player_id")
           .in("schedule_id", practiceIds)
           .in("player_id", activePlayerIds)
-          .eq("status", "出席"),
+          .in("status", ["出席", "遅刻早退"]),
       ]);
       menus = m ?? [];
       attendanceRows = a ?? [];

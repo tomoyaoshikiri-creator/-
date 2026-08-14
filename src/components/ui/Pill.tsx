@@ -4,7 +4,7 @@ export function Pill({
   tone,
   children,
 }: {
-  tone: "ok" | "pending" | "absent";
+  tone: "ok" | "pending" | "absent" | "late" | "watch";
   children: React.ReactNode;
 }) {
   const cls =
@@ -12,7 +12,11 @@ export function Pill({
       ? "bg-green/10 text-green"
       : tone === "absent"
         ? "bg-danger/10 text-danger"
-        : "bg-orange/10 text-orange";
+        : tone === "late"
+          ? "bg-sky/10 text-sky"
+          : tone === "watch"
+            ? "bg-ink-soft/10 text-ink-soft"
+            : "bg-orange/10 text-orange";
   return (
     <span className={`font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg ${cls}`}>
       {children}

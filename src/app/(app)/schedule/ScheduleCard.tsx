@@ -13,7 +13,16 @@ export function ScheduleCard({
   attendance?: Attendance;
 }) {
   const status = attendance?.status ?? null;
-  const pillTone = status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending";
+  const pillTone =
+    status === "出席"
+      ? "ok"
+      : status === "欠席"
+        ? "absent"
+        : status === "遅刻早退"
+          ? "late"
+          : status === "見学"
+            ? "watch"
+            : "pending";
   const pillLabel = status ?? "未回答";
 
   return (
