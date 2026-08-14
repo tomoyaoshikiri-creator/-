@@ -26,12 +26,12 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 bg-navy/50 flex items-end z-40"
+      className="fixed inset-0 bg-navy/50 flex items-end justify-center px-3 z-40"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className="bg-white w-full max-w-[480px] mx-auto rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
+      <div className="bg-white w-full max-w-[420px] rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
         <div className="font-display font-extrabold text-lg text-navy mb-3">{title}</div>
         {children}
       </div>
