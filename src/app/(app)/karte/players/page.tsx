@@ -14,6 +14,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import {
   buildBulkKarteAnalysisText,
   computeSeasonAverages,
@@ -29,14 +30,17 @@ interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
 
-function PlayerRow({ player }: { player: Player }) {
+function PlayerRow({ player, hasUnseenAnalysis }: { player: Player; hasUnseenAnalysis: boolean }) {
   return (
     <Link
       href={`/karte/players/${player.id}`}
       className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
     >
       <NumChip num={player.number ?? "-"} />
-      <div className="flex-1 min-w-0 font-bold text-[13.5px]">{playerFullName(player)}</div>
+      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+        {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+        <span className="font-bold text-[13.5px]">{playerFullName(player)}</span>
+      </div>
       <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </Link>
   );
@@ -44,10 +48,11 @@ function PlayerRow({ player }: { player: Player }) {
 
 export default function KartePlayersPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
@@ -62,6 +67,10 @@ export default function KartePlayersPage() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
+  }, [userId]);
 
   useEffect(() => {
     if (!canViewKarte(role)) router.replace("/schedule");
@@ -197,7 +206,9 @@ export default function KartePlayersPage() {
         ) : activeList.length === 0 ? (
           <EmptyState>選手がいません</EmptyState>
         ) : (
-          activeList.map((p) => <PlayerRow key={p.id} player={p} />)
+          activeList.map((p) => (
+            <PlayerRow key={p.id} player={p} hasUnseenAnalysis={unseenAnalysisIds.has(p.id)} />
+          ))
         )}
       </Card>
 

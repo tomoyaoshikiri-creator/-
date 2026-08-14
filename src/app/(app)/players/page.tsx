@@ -14,6 +14,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { canAccessTab, canManagePlayers } from "@/lib/permissions";
 import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
+import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
@@ -22,11 +23,13 @@ function PlayerRow({
   noteCount,
   showNotes,
   selectable,
+  hasUnseenNotes,
 }: {
   player: Player;
   noteCount: number;
   showNotes: boolean;
   selectable: boolean;
+  hasUnseenNotes: boolean;
 }) {
   const router = useRouter();
   const isObog = player.status === "OB・OG";
@@ -50,11 +53,14 @@ function PlayerRow({
           <Link
             href={`/players/${player.id}/notes`}
             onClick={(e) => e.stopPropagation()}
-            className={`flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+            className={`relative flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
               hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
             }`}
           >
             {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
+            {hasUnseenNotes && (
+              <span className="absolute -top-1 -right-1 w-[7px] h-[7px] rounded-full bg-danger border border-white" />
+            )}
           </Link>
         )}
       </div>
@@ -70,6 +76,7 @@ export default function PlayersPage() {
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [unseenNoteIds, setUnseenNoteIds] = useState<Set<string>>(new Set());
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -100,6 +107,11 @@ export default function PlayersPage() {
       setOwnPlayerIds(new Set((pg ?? []).map((g) => g.player_id)));
     } else {
       setOwnPlayerIds(new Set());
+    }
+    if (list.length > 0 && isStaff) {
+      computeUnseenPlayerNoteIds(userId).then(setUnseenNoteIds);
+    } else {
+      setUnseenNoteIds(new Set());
     }
     setLoading(false);
   }, [isStaff, userId]);
@@ -182,6 +194,7 @@ export default function PlayersPage() {
               noteCount={noteCounts[p.id] ?? 0}
               showNotes={isStaff}
               selectable={isStaff || ownPlayerIds.has(p.id)}
+              hasUnseenNotes={unseenNoteIds.has(p.id)}
             />
           ))
         )}

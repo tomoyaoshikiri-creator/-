@@ -4,22 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isStaffRole, type TabKey } from "@/lib/permissions";
 import type { Role } from "@/lib/database.types";
+import {
+  computeTeamAnalysisUnseen,
+  computeUnseenPlayerAnalysisIds,
+  computeUnseenPlayerNoteIds,
+  computeUnseenScheduleIds,
+} from "@/lib/itemBadges";
 
-// タブの新着通知(赤丸)は、個別のメモ・お知らせ単位の既読管理はせず、
-// 「そのタブを最後に開いた日時」より新しい他人の投稿・編集があるかどうかだけを見る。
-export type BadgeTab = "notice" | "player_notes" | "attendance" | "report" | "analysis_notes";
+// タブアイコンの新着通知(赤丸)。
+// お知らせ・日報は一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
+// (tab_last_seen)との比較。予定・選手メモ・分析フィードバックは一覧の行ごとに新着かどうかを
+// 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
+export type BadgeTab = "notice" | "report";
 
-const BADGE_TO_TAB: Record<BadgeTab, TabKey> = {
-  notice: "notice",
-  player_notes: "players",
-  attendance: "schedule",
-  report: "report",
-  analysis_notes: "karte",
-};
-
-const ALL_BADGE_TABS: BadgeTab[] = ["notice", "player_notes", "attendance", "report", "analysis_notes"];
-
-export function useTabBadges(userId: string, role: Role): Partial<Record<TabKey, boolean>> {
+export function useTabBadges(userId: string, role: Role, teamId: string): Partial<Record<TabKey, boolean>> {
   const [badges, setBadges] = useState<Partial<Record<TabKey, boolean>>>({});
 
   const load = useCallback(async () => {
@@ -27,25 +25,22 @@ export function useTabBadges(userId: string, role: Role): Partial<Record<TabKey,
     const { data: seenRows } = await supabase.from("tab_last_seen").select("*").eq("user_id", userId);
     const seenMap: Partial<Record<BadgeTab, string>> = {};
     (seenRows ?? []).forEach((r) => {
-      if ((ALL_BADGE_TABS as string[]).includes(r.tab)) seenMap[r.tab as BadgeTab] = r.seen_at;
+      if (r.tab === "notice" || r.tab === "report") seenMap[r.tab] = r.seen_at;
     });
     // 一度もそのタブを開いたことが無い場合は、今より前の投稿を新着扱いにしないよう現在時刻を基準にする。
     const now = new Date().toISOString();
     const noticeSeen = seenMap.notice ?? now;
-    const playerNotesSeen = seenMap.player_notes ?? now;
-    const attendanceSeen = seenMap.attendance ?? now;
     const reportSeen = seenMap.report ?? now;
-    const analysisNotesSeen = seenMap.analysis_notes ?? now;
-    // 出欠登録の通知は保護者(一般)には出さない。
-    const watchAttendance = isStaffRole(role);
+    // 出欠・予定編集の通知は保護者(一般)には出さない。
+    const watchSchedule = isStaffRole(role);
 
     const [
       { count: noticeCount },
-      { count: noteCount },
-      attendanceCount,
       { count: reportCount },
-      { count: teamAnalysisCount },
-      { count: playerAnalysisCount },
+      unseenSchedules,
+      unseenPlayerNotes,
+      unseenPlayerAnalysis,
+      teamAnalysisUnseen,
     ] = await Promise.all([
       supabase
         .from("notices")
@@ -53,43 +48,24 @@ export function useTabBadges(userId: string, role: Role): Partial<Record<TabKey,
         .gt("created_at", noticeSeen)
         .neq("sender_id", userId),
       supabase
-        .from("player_notes")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${playerNotesSeen},updated_at.gt.${playerNotesSeen}`)
-        .neq("author_id", userId),
-      watchAttendance
-        ? supabase
-            .from("attendances")
-            .select("id", { count: "exact", head: true })
-            .gt("updated_at", attendanceSeen)
-            .neq("user_id", userId)
-            .then((res) => res.count)
-        : Promise.resolve(0),
-      supabase
         .from("reports")
         .select("id", { count: "exact", head: true })
         .or(`created_at.gt.${reportSeen},updated_at.gt.${reportSeen}`)
         .neq("author_id", userId),
-      supabase
-        .from("team_analysis_notes")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${analysisNotesSeen},updated_at.gt.${analysisNotesSeen}`)
-        .neq("author_id", userId),
-      supabase
-        .from("player_analysis_notes")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${analysisNotesSeen},updated_at.gt.${analysisNotesSeen}`)
-        .neq("author_id", userId),
+      watchSchedule ? computeUnseenScheduleIds(userId) : Promise.resolve(new Set<string>()),
+      computeUnseenPlayerNoteIds(userId),
+      computeUnseenPlayerAnalysisIds(userId),
+      computeTeamAnalysisUnseen(userId, teamId),
     ]);
 
     setBadges({
-      [BADGE_TO_TAB.notice]: (noticeCount ?? 0) > 0,
-      [BADGE_TO_TAB.player_notes]: (noteCount ?? 0) > 0,
-      [BADGE_TO_TAB.attendance]: (attendanceCount ?? 0) > 0,
-      [BADGE_TO_TAB.report]: (reportCount ?? 0) > 0,
-      [BADGE_TO_TAB.analysis_notes]: (teamAnalysisCount ?? 0) > 0 || (playerAnalysisCount ?? 0) > 0,
+      notice: (noticeCount ?? 0) > 0,
+      report: (reportCount ?? 0) > 0,
+      schedule: unseenSchedules.size > 0,
+      players: unseenPlayerNotes.size > 0,
+      karte: unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen,
     });
-  }, [userId, role]);
+  }, [userId, role, teamId]);
 
   useEffect(() => {
     load();
@@ -98,7 +74,7 @@ export function useTabBadges(userId: string, role: Role): Partial<Record<TabKey,
   return badges;
 }
 
-// タブを開いたタイミングで呼び、そのタブの「最後に開いた日時」を今に更新する。
+// タブを開いたタイミングで呼び、そのタブの「最後に開いた日時」を今に更新する(notice/reportのみ)。
 export async function markTabSeen(userId: string, tab: BadgeTab) {
   const supabase = createClient();
   await supabase.from("tab_last_seen").upsert(

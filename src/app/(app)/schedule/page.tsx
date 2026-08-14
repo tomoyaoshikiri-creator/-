@@ -13,7 +13,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { canWriteSchedule, isStaffRole } from "@/lib/permissions";
 import { playerFullName, todayDateStr } from "@/lib/format";
-import { markTabSeen } from "@/lib/tabBadges";
+import { computeUnseenScheduleIds } from "@/lib/itemBadges";
 import type { Attendance, Schedule } from "@/lib/database.types";
 import type { Birthday } from "./CalendarView";
 import { ScheduleCard } from "./ScheduleCard";
@@ -31,6 +31,7 @@ export default function SchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | null>(null);
+  const [unseenScheduleIds, setUnseenScheduleIds] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -58,9 +59,12 @@ export default function SchedulePage() {
     load();
   }, [load]);
 
+  // 一覧の中で「どの予定が新着か」を行ごとに示すため、タブを開いただけでは既読にしない
+  // (個別の予定を開いたときにmarkItemSeenする。詳細はschedule/[id]/page.tsx)。
   useEffect(() => {
-    if (isStaffRole(role)) markTabSeen(userId, "attendance");
-  }, [userId, role]);
+    if (!isStaffRole(role)) return;
+    computeUnseenScheduleIds(userId).then(setUnseenScheduleIds);
+  }, [userId, role, schedules]);
 
   const today = todayDateStr();
   const upcoming = useMemo(() => schedules.filter((s) => s.date >= today), [schedules, today]);
@@ -119,7 +123,9 @@ export default function SchedulePage() {
           ) : filtered.length === 0 ? (
             <EmptyState>{query ? "該当する予定がありません" : "予定がありません"}</EmptyState>
           ) : (
-            filtered.map((s) => <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />)
+            filtered.map((s) => (
+              <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} hasUpdate={unseenScheduleIds.has(s.id)} />
+            ))
           )}
           {!loading && !query && hasPast && (
             <Link

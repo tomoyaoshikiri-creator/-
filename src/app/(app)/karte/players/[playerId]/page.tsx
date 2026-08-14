@@ -18,7 +18,7 @@ import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markTabSeen } from "@/lib/tabBadges";
+import { markItemSeen } from "@/lib/itemBadges";
 import {
   buildKarteAnalysisText,
   computeSeasonAverages,
@@ -182,8 +182,8 @@ export default function KartePlayerPage() {
   }, [load]);
 
   useEffect(() => {
-    markTabSeen(userId, "analysis_notes");
-  }, [userId]);
+    markItemSeen(userId, "player_analysis", params.playerId);
+  }, [userId, params.playerId]);
 
   const seasonLines = statLines
     .filter((l) => {

@@ -8,9 +8,11 @@ import type { Attendance, Schedule } from "@/lib/database.types";
 export function ScheduleCard({
   schedule,
   attendance,
+  hasUpdate = false,
 }: {
   schedule: Schedule;
   attendance?: Attendance;
+  hasUpdate?: boolean;
 }) {
   const status = attendance?.status ?? null;
   const pillTone = status === "出席" ? "ok" : status === "欠席" ? "absent" : "pending";
@@ -21,9 +23,12 @@ export function ScheduleCard({
       <Card className="cursor-pointer">
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-bold text-[14.5px]">
-              <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
-              {schedule.title}
+            <div className="font-bold text-[14.5px] flex items-center gap-1.5">
+              {hasUpdate && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+              <span>
+                <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
+                {schedule.title}
+              </span>
             </div>
             <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(schedule)}</div>
             {schedule.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{schedule.toban}</div>}

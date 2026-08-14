@@ -12,7 +12,8 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { isTargetEligible, playerFullName, scheduleMeta, sortPlayers } from "@/lib/format";
-import { canWriteSchedule } from "@/lib/permissions";
+import { canWriteSchedule, isStaffRole } from "@/lib/permissions";
+import { markItemSeen } from "@/lib/itemBadges";
 import type { Player, Schedule } from "@/lib/database.types";
 import { AttendanceEntryForm } from "../AttendanceEntryForm";
 import { AttendanceRosterModal } from "../AttendanceRosterModal";
@@ -130,6 +131,10 @@ export default function ScheduleDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (isStaffRole(role)) markItemSeen(userId, "schedule", params.id);
+  }, [userId, role, params.id]);
 
   const isGame = schedule?.type === "game";
 

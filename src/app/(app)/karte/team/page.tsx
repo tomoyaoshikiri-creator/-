@@ -16,7 +16,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markTabSeen } from "@/lib/tabBadges";
+import { markItemSeen } from "@/lib/itemBadges";
 import {
   buildTeamKarteAnalysisText,
   computeSeasonAverages,
@@ -139,8 +139,8 @@ export default function KarteTeamPage() {
   }, [loadNotes]);
 
   useEffect(() => {
-    markTabSeen(userId, "analysis_notes");
-  }, [userId]);
+    markItemSeen(userId, "team_analysis", teamId);
+  }, [userId, teamId]);
 
   useEffect(() => {
     if (!analysisOpen) return;

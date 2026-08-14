@@ -9,8 +9,8 @@ import { TabBar } from "@/components/TabBar";
 // SidebarとTabBarは画面幅によってCSSで出し分けているだけで両方ともDOMに存在するため、
 // バッジ判定のクエリをそれぞれで発行すると二重になる。ここで1回だけ計算して両方に渡す。
 export function AppNav({ role, children }: { role: Role; children: React.ReactNode }) {
-  const { userId } = useSession();
-  const badges = useTabBadges(userId, role);
+  const { userId, teamId } = useSession();
+  const badges = useTabBadges(userId, role, teamId);
 
   return (
     <>

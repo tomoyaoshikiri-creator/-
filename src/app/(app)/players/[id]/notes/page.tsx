@@ -15,7 +15,7 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markTabSeen } from "@/lib/tabBadges";
+import { markItemSeen } from "@/lib/itemBadges";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
 
 export default function PlayerNotesPage() {
@@ -120,8 +120,8 @@ export default function PlayerNotesPage() {
   }, [load]);
 
   useEffect(() => {
-    markTabSeen(userId, "player_notes");
-  }, [userId]);
+    markItemSeen(userId, "player_notes", params.id);
+  }, [userId, params.id]);
 
   useEffect(() => {
     if (!canManagePlayers(role)) router.replace("/players");

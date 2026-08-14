@@ -126,6 +126,7 @@ export interface Database {
           fiscal_year_override: number | null;
           created_by: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -142,7 +143,7 @@ export interface Database {
           fiscal_year_override?: number | null;
           created_by?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"]>;
+        Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"] & { updated_at: string }>;
         Relationships: [];
       };
       attendances: {
@@ -775,6 +776,24 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      item_last_seen: {
+        Row: {
+          user_id: string;
+          item_type: string;
+          item_id: string;
+          seen_at: string;
+        };
+        Insert: {
+          user_id: string;
+          item_type: string;
+          item_id: string;
+          seen_at?: string;
+        };
+        Update: Partial<{
+          seen_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -925,6 +944,7 @@ export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analys
 export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];
 export type TabLastSeen = Database["public"]["Tables"]["tab_last_seen"]["Row"];
+export type ItemLastSeen = Database["public"]["Tables"]["item_last_seen"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];
