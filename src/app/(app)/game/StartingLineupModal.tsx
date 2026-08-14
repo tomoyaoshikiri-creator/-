@@ -33,7 +33,7 @@ export function StartingLineupModal({
   onSaveOpponentStarters: (starters: string[]) => void;
 }) {
   return (
-    <Modal open={open} onClose={onClose} title="選手選択">
+    <Modal open={open} onClose={onClose} title="選手選択" maxWidthClass="max-w-[340px]">
       <LineupSection
         starters={starters}
         saving={savingStarters}

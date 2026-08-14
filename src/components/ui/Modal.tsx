@@ -7,11 +7,14 @@ export function Modal({
   onClose,
   title,
   children,
+  maxWidthClass = "max-w-[420px]",
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  // 選手選択モーダルなど、内容が短く狭い方が見やすい画面では狭いクラスを渡す。
+  maxWidthClass?: string;
 }) {
   // モーダルを閉じる操作(背景タップなど)はページ遷移を伴わないため<GuardedLink>では捕まえられない。
   // ここで直接、未保存の変更が無いか確認してから閉じる。
@@ -31,7 +34,7 @@ export function Modal({
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className="bg-white w-full max-w-[420px] rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
+      <div className={`bg-white w-full ${maxWidthClass} rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto`}>
         <div className="font-display font-extrabold text-lg text-navy mb-3">{title}</div>
         {children}
       </div>

@@ -26,7 +26,7 @@ export function MemberChangeModal({
   const checkedCount = options.filter((o) => o.checked).length;
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} maxWidthClass="max-w-[340px]">
       {options.length === 0 ? (
         <div className="text-xs text-ink-soft py-3">選手がいません</div>
       ) : (
