@@ -34,10 +34,10 @@ const GRID_CELLS: GridCell[] = [
   statCell("fg_miss"),
   statCell("ast"),
   { type: "ft" },
-  statCell("fouls"),
   statCell("blk"),
-  statCell("tov"),
+  statCell("fouls"),
   statCell("stl"),
+  statCell("tov"),
   statCell("reb_off"),
   statCell("reb_def"),
 ];
