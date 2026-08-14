@@ -178,23 +178,6 @@ export function applyStatEventLocally<T extends StatTotals>(row: T, event: StatE
   return next;
 }
 
-export function isStatEventAllowed<T extends StatTotals>(row: T, event: StatEvent, delta: number): boolean {
-  const next = applyStatEventLocally(row, event, delta);
-  return (
-    next.fg_made >= 0 &&
-    next.fg_att >= next.fg_made &&
-    next.ft_made >= 0 &&
-    next.ft_att >= next.ft_made &&
-    next.reb_off >= 0 &&
-    next.reb_def >= 0 &&
-    next.ast >= 0 &&
-    next.stl >= 0 &&
-    next.blk >= 0 &&
-    next.tov >= 0 &&
-    next.fouls >= 0
-  );
-}
-
 export function recordGameStat(
   supabase: SupabaseClient<Database>,
   matchId: string,

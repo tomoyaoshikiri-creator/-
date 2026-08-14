@@ -470,26 +470,6 @@ export default function GameStatsPage() {
     }
   }
 
-  // 「−」タップは新たに取消イベントを積み上げるのではなく、直近の該当タップそのものを削除する。
-  async function handleStatUndo(playerId: string, event: StatEvent) {
-    const target = statEvents.find((e) => e.player_id === playerId && e.event === event && e.delta > 0);
-    if (!target) {
-      toast("取り消せる記録が見つかりませんでした");
-      return;
-    }
-    await handleDeleteStatEvent(target.id);
-  }
-
-  async function handleOpponentStatUndo(opponentPlayerId: string, event: StatEvent) {
-    const target = opponentStatEvents.find(
-      (e) => e.opponent_player_id === opponentPlayerId && e.event === event && e.delta > 0,
-    );
-    if (!target) {
-      toast("取り消せる記録が見つかりませんでした");
-      return;
-    }
-    await handleDeleteOpponentStatEvent(target.id);
-  }
 
   async function handleChangeStatEventQuarter(eventId: string, newQuarter: number) {
     const supabase = createClient();
@@ -801,18 +781,21 @@ export default function GameStatsPage() {
 
           <div className="mt-4">
             <StatPad
+              quarter={quarter}
               ownEntrants={ownEntrants}
               ownStatLines={statLines}
+              ownStatEvents={statEvents}
               onOwnTap={handleStatTap}
-              onOwnUndo={handleStatUndo}
               onOwnFreeThrowTrip={handleFreeThrowTrip}
               onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
               opponentEntrants={opponentEntrants}
               opponentStatLines={opponentStatLines}
+              opponentStatEvents={opponentStatEvents}
               onOpponentTap={handleOpponentStatTap}
-              onOpponentUndo={handleOpponentStatUndo}
               onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
               onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
+              onDeleteStatEvent={handleDeleteStatEvent}
+              onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
             />
           </div>
 

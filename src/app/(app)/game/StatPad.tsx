@@ -3,13 +3,8 @@
 import { useEffect, useState } from "react";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FreeThrowModal } from "./FreeThrowModal";
-import {
-  STAT_BUTTONS,
-  statEventCount,
-  isStatEventAllowed,
-  type StatEvent,
-  type StatTotals,
-} from "@/lib/gameStats";
+import { STAT_BUTTONS, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
+import type { GameStatEvent, GameOpponentStatEvent } from "@/lib/database.types";
 
 export interface StatEntrant {
   id: string;
@@ -105,47 +100,47 @@ function ChipRow({
 }
 
 export function StatPad({
+  quarter,
   ownEntrants,
   ownStatLines,
+  ownStatEvents,
   onOwnTap,
-  onOwnUndo,
   onOwnFreeThrowTrip,
   onOpenOwnMemberChange,
   opponentEntrants,
   opponentStatLines,
+  opponentStatEvents,
   onOpponentTap,
-  onOpponentUndo,
   onOpponentFreeThrowTrip,
   onOpenOpponentMemberChange,
+  onDeleteStatEvent,
+  onDeleteOpponentStatEvent,
 }: {
+  quarter: number;
   ownEntrants: StatEntrant[];
   ownStatLines: Record<string, StatTotals>;
+  ownStatEvents: GameStatEvent[];
   onOwnTap: (entrantId: string, event: StatEvent) => void;
-  onOwnUndo: (entrantId: string, event: StatEvent) => void;
   onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
   onOpenOwnMemberChange: () => void;
   opponentEntrants: StatEntrant[];
   opponentStatLines: Record<string, StatTotals>;
+  opponentStatEvents: GameOpponentStatEvent[];
   onOpponentTap: (entrantId: string, event: StatEvent) => void;
-  onOpponentUndo: (entrantId: string, event: StatEvent) => void;
   onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
   onOpenOpponentMemberChange: () => void;
+  onDeleteStatEvent: (eventId: string) => Promise<void>;
+  onDeleteOpponentStatEvent: (eventId: string) => Promise<void>;
 }) {
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
 
+  // 選択中の選手がスタメン/途中出場から外れた場合だけ選択を解除する。
+  // タップのたびに次の選手を自動選択することはせず、毎回選び直してもらう。
   useEffect(() => {
-    if (selected) {
-      const list = selected.side === "own" ? ownEntrants : opponentEntrants;
-      if (list.some((e) => e.id === selected.id)) return;
-    }
-    if (ownEntrants.length > 0) {
-      setSelected({ side: "own", id: ownEntrants[0].id });
-    } else if (opponentEntrants.length > 0) {
-      setSelected({ side: "opponent", id: opponentEntrants[0].id });
-    } else {
-      setSelected(null);
-    }
+    if (!selected) return;
+    const list = selected.side === "own" ? ownEntrants : opponentEntrants;
+    if (!list.some((e) => e.id === selected.id)) setSelected(null);
   }, [ownEntrants, opponentEntrants, selected]);
 
   useEffect(() => {
@@ -157,14 +152,40 @@ export function StatPad({
   const statLines = selected?.side === "own" ? ownStatLines : opponentStatLines;
   const row = selectedEntrant ? statLines[selectedEntrant.id] : undefined;
   const onTap = selected?.side === "own" ? onOwnTap : onOpponentTap;
-  const onUndo = selected?.side === "own" ? onOwnUndo : onOpponentUndo;
   const onFreeThrowTrip = selected?.side === "own" ? onOwnFreeThrowTrip : onOpponentFreeThrowTrip;
+
+  function handleTap(event: StatEvent) {
+    if (!selectedEntrant) return;
+    onTap(selectedEntrant.id, event);
+    setSelected(null);
+  }
 
   function handleSaveFreeThrows(results: boolean[]) {
     if (!selectedEntrant) return;
     const makes = results.filter(Boolean).length;
     onFreeThrowTrip(selectedEntrant.id, makes, results.length);
     setFtModalOpen(false);
+    setSelected(null);
+  }
+
+  // 選手選択の有無にかかわらず、自チーム・相手チームを通じて直前に記録された1件を取り消す。
+  // 両イベント配列は作成日時の降順で読み込まれている前提で、それぞれの先頭同士を比較する。
+  const ownLast = ownStatEvents.find((e) => e.quarter === quarter);
+  const opponentLast = opponentStatEvents.find((e) => e.quarter === quarter);
+  const lastEntry: { side: Side; id: string } | null = !ownLast
+    ? opponentLast
+      ? { side: "opponent", id: opponentLast.id }
+      : null
+    : !opponentLast
+      ? { side: "own", id: ownLast.id }
+      : ownLast.created_at >= opponentLast.created_at
+        ? { side: "own", id: ownLast.id }
+        : { side: "opponent", id: opponentLast.id };
+
+  async function handleUndo() {
+    if (!lastEntry) return;
+    if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
+    else await onDeleteOpponentStatEvent(lastEntry.id);
   }
 
   return (
@@ -179,59 +200,61 @@ export function StatPad({
         onOpenMemberChange={onOpenOwnMemberChange}
       />
 
-      {!selectedEntrant ? (
+      {ownEntrants.length === 0 && opponentEntrants.length === 0 ? (
         <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
       ) : (
-        <Card className="mt-2">
-          <div className="grid grid-cols-2 gap-1.5">
-            {GRID_CELLS.map((cell) => {
-              if (cell.type === "ft") {
+        <>
+          <button
+            type="button"
+            disabled={!lastEntry}
+            onClick={handleUndo}
+            className={`w-full mt-2 py-2 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[12.5px] ${
+              lastEntry ? "" : "opacity-40"
+            }`}
+          >
+            取消
+          </button>
+          <Card className="mt-2">
+            <div className="grid grid-cols-2 gap-1.5">
+              {GRID_CELLS.map((cell) => {
+                if (cell.type === "ft") {
+                  return (
+                    <button
+                      key="ft"
+                      type="button"
+                      disabled={!selected}
+                      onClick={() => setFtModalOpen(true)}
+                      className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-[10px] border border-line bg-paper ${
+                        selected ? "" : "opacity-45"
+                      }`}
+                    >
+                      <div className="text-[12px] font-bold">FT(フリースロー)</div>
+                      <div className="font-mono text-[17px] font-bold">
+                        {row ? `${row.ft_made}/${row.ft_att}` : "-"}
+                      </div>
+                    </button>
+                  );
+                }
+                const { event, label } = cell;
+                const count = row ? statEventCount(row, event) : null;
                 return (
                   <button
-                    key="ft"
+                    key={event}
                     type="button"
-                    onClick={() => setFtModalOpen(true)}
-                    className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-line bg-paper"
+                    disabled={!selected}
+                    onClick={() => handleTap(event)}
+                    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-[10px] border border-line bg-paper ${
+                      selected ? "" : "opacity-45"
+                    }`}
                   >
-                    <div className="text-[11px] font-bold">FT(フリースロー)</div>
-                    <div className="font-mono text-[13px] font-bold">
-                      {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
-                    </div>
+                    <div className="text-[12px] font-bold">{label}</div>
+                    <div className="font-mono text-[17px] font-bold">{count ?? "-"}</div>
                   </button>
                 );
-              }
-              const { event, label } = cell;
-              const count = statEventCount(row, event);
-              const canMinus = row ? isStatEventAllowed(row, event, -1) : false;
-              return (
-                <div
-                  key={event}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-[10px] border border-line bg-paper"
-                >
-                  <button
-                    type="button"
-                    onClick={() => canMinus && onUndo(selectedEntrant.id, event)}
-                    disabled={!canMinus}
-                    className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
-                  >
-                    −
-                  </button>
-                  <div className="text-center">
-                    <div className="text-[11px] font-bold">{label}</div>
-                    <div className="font-mono text-[13px] font-bold">{count}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onTap(selectedEntrant.id, event)}
-                    className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
-                  >
-                    ＋
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+              })}
+            </div>
+          </Card>
+        </>
       )}
 
       <div className="mt-2">

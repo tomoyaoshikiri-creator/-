@@ -58,7 +58,7 @@ export function FreeThrowModal({
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="text-orange font-bold text-[13px] disabled:opacity-30"
+          className="text-orange font-bold text-[13px] border border-orange rounded-lg px-3 py-1 disabled:opacity-30 disabled:border-line disabled:text-ink-soft"
         >
           保存
         </button>
