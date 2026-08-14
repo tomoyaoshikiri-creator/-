@@ -229,6 +229,7 @@ export interface Database {
           date: string;
           body: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -240,6 +241,7 @@ export interface Database {
         Update: Partial<{
           date: string;
           body: string;
+          updated_at: string;
         }>;
         Relationships: [];
       };
@@ -682,6 +684,7 @@ export interface Database {
           author_id: string | null;
           body: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -691,6 +694,7 @@ export interface Database {
         };
         Update: Partial<{
           body: string;
+          updated_at: string;
         }>;
         Relationships: [];
       };
@@ -702,6 +706,7 @@ export interface Database {
           author_id: string | null;
           body: string;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -712,6 +717,7 @@ export interface Database {
         };
         Update: Partial<{
           body: string;
+          updated_at: string;
         }>;
         Relationships: [];
       };

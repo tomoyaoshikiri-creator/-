@@ -16,6 +16,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
+import { markTabSeen } from "@/lib/tabBadges";
 import {
   buildTeamKarteAnalysisText,
   computeSeasonAverages,
@@ -136,6 +137,10 @@ export default function KarteTeamPage() {
   useEffect(() => {
     loadNotes();
   }, [loadNotes]);
+
+  useEffect(() => {
+    markTabSeen(userId, "analysis_notes");
+  }, [userId]);
 
   useEffect(() => {
     if (!analysisOpen) return;
@@ -273,7 +278,10 @@ export default function KarteTeamPage() {
     }
     setSavingNoteEdit(true);
     const supabase = createClient();
-    const { error } = await supabase.from("team_analysis_notes").update({ body: editNoteBody.trim() }).eq("id", noteId);
+    const { error } = await supabase
+      .from("team_analysis_notes")
+      .update({ body: editNoteBody.trim(), updated_at: new Date().toISOString() })
+      .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);

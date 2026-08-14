@@ -13,6 +13,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
+import { markTabSeen } from "@/lib/tabBadges";
 import { formatFullDateLabel } from "@/lib/format";
 import type { Report, ReportReaction, ReactionType } from "@/lib/database.types";
 
@@ -104,6 +105,10 @@ export default function ReportPage() {
   }, [load]);
 
   useEffect(() => {
+    markTabSeen(userId, "report");
+  }, [userId]);
+
+  useEffect(() => {
     if (!canAccessTab(role, "report")) router.replace("/schedule");
   }, [role, router]);
 
@@ -180,7 +185,7 @@ export default function ReportPage() {
     const supabase = createClient();
     const { error } = await supabase
       .from("reports")
-      .update({ date: editDateValue, body: editBody.trim() })
+      .update({ date: editDateValue, body: editBody.trim(), updated_at: new Date().toISOString() })
       .eq("id", id);
     setSavingEdit(false);
     if (error) {

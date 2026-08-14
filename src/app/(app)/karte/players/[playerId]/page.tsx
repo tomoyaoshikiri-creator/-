@@ -18,6 +18,7 @@ import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
+import { markTabSeen } from "@/lib/tabBadges";
 import {
   buildKarteAnalysisText,
   computeSeasonAverages,
@@ -180,6 +181,10 @@ export default function KartePlayerPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    markTabSeen(userId, "analysis_notes");
+  }, [userId]);
+
   const seasonLines = statLines
     .filter((l) => {
       const date = l.game_matches?.schedules?.date;
@@ -300,7 +305,10 @@ export default function KartePlayerPage() {
     }
     setSavingNoteEdit(true);
     const supabase = createClient();
-    const { error } = await supabase.from("player_analysis_notes").update({ body: editNoteBody.trim() }).eq("id", noteId);
+    const { error } = await supabase
+      .from("player_analysis_notes")
+      .update({ body: editNoteBody.trim(), updated_at: new Date().toISOString() })
+      .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
