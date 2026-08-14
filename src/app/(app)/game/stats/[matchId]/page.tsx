@@ -11,11 +11,13 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
+import { GameStatsLandscape } from "../../GameStatsLandscape";
 import { OpponentRoster } from "../../OpponentRoster";
 import { StartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
 import { playerFullName, sortPlayers, sortOpponentPlayers } from "@/lib/format";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
   emptyStatLine,
   emptyOpponentStatLine,
@@ -69,6 +71,7 @@ export default function GameStatsPage() {
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const isLandscapeWide = useMediaQuery("(orientation: landscape) and (min-width: 900px)");
 
   useEffect(() => {
     (async () => {
@@ -658,6 +661,7 @@ export default function GameStatsPage() {
 
   return (
     <PageShell
+      wide={isLandscapeWide}
       header={
         <AppHeader
           title="スタッツ入力"
@@ -671,6 +675,81 @@ export default function GameStatsPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : !match ? (
         <EmptyState>試合が見つかりません</EmptyState>
+      ) : isLandscapeWide ? (
+        <>
+          <GameStatsLandscape
+            quarter={quarter}
+            onQuarterChange={setQuarter}
+            match={match}
+            schedule={schedule}
+            ownScore={liveTeamScore}
+            oppScore={liveOpponentScore}
+            ownStatEvents={statEvents}
+            opponentStatEvents={opponentStatEvents}
+            ownEntrants={ownEntrants}
+            ownStatLines={statLines}
+            opponentEntrants={opponentEntrants}
+            opponentStatLines={opponentStatLines}
+            onOwnTap={handleStatTap}
+            onOpponentTap={handleOpponentStatTap}
+            onOwnFreeThrowTrip={handleFreeThrowTrip}
+            onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
+            onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
+            onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
+            players={players}
+            opponentPlayers={opponentPlayers}
+            onDeleteStatEvent={handleDeleteStatEvent}
+            onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
+            resetConfirm={resetConfirm}
+            resetting={resetting}
+            onResetAll={handleResetStats}
+          />
+
+          <div ref={opponentRosterRef}>
+            <OpponentRoster
+              matchId={matchId}
+              teamId={teamId}
+              opponentPlayers={opponentPlayers}
+              onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setStartingLineupModalOpen(true)}
+            className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+          >
+            スターティングの編集
+          </button>
+
+          <MemberChangeModal
+            open={ownMemberModalOpen}
+            onClose={() => setOwnMemberModalOpen(false)}
+            title="選手選択"
+            options={ownMemberOptions}
+            onToggle={handleToggleOwnMember}
+          />
+          <MemberChangeModal
+            open={!ownLineupIncomplete && opponentMemberModalOpen}
+            onClose={() => setOpponentMemberModalOpen(false)}
+            title="選手選択(相手チーム)"
+            options={opponentMemberOptions}
+            onToggle={handleToggleOpponentMember}
+          />
+          <StartingLineupModal
+            open={startingLineupModalOpen}
+            onClose={() => setStartingLineupModalOpen(false)}
+            starters={starters}
+            savingStarters={savingStarters}
+            players={players}
+            attendanceStatus={attendanceStatus}
+            onSaveStarters={handleSaveStarters}
+            opponentPlayers={opponentPlayers}
+            opponentStarters={opponentStarters}
+            savingOpponentStarters={savingOpponentStarters}
+            onSaveOpponentStarters={handleSaveOpponentStarters}
+          />
+        </>
       ) : (
         <>
           <Card>

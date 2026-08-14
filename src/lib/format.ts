@@ -10,6 +10,11 @@ export function formatFullDateLabel(dateStr: string): string {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAYS[d.getDay()]})`;
 }
 
+export function formatSlashDateLabel(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
+}
+
 export function formatTodayLabel(): string {
   const d = new Date();
   return `${d.getMonth() + 1}/${d.getDate()}`;

@@ -22,14 +22,14 @@ type Side = "own" | "opponent";
 // 自チーム・相手チームで別々のスタッツパッドを持たせず、選手チップ(上=自チーム/下=相手チーム)で
 // スタッツボタンを挟み込み、1つのボタン列を両チーム共有にする。
 // タップされたチップ(どちらのチームか)に応じて、共有ボタンの加算先だけが切り替わる。
-type GridCell = { type: "ft" } | { type: "stat"; event: StatEvent; label: string };
+export type GridCell = { type: "ft" } | { type: "stat"; event: StatEvent; label: string };
 
 function statCell(event: StatEvent): GridCell {
   const label = STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
   return { type: "stat", event, label };
 }
 
-const GRID_CELLS: GridCell[] = [
+export const GRID_CELLS: GridCell[] = [
   statCell("fg_make"),
   statCell("fg_miss"),
   statCell("ast"),
