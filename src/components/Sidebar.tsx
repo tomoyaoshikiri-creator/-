@@ -13,13 +13,13 @@ export function Sidebar({ role }: { role: Role }) {
   const tabs = tabsForRole(role);
 
   return (
-    <nav className="hidden min-[700px]:flex flex-col w-[190px] flex-shrink-0 border-r border-line bg-white px-3 py-5">
-      <div className="flex items-center gap-2 px-2 mb-6">
+    <nav className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 py-5">
+      <div className="flex items-center gap-1.5 px-1.5 mb-6">
         {teamLogoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={teamLogoUrl} alt="" className="w-7 h-7 rounded object-contain bg-paper flex-shrink-0" />
+          <img src={teamLogoUrl} alt="" className="w-6 h-6 rounded object-contain bg-paper flex-shrink-0" />
         )}
-        <span className="font-display font-bold text-[15px] text-ink truncate">{teamName}</span>
+        <span className="font-display font-bold text-[13px] text-ink truncate">{teamName}</span>
       </div>
 
       <div className="flex flex-col gap-0.5">
@@ -31,11 +31,11 @@ export function Sidebar({ role }: { role: Role }) {
             <GuardedLink
               key={tab}
               href={href}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-bold ${
+              className={`flex items-center gap-2 px-2.5 py-2.5 rounded-[10px] text-[12px] font-bold ${
                 isActive ? "bg-orange/10 text-orange" : "text-ink-soft"
               }`}
             >
-              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               {TAB_LABELS[tab]}
             </GuardedLink>
           );
