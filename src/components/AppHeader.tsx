@@ -41,6 +41,11 @@ export function AppHeader({
         <CurrentUserBadge />
       </div>
       <h1 className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-2.5 mb-1.5 leading-tight break-words tracking-wide">
+        {backHref && (
+          <GuardedLink href={backHref} aria-label="戻る" className="inline-flex items-center opacity-90 -ml-1">
+            <BackIcon className="w-6 h-6" />
+          </GuardedLink>
+        )}
         {title}
         {accessBadge && (
           <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 tracking-wide">
@@ -48,11 +53,6 @@ export function AppHeader({
           </span>
         )}
       </h1>
-      {backHref && (
-        <GuardedLink href={backHref} aria-label="戻る" className="inline-flex items-center opacity-90 mt-2.5">
-          <BackIcon className="w-6 h-6" />
-        </GuardedLink>
-      )}
       {searchPlaceholder && (
         <div className="bg-white/22 rounded-[10px] px-3 py-1 flex items-center gap-1.5">
           <SearchIcon className="w-3.5 h-3.5 opacity-80 flex-shrink-0" />
