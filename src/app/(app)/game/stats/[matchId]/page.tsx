@@ -9,7 +9,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
-import { StatPad, type StatEntrant } from "../../StatPad";
+import { StatPad, StatPadSideBySide, type StatEntrant } from "../../StatPad";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { OpponentRoster } from "../../OpponentRoster";
 import { StartingLineupModal } from "../../StartingLineupModal";
@@ -45,6 +46,9 @@ export default function GameStatsPage() {
   const router = useRouter();
   const { teamId, role } = useSession();
   const toast = useToast();
+  // iPadなどを横向きにしてこの画面を使うときだけ、自チーム/相手チームを
+  // 左右2列で常時表示するレイアウトに切り替える(縦画面・スマホは従来通り)。
+  const isLandscapeWide = useMediaQuery("(orientation: landscape) and (min-width: 900px)");
   const [match, setMatch] = useState<GameMatch | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -658,6 +662,7 @@ export default function GameStatsPage() {
 
   return (
     <PageShell
+      wide={isLandscapeWide}
       header={
         <AppHeader
           title="スタッツ入力"
@@ -673,97 +678,118 @@ export default function GameStatsPage() {
         <EmptyState>試合が見つかりません</EmptyState>
       ) : (
         <>
-          <Card>
-            <div className="font-bold text-[14.5px] text-center">
-              第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
-            </div>
-            <div className="flex items-center justify-center gap-8 mt-2">
-              <div className="text-center">
-                <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+          <div className={isLandscapeWide ? "max-w-2xl mx-auto" : ""}>
+            <Card>
+              <div className="font-bold text-[14.5px] text-center">
+                第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
               </div>
-              <div className="text-ink-soft font-bold text-[18px]">-</div>
-              <div className="text-center">
-                <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
-                <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
+              <div className="flex items-center justify-center gap-8 mt-2">
+                <div className="text-center">
+                  <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
+                  <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+                </div>
+                <div className="text-ink-soft font-bold text-[18px]">-</div>
+                <div className="text-center">
+                  <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
+                  <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
+                </div>
               </div>
-            </div>
-            <div className="text-[10px] text-ink-soft text-center mt-1.5">
-              スタッツの記録から集計した得点です。試合結果の得点は試合詳細画面で編集してください
-            </div>
-          </Card>
+              <div className="text-[10px] text-ink-soft text-center mt-1.5">
+                スタッツの記録から集計した得点です。試合結果の得点は試合詳細画面で編集してください
+              </div>
+            </Card>
 
-          <button
-            type="button"
-            onClick={handleResetStats}
-            disabled={resetting}
-            className="w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white"
-            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-          >
-            {resetting
-              ? "リセット中…"
-              : resetConfirm
-                ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
-                : "この試合のスタッツ・スタメンをオールリセット"}
-          </button>
+            <button
+              type="button"
+              onClick={handleResetStats}
+              disabled={resetting}
+              className="w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white"
+              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+            >
+              {resetting
+                ? "リセット中…"
+                : resetConfirm
+                  ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
+                  : "この試合のスタッツ・スタメンをオールリセット"}
+            </button>
 
-          <div className="mt-3">
-            <FieldLabel>クォーター</FieldLabel>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4].map((q) => (
-                <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
-                  {q}Q
-                </SegButton>
-              ))}
+            <div className="mt-3">
+              <FieldLabel>クォーター</FieldLabel>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4].map((q) => (
+                  <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
+                    {q}Q
+                  </SegButton>
+                ))}
+              </div>
             </div>
           </div>
 
           <div className="mt-4">
-            <StatPad
-              ownEntrants={ownEntrants}
-              ownStatLines={statLines}
-              onOwnTap={handleStatTap}
-              onOwnUndo={handleStatUndo}
-              onOwnFreeThrowTrip={handleFreeThrowTrip}
-              onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
-              opponentEntrants={opponentEntrants}
-              opponentStatLines={opponentStatLines}
-              onOpponentTap={handleOpponentStatTap}
-              onOpponentUndo={handleOpponentStatUndo}
-              onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
-              onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
-            />
+            {isLandscapeWide ? (
+              <StatPadSideBySide
+                ownEntrants={ownEntrants}
+                ownStatLines={statLines}
+                onOwnTap={handleStatTap}
+                onOwnUndo={handleStatUndo}
+                onOwnFreeThrowTrip={handleFreeThrowTrip}
+                onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
+                opponentEntrants={opponentEntrants}
+                opponentStatLines={opponentStatLines}
+                onOpponentTap={handleOpponentStatTap}
+                onOpponentUndo={handleOpponentStatUndo}
+                onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
+                onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
+              />
+            ) : (
+              <StatPad
+                ownEntrants={ownEntrants}
+                ownStatLines={statLines}
+                onOwnTap={handleStatTap}
+                onOwnUndo={handleStatUndo}
+                onOwnFreeThrowTrip={handleFreeThrowTrip}
+                onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
+                opponentEntrants={opponentEntrants}
+                opponentStatLines={opponentStatLines}
+                onOpponentTap={handleOpponentStatTap}
+                onOpponentUndo={handleOpponentStatUndo}
+                onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
+                onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
+              />
+            )}
           </div>
 
-          <div ref={opponentRosterRef}>
-            <OpponentRoster
-              matchId={matchId}
-              teamId={teamId}
-              opponentPlayers={opponentPlayers}
-              onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
+          <div className={isLandscapeWide ? "max-w-2xl mx-auto" : ""}>
+            <div ref={opponentRosterRef}>
+              <OpponentRoster
+                matchId={matchId}
+                teamId={teamId}
+                opponentPlayers={opponentPlayers}
+                onChange={(list) => setOpponentPlayers(sortOpponentPlayers(list))}
+              />
+            </div>
+
+            <GameStatLog
+              title="自チームの記録ログ"
+              events={ownLog}
+              onChangeQuarter={handleChangeStatEventQuarter}
+              onDelete={handleDeleteStatEvent}
             />
+            <GameStatLog
+              title="相手チームの記録ログ"
+              events={opponentLog}
+              onChangeQuarter={handleChangeOpponentStatEventQuarter}
+              onDelete={handleDeleteOpponentStatEvent}
+            />
+
+            <button
+              type="button"
+              onClick={() => setStartingLineupModalOpen(true)}
+              className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+            >
+              スターティングの編集
+            </button>
           </div>
-
-          <GameStatLog
-            title="自チームの記録ログ"
-            events={ownLog}
-            onChangeQuarter={handleChangeStatEventQuarter}
-            onDelete={handleDeleteStatEvent}
-          />
-          <GameStatLog
-            title="相手チームの記録ログ"
-            events={opponentLog}
-            onChangeQuarter={handleChangeOpponentStatEventQuarter}
-            onDelete={handleDeleteOpponentStatEvent}
-          />
-
-          <button
-            type="button"
-            onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
-          >
-            スターティングの編集
-          </button>
 
           <MemberChangeModal
             open={ownMemberModalOpen}

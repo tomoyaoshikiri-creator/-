@@ -104,6 +104,173 @@ function ChipRow({
   );
 }
 
+function StatGrid({
+  row,
+  onTap,
+  onUndo,
+  onOpenFt,
+}: {
+  row: StatTotals | undefined;
+  onTap: (event: StatEvent) => void;
+  onUndo: (event: StatEvent) => void;
+  onOpenFt: () => void;
+}) {
+  return (
+    <Card className="mt-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {GRID_CELLS.map((cell) => {
+          if (cell.type === "ft") {
+            return (
+              <button
+                key="ft"
+                type="button"
+                onClick={onOpenFt}
+                className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-line bg-paper"
+              >
+                <div className="text-[11px] font-bold">FT(フリースロー)</div>
+                <div className="font-mono text-[13px] font-bold">
+                  {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
+                </div>
+              </button>
+            );
+          }
+          const { event, label } = cell;
+          const count = statEventCount(row, event);
+          const canMinus = row ? isStatEventAllowed(row, event, -1) : false;
+          return (
+            <div
+              key={event}
+              className="flex items-center justify-between px-2 py-1.5 rounded-[10px] border border-line bg-paper"
+            >
+              <button
+                type="button"
+                onClick={() => canMinus && onUndo(event)}
+                disabled={!canMinus}
+                className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
+              >
+                −
+              </button>
+              <div className="text-center">
+                <div className="text-[11px] font-bold">{label}</div>
+                <div className="font-mono text-[13px] font-bold">{count}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTap(event)}
+                className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
+              >
+                ＋
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+interface TeamPanelProps {
+  title: string;
+  align?: "left" | "right";
+  entrants: StatEntrant[];
+  statLines: Record<string, StatTotals>;
+  activeColor?: "orange" | "navy";
+  showName?: boolean;
+  onTap: (entrantId: string, event: StatEvent) => void;
+  onUndo: (entrantId: string, event: StatEvent) => void;
+  onFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
+  onOpenMemberChange: () => void;
+}
+
+// 横向きタブレット用の左右2列レイアウト(StatPadSideBySide)で使う、
+// チーム単体で選手選択〜スタッツ入力まで完結するパネル。
+function TeamStatPanel({
+  title,
+  align,
+  entrants,
+  statLines,
+  activeColor,
+  showName = false,
+  onTap,
+  onUndo,
+  onFreeThrowTrip,
+  onOpenMemberChange,
+}: TeamPanelProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ftModalOpen, setFtModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (selectedId && entrants.some((e) => e.id === selectedId)) return;
+    setSelectedId(entrants[0]?.id ?? null);
+  }, [entrants, selectedId]);
+
+  useEffect(() => {
+    setFtModalOpen(false);
+  }, [selectedId]);
+
+  const selectedEntrant = selectedId ? entrants.find((e) => e.id === selectedId) : undefined;
+  const row = selectedEntrant ? statLines[selectedEntrant.id] : undefined;
+
+  function handleSaveFreeThrows(results: boolean[]) {
+    if (!selectedEntrant) return;
+    const makes = results.filter(Boolean).length;
+    onFreeThrowTrip(selectedEntrant.id, makes, results.length);
+    setFtModalOpen(false);
+  }
+
+  return (
+    <div>
+      <SectionLabel align={align === "right" ? "right" : undefined}>{title}</SectionLabel>
+      <ChipRow
+        entrants={entrants}
+        statLines={statLines}
+        active={(id) => selectedId === id}
+        activeColor={activeColor}
+        showName={showName}
+        onSelect={setSelectedId}
+        onOpenMemberChange={onOpenMemberChange}
+      />
+
+      {!selectedEntrant ? (
+        <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
+      ) : (
+        <StatGrid
+          row={row}
+          onTap={(event) => onTap(selectedEntrant.id, event)}
+          onUndo={(event) => onUndo(selectedEntrant.id, event)}
+          onOpenFt={() => setFtModalOpen(true)}
+        />
+      )}
+
+      {selectedEntrant && (
+        <FreeThrowModal
+          open={ftModalOpen}
+          onClose={() => setFtModalOpen(false)}
+          entrantLabel={`#${selectedEntrant.number ?? "-"}${selectedEntrant.name ? ` ${selectedEntrant.name}` : ""}`}
+          onSave={handleSaveFreeThrows}
+        />
+      )}
+    </div>
+  );
+}
+
+interface StatPadProps {
+  ownEntrants: StatEntrant[];
+  ownStatLines: Record<string, StatTotals>;
+  onOwnTap: (entrantId: string, event: StatEvent) => void;
+  onOwnUndo: (entrantId: string, event: StatEvent) => void;
+  onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
+  onOpenOwnMemberChange: () => void;
+  opponentEntrants: StatEntrant[];
+  opponentStatLines: Record<string, StatTotals>;
+  onOpponentTap: (entrantId: string, event: StatEvent) => void;
+  onOpponentUndo: (entrantId: string, event: StatEvent) => void;
+  onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
+  onOpenOpponentMemberChange: () => void;
+}
+
+// 縦画面・スマホ向け: 上下のチップ列でチームを切り替え、1つの入力グリッドを共有する
+// (縦に長くなりすぎないよう、グリッドを2チーム分並べて表示しない)。
 export function StatPad({
   ownEntrants,
   ownStatLines,
@@ -117,20 +284,7 @@ export function StatPad({
   onOpponentUndo,
   onOpponentFreeThrowTrip,
   onOpenOpponentMemberChange,
-}: {
-  ownEntrants: StatEntrant[];
-  ownStatLines: Record<string, StatTotals>;
-  onOwnTap: (entrantId: string, event: StatEvent) => void;
-  onOwnUndo: (entrantId: string, event: StatEvent) => void;
-  onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  onOpenOwnMemberChange: () => void;
-  opponentEntrants: StatEntrant[];
-  opponentStatLines: Record<string, StatTotals>;
-  onOpponentTap: (entrantId: string, event: StatEvent) => void;
-  onOpponentUndo: (entrantId: string, event: StatEvent) => void;
-  onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  onOpenOpponentMemberChange: () => void;
-}) {
+}: StatPadProps) {
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
 
@@ -182,56 +336,12 @@ export function StatPad({
       {!selectedEntrant ? (
         <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
       ) : (
-        <Card className="mt-2">
-          <div className="grid grid-cols-2 gap-1.5">
-            {GRID_CELLS.map((cell) => {
-              if (cell.type === "ft") {
-                return (
-                  <button
-                    key="ft"
-                    type="button"
-                    onClick={() => setFtModalOpen(true)}
-                    className="flex flex-col items-center justify-center px-2 py-1.5 rounded-[10px] border border-line bg-paper"
-                  >
-                    <div className="text-[11px] font-bold">FT(フリースロー)</div>
-                    <div className="font-mono text-[13px] font-bold">
-                      {row?.ft_made ?? 0}/{row?.ft_att ?? 0}
-                    </div>
-                  </button>
-                );
-              }
-              const { event, label } = cell;
-              const count = statEventCount(row, event);
-              const canMinus = row ? isStatEventAllowed(row, event, -1) : false;
-              return (
-                <div
-                  key={event}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-[10px] border border-line bg-paper"
-                >
-                  <button
-                    type="button"
-                    onClick={() => canMinus && onUndo(selectedEntrant.id, event)}
-                    disabled={!canMinus}
-                    className="w-8 h-8 flex-none rounded-full border border-line bg-white font-bold text-[16px] text-ink-soft disabled:opacity-30"
-                  >
-                    −
-                  </button>
-                  <div className="text-center">
-                    <div className="text-[11px] font-bold">{label}</div>
-                    <div className="font-mono text-[13px] font-bold">{count}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onTap(selectedEntrant.id, event)}
-                    className="w-8 h-8 flex-none rounded-full border border-orange bg-orange text-white font-bold text-[16px]"
-                  >
-                    ＋
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        <StatGrid
+          row={row}
+          onTap={(event) => onTap(selectedEntrant.id, event)}
+          onUndo={(event) => onUndo(selectedEntrant.id, event)}
+          onOpenFt={() => setFtModalOpen(true)}
+        />
       )}
 
       <div className="mt-2">
@@ -255,5 +365,48 @@ export function StatPad({
         />
       )}
     </>
+  );
+}
+
+// 横画面・タブレット向け: 自チーム/相手チームを左右2列に常設し、
+// 選手選択の切り替えなしに両方へ同時に入力できるようにする。
+export function StatPadSideBySide({
+  ownEntrants,
+  ownStatLines,
+  onOwnTap,
+  onOwnUndo,
+  onOwnFreeThrowTrip,
+  onOpenOwnMemberChange,
+  opponentEntrants,
+  opponentStatLines,
+  onOpponentTap,
+  onOpponentUndo,
+  onOpponentFreeThrowTrip,
+  onOpenOpponentMemberChange,
+}: StatPadProps) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <TeamStatPanel
+        title="自チームのスタッツ"
+        showName
+        entrants={ownEntrants}
+        statLines={ownStatLines}
+        onTap={onOwnTap}
+        onUndo={onOwnUndo}
+        onFreeThrowTrip={onOwnFreeThrowTrip}
+        onOpenMemberChange={onOpenOwnMemberChange}
+      />
+      <TeamStatPanel
+        title="相手チームのスタッツ"
+        align="right"
+        activeColor="navy"
+        entrants={opponentEntrants}
+        statLines={opponentStatLines}
+        onTap={onOpponentTap}
+        onUndo={onOpponentUndo}
+        onFreeThrowTrip={onOpponentFreeThrowTrip}
+        onOpenMemberChange={onOpenOpponentMemberChange}
+      />
+    </div>
   );
 }
