@@ -768,14 +768,14 @@ export default function GameStatsPage() {
           <MemberChangeModal
             open={ownMemberModalOpen}
             onClose={() => setOwnMemberModalOpen(false)}
-            title="メンバーチェンジ"
+            title="選手選択"
             options={ownMemberOptions}
             onToggle={handleToggleOwnMember}
           />
           <MemberChangeModal
             open={!ownLineupIncomplete && opponentMemberModalOpen}
             onClose={() => setOpponentMemberModalOpen(false)}
-            title="メンバーチェンジ(相手チーム)"
+            title="選手選択(相手チーム)"
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}
           />

@@ -180,7 +180,7 @@ export function StatPad({
       />
 
       {!selectedEntrant ? (
-        <EmptyState>スタメンを登録するか、メンバーチェンジで選手を選んでください</EmptyState>
+        <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
       ) : (
         <Card className="mt-2">
           <div className="grid grid-cols-2 gap-1.5">

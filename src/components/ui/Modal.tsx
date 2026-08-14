@@ -31,7 +31,7 @@ export function Modal({
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className="bg-white w-full rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
+      <div className="bg-white w-full max-w-[480px] mx-auto rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto">
         <div className="font-display font-extrabold text-lg text-navy mb-3">{title}</div>
         {children}
       </div>
