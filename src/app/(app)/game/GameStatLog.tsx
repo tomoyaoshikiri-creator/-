@@ -51,13 +51,13 @@ export function GameStatLog({
           return (
             <div key={e.id} className="border-b border-line last:border-b-0">
               <div
-                className="flex items-center justify-between py-1.5 text-[12.5px] cursor-pointer"
+                className="flex items-center justify-between py-0.5 text-[11px] leading-tight cursor-pointer"
                 onClick={() => setExpandedId(expanded ? null : e.id)}
               >
                 <div>
-                  <span className="font-mono text-ink-soft mr-1.5">{e.quarter}Q</span>
+                  <span className="font-mono text-ink-soft mr-1">{e.quarter}Q</span>
                   <span className="font-bold">{e.entrantLabel}</span>
-                  <span className="text-ink-soft ml-1.5">
+                  <span className="text-ink-soft ml-1">
                     {statEventLabel(e.event)}
                     {e.delta < 0 ? "(取消)" : ""}
                   </span>
