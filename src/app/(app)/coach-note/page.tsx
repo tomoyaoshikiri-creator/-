@@ -12,6 +12,7 @@ import { Fab } from "@/components/ui/Modal";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { MonthPicker } from "@/components/MonthPicker";
+import { CollapsibleList } from "@/components/CollapsibleList";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -47,6 +48,7 @@ export default function CoachNotePage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [monthValue, setMonthValue] = useState(currentYearMonth());
+  const [showAll, setShowAll] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState(todayValue);
@@ -100,6 +102,10 @@ export default function CoachNotePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [monthValue]);
 
   useEffect(() => {
     markTabSeen(userId, "coachNote");
@@ -317,7 +323,11 @@ export default function CoachNotePage() {
       ) : reports.length === 0 ? (
         <EmptyState>この月のコーチノートはありません</EmptyState>
       ) : (
-        reports.map((r) =>
+        <CollapsibleList
+          items={reports}
+          showAll={showAll}
+          onShowAll={() => setShowAll(true)}
+          renderItem={(r) =>
           editingId === r.id ? (
             <Card key={r.id}>
               <FieldLabel>日付</FieldLabel>
@@ -470,8 +480,9 @@ export default function CoachNotePage() {
                 </div>
               </div>
             </Card>
-          ),
-        )
+          )
+          }
+        />
       )}
     </PageShell>
   );

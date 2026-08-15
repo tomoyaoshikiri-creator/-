@@ -11,6 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { MonthPicker } from "@/components/MonthPicker";
+import { CollapsibleList } from "@/components/CollapsibleList";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
@@ -30,6 +31,7 @@ export default function NoticePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [monthValue, setMonthValue] = useState(currentYearMonth());
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -68,6 +70,10 @@ export default function NoticePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setShowAll(false);
+  }, [monthValue, query]);
 
   useEffect(() => {
     markTabSeen(userId, "notice");
@@ -178,7 +184,7 @@ export default function NoticePage() {
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
-        filteredNotices.map(renderNoticeCard)
+        <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
       )}
     </PageShell>
   );
