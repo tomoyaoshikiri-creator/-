@@ -6,14 +6,9 @@ import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
-import { todayDateStr } from "@/lib/format";
+import { groupByMonth, todayDateStr } from "@/lib/format";
 import type { Attendance, Schedule } from "@/lib/database.types";
 import { ScheduleCard } from "../ScheduleCard";
-
-function monthLabel(dateStr: string): string {
-  const [y, m] = dateStr.split("-");
-  return `${y}年${Number(m)}月`;
-}
 
 export default function ScheduleHistoryPage() {
   const { userId } = useSession();
@@ -41,13 +36,7 @@ export default function ScheduleHistoryPage() {
     load();
   }, [load]);
 
-  const groups = new Map<string, Schedule[]>();
-  for (const s of schedules) {
-    const key = monthLabel(s.date);
-    const list = groups.get(key) ?? [];
-    list.push(s);
-    groups.set(key, list);
-  }
+  const groups = groupByMonth(schedules, (s) => s.date);
 
   return (
     <PageShell header={<AppHeader title="過去の予定" variant="detail" backHref="/schedule" />}>
@@ -56,10 +45,10 @@ export default function ScheduleHistoryPage() {
       ) : schedules.length === 0 ? (
         <EmptyState>過去の予定はありません</EmptyState>
       ) : (
-        Array.from(groups.entries()).map(([label, list]) => (
-          <div key={label}>
-            <SectionLabel>{label}</SectionLabel>
-            {list.map((s) => (
+        groups.map((g) => (
+          <div key={g.key}>
+            <SectionLabel>{g.label}</SectionLabel>
+            {g.items.map((s) => (
               <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />
             ))}
           </div>

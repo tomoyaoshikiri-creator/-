@@ -11,11 +11,12 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { MonthGroup } from "@/components/MonthGroup";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
-import { formatFullDateLabel } from "@/lib/format";
+import { formatFullDateLabel, groupByMonth } from "@/lib/format";
 import type {
   Report,
   ReportReaction,
@@ -308,161 +309,165 @@ export default function CoachNotePage() {
       ) : reports.length === 0 ? (
         <EmptyState>まだコーチノートがありません</EmptyState>
       ) : (
-        reports.map((r) =>
-          editingId === r.id ? (
-            <Card key={r.id}>
-              <FieldLabel>日付</FieldLabel>
-              <DateSelect value={editDateValue} onChange={setEditDateValue} />
-              <div className="mt-3">
-                <FieldLabel>内容</FieldLabel>
-                <textarea
-                  rows={3}
-                  className={inputClass()}
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2 mt-2.5">
-                <button
-                  type="button"
-                  onClick={() => handleSaveEdit(r.id)}
-                  disabled={savingEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
-                >
-                  {savingEdit ? "保存中…" : "保存"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingId(null)}
-                  disabled={savingEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </Card>
-          ) : (
-            <Card
-              key={r.id}
-              className={canWriteCoachNote(role) ? "cursor-pointer" : ""}
-              onClick={() => canWriteCoachNote(role) && setExpandedId(expandedId === r.id ? null : r.id)}
-            >
-              <div className="font-bold text-[14.5px]">{formatFullDateLabel(r.date)}</div>
-              <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
-              <div className="text-xs text-ink-soft mt-1.5">
-                {r.author_id ? (profiles[r.author_id] ?? "") : ""}
-              </div>
-              <ReactionButtons
-                reactions={reactions.filter((rc) => rc.report_id === r.id)}
-                onToggle={(type) => toggleReaction(r.id, type)}
-              />
-
-              <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
-                {expandedId === r.id && (
-                  <div className="flex gap-2 mb-2.5">
+        groupByMonth(reports, (r) => r.date).map((g, i) => (
+          <MonthGroup key={g.key} label={g.label} count={g.items.length} defaultOpen={i === 0}>
+            {g.items.map((r) =>
+              editingId === r.id ? (
+                <Card key={r.id}>
+                  <FieldLabel>日付</FieldLabel>
+                  <DateSelect value={editDateValue} onChange={setEditDateValue} />
+                  <div className="mt-3">
+                    <FieldLabel>内容</FieldLabel>
+                    <textarea
+                      rows={3}
+                      className={inputClass()}
+                      value={editBody}
+                      onChange={(e) => setEditBody(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-2.5">
                     <button
                       type="button"
-                      onClick={() => startEdit(r)}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                      onClick={() => handleSaveEdit(r.id)}
+                      disabled={savingEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
                     >
-                      編集
+                      {savingEdit ? "保存中…" : "保存"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(r.id)}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
-                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      onClick={() => setEditingId(null)}
+                      disabled={savingEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
                     >
-                      {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
+                      キャンセル
                     </button>
                   </div>
-                )}
-
-                {comments
-                  .filter((c) => c.report_id === r.id)
-                  .map((c) =>
-                    editingCommentId === c.id ? (
-                      <div key={c.id} className="mb-2">
-                        <input
-                          value={editCommentBody}
-                          onChange={(e) => setEditCommentBody(e.target.value)}
-                          className="w-full min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
-                        />
-                        <div className="flex gap-2 mt-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveCommentEdit(c.id)}
-                            disabled={savingCommentEdit}
-                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
-                          >
-                            {savingCommentEdit ? "保存中…" : "保存"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingCommentId(null)}
-                            disabled={savingCommentEdit}
-                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-white"
-                          >
-                            キャンセル
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        key={c.id}
-                        className="mb-2"
-                        onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
-                      >
-                        <div className={`text-[12px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}>
-                          <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
-                          <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
-                        </div>
-                        <ReactionButtons
-                          reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
-                          onToggle={(type) => toggleCommentReaction(c.id, type)}
-                        />
-                        {c.profile_id === userId && expandedCommentId === c.id && (
-                          <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              onClick={() => startEditComment(c)}
-                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
-                            >
-                              編集
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(c.id)}
-                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white"
-                              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                            >
-                              {deleteCommentConfirmId === c.id ? "もう一度タップで削除確定" : "削除"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ),
-                  )}
-                <div className="flex gap-1.5 mt-1.5">
-                  <input
-                    value={commentDrafts[r.id] ?? ""}
-                    onChange={(e) => setCommentDrafts((m) => ({ ...m, [r.id]: e.target.value }))}
-                    placeholder="コメントを書く"
-                    className="flex-1 min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                </Card>
+              ) : (
+                <Card
+                  key={r.id}
+                  className={canWriteCoachNote(role) ? "cursor-pointer" : ""}
+                  onClick={() => canWriteCoachNote(role) && setExpandedId(expandedId === r.id ? null : r.id)}
+                >
+                  <div className="font-bold text-[14.5px]">{formatFullDateLabel(r.date)}</div>
+                  <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
+                  <div className="text-xs text-ink-soft mt-1.5">
+                    {r.author_id ? (profiles[r.author_id] ?? "") : ""}
+                  </div>
+                  <ReactionButtons
+                    reactions={reactions.filter((rc) => rc.report_id === r.id)}
+                    onToggle={(type) => toggleReaction(r.id, type)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleAddComment(r.id)}
-                    disabled={postingCommentId === r.id || !(commentDrafts[r.id] ?? "").trim()}
-                    className="flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
-                  >
-                    送信
-                  </button>
-                </div>
-              </div>
-            </Card>
-          ),
-        )
+
+                  <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
+                    {expandedId === r.id && (
+                      <div className="flex gap-2 mb-2.5">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(r)}
+                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                        >
+                          編集
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r.id)}
+                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                        >
+                          {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
+                        </button>
+                      </div>
+                    )}
+
+                    {comments
+                      .filter((c) => c.report_id === r.id)
+                      .map((c) =>
+                        editingCommentId === c.id ? (
+                          <div key={c.id} className="mb-2">
+                            <input
+                              value={editCommentBody}
+                              onChange={(e) => setEditCommentBody(e.target.value)}
+                              className="w-full min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                            />
+                            <div className="flex gap-2 mt-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSaveCommentEdit(c.id)}
+                                disabled={savingCommentEdit}
+                                className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
+                              >
+                                {savingCommentEdit ? "保存中…" : "保存"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCommentId(null)}
+                                disabled={savingCommentEdit}
+                                className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-white"
+                              >
+                                キャンセル
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            key={c.id}
+                            className="mb-2"
+                            onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
+                          >
+                            <div className={`text-[12px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}>
+                              <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
+                              <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
+                            </div>
+                            <ReactionButtons
+                              reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
+                              onToggle={(type) => toggleCommentReaction(c.id, type)}
+                            />
+                            {c.profile_id === userId && expandedCommentId === c.id && (
+                              <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditComment(c)}
+                                  className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
+                                >
+                                  編集
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteComment(c.id)}
+                                  className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white"
+                                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                                >
+                                  {deleteCommentConfirmId === c.id ? "もう一度タップで削除確定" : "削除"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
+                    <div className="flex gap-1.5 mt-1.5">
+                      <input
+                        value={commentDrafts[r.id] ?? ""}
+                        onChange={(e) => setCommentDrafts((m) => ({ ...m, [r.id]: e.target.value }))}
+                        placeholder="コメントを書く"
+                        className="flex-1 min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddComment(r.id)}
+                        disabled={postingCommentId === r.id || !(commentDrafts[r.id] ?? "").trim()}
+                        className="flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
+                      >
+                        送信
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ),
+            )}
+          </MonthGroup>
+        ))
       )}
     </PageShell>
   );

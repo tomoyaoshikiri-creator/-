@@ -10,6 +10,28 @@ export function formatFullDateLabel(dateStr: string): string {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAYS[d.getDay()]})`;
 }
 
+// "YYYY-MM-DD"の日付文字列・ISOタイムスタンプのどちらでも先頭の年月を取り出せる。
+export function monthLabel(dateStr: string): string {
+  const [y, m] = dateStr.split("-");
+  return `${y}年${Number(m)}月`;
+}
+
+// 日付の新しい順に並んだ一覧を、年月ごとのグループに分ける(グループ内の順序は維持される)。
+export function groupByMonth<T>(items: T[], dateOf: (item: T) => string): { key: string; label: string; items: T[] }[] {
+  const map = new Map<string, T[]>();
+  for (const item of items) {
+    const key = dateOf(item).slice(0, 7);
+    const list = map.get(key);
+    if (list) list.push(item);
+    else map.set(key, [item]);
+  }
+  return Array.from(map.entries()).map(([key, groupItems]) => ({
+    key,
+    label: monthLabel(key),
+    items: groupItems,
+  }));
+}
+
 export function formatSlashDateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;

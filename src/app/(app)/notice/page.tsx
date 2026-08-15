@@ -10,10 +10,11 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { MonthGroup } from "@/components/MonthGroup";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
-import { formatDateLabel } from "@/lib/format";
+import { formatDateLabel, groupByMonth } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
@@ -101,6 +102,41 @@ export default function NoticePage() {
 
   const filteredNotices = notices.filter((n) => n.title.includes(query.trim()));
 
+  function renderNoticeCard(n: Notice) {
+    return (
+      <Card key={n.id} className="cursor-pointer" onClick={() => router.push(`/notice/${n.id}`)}>
+        <div className="font-bold text-[14.5px]">
+          {n.audience !== "全員" && (
+            <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
+              {n.audience}
+            </span>
+          )}
+          {n.title}
+        </div>
+        <div className="text-xs text-ink-soft mt-0.5">
+          {n.sender_id && profiles[n.sender_id] ? `${profiles[n.sender_id]} · ` : ""}
+          {formatDateLabel(n.created_at.slice(0, 10))}配信
+        </div>
+        {attachmentsByNotice[n.id]?.length ? (
+          <div className="mt-2 flex gap-1.5 flex-wrap">
+            {attachmentsByNotice[n.id].map((a) => (
+              <span
+                key={a.id}
+                className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-navy/8 text-navy"
+              >
+                📎 {a.kind}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <ReactionButtons
+          reactions={reactions.filter((r) => r.notice_id === n.id)}
+          onToggle={(type) => toggleReaction(n.id, type)}
+        />
+      </Card>
+    );
+  }
+
   return (
     <PageShell
       header={
@@ -133,38 +169,13 @@ export default function NoticePage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "お知らせがありません"}</EmptyState>
+      ) : query.trim() ? (
+        filteredNotices.map(renderNoticeCard)
       ) : (
-        filteredNotices.map((n) => (
-          <Card key={n.id} className="cursor-pointer" onClick={() => router.push(`/notice/${n.id}`)}>
-            <div className="font-bold text-[14.5px]">
-              {n.audience !== "全員" && (
-                <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
-                  {n.audience}
-                </span>
-              )}
-              {n.title}
-            </div>
-            <div className="text-xs text-ink-soft mt-0.5">
-              {n.sender_id && profiles[n.sender_id] ? `${profiles[n.sender_id]} · ` : ""}
-              {formatDateLabel(n.created_at.slice(0, 10))}配信
-            </div>
-            {attachmentsByNotice[n.id]?.length ? (
-              <div className="mt-2 flex gap-1.5 flex-wrap">
-                {attachmentsByNotice[n.id].map((a) => (
-                  <span
-                    key={a.id}
-                    className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-navy/8 text-navy"
-                  >
-                    📎 {a.kind}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <ReactionButtons
-              reactions={reactions.filter((r) => r.notice_id === n.id)}
-              onToggle={(type) => toggleReaction(n.id, type)}
-            />
-          </Card>
+        groupByMonth(filteredNotices, (n) => n.created_at).map((g, i) => (
+          <MonthGroup key={g.key} label={g.label} count={g.items.length} defaultOpen={i === 0}>
+            {g.items.map(renderNoticeCard)}
+          </MonthGroup>
         ))
       )}
     </PageShell>
