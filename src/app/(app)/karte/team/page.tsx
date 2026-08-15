@@ -421,7 +421,7 @@ export default function KarteTeamPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : analysisNotes.length === 0 ? (
         <Card>
-          <div className="text-xs text-ink-soft">まだメモがありません</div>
+          <div className="text-xs text-ink-soft">まだコメントがありません</div>
         </Card>
       ) : (
         analysisNotes.map((n) =>

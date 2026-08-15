@@ -611,7 +611,7 @@ export default function KartePlayerPage() {
       <SectionLabel>選手分析フィードバック</SectionLabel>
       {analysisNotes.length === 0 ? (
         <Card>
-          <div className="text-xs text-ink-soft">まだメモがありません</div>
+          <div className="text-xs text-ink-soft">まだコメントがありません</div>
         </Card>
       ) : (
         analysisNotes.map((n) =>
