@@ -8,7 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { Fab } from "@/components/ui/Modal";
+import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
@@ -22,40 +23,8 @@ import type {
   DailyReportCommentReaction,
   ReactionType,
 } from "@/lib/database.types";
-
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-// 実際の日付(年入り)を1つのselect(スクロール)で選べるようにする。過去2年分をカバーしておけば、
-// 編集時に既存の日報の日付が選択肢から外れることはまず無い。
-const DATE_OPTIONS: { value: string; label: string }[] = (() => {
-  const options: { value: string; label: string }[] = [];
-  const today = new Date();
-  for (let i = 730; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    options.push({ value, label: formatFullDateLabel(value) });
-  }
-  return options;
-})();
-
-function DateSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  // 編集対象の日付が選択肢の範囲外(2年より前)だった場合に備えて、無ければ選択肢に足しておく。
-  const options = DATE_OPTIONS.some((o) => o.value === value)
-    ? DATE_OPTIONS
-    : [{ value, label: formatFullDateLabel(value) }, ...DATE_OPTIONS];
-  return (
-    <select className={inputClass()} value={value} onChange={(e) => onChange(e.target.value)}>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-}
+import { DateSelect, DATE_OPTIONS } from "./DateSelect";
+import { NewDailyReportModal } from "./NewDailyReportModal";
 
 export default function ReportPage() {
   const router = useRouter();
@@ -74,10 +43,8 @@ export default function ReportPage() {
   const [savingCommentEdit, setSavingCommentEdit] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
-  const [dateValue, setDateValue] = useState(todayValue);
-  const [body, setBody] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState(todayValue);
@@ -85,7 +52,6 @@ export default function ReportPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  useUnsavedChangesGuard(body.trim() !== "");
   const editingReport = reports.find((r) => r.id === editingId);
   useUnsavedChangesGuard(
     editingReport !== undefined && (editBody !== editingReport.body || editDateValue !== editingReport.date),
@@ -275,30 +241,6 @@ export default function ReportPage() {
     setEditingCommentId(null);
   }
 
-  async function handleSubmit() {
-    if (!body.trim()) {
-      toast("内容を入力してください");
-      return;
-    }
-    setSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("daily_reports").insert({
-      team_id: teamId,
-      author_id: userId,
-      date: dateValue,
-      body: body.trim(),
-    });
-    setSaving(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
-      return;
-    }
-    setDateValue(todayValue);
-    setBody("");
-    toast("日報を登録しました");
-    load();
-  }
-
   function startEdit(r: DailyReport) {
     setEditingId(r.id);
     setEditDateValue(r.date);
@@ -345,26 +287,25 @@ export default function ReportPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="練習日報" />}>
-      <SectionLabel>日報を書く</SectionLabel>
-      <Card>
-        <FieldLabel>日付</FieldLabel>
-        <DateSelect value={dateValue} onChange={setDateValue} />
-        <div className="mt-3">
-          <FieldLabel>内容</FieldLabel>
-          <textarea
-            rows={3}
-            className={inputClass()}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="今日の練習についての気づきや共有事項"
-          />
-        </div>
-        <SubmitButton onClick={handleSubmit} disabled={saving}>
-          {saving ? "登録中…" : "登録する"}
-        </SubmitButton>
-      </Card>
-
+    <PageShell
+      header={<AppHeader title="練習日報" />}
+      fab={
+        canWriteReport(role) && (
+          <>
+            <Fab onClick={() => setModalOpen(true)} />
+            <NewDailyReportModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onCreated={() => {
+                setModalOpen(false);
+                load();
+                toast("日報を登録しました");
+              }}
+            />
+          </>
+        )
+      }
+    >
       <SectionLabel>これまでの日報</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
