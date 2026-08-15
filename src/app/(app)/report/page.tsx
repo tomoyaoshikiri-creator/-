@@ -364,7 +364,7 @@ export default function ReportPage() {
                     value={commentDrafts[r.id] ?? ""}
                     onChange={(e) => setCommentDrafts((m) => ({ ...m, [r.id]: e.target.value }))}
                     placeholder="コメントを書く"
-                    className={inputClass("flex-1")}
+                    className="flex-1 min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
                   />
                   <button
                     type="button"
