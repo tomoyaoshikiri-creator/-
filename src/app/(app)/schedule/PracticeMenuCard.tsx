@@ -47,7 +47,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
       .from("practice_menus")
       .select("*")
       .eq("schedule_id", scheduleId)
-      .order("updated_at", { ascending: true });
+      .order("position", { ascending: true });
     setMenus(data ?? []);
     setLoading(false);
   }, [scheduleId]);
@@ -61,11 +61,13 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
     if (!trimmed) return;
     setSaving(true);
     const supabase = createClient();
+    const nextPosition = menus.length > 0 ? Math.max(...menus.map((m) => m.position)) + 1 : 0;
     const { error } = await supabase.from("practice_menus").insert({
       team_id: teamId,
       schedule_id: scheduleId,
       theme: trimmed,
       created_by: userId,
+      position: nextPosition,
     });
     setSaving(false);
     if (error) {
@@ -108,6 +110,24 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
     load();
   }
 
+  async function handleMove(id: string, direction: "up" | "down") {
+    const idx = menus.findIndex((m) => m.id === id);
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= menus.length) return;
+    const a = menus[idx];
+    const b = menus[swapIdx];
+    const supabase = createClient();
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase.from("practice_menus").update({ position: b.position }).eq("id", a.id),
+      supabase.from("practice_menus").update({ position: a.position }).eq("id", b.id),
+    ]);
+    if (e1 || e2) {
+      toast(`並び替えに失敗しました: ${(e1 ?? e2)?.message}`);
+      return;
+    }
+    load();
+  }
+
   async function openCopy() {
     setCopyOpen(true);
     const supabase = createClient();
@@ -126,11 +146,12 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
     setCopying(true);
     const supabase = createClient();
     const { error } = await supabase.from("practice_menus").insert(
-      menus.map((m) => ({
+      menus.map((m, idx) => ({
         team_id: teamId,
         schedule_id: copyTargetId,
         theme: m.theme,
         created_by: userId,
+        position: idx,
       })),
     );
     setCopying(false);
@@ -193,6 +214,28 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
                 <div className="flex items-start gap-2">
                   <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
                   <div className="flex-1 text-[13.5px] font-bold">{m.theme}</div>
+                  {canManage && (
+                    <div className="flex flex-col gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => handleMove(m.id, "up")}
+                        className="w-6 h-5 flex items-center justify-center rounded-md border border-line bg-paper text-ink-soft text-[10px] leading-none disabled:opacity-30"
+                        aria-label="上へ移動"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === menus.length - 1}
+                        onClick={() => handleMove(m.id, "down")}
+                        className="w-6 h-5 flex items-center justify-center rounded-md border border-line bg-paper text-ink-soft text-[10px] leading-none disabled:opacity-30"
+                        aria-label="下へ移動"
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {canManage && expandedId === m.id && (
                   <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>

@@ -508,6 +508,7 @@ export interface Database {
           content: string | null;
           created_by: string | null;
           updated_at: string;
+          position: number;
         };
         Insert: {
           id?: string;
@@ -516,10 +517,12 @@ export interface Database {
           theme?: string | null;
           content?: string | null;
           created_by?: string | null;
+          position?: number;
         };
         Update: Partial<{
           theme: string | null;
           content: string | null;
+          position: number;
         }>;
         Relationships: [];
       };
