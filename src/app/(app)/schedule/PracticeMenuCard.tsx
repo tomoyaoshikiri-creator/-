@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
@@ -148,7 +148,17 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
 
   return (
     <>
-      <SectionLabel>実施メニュー</SectionLabel>
+      <div className="mb-2.5 flex items-center gap-2">
+        <span className="font-mono text-[13px] font-bold tracking-widest uppercase text-ink whitespace-nowrap">
+          実施メニュー
+        </span>
+        <span className="flex-1 h-px bg-line" />
+        {canManage && menus.length > 0 && !copyOpen && (
+          <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange whitespace-nowrap">
+            他の練習日にコピー
+          </button>
+        )}
+      </div>
       <Card>
         {menus.map((m, idx) => (
           <div
@@ -213,44 +223,32 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
             )}
           </div>
         ))}
-        {canManage && menus.length > 0 && (
+        {canManage && menus.length > 0 && copyOpen && (
           <div className="border-b border-line pb-2.5 mb-2.5">
-            {!copyOpen ? (
-              <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange">
-                他の練習日にコピー
+            <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
+            <select className={inputClass()} value={copyTargetId} onChange={(e) => setCopyTargetId(e.target.value)}>
+              <option value="">選択してください</option>
+              {copyTargets.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {formatDateLabel(s.date)} {s.title}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2 mt-2">
+              <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="flex-1 mt-0">
+                {copying ? "コピー中…" : "コピーする"}
+              </SubmitButton>
+              <button
+                type="button"
+                onClick={() => {
+                  setCopyOpen(false);
+                  setCopyTargetId("");
+                }}
+                className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+              >
+                キャンセル
               </button>
-            ) : (
-              <div>
-                <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
-                <select
-                  className={inputClass()}
-                  value={copyTargetId}
-                  onChange={(e) => setCopyTargetId(e.target.value)}
-                >
-                  <option value="">選択してください</option>
-                  {copyTargets.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {formatDateLabel(s.date)} {s.title}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex gap-2 mt-2">
-                  <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="flex-1 mt-0">
-                    {copying ? "コピー中…" : "コピーする"}
-                  </SubmitButton>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCopyOpen(false);
-                      setCopyTargetId("");
-                    }}
-                    className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                  >
-                    キャンセル
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
         {canManage && (
