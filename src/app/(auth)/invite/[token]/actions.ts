@@ -11,11 +11,13 @@ export interface FormState {
 
 export async function acceptInvite(_prev: FormState, formData: FormData): Promise<FormState> {
   const token = String(formData.get("token") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const sei = String(formData.get("sei") ?? "").trim();
+  const mei = String(formData.get("mei") ?? "").trim();
+  const name = `${sei}${mei}`;
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!token || !name || !email || !password) {
+  if (!token || !sei || !mei || !email || !password) {
     return { error: "すべての項目を入力してください" };
   }
   if (password.length < 8) {

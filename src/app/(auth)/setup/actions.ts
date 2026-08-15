@@ -12,9 +12,11 @@ export interface FormState {
 // signUp() は行わず、既存セッションに対して create_team_and_admin RPC だけを実行する。
 export async function completeSetup(_prev: FormState, formData: FormData): Promise<FormState> {
   const teamName = String(formData.get("teamName") ?? "").trim();
-  const adminName = String(formData.get("adminName") ?? "").trim();
+  const adminSei = String(formData.get("adminSei") ?? "").trim();
+  const adminMei = String(formData.get("adminMei") ?? "").trim();
+  const adminName = `${adminSei}${adminMei}`;
 
-  if (!teamName || !adminName) {
+  if (!teamName || !adminSei || !adminMei) {
     return { error: "すべての項目を入力してください" };
   }
 
