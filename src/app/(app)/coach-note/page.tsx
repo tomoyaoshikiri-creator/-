@@ -15,7 +15,13 @@ import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { formatFullDateLabel } from "@/lib/format";
-import type { Report, ReportReaction, ReportComment, ReactionType } from "@/lib/database.types";
+import type {
+  Report,
+  ReportReaction,
+  ReportComment,
+  ReportCommentReaction,
+  ReactionType,
+} from "@/lib/database.types";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -58,6 +64,7 @@ export default function CoachNotePage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [reactions, setReactions] = useState<ReportReaction[]>([]);
   const [comments, setComments] = useState<ReportComment[]>([]);
+  const [commentReactions, setCommentReactions] = useState<ReportCommentReaction[]>([]);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
   const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
@@ -97,9 +104,17 @@ export default function CoachNotePage() {
       ]);
       setReactions(rc ?? []);
       setComments(cm ?? []);
+      const commentIds = (cm ?? []).map((c) => c.id);
+      if (commentIds.length > 0) {
+        const { data: crc } = await supabase.from("report_comment_reactions").select("*").in("comment_id", commentIds);
+        setCommentReactions(crc ?? []);
+      } else {
+        setCommentReactions([]);
+      }
     } else {
       setReactions([]);
       setComments([]);
+      setCommentReactions([]);
     }
     setLoading(false);
   }, []);
@@ -148,6 +163,40 @@ export default function CoachNotePage() {
       }
     }
     loadReactions();
+  }
+
+  async function loadCommentReactions() {
+    const commentIds = comments.map((c) => c.id);
+    if (commentIds.length === 0) return;
+    const supabase = createClient();
+    const { data } = await supabase.from("report_comment_reactions").select("*").in("comment_id", commentIds);
+    setCommentReactions(data ?? []);
+  }
+
+  async function toggleCommentReaction(commentId: string, type: ReactionType) {
+    const supabase = createClient();
+    const existing = commentReactions.find(
+      (r) => r.comment_id === commentId && r.reaction_type === type && r.profile_id === userId,
+    );
+    if (existing) {
+      const { error } = await supabase.from("report_comment_reactions").delete().eq("id", existing.id);
+      if (error) {
+        toast(`取り消しに失敗しました: ${error.message}`);
+        return;
+      }
+    } else {
+      const { error } = await supabase.from("report_comment_reactions").insert({
+        team_id: teamId,
+        comment_id: commentId,
+        profile_id: userId,
+        reaction_type: type,
+      });
+      if (error) {
+        toast(`スタンプに失敗しました: ${error.message}`);
+        return;
+      }
+    }
+    loadCommentReactions();
   }
 
   async function handleAddComment(reportId: string) {
@@ -343,20 +392,26 @@ export default function CoachNotePage() {
                 {comments
                   .filter((c) => c.report_id === r.id)
                   .map((c) => (
-                    <div key={c.id} className="flex items-start justify-between gap-2 text-[12px] mb-1.5">
-                      <div className="min-w-0">
-                        <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
-                        <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
+                    <div key={c.id} className="mb-2">
+                      <div className="flex items-start justify-between gap-2 text-[12px]">
+                        <div className="min-w-0">
+                          <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
+                          <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
+                        </div>
+                        {c.profile_id === userId && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteComment(c.id)}
+                            className="flex-shrink-0 text-[10px] font-bold text-ink-soft"
+                          >
+                            {deleteCommentConfirmId === c.id ? "削除確定" : "削除"}
+                          </button>
+                        )}
                       </div>
-                      {c.profile_id === userId && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(c.id)}
-                          className="flex-shrink-0 text-[10px] font-bold text-ink-soft"
-                        >
-                          {deleteCommentConfirmId === c.id ? "削除確定" : "削除"}
-                        </button>
-                      )}
+                      <ReactionButtons
+                        reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
+                        onToggle={(type) => toggleCommentReaction(c.id, type)}
+                      />
                     </div>
                   ))}
                 <div className="flex gap-1.5 mt-1.5">

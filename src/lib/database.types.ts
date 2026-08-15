@@ -355,6 +355,44 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      report_comment_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          comment_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          comment_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      daily_report_comment_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          comment_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          comment_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       players: {
         Row: {
           id: string;
@@ -1031,6 +1069,8 @@ export type ReportComment = Database["public"]["Tables"]["report_comments"]["Row
 export type DailyReport = Database["public"]["Tables"]["daily_reports"]["Row"];
 export type DailyReportReaction = Database["public"]["Tables"]["daily_report_reactions"]["Row"];
 export type DailyReportComment = Database["public"]["Tables"]["daily_report_comments"]["Row"];
+export type ReportCommentReaction = Database["public"]["Tables"]["report_comment_reactions"]["Row"];
+export type DailyReportCommentReaction = Database["public"]["Tables"]["daily_report_comment_reactions"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
