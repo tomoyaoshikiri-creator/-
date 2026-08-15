@@ -10,11 +10,11 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
-import { MonthGroup } from "@/components/MonthGroup";
+import { MonthPicker } from "@/components/MonthPicker";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
-import { formatDateLabel, groupByMonth } from "@/lib/format";
+import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
@@ -29,12 +29,19 @@ export default function NoticePage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [monthValue, setMonthValue] = useState(currentYearMonth());
 
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
+    const { start, end } = monthRangeBounds(monthValue);
     const [{ data: n }, profMap] = await Promise.all([
-      supabase.from("notices").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("notices")
+        .select("*")
+        .gte("created_at", start)
+        .lt("created_at", end)
+        .order("created_at", { ascending: false }),
       loadProfilesMap(supabase),
     ]);
     setNotices(n ?? []);
@@ -56,7 +63,7 @@ export default function NoticePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, []);
+  }, [monthValue]);
 
   useEffect(() => {
     load();
@@ -165,18 +172,13 @@ export default function NoticePage() {
       }
     >
       <SectionLabel>お知らせ</SectionLabel>
+      <MonthPicker value={monthValue} onChange={setMonthValue} />
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : filteredNotices.length === 0 ? (
-        <EmptyState>{query ? "該当するお知らせがありません" : "お知らせがありません"}</EmptyState>
-      ) : query.trim() ? (
-        filteredNotices.map(renderNoticeCard)
+        <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
-        groupByMonth(filteredNotices, (n) => n.created_at).map((g, i) => (
-          <MonthGroup key={g.key} label={g.label} count={g.items.length} defaultOpen={i === 0}>
-            {g.items.map(renderNoticeCard)}
-          </MonthGroup>
-        ))
+        filteredNotices.map(renderNoticeCard)
       )}
     </PageShell>
   );

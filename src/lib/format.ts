@@ -32,6 +32,27 @@ export function groupByMonth<T>(items: T[], dateOf: (item: T) => string): { key:
   }));
 }
 
+// "YYYY-MM"形式の年月。お知らせ・日報・コーチノートなどの月別表示の基準値に使う。
+export function currentYearMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function shiftYearMonth(yearMonth: string, delta: number): string {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// "YYYY-MM"を、その月の1日から翌月1日まで([start, end))のSupabaseクエリ用範囲に変換する。
+export function monthRangeBounds(yearMonth: string): { start: string; end: string } {
+  const [y, m] = yearMonth.split("-").map(Number);
+  const start = `${y}-${String(m).padStart(2, "0")}-01`;
+  const next = new Date(y, m, 1);
+  const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
+  return { start, end };
+}
+
 export function formatSlashDateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
