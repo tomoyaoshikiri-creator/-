@@ -45,6 +45,7 @@ import type {
   ReactionType,
   SportsTestRecord,
 } from "@/lib/database.types";
+import { AddFeedbackModal } from "../../AddFeedbackModal";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -80,15 +81,13 @@ export default function KartePlayerPage() {
   const [analysisNotes, setAnalysisNotes] = useState<PlayerAnalysisNote[]>([]);
   const [noteReactions, setNoteReactions] = useState<PlayerAnalysisNoteReaction[]>([]);
   const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
-  const [noteBody, setNoteBody] = useState("");
-  const [savingNote, setSavingNote] = useState(false);
+  const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteBody, setEditNoteBody] = useState("");
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
 
-  useUnsavedChangesGuard(noteBody.trim() !== "");
   const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
 
@@ -273,28 +272,16 @@ export default function KartePlayerPage() {
     }
   }
 
-  async function handleAddNote() {
-    if (!player) return;
-    if (!noteBody.trim()) {
-      toast("メモを入力してください");
-      return;
-    }
-    setSavingNote(true);
+  async function handleAddNote(body: string) {
+    if (!player) return { error: "選手情報を読み込めませんでした" };
     const supabase = createClient();
     const { error } = await supabase.from("player_analysis_notes").insert({
       team_id: player.team_id,
       player_id: player.id,
       author_id: userId,
-      body: noteBody.trim(),
+      body,
     });
-    setSavingNote(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
-      return;
-    }
-    setNoteBody("");
-    toast("メモを登録しました");
-    load();
+    return { error: error?.message ?? null };
   }
 
   function startEditNote(n: PlayerAnalysisNote) {
@@ -682,19 +669,19 @@ export default function KartePlayerPage() {
       )}
 
       {canManagePlayers(role) && (
-        <Card>
-          <FieldLabel>メモを追加</FieldLabel>
-          <textarea
-            rows={3}
-            className={inputClass()}
-            value={noteBody}
-            onChange={(e) => setNoteBody(e.target.value)}
-            placeholder="例:分析してもらった内容を貼り付ける"
+        <>
+          <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを登録</SubmitButton>
+          <AddFeedbackModal
+            open={addFeedbackOpen}
+            onClose={() => setAddFeedbackOpen(false)}
+            onCreated={() => {
+              setAddFeedbackOpen(false);
+              toast("フィードバックを登録しました");
+              load();
+            }}
+            insert={handleAddNote}
           />
-          <SubmitButton onClick={handleAddNote} disabled={savingNote}>
-            {savingNote ? "登録中…" : "メモを登録する"}
-          </SubmitButton>
-        </Card>
+        </>
       )}
     </PageShell>
   );
