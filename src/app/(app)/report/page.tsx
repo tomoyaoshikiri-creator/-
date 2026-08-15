@@ -349,8 +349,8 @@ export default function ReportPage() {
                   .map((c) => (
                     <div key={c.id} className="flex items-start justify-between gap-2 text-[12px] mb-1.5">
                       <div className="min-w-0">
-                        <span className="font-bold">{profiles[c.profile_id] ?? ""}</span>
-                        <span className="text-ink-soft ml-1 whitespace-pre-wrap">{c.body}</span>
+                        <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
+                        <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
                       </div>
                       {c.profile_id === userId && (
                         <button
