@@ -15,7 +15,7 @@ import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { formatFullDateLabel } from "@/lib/format";
-import type { Report, ReportReaction, ReactionType } from "@/lib/database.types";
+import type { Report, ReportReaction, ReportComment, ReactionType } from "@/lib/database.types";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -57,6 +57,10 @@ export default function ReportPage() {
   const toast = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [reactions, setReactions] = useState<ReportReaction[]>([]);
+  const [comments, setComments] = useState<ReportComment[]>([]);
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
+  const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
   const [dateValue, setDateValue] = useState(todayValue);
@@ -86,16 +90,16 @@ export default function ReportPage() {
     setReports(r ?? []);
     setProfiles(profMap);
     if (r && r.length > 0) {
-      const { data: rc } = await supabase
-        .from("report_reactions")
-        .select("*")
-        .in(
-          "report_id",
-          r.map((x) => x.id),
-        );
+      const reportIds = r.map((x) => x.id);
+      const [{ data: rc }, { data: cm }] = await Promise.all([
+        supabase.from("report_reactions").select("*").in("report_id", reportIds),
+        supabase.from("report_comments").select("*").in("report_id", reportIds).order("created_at", { ascending: true }),
+      ]);
       setReactions(rc ?? []);
+      setComments(cm ?? []);
     } else {
       setReactions([]);
+      setComments([]);
     }
     setLoading(false);
   }, []);
@@ -144,6 +148,50 @@ export default function ReportPage() {
       }
     }
     loadReactions();
+  }
+
+  async function handleAddComment(reportId: string) {
+    const body = (commentDrafts[reportId] ?? "").trim();
+    if (!body) return;
+    setPostingCommentId(reportId);
+    const supabase = createClient();
+    const { error } = await supabase.from("report_comments").insert({
+      team_id: teamId,
+      report_id: reportId,
+      profile_id: userId,
+      body,
+    });
+    setPostingCommentId(null);
+    if (error) {
+      toast(`コメントの投稿に失敗しました: ${error.message}`);
+      return;
+    }
+    setCommentDrafts((m) => ({ ...m, [reportId]: "" }));
+    const { data } = await supabase
+      .from("report_comments")
+      .select("*")
+      .in(
+        "report_id",
+        reports.map((r) => r.id),
+      )
+      .order("created_at", { ascending: true });
+    setComments(data ?? []);
+  }
+
+  async function handleDeleteComment(id: string) {
+    if (deleteCommentConfirmId !== id) {
+      setDeleteCommentConfirmId(id);
+      setTimeout(() => setDeleteCommentConfirmId((cur) => (cur === id ? null : cur)), 3000);
+      return;
+    }
+    setDeleteCommentConfirmId(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("report_comments").delete().eq("id", id);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setComments((prev) => prev.filter((c) => c.id !== id));
   }
 
   async function handleSubmit() {
@@ -290,6 +338,45 @@ export default function ReportPage() {
                 reactions={reactions.filter((rc) => rc.report_id === r.id)}
                 onToggle={(type) => toggleReaction(r.id, type)}
               />
+
+              <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
+                {comments
+                  .filter((c) => c.report_id === r.id)
+                  .map((c) => (
+                    <div key={c.id} className="flex items-start justify-between gap-2 text-[12px] mb-1.5">
+                      <div className="min-w-0">
+                        <span className="font-bold">{profiles[c.profile_id] ?? ""}</span>
+                        <span className="text-ink-soft ml-1 whitespace-pre-wrap">{c.body}</span>
+                      </div>
+                      {c.profile_id === userId && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(c.id)}
+                          className="flex-shrink-0 text-[10px] font-bold text-ink-soft"
+                        >
+                          {deleteCommentConfirmId === c.id ? "削除確定" : "削除"}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                <div className="flex gap-1.5 mt-1.5">
+                  <input
+                    value={commentDrafts[r.id] ?? ""}
+                    onChange={(e) => setCommentDrafts((m) => ({ ...m, [r.id]: e.target.value }))}
+                    placeholder="コメントを書く"
+                    className={inputClass("flex-1")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddComment(r.id)}
+                    disabled={postingCommentId === r.id || !(commentDrafts[r.id] ?? "").trim()}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
+                  >
+                    送信
+                  </button>
+                </div>
+              </div>
+
               {expandedId === r.id && (
                 <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
                   <button
