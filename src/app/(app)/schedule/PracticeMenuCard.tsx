@@ -1,11 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Card } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { formatDateLabel } from "@/lib/format";
@@ -35,6 +46,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
   const [copyTargets, setCopyTargets] = useState<CopyTarget[]>([]);
   const [copyTargetId, setCopyTargetId] = useState("");
   const [copying, setCopying] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   useUnsavedChangesGuard(input.trim() !== "");
   const editingMenu = menus.find((m) => m.id === editingId);
@@ -110,22 +122,23 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
     load();
   }
 
-  async function handleMove(id: string, direction: "up" | "down") {
-    const idx = menus.findIndex((m) => m.id === id);
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (idx === -1 || swapIdx < 0 || swapIdx >= menus.length) return;
-    const a = menus[idx];
-    const b = menus[swapIdx];
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = menus.findIndex((m) => m.id === active.id);
+    const newIndex = menus.findIndex((m) => m.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(menus, oldIndex, newIndex);
+    setMenus(reordered);
     const supabase = createClient();
-    const [{ error: e1 }, { error: e2 }] = await Promise.all([
-      supabase.from("practice_menus").update({ position: b.position }).eq("id", a.id),
-      supabase.from("practice_menus").update({ position: a.position }).eq("id", b.id),
-    ]);
-    if (e1 || e2) {
-      toast(`並び替えに失敗しました: ${(e1 ?? e2)?.message}`);
-      return;
+    const results = await Promise.all(
+      reordered.map((m, idx) => supabase.from("practice_menus").update({ position: idx }).eq("id", m.id)),
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      toast(`並び替えに失敗しました: ${failed.error.message}`);
+      load();
     }
-    load();
   }
 
   async function openCopy() {
@@ -181,91 +194,28 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
         )}
       </div>
       <Card>
-        {menus.map((m, idx) => (
-          <div
-            key={m.id}
-            className="border-b border-line pb-2.5 mb-2.5 last:border-b-0 last:mb-0 last:pb-0"
-          >
-            {editingId === m.id ? (
-              <div>
-                <input
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  className={inputClass()}
-                />
-                <div className="flex gap-2 mt-2">
-                  <SubmitButton onClick={() => handleEditSave(m.id)} disabled={savingEdit} className="flex-1 mt-0">
-                    {savingEdit ? "保存中…" : "保存する"}
-                  </SubmitButton>
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(null)}
-                    className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                  >
-                    キャンセル
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={canManage ? "cursor-pointer" : ""}
-                onClick={canManage ? () => setExpandedId(expandedId === m.id ? null : m.id) : undefined}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
-                  <div className="flex-1 text-[13.5px] font-bold">{m.theme}</div>
-                  {canManage && (
-                    <div className="flex flex-col gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        disabled={idx === 0}
-                        onClick={() => handleMove(m.id, "up")}
-                        className="w-6 h-5 flex items-center justify-center rounded-md border border-line bg-paper text-ink-soft text-[10px] leading-none disabled:opacity-30"
-                        aria-label="上へ移動"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        disabled={idx === menus.length - 1}
-                        onClick={() => handleMove(m.id, "down")}
-                        className="w-6 h-5 flex items-center justify-center rounded-md border border-line bg-paper text-ink-soft text-[10px] leading-none disabled:opacity-30"
-                        aria-label="下へ移動"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {canManage && expandedId === m.id && (
-                  <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(m.id);
-                        setEditValue(m.theme ?? "");
-                      }}
-                      className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
-                    >
-                      編集
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(m.id)}
-                      className={`flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border ${
-                        deleteConfirmId === m.id
-                          ? "border-danger text-danger bg-danger/8"
-                          : "border-line text-ink-soft bg-paper"
-                      }`}
-                    >
-                      {deleteConfirmId === m.id ? "もう一度タップで削除" : "削除"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={menus.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+            {menus.map((m, idx) => (
+              <SortableMenuRow
+                key={m.id}
+                menu={m}
+                idx={idx}
+                canManage={canManage}
+                editingId={editingId}
+                editValue={editValue}
+                setEditValue={setEditValue}
+                savingEdit={savingEdit}
+                handleEditSave={handleEditSave}
+                setEditingId={setEditingId}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                deleteConfirmId={deleteConfirmId}
+                handleDelete={handleDelete}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         {canManage && menus.length > 0 && copyOpen && (
           <div className="border-b border-line pb-2.5 mb-2.5">
             <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
@@ -310,5 +260,116 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
         )}
       </Card>
     </>
+  );
+}
+
+function SortableMenuRow({
+  menu,
+  idx,
+  canManage,
+  editingId,
+  editValue,
+  setEditValue,
+  savingEdit,
+  handleEditSave,
+  setEditingId,
+  expandedId,
+  setExpandedId,
+  deleteConfirmId,
+  handleDelete,
+}: {
+  menu: PracticeMenu;
+  idx: number;
+  canManage: boolean;
+  editingId: string | null;
+  editValue: string;
+  setEditValue: (v: string) => void;
+  savingEdit: boolean;
+  handleEditSave: (id: string) => void;
+  setEditingId: (id: string | null) => void;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+  deleteConfirmId: string | null;
+  handleDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: menu.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border-b border-line pb-2.5 mb-2.5 last:border-b-0 last:mb-0 last:pb-0"
+    >
+      {editingId === menu.id ? (
+        <div>
+          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={inputClass()} />
+          <div className="flex gap-2 mt-2">
+            <SubmitButton onClick={() => handleEditSave(menu.id)} disabled={savingEdit} className="flex-1 mt-0">
+              {savingEdit ? "保存中…" : "保存する"}
+            </SubmitButton>
+            <button
+              type="button"
+              onClick={() => setEditingId(null)}
+              className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={canManage ? "cursor-pointer" : ""}
+          onClick={canManage ? () => setExpandedId(expandedId === menu.id ? null : menu.id) : undefined}
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
+            <div className="flex-1 text-[13.5px] font-bold">{menu.theme}</div>
+            {canManage && (
+              <button
+                type="button"
+                {...attributes}
+                {...listeners}
+                onClick={(e) => e.stopPropagation()}
+                className="w-7 h-7 flex items-center justify-center text-ink-soft flex-shrink-0 cursor-grab active:cursor-grabbing"
+                style={{ touchAction: "none" }}
+                aria-label="ドラッグして並び替え"
+              >
+                <DragHandleIcon className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {canManage && expandedId === menu.id && (
+            <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(menu.id);
+                  setEditValue(menu.theme ?? "");
+                }}
+                className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
+              >
+                編集
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(menu.id)}
+                className={`flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border ${
+                  deleteConfirmId === menu.id
+                    ? "border-danger text-danger bg-danger/8"
+                    : "border-line text-ink-soft bg-paper"
+                }`}
+              >
+                {deleteConfirmId === menu.id ? "もう一度タップで削除" : "削除"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
