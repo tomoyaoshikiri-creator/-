@@ -68,6 +68,10 @@ export default function CoachNotePage() {
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
   const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
+  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentBody, setEditCommentBody] = useState("");
+  const [savingCommentEdit, setSavingCommentEdit] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
   const [dateValue, setDateValue] = useState(todayValue);
@@ -241,6 +245,30 @@ export default function CoachNotePage() {
       return;
     }
     setComments((prev) => prev.filter((c) => c.id !== id));
+    setExpandedCommentId(null);
+  }
+
+  function startEditComment(c: ReportComment) {
+    setEditingCommentId(c.id);
+    setEditCommentBody(c.body);
+    setExpandedCommentId(null);
+  }
+
+  async function handleSaveCommentEdit(id: string) {
+    if (!editCommentBody.trim()) return;
+    setSavingCommentEdit(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("report_comments")
+      .update({ body: editCommentBody.trim(), updated_at: new Date().toISOString() })
+      .eq("id", id);
+    setSavingCommentEdit(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    setComments((prev) => prev.map((c) => (c.id === id ? { ...c, body: editCommentBody.trim() } : c)));
+    setEditingCommentId(null);
   }
 
   async function handleSubmit() {
@@ -389,31 +417,91 @@ export default function CoachNotePage() {
               />
 
               <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
+                {expandedId === r.id && (
+                  <div className="flex gap-2 mb-2.5">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(r)}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                    >
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(r.id)}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    >
+                      {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
+                    </button>
+                  </div>
+                )}
+
                 {comments
                   .filter((c) => c.report_id === r.id)
-                  .map((c) => (
-                    <div key={c.id} className="mb-2">
-                      <div className="flex items-start justify-between gap-2 text-[12px]">
-                        <div className="min-w-0">
+                  .map((c) =>
+                    editingCommentId === c.id ? (
+                      <div key={c.id} className="mb-2">
+                        <input
+                          value={editCommentBody}
+                          onChange={(e) => setEditCommentBody(e.target.value)}
+                          className="w-full min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                        />
+                        <div className="flex gap-2 mt-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveCommentEdit(c.id)}
+                            disabled={savingCommentEdit}
+                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
+                          >
+                            {savingCommentEdit ? "保存中…" : "保存"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCommentId(null)}
+                            disabled={savingCommentEdit}
+                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-white"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        key={c.id}
+                        className="mb-2"
+                        onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
+                      >
+                        <div className={`text-[12px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}>
                           <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
                           <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
                         </div>
-                        {c.profile_id === userId && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteComment(c.id)}
-                            className="flex-shrink-0 text-[10px] font-bold text-ink-soft"
-                          >
-                            {deleteCommentConfirmId === c.id ? "削除確定" : "削除"}
-                          </button>
+                        <ReactionButtons
+                          reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
+                          onToggle={(type) => toggleCommentReaction(c.id, type)}
+                        />
+                        {c.profile_id === userId && expandedCommentId === c.id && (
+                          <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => startEditComment(c)}
+                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
+                            >
+                              編集
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(c.id)}
+                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white"
+                              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                            >
+                              {deleteCommentConfirmId === c.id ? "もう一度タップで削除確定" : "削除"}
+                            </button>
+                          </div>
                         )}
                       </div>
-                      <ReactionButtons
-                        reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
-                        onToggle={(type) => toggleCommentReaction(c.id, type)}
-                      />
-                    </div>
-                  ))}
+                    ),
+                  )}
                 <div className="flex gap-1.5 mt-1.5">
                   <input
                     value={commentDrafts[r.id] ?? ""}
@@ -431,26 +519,6 @@ export default function CoachNotePage() {
                   </button>
                 </div>
               </div>
-
-              {expandedId === r.id && (
-                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => startEdit(r)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
-                  >
-                    編集
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(r.id)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
-                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                  >
-                    {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
-                  </button>
-                </div>
-              )}
             </Card>
           ),
         )
