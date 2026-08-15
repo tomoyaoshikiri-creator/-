@@ -11,18 +11,18 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import { canAccessTab, canWriteReport } from "@/lib/permissions";
+import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { formatFullDateLabel } from "@/lib/format";
-import type { DailyReport, DailyReportReaction, DailyReportComment, ReactionType } from "@/lib/database.types";
+import type { Report, ReportReaction, ReportComment, ReactionType } from "@/lib/database.types";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
 // 実際の日付(年入り)を1つのselect(スクロール)で選べるようにする。過去2年分をカバーしておけば、
-// 編集時に既存の日報の日付が選択肢から外れることはまず無い。
+// 編集時に既存のコーチノートの日付が選択肢から外れることはまず無い。
 const DATE_OPTIONS: { value: string; label: string }[] = (() => {
   const options: { value: string; label: string }[] = [];
   const today = new Date();
@@ -51,13 +51,13 @@ function DateSelect({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
-export default function ReportPage() {
+export default function CoachNotePage() {
   const router = useRouter();
   const { userId, teamId, role } = useSession();
   const toast = useToast();
-  const [reports, setReports] = useState<DailyReport[]>([]);
-  const [reactions, setReactions] = useState<DailyReportReaction[]>([]);
-  const [comments, setComments] = useState<DailyReportComment[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [reactions, setReactions] = useState<ReportReaction[]>([]);
+  const [comments, setComments] = useState<ReportComment[]>([]);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
   const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export default function ReportPage() {
     const supabase = createClient();
     setLoading(true);
     const [{ data: r }, profMap] = await Promise.all([
-      supabase.from("daily_reports").select("*").order("created_at", { ascending: false }),
+      supabase.from("reports").select("*").order("created_at", { ascending: false }),
       loadProfilesMap(supabase),
     ]);
     setReports(r ?? []);
@@ -92,12 +92,8 @@ export default function ReportPage() {
     if (r && r.length > 0) {
       const reportIds = r.map((x) => x.id);
       const [{ data: rc }, { data: cm }] = await Promise.all([
-        supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds),
-        supabase
-          .from("daily_report_comments")
-          .select("*")
-          .in("daily_report_id", reportIds)
-          .order("created_at", { ascending: true }),
+        supabase.from("report_reactions").select("*").in("report_id", reportIds),
+        supabase.from("report_comments").select("*").in("report_id", reportIds).order("created_at", { ascending: true }),
       ]);
       setReactions(rc ?? []);
       setComments(cm ?? []);
@@ -113,36 +109,36 @@ export default function ReportPage() {
   }, [load]);
 
   useEffect(() => {
-    markTabSeen(userId, "report");
+    markTabSeen(userId, "coachNote");
   }, [userId]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "report")) router.replace("/schedule");
+    if (!canAccessTab(role, "coachNote")) router.replace("/schedule");
   }, [role, router]);
 
   async function loadReactions() {
     const reportIds = reports.map((r) => r.id);
     if (reportIds.length === 0) return;
     const supabase = createClient();
-    const { data } = await supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds);
+    const { data } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
     setReactions(data ?? []);
   }
 
   async function toggleReaction(reportId: string, type: ReactionType) {
     const supabase = createClient();
     const existing = reactions.find(
-      (r) => r.daily_report_id === reportId && r.reaction_type === type && r.profile_id === userId,
+      (r) => r.report_id === reportId && r.reaction_type === type && r.profile_id === userId,
     );
     if (existing) {
-      const { error } = await supabase.from("daily_report_reactions").delete().eq("id", existing.id);
+      const { error } = await supabase.from("report_reactions").delete().eq("id", existing.id);
       if (error) {
         toast(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
-      const { error } = await supabase.from("daily_report_reactions").insert({
+      const { error } = await supabase.from("report_reactions").insert({
         team_id: teamId,
-        daily_report_id: reportId,
+        report_id: reportId,
         profile_id: userId,
         reaction_type: type,
       });
@@ -159,9 +155,9 @@ export default function ReportPage() {
     if (!body) return;
     setPostingCommentId(reportId);
     const supabase = createClient();
-    const { error } = await supabase.from("daily_report_comments").insert({
+    const { error } = await supabase.from("report_comments").insert({
       team_id: teamId,
-      daily_report_id: reportId,
+      report_id: reportId,
       profile_id: userId,
       body,
     });
@@ -172,10 +168,10 @@ export default function ReportPage() {
     }
     setCommentDrafts((m) => ({ ...m, [reportId]: "" }));
     const { data } = await supabase
-      .from("daily_report_comments")
+      .from("report_comments")
       .select("*")
       .in(
-        "daily_report_id",
+        "report_id",
         reports.map((r) => r.id),
       )
       .order("created_at", { ascending: true });
@@ -190,7 +186,7 @@ export default function ReportPage() {
     }
     setDeleteCommentConfirmId(null);
     const supabase = createClient();
-    const { error } = await supabase.from("daily_report_comments").delete().eq("id", id);
+    const { error } = await supabase.from("report_comments").delete().eq("id", id);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
@@ -205,7 +201,7 @@ export default function ReportPage() {
     }
     setSaving(true);
     const supabase = createClient();
-    const { error } = await supabase.from("daily_reports").insert({
+    const { error } = await supabase.from("reports").insert({
       team_id: teamId,
       author_id: userId,
       date: dateValue,
@@ -218,11 +214,11 @@ export default function ReportPage() {
     }
     setDateValue(todayValue);
     setBody("");
-    toast("日報を登録しました");
+    toast("コーチノートを登録しました");
     load();
   }
 
-  function startEdit(r: DailyReport) {
+  function startEdit(r: Report) {
     setEditingId(r.id);
     setEditDateValue(r.date);
     setEditBody(r.body);
@@ -236,7 +232,7 @@ export default function ReportPage() {
     setSavingEdit(true);
     const supabase = createClient();
     const { error } = await supabase
-      .from("daily_reports")
+      .from("reports")
       .update({ date: editDateValue, body: editBody.trim(), updated_at: new Date().toISOString() })
       .eq("id", id);
     setSavingEdit(false);
@@ -244,7 +240,7 @@ export default function ReportPage() {
       toast(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("日報を更新しました");
+    toast("コーチノートを更新しました");
     setEditingId(null);
     load();
   }
@@ -256,20 +252,20 @@ export default function ReportPage() {
       return;
     }
     const supabase = createClient();
-    const { error } = await supabase.from("daily_reports").delete().eq("id", id);
+    const { error } = await supabase.from("reports").delete().eq("id", id);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
     }
     setDeleteConfirmId(null);
     setExpandedId(null);
-    toast("日報を削除しました");
+    toast("コーチノートを削除しました");
     load();
   }
 
   return (
-    <PageShell header={<AppHeader title="練習日報" />}>
-      <SectionLabel>日報を書く</SectionLabel>
+    <PageShell header={<AppHeader title="コーチノート" accessBadge="coach" />}>
+      <SectionLabel>コーチノートを書く</SectionLabel>
       <Card>
         <FieldLabel>日付</FieldLabel>
         <DateSelect value={dateValue} onChange={setDateValue} />
@@ -280,7 +276,7 @@ export default function ReportPage() {
             className={inputClass()}
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="今日の練習についての気づきや共有事項"
+            placeholder="今日の練習で気づいたこと・思ったこと"
           />
         </div>
         <SubmitButton onClick={handleSubmit} disabled={saving}>
@@ -288,11 +284,11 @@ export default function ReportPage() {
         </SubmitButton>
       </Card>
 
-      <SectionLabel>これまでの日報</SectionLabel>
+      <SectionLabel>これまでのコーチノート</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : reports.length === 0 ? (
-        <EmptyState>まだ日報がありません</EmptyState>
+        <EmptyState>まだコーチノートがありません</EmptyState>
       ) : (
         reports.map((r) =>
           editingId === r.id ? (
@@ -330,8 +326,8 @@ export default function ReportPage() {
           ) : (
             <Card
               key={r.id}
-              className={canWriteReport(role) ? "cursor-pointer" : ""}
-              onClick={() => canWriteReport(role) && setExpandedId(expandedId === r.id ? null : r.id)}
+              className={canWriteCoachNote(role) ? "cursor-pointer" : ""}
+              onClick={() => canWriteCoachNote(role) && setExpandedId(expandedId === r.id ? null : r.id)}
             >
               <div className="font-bold text-[14.5px]">{formatFullDateLabel(r.date)}</div>
               <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
@@ -339,13 +335,13 @@ export default function ReportPage() {
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}
               </div>
               <ReactionButtons
-                reactions={reactions.filter((rc) => rc.daily_report_id === r.id)}
+                reactions={reactions.filter((rc) => rc.report_id === r.id)}
                 onToggle={(type) => toggleReaction(r.id, type)}
               />
 
               <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
                 {comments
-                  .filter((c) => c.daily_report_id === r.id)
+                  .filter((c) => c.report_id === r.id)
                   .map((c) => (
                     <div key={c.id} className="flex items-start justify-between gap-2 text-[12px] mb-1.5">
                       <div className="min-w-0">

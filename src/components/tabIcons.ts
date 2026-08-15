@@ -1,5 +1,6 @@
 import type { TabKey } from "@/lib/permissions";
 import {
+  CoachNoteIcon,
   GameIcon,
   KarteIcon,
   NoticeIcon,
@@ -14,6 +15,7 @@ export const TAB_ICONS: Record<TabKey, (props: { className?: string }) => React.
   schedule: ScheduleIcon,
   notice: NoticeIcon,
   report: ReportIcon,
+  coachNote: CoachNoteIcon,
   players: PlayersIcon,
   game: GameIcon,
   karte: KarteIcon,

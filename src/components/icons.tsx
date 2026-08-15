@@ -43,6 +43,15 @@ export function ReportIcon(props: IconProps) {
   );
 }
 
+export function CoachNoteIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 6.5c-1.6-1.1-4-1.6-6.5-1.2v13c2.5-.4 4.9.1 6.5 1.2c1.6-1.1 4-1.6 6.5-1.2v-13c-2.5-.4-4.9.1-6.5 1.2z" />
+      <line x1="12" y1="6.5" x2="12" y2="19.5" />
+    </svg>
+  );
+}
+
 export function PlayersIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
