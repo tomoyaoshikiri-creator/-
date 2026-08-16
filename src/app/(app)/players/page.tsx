@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -13,14 +12,13 @@ import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { PlayerRow } from "@/components/PlayerRow";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
-import { canAccessTab, canManagePlayers } from "@/lib/permissions";
+import { canManagePlayers } from "@/lib/permissions";
 import { sortPlayers } from "@/lib/format";
 import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
 export default function PlayersPage() {
-  const router = useRouter();
   const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
@@ -70,10 +68,6 @@ export default function PlayersPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    if (!canAccessTab(role, "players")) router.replace("/schedule");
-  }, [role, router]);
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");

@@ -54,14 +54,16 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 「コーチノート」は指導者・管理者専用。「日報」(全ロール共有)とはテーブルごと分離している。
 // 「試合記録」タブは一般・運営にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
 // 操作できるため、一般・運営がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
-// 「選手一覧」タブは一般・運営(保護者)にも見せる。この2ロールはチーム全選手を閲覧できるが、
-// 選手一覧画面側でplayer_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
+// 「選手一覧」は専用タブを廃止し、「カルテ」タブの中の1カードとして統合した(/karte)。
+// そのため「カルテ」タブ自体は全ロールに開放し、中身のカード出し分け(チームカルテ・選手カルテは
+// canViewKarte、選手一覧は全ロール)は/karte/page.tsx側で行う。選手一覧画面側は元のまま、
+// player_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
 // (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
-  一般: ["schedule", "notice", "report", "players", "game", "settings"],
-  運営: ["schedule", "notice", "report", "players", "game", "users", "settings"],
-  指導者: ["schedule", "notice", "report", "coachNote", "players", "game", "karte", "settings"],
-  管理者: ["schedule", "notice", "report", "coachNote", "players", "game", "karte", "users", "settings"],
+  一般: ["schedule", "notice", "report", "karte", "game", "settings"],
+  運営: ["schedule", "notice", "report", "karte", "game", "users", "settings"],
+  指導者: ["schedule", "notice", "report", "coachNote", "karte", "game", "settings"],
+  管理者: ["schedule", "notice", "report", "coachNote", "karte", "game", "users", "settings"],
 };
 
 export function tabsForRole(role: Role): TabKey[] {

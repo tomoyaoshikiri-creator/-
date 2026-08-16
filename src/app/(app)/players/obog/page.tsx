@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
@@ -10,7 +9,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { PlayerRow } from "@/components/PlayerRow";
-import { canAccessTab, canManagePlayers } from "@/lib/permissions";
+import { canManagePlayers } from "@/lib/permissions";
 import { fiscalYearOf, obogGraduationFiscalYear, sortPlayers, todayDateStr } from "@/lib/format";
 import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
@@ -18,7 +17,6 @@ import type { Player } from "@/lib/database.types";
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function ObogPage() {
-  const router = useRouter();
   const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -27,10 +25,6 @@ export default function ObogPage() {
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!canAccessTab(role, "players")) router.replace("/schedule");
-  }, [role, router]);
 
   useEffect(() => {
     (async () => {

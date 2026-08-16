@@ -65,8 +65,9 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       notice: (noticeCount ?? 0) > 0,
       report: (reportCount ?? 0) > 0,
       coachNote: (coachNoteCount ?? 0) > 0,
-      players: unseenPlayerNotes.size > 0,
-      karte: unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen,
+      // 「選手一覧」は専用タブを廃止しカルテタブ内のカードに統合したため、
+      // 選手メモの未読もカルテタブの赤丸に合流させる。
+      karte: unseenPlayerNotes.size > 0 || unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen,
     });
   }, [userId, teamId]);
 
