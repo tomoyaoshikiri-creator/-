@@ -25,6 +25,8 @@ before insert or update of plan on public.teams
 for each row execute function public.sync_team_storage_limit();
 
 -- 既存チーム(列追加直後はplanのデフォルト'お試し'が入っている)にもトリガーを効かせて
--- storage_limit_bytesを揃える。実際のプランに合わせたい場合は、この後
--- update public.teams set plan = '中間' where id = '(チームのid)'; のように書き換える。
+-- storage_limit_bytesを揃える。
 update public.teams set plan = plan;
+
+-- 都賀ビクトリーズは本番運用中のパイロットチームのため「フル」プランにしておく。
+update public.teams set plan = 'フル' where name = '都賀ビクトリーズ';
