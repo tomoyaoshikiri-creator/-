@@ -87,11 +87,25 @@ export function CalendarView({
   const firstDay = new Date(year, month, 1);
   const startOffset = (firstDay.getDay() + 6) % 7; // 月曜始まり
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-  const cells: { date?: string; day?: number }[] = [];
-  for (let i = 0; i < startOffset; i++) cells.push({});
+  // 前月末・翌月初の日付でマス目を埋め、週の途中で歯抜けにならないようにする。
+  // 当月以外の日付もotherMonthフラグを立てつつ通常のセルと同じ扱い(選択・予定表示)にする。
+  const cells: { date: string; day: number; otherMonth?: boolean }[] = [];
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const day = daysInPrevMonth - i;
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    cells.push({ date: `${prevYear}-${pad(prevMonth + 1)}-${pad(day)}`, day, otherMonth: true });
+  }
   for (let day = 1; day <= daysInMonth; day++) {
     cells.push({ date: `${year}-${pad(month + 1)}-${pad(day)}`, day });
+  }
+  const trailing = (7 - (cells.length % 7)) % 7;
+  for (let day = 1; day <= trailing; day++) {
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    cells.push({ date: `${nextYear}-${pad(nextMonth + 1)}-${pad(day)}`, day, otherMonth: true });
   }
 
   function goPrev() {
@@ -146,7 +160,6 @@ export function CalendarView({
 
       <div className="grid grid-cols-7 gap-1">
         {cells.map((c, i) => {
-          if (!c.date) return <div key={i} className="aspect-[4/3]" />;
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
           const holiday = holidayKind(c.date, i % 7);
@@ -178,10 +191,12 @@ export function CalendarView({
             <button
               key={c.date}
               type="button"
-              onClick={() => selectDate(c.date!)}
+              onClick={() => selectDate(c.date)}
               className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs relative ${
                 isColored ? "border-2" : "border"
-              } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${cellCls}`}
+              } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${
+                c.otherMonth ? "opacity-40" : ""
+              } ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
               <span className={holiday ? HOLIDAY_TEXT_CLASS[holiday] : ""}>{c.day}</span>
