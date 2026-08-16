@@ -6,6 +6,8 @@ export type UserStatus = "アクティブ" | "休止";
 export type ScheduleType = "practice" | "game" | "event";
 // 種別が"game"の予定にのみ意味を持つ区分。試合記録・試合結果一覧の絞り込みにも使う。
 export type GameCategory = "練習試合" | "公式戦";
+// 種別が"game"の予定にのみ意味を持つ。アウェイは車出し、ホームは会場設営のヒアリングになる。
+export type VenueType = "ホーム" | "アウェイ";
 export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
 export type TeamPlan = "お試し" | "中間" | "フル";
 // 練習は4択(出席・欠席・遅刻早退・見学)、試合は画面上は出席・欠席の2択のみ(UI側で制御)。
@@ -130,6 +132,8 @@ export interface Database {
           target_grade_min: string | null;
           // type="game"の予定にのみ意味を持つ(練習試合/公式戦)。それ以外はnull。
           game_category: GameCategory | null;
+          // type="game"の予定にのみ意味を持つ(ホーム/アウェイ)。それ以外はnull。
+          venue_type: VenueType | null;
           // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
           fiscal_year_override: number | null;
           created_by: string | null;
@@ -148,6 +152,7 @@ export interface Database {
           toban?: string | null;
           target_grade_min?: string | null;
           game_category?: GameCategory | null;
+          venue_type?: VenueType | null;
           fiscal_year_override?: number | null;
           created_by?: string | null;
         };
@@ -165,6 +170,8 @@ export interface Database {
           accompany_count: number | null;
           car: CarStatus | null;
           seats: number | null;
+          setup_available: YesNo | null;
+          setup_count: number | null;
           note: string | null;
           updated_at: string;
         };
@@ -178,6 +185,8 @@ export interface Database {
           accompany_count?: number | null;
           car?: CarStatus | null;
           seats?: number | null;
+          setup_available?: YesNo | null;
+          setup_count?: number | null;
           note?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["attendances"]["Insert"]>;

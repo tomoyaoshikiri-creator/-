@@ -253,6 +253,7 @@ export default function ScheduleDetailPage() {
               playerId={subject.playerId}
               label={subject.label}
               isGame={isGame}
+              venueType={schedule.venue_type}
             />
           ))}
 
@@ -284,6 +285,7 @@ export default function ScheduleDetailPage() {
                   playerId={proxyPlayerId}
                   label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
                   isGame={isGame}
+                  venueType={schedule.venue_type}
                 />
               )}
             </>
@@ -315,6 +317,7 @@ export default function ScheduleDetailPage() {
                   playerId={null}
                   label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
                   isGame={isGame}
+                  venueType={schedule.venue_type}
                   allowDelete
                 />
               )}

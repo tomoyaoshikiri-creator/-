@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
-import type { GameCategory, Schedule, ScheduleType } from "@/lib/database.types";
+import type { GameCategory, Schedule, ScheduleType, VenueType } from "@/lib/database.types";
 import { MiniCalendarPicker } from "./MiniCalendarPicker";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
@@ -41,6 +41,7 @@ export function NewScheduleModal({
 
   const [type, setType] = useState<ScheduleType>("practice");
   const [gameCategory, setGameCategory] = useState<GameCategory>("練習試合");
+  const [venueType, setVenueType] = useState<VenueType>("アウェイ");
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -59,6 +60,7 @@ export function NewScheduleModal({
   const currentSnapshot = JSON.stringify({
     type,
     gameCategory,
+    venueType,
     title,
     dates,
     startHour,
@@ -75,6 +77,7 @@ export function NewScheduleModal({
   function reset() {
     setType("practice");
     setGameCategory("練習試合");
+    setVenueType("アウェイ");
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -101,6 +104,7 @@ export function NewScheduleModal({
       fields = {
         type: source.type,
         gameCategory: source.game_category ?? ("練習試合" as GameCategory),
+        venueType: source.venue_type ?? ("アウェイ" as VenueType),
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -115,6 +119,7 @@ export function NewScheduleModal({
       };
       setType(fields.type);
       setGameCategory(fields.gameCategory);
+      setVenueType(fields.venueType);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -132,6 +137,7 @@ export function NewScheduleModal({
       fields = {
         type: "practice" as ScheduleType,
         gameCategory: "練習試合" as GameCategory,
+        venueType: "アウェイ" as VenueType,
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -170,6 +176,7 @@ export function NewScheduleModal({
       toban: type === "practice" ? toban.trim() || null : null,
       target_grade_min: targetGradeMin || null,
       game_category: type === "game" ? gameCategory : null,
+      venue_type: type === "game" ? venueType : null,
       fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
     };
     const { error } = editSchedule
@@ -232,6 +239,23 @@ export function NewScheduleModal({
             <SegButton active={gameCategory === "公式戦"} onClick={() => setGameCategory("公式戦")}>
               公式戦
             </SegButton>
+          </div>
+        </div>
+      )}
+
+      {type === "game" && (
+        <div className="mt-3">
+          <FieldLabel>開催地</FieldLabel>
+          <div className="flex gap-2">
+            <SegButton active={venueType === "アウェイ"} onClick={() => setVenueType("アウェイ")}>
+              アウェイ
+            </SegButton>
+            <SegButton active={venueType === "ホーム"} onClick={() => setVenueType("ホーム")}>
+              ホーム
+            </SegButton>
+          </div>
+          <div className="text-xs text-ink-soft mt-1">
+            出欠登録のヒアリング項目が変わります(アウェイ:車出し / ホーム:会場設営)。
           </div>
         </div>
       )}

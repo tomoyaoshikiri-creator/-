@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { isTargetEligible, playerFullName } from "@/lib/format";
-import type { Attendance, Role, Schedule } from "@/lib/database.types";
+import type { Attendance, Role, Schedule, VenueType } from "@/lib/database.types";
 import { AttendanceEntryForm } from "./AttendanceEntryForm";
 
 interface Row {
@@ -27,6 +27,7 @@ function AttendanceGroup({
   onToggle,
   scheduleId,
   isGame,
+  venueType,
   editorUserId,
   onChanged,
 }: {
@@ -42,9 +43,11 @@ function AttendanceGroup({
   onToggle: (key: string) => void;
   scheduleId: string;
   isGame: boolean;
+  venueType: VenueType | null;
   editorUserId: string;
   onChanged: () => void;
 }) {
+  const isHome = venueType === "ホーム";
   if (rows.length === 0) return null;
   return (
     <div className="mb-3 last:mb-0">
@@ -95,15 +98,27 @@ function AttendanceGroup({
                           }`,
                         );
                       }
-                      parts.push(
-                        `車出し: ${
-                          r.attendance.car === "可"
-                            ? `可(乗車${r.attendance.seats ?? "-"}人)`
-                            : r.attendance.car === "不可"
-                              ? "不可"
-                              : "未回答"
-                        }`,
-                      );
+                      if (isHome) {
+                        parts.push(
+                          `会場設営: ${
+                            r.attendance.setup_available === "あり"
+                              ? `可能(${r.attendance.setup_count ?? "-"}人)`
+                              : r.attendance.setup_available === "なし"
+                                ? "不可"
+                                : "未回答"
+                          }`,
+                        );
+                      } else {
+                        parts.push(
+                          `車出し: ${
+                            r.attendance.car === "可"
+                              ? `可(乗車${r.attendance.seats ?? "-"}人)`
+                              : r.attendance.car === "不可"
+                                ? "不可"
+                                : "未回答"
+                          }`,
+                        );
+                      }
                     }
                     if (r.attendance.note) parts.push(`備考:${r.attendance.note}`);
                     if (parts.length === 0) return null;
@@ -118,6 +133,7 @@ function AttendanceGroup({
                     playerId={isPlayerGroup ? r.key : null}
                     label={r.name}
                     isGame={isGame}
+                    venueType={venueType}
                     allowDelete
                     onChanged={onChanged}
                   />
@@ -203,6 +219,7 @@ export function AttendanceRosterModal({
 
   const isAdmin = role === "管理者";
   const isGame = schedule.type === "game";
+  const isHome = schedule.venue_type === "ホーム";
   const allRows = [...playerRows, ...staffRows, ...otherRows];
   const attendingCount = allRows.filter((r) => r.attendance?.status === "出席").length;
   const absentCount = allRows.filter((r) => r.attendance?.status === "欠席").length;
@@ -216,6 +233,11 @@ export function AttendanceRosterModal({
   const carAvailableCount = allRows.filter((r) => r.attendance?.car === "可").length;
   const totalSeats = allRows.reduce(
     (sum, r) => sum + (r.attendance?.car === "可" ? (r.attendance.seats ?? 0) : 0),
+    0,
+  );
+  const setupAvailableCount = allRows.filter((r) => r.attendance?.setup_available === "あり").length;
+  const totalSetupCount = allRows.reduce(
+    (sum, r) => sum + (r.attendance?.setup_available === "あり" ? (r.attendance.setup_count ?? 0) : 0),
     0,
   );
 
@@ -252,9 +274,15 @@ export function AttendanceRosterModal({
               <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
                 帯同合計 {totalAccompany}名
               </span>
-              <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
-                車出し可 {carAvailableCount}名(乗車可能 合計{totalSeats}人)
-              </span>
+              {isHome ? (
+                <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
+                  会場設営可 {setupAvailableCount}名(合計{totalSetupCount}人)
+                </span>
+              ) : (
+                <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
+                  車出し可 {carAvailableCount}名(乗車可能 合計{totalSeats}人)
+                </span>
+              )}
             </div>
           )}
 
@@ -271,6 +299,7 @@ export function AttendanceRosterModal({
                 onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
                 scheduleId={schedule.id}
                 isGame={isGame}
+                venueType={schedule.venue_type}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />
@@ -283,6 +312,7 @@ export function AttendanceRosterModal({
                 onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
                 scheduleId={schedule.id}
                 isGame={isGame}
+                venueType={schedule.venue_type}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />
@@ -295,6 +325,7 @@ export function AttendanceRosterModal({
                 onToggle={(key) => setExpandedKey((cur) => (cur === key ? null : key))}
                 scheduleId={schedule.id}
                 isGame={isGame}
+                venueType={schedule.venue_type}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />

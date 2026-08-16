@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import type { AttendanceStatus, CarStatus, YesNo } from "@/lib/database.types";
+import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/database.types";
 
 export function AttendanceEntryForm({
   scheduleId,
@@ -14,6 +14,7 @@ export function AttendanceEntryForm({
   playerId,
   label,
   isGame,
+  venueType,
   allowDelete = false,
   onChanged,
 }: {
@@ -22,10 +23,13 @@ export function AttendanceEntryForm({
   playerId: string | null;
   label: string;
   isGame: boolean;
+  // type="game"の予定にのみ意味を持つ。nullは既存データ互換のためアウェイ(車出し)として扱う。
+  venueType?: VenueType | null;
   allowDelete?: boolean;
   onChanged?: () => void;
 }) {
   const isSelf = playerId === null;
+  const isHome = venueType === "ホーム";
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
@@ -33,6 +37,8 @@ export function AttendanceEntryForm({
   const [accompanyCount, setAccompanyCount] = useState("");
   const [car, setCar] = useState<CarStatus | null>(null);
   const [seats, setSeats] = useState("");
+  const [setupAvailable, setSetupAvailable] = useState<YesNo | null>(null);
+  const [setupCount, setSetupCount] = useState("");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -56,6 +62,8 @@ export function AttendanceEntryForm({
       setAccompanyCount(a?.accompany_count?.toString() ?? "");
       setCar(a?.car ?? null);
       setSeats(a?.seats?.toString() ?? "");
+      setSetupAvailable(a?.setup_available ?? null);
+      setSetupCount(a?.setup_count?.toString() ?? "");
       setNote(a?.note ?? "");
       setRegistered(Boolean(a?.status));
       setLoading(false);
@@ -77,8 +85,10 @@ export function AttendanceEntryForm({
         status,
         accompany: isGame && !isSelf ? accompany : null,
         accompany_count: isGame && !isSelf && accompany === "あり" && accompanyCount ? Number(accompanyCount) : null,
-        car: isGame ? car : null,
-        seats: isGame && car === "可" && seats ? Number(seats) : null,
+        car: isGame && !isHome ? car : null,
+        seats: isGame && !isHome && car === "可" && seats ? Number(seats) : null,
+        setup_available: isGame && isHome ? setupAvailable : null,
+        setup_count: isGame && isHome && setupAvailable === "あり" && setupCount ? Number(setupCount) : null,
         note: note || null,
       },
       { onConflict: "schedule_id,identity_key" },
@@ -116,6 +126,8 @@ export function AttendanceEntryForm({
     setAccompanyCount("");
     setCar(null);
     setSeats("");
+    setSetupAvailable(null);
+    setSetupCount("");
     setNote("");
     setRegistered(false);
     onChanged?.();
@@ -224,46 +236,94 @@ export function AttendanceEntryForm({
                   </>
                 )}
 
-                <div className="mt-3">
-                  <FieldLabel>車出し</FieldLabel>
-                  <div className="flex gap-2">
-                    <SegButton
-                      variant="small"
-                      active={car === "可"}
-                      onClick={() => {
-                        setCar("可");
-                        setRegistered(false);
-                      }}
-                    >
-                      可
-                    </SegButton>
-                    <SegButton
-                      variant="small"
-                      active={car === "不可"}
-                      onClick={() => {
-                        setCar("不可");
-                        setRegistered(false);
-                      }}
-                    >
-                      不可
-                    </SegButton>
-                  </div>
-                </div>
-                {car === "可" && (
-                  <div className="mt-3">
-                    <FieldLabel>乗車可能人数</FieldLabel>
-                    <input
-                      type="number"
-                      min={0}
-                      className={inputClass()}
-                      value={seats}
-                      onChange={(e) => {
-                        setSeats(e.target.value);
-                        setRegistered(false);
-                      }}
-                      placeholder="例:3"
-                    />
-                  </div>
+                {isHome ? (
+                  <>
+                    <div className="mt-3">
+                      <FieldLabel>会場設営</FieldLabel>
+                      <div className="flex gap-2">
+                        <SegButton
+                          variant="small"
+                          active={setupAvailable === "あり"}
+                          onClick={() => {
+                            setSetupAvailable("あり");
+                            setRegistered(false);
+                          }}
+                        >
+                          可能
+                        </SegButton>
+                        <SegButton
+                          variant="small"
+                          active={setupAvailable === "なし"}
+                          onClick={() => {
+                            setSetupAvailable("なし");
+                            setRegistered(false);
+                          }}
+                        >
+                          不可
+                        </SegButton>
+                      </div>
+                    </div>
+                    {setupAvailable === "あり" && (
+                      <div className="mt-3">
+                        <FieldLabel>設営可能人数</FieldLabel>
+                        <input
+                          type="number"
+                          min={1}
+                          className={inputClass()}
+                          value={setupCount}
+                          onChange={(e) => {
+                            setSetupCount(e.target.value);
+                            setRegistered(false);
+                          }}
+                          placeholder="例:2"
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-3">
+                      <FieldLabel>車出し</FieldLabel>
+                      <div className="flex gap-2">
+                        <SegButton
+                          variant="small"
+                          active={car === "可"}
+                          onClick={() => {
+                            setCar("可");
+                            setRegistered(false);
+                          }}
+                        >
+                          可
+                        </SegButton>
+                        <SegButton
+                          variant="small"
+                          active={car === "不可"}
+                          onClick={() => {
+                            setCar("不可");
+                            setRegistered(false);
+                          }}
+                        >
+                          不可
+                        </SegButton>
+                      </div>
+                    </div>
+                    {car === "可" && (
+                      <div className="mt-3">
+                        <FieldLabel>乗車可能人数</FieldLabel>
+                        <input
+                          type="number"
+                          min={0}
+                          className={inputClass()}
+                          value={seats}
+                          onChange={(e) => {
+                            setSeats(e.target.value);
+                            setRegistered(false);
+                          }}
+                          placeholder="例:3"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
