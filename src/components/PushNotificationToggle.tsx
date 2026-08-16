@@ -43,11 +43,17 @@ export function PushNotificationToggle() {
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
       const json = sub.toJSON();
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
       });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: null }));
+        await sub.unsubscribe();
+        toast(`通知の登録に失敗しました${error ? `: ${error}` : ""}`);
+        return;
+      }
       setSubscribed(true);
       toast("通知を有効にしました");
     } catch {
