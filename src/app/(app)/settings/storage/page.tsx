@@ -9,10 +9,12 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { canManageSettings } from "@/lib/permissions";
 import { formatBytes } from "@/lib/format";
+import type { TeamPlan } from "@/lib/database.types";
 
 export default function SettingsStoragePage() {
   const router = useRouter();
   const { role, teamId } = useSession();
+  const [plan, setPlan] = useState<TeamPlan | null>(null);
   const [usedBytes, setUsedBytes] = useState(0);
   const [limitBytes, setLimitBytes] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -27,9 +29,10 @@ export default function SettingsStoragePage() {
     (async () => {
       const supabase = createClient();
       const [{ data: team }, { data: usage }] = await Promise.all([
-        supabase.from("teams").select("storage_limit_bytes").eq("id", teamId).single(),
+        supabase.from("teams").select("plan, storage_limit_bytes").eq("id", teamId).single(),
         supabase.rpc("team_storage_usage_bytes"),
       ]);
+      setPlan(team?.plan ?? null);
       setLimitBytes(team?.storage_limit_bytes ?? 0);
       setUsedBytes(usage ?? 0);
       setLoading(false);
@@ -45,6 +48,7 @@ export default function SettingsStoragePage() {
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
         <Card>
+          {plan && <div className="text-[11px] font-bold text-orange mb-1">{plan}プラン</div>}
           <div className="flex items-end justify-between">
             <div className="font-bold text-[20px]">{formatBytes(usedBytes)}</div>
             <div className="text-[12.5px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
