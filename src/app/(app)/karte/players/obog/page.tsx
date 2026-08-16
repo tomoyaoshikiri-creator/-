@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -9,20 +8,22 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/SegButton";
-import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
+import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
-import { fiscalYearOf, obogGraduationFiscalYear, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import { fiscalYearOf, obogGraduationFiscalYear, sortPlayers, todayDateStr } from "@/lib/format";
+import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KarteObogPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, userId } = useSession();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!canViewKarte(role)) router.replace("/schedule");
@@ -37,6 +38,10 @@ export default function KarteObogPage() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
+  }, [userId]);
 
   const withYear = players
     .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, CURRENT_FISCAL_YEAR) }))
@@ -74,18 +79,7 @@ export default function KarteObogPage() {
               <EmptyState>この年度に卒団した選手はいません</EmptyState>
             ) : (
               yearMembers.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/karte/players/${p.id}`}
-                  className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-                >
-                  <NumChip num={p.number ?? "-"} muted />
-                  <div className="flex-1">
-                    <div className="font-bold text-[13.5px]">{playerFullName(p)}</div>
-                    <div className="text-[11px] text-ink-soft mt-0.5">{p.positions.join("/")}</div>
-                  </div>
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                </Link>
+                <KartePlayerRow key={p.id} player={p} hasUnseenAnalysis={unseenAnalysisIds.has(p.id)} />
               ))
             )}
           </Card>

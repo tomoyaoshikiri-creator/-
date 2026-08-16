@@ -11,8 +11,8 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
+import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
 import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import {
@@ -21,29 +21,13 @@ import {
   DEFAULT_KARTE_ANALYSIS_PROMPT,
   type PlayerKarteBodyParams,
 } from "@/lib/karteAggregate";
-import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, sortPlayers, todayDateStr } from "@/lib/format";
 import type { GamePlayerStatLine, Player, PlayerGrowthRecord, PracticeMenu, SportsTestRecord } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
-}
-
-function PlayerRow({ player, hasUnseenAnalysis }: { player: Player; hasUnseenAnalysis: boolean }) {
-  return (
-    <Link
-      href={`/karte/players/${player.id}`}
-      className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-    >
-      <NumChip num={player.number ?? "-"} />
-      <div className="flex-1 min-w-0 flex items-center gap-1.5">
-        {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
-        <span className="font-bold text-[13.5px]">{playerFullName(player)}</span>
-      </div>
-      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-    </Link>
-  );
 }
 
 export default function KartePlayersPage() {
@@ -207,7 +191,7 @@ export default function KartePlayersPage() {
           <EmptyState>選手がいません</EmptyState>
         ) : (
           activeList.map((p) => (
-            <PlayerRow key={p.id} player={p} hasUnseenAnalysis={unseenAnalysisIds.has(p.id)} />
+            <KartePlayerRow key={p.id} player={p} hasUnseenAnalysis={unseenAnalysisIds.has(p.id)} />
           ))
         )}
       </Card>
