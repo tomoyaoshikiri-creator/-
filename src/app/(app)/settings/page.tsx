@@ -38,6 +38,12 @@ export default function SettingsPage() {
           </Card>
         </>
       )}
+
+      <SectionLabel>規約・ポリシー</SectionLabel>
+      <Card>
+        <SettingsRow href="/privacy" label="プライバシーポリシー" />
+        <SettingsRow href="/terms" label="利用規約" />
+      </Card>
     </PageShell>
   );
 }

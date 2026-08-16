@@ -33,7 +33,9 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/signup") ||
     path.startsWith("/invite") ||
     path.startsWith("/auth") ||
-    path.startsWith("/forgot-password");
+    path.startsWith("/forgot-password") ||
+    path.startsWith("/privacy") ||
+    path.startsWith("/terms");
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
