@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 
 // タブ単位のtab_last_seen(tabBadges.ts)とは別に、一覧の中の「どの項目が新着か」を
 // 個別に判定するための仕組み。項目の種類ごとに1件、最後に見た日時を記録する。
-export type ItemType = "player_notes" | "player_analysis" | "team_analysis";
+export type ItemType = "player_notes" | "player_analysis" | "team_analysis" | "notice" | "daily_report" | "coach_note";
 
 export async function markItemSeen(userId: string, itemType: ItemType, itemId: string) {
   const supabase = createClient();
@@ -54,6 +54,50 @@ export async function computeUnseenPlayerAnalysisIds(userId: string): Promise<Se
     if (n.author_id === userId) return;
     const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
     if (isNewer(latest, seenMap.get(n.player_id))) unseen.add(n.player_id);
+  });
+  return unseen;
+}
+
+export async function computeUnseenNoticeIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const [seenMap, { data: notices }] = await Promise.all([
+    loadSeenMap(userId, "notice"),
+    supabase.from("notices").select("id, sender_id, created_at"),
+  ]);
+  const unseen = new Set<string>();
+  (notices ?? []).forEach((n) => {
+    if (n.sender_id === userId) return;
+    if (isNewer(n.created_at, seenMap.get(n.id))) unseen.add(n.id);
+  });
+  return unseen;
+}
+
+export async function computeUnseenDailyReportIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const [seenMap, { data: reports }] = await Promise.all([
+    loadSeenMap(userId, "daily_report"),
+    supabase.from("daily_reports").select("id, author_id, created_at, updated_at"),
+  ]);
+  const unseen = new Set<string>();
+  (reports ?? []).forEach((r) => {
+    if (r.author_id === userId) return;
+    const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
+    if (isNewer(latest, seenMap.get(r.id))) unseen.add(r.id);
+  });
+  return unseen;
+}
+
+export async function computeUnseenCoachNoteIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const [seenMap, { data: reports }] = await Promise.all([
+    loadSeenMap(userId, "coach_note"),
+    supabase.from("reports").select("id, author_id, created_at, updated_at"),
+  ]);
+  const unseen = new Set<string>();
+  (reports ?? []).forEach((r) => {
+    if (r.author_id === userId) return;
+    const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
+    if (isNewer(latest, seenMap.get(r.id))) unseen.add(r.id);
   });
   return unseen;
 }

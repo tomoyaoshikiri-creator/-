@@ -18,6 +18,7 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
+import { computeUnseenDailyReportIds, markItemSeen } from "@/lib/itemBadges";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import type {
   DailyReport,
@@ -54,6 +55,7 @@ export default function ReportPage() {
   );
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
+  const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("report:unseenIds", new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState(todayValue);
@@ -121,8 +123,23 @@ export default function ReportPage() {
   }, [userId]);
 
   useEffect(() => {
+    computeUnseenDailyReportIds(userId).then(setUnseenIds);
+  }, [userId, setUnseenIds]);
+
+  useEffect(() => {
     if (!canAccessTab(role, "report")) router.replace("/schedule");
   }, [role, router]);
+
+  function openReport(reportId: string) {
+    markItemSeen(userId, "daily_report", reportId);
+    setUnseenIds((prev) => {
+      if (!prev.has(reportId)) return prev;
+      const next = new Set(prev);
+      next.delete(reportId);
+      return next;
+    });
+    setExpandedId((cur) => (cur === reportId ? null : reportId));
+  }
 
   async function loadReactions() {
     const reportIds = reports.map((r) => r.id);
@@ -373,9 +390,16 @@ export default function ReportPage() {
             <Card
               key={r.id}
               className={canWriteReport(role) ? "cursor-pointer" : ""}
-              onClick={() => canWriteReport(role) && setExpandedId(expandedId === r.id ? null : r.id)}
+              onClick={() => canWriteReport(role) && openReport(r.id)}
             >
-              <div className="font-bold text-[14.5px]">{formatFullDateLabel(r.date)}</div>
+              <div className="font-bold text-[14.5px]">
+                {unseenIds.has(r.id) && (
+                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
+                    NEW
+                  </span>
+                )}
+                {formatFullDateLabel(r.date)}
+              </div>
               <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
               <div className="text-xs text-ink-soft mt-1.5">
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}

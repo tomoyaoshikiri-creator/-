@@ -16,6 +16,7 @@ import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
+import { computeUnseenNoticeIds, markItemSeen } from "@/lib/itemBadges";
 import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
@@ -37,6 +38,7 @@ export default function NoticePage() {
   const [reactions, setReactions] = useCachedState<NoticeReaction[]>(cacheKey("reactions"), []);
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
+  const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -84,6 +86,21 @@ export default function NoticePage() {
     markTabSeen(userId, "notice");
   }, [userId]);
 
+  useEffect(() => {
+    computeUnseenNoticeIds(userId).then(setUnseenIds);
+  }, [userId, setUnseenIds]);
+
+  function openNotice(noticeId: string) {
+    markItemSeen(userId, "notice", noticeId);
+    setUnseenIds((prev) => {
+      if (!prev.has(noticeId)) return prev;
+      const next = new Set(prev);
+      next.delete(noticeId);
+      return next;
+    });
+    router.push(`/notice/${noticeId}`);
+  }
+
   async function loadReactions() {
     const noticeIds = notices.map((n) => n.id);
     if (noticeIds.length === 0) return;
@@ -122,8 +139,13 @@ export default function NoticePage() {
 
   function renderNoticeCard(n: Notice) {
     return (
-      <Card key={n.id} className="cursor-pointer" onClick={() => router.push(`/notice/${n.id}`)}>
+      <Card key={n.id} className="cursor-pointer" onClick={() => openNotice(n.id)}>
         <div className="font-bold text-[14.5px]">
+          {unseenIds.has(n.id) && (
+            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
+              NEW
+            </span>
+          )}
           {n.audience !== "全員" && (
             <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
               {n.audience}
