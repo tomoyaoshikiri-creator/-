@@ -21,11 +21,11 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClubLink",
-  description: "ClubLink — チーム運営アプリ",
+  title: "CLUB LINK",
+  description: "CLUB LINK — チーム運営アプリ",
   appleWebApp: {
     capable: true,
-    title: "TsugaVic",
+    title: "CLUB LINK",
     statusBarStyle: "black-translucent",
   },
 };
