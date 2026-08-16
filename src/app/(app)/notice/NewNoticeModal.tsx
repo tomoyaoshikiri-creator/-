@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { resizeImageFile } from "@/lib/resizeImage";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
@@ -99,10 +100,11 @@ export function NewNoticeModal({
 
     const entries = Object.entries(files) as [AttachmentKind, File][];
     for (const [kind, file] of entries) {
-      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(file.name)}`;
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage
         .from("notice-attachments")
-        .upload(path, file);
+        .upload(path, uploadFile);
       if (uploadError) {
         toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
         continue;

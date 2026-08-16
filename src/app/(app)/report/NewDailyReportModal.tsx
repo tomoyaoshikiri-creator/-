@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { safeExt } from "@/lib/storagePath";
+import { resizeImageFile } from "@/lib/resizeImage";
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 
 export function NewDailyReportModal({
@@ -68,8 +69,9 @@ export function NewDailyReportModal({
       return;
     }
     for (const file of files) {
-      const path = `${teamId}/${report.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("daily-report-attachments").upload(path, file);
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${report.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("daily-report-attachments").upload(path, uploadFile);
       if (uploadError) {
         toast(`${file.name}のアップロードに失敗しました: ${uploadError.message}`);
         continue;

@@ -15,6 +15,7 @@ import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
+import { resizeImageFile } from "@/lib/resizeImage";
 import type {
   AttachmentKind,
   Notice,
@@ -190,8 +191,9 @@ export default function NoticeDetailPage() {
 
     const entries = Object.entries(newFiles) as [AttachmentKind, File][];
     for (const [kind, file] of entries) {
-      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, file);
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
       if (uploadError) {
         toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
         continue;
