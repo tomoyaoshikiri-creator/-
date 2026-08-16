@@ -237,7 +237,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
                   setCopyOpen(false);
                   setCopyTargetId("");
                 }}
-                className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
               >
                 キャンセル
               </button>
@@ -315,7 +315,7 @@ function SortableMenuRow({
             <button
               type="button"
               onClick={() => setEditingId(null)}
-              className="flex-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+              className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
             >
               キャンセル
             </button>
