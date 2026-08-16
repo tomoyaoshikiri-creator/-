@@ -257,19 +257,51 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
-      library_files: {
+      library_categories: {
+        Row: {
+          id: string;
+          team_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          name: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      library_items: {
         Row: {
           id: string;
           team_id: string;
           uploader_id: string | null;
-          storage_path: string;
-          file_name: string;
+          category_id: string | null;
+          title: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           team_id: string;
           uploader_id?: string | null;
+          category_id?: string | null;
+          title: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      library_files: {
+        Row: {
+          id: string;
+          library_item_id: string;
+          storage_path: string;
+          file_name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          library_item_id: string;
           storage_path: string;
           file_name: string;
         };
@@ -1156,6 +1188,8 @@ export type ReportCommentReaction = Database["public"]["Tables"]["report_comment
 export type DailyReportCommentReaction = Database["public"]["Tables"]["daily_report_comment_reactions"]["Row"];
 export type DailyReportAttachment = Database["public"]["Tables"]["daily_report_attachments"]["Row"];
 export type ReportAttachment = Database["public"]["Tables"]["report_attachments"]["Row"];
+export type LibraryCategory = Database["public"]["Tables"]["library_categories"]["Row"];
+export type LibraryItem = Database["public"]["Tables"]["library_items"]["Row"];
 export type LibraryFile = Database["public"]["Tables"]["library_files"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];

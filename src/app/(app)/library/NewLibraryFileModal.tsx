@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
-import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { safeExt } from "@/lib/storagePath";
+import type { LibraryCategory } from "@/lib/database.types";
+
+const NEW_CATEGORY_VALUE = "__new__";
 
 export function NewLibraryFileModal({
   open,
@@ -21,10 +24,27 @@ export function NewLibraryFileModal({
   const { userId, teamId } = useSession();
   const toast = useToast();
 
+  const [categories, setCategories] = useState<LibraryCategory[]>([]);
+  const [title, setTitle] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    supabase
+      .from("library_categories")
+      .select("*")
+      .order("name", { ascending: true })
+      .then(({ data }) => setCategories(data ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   function reset() {
+    setTitle("");
+    setCategoryId("");
+    setNewCategoryName("");
     setFiles([]);
   }
 
@@ -37,22 +57,66 @@ export function NewLibraryFileModal({
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
+  async function resolveCategoryId(): Promise<string | null> {
+    if (categoryId === NEW_CATEGORY_VALUE) {
+      const name = newCategoryName.trim();
+      if (!name) return null;
+      const existing = categories.find((c) => c.name === name);
+      if (existing) return existing.id;
+      const { data, error } = await supabase
+        .from("library_categories")
+        .insert({ team_id: teamId, name })
+        .select()
+        .single();
+      if (error || !data) {
+        // 同時に同名カテゴリーが作られた場合など。既存のものを探して使う。
+        const { data: existingRow } = await supabase
+          .from("library_categories")
+          .select("*")
+          .eq("name", name)
+          .maybeSingle();
+        return existingRow?.id ?? null;
+      }
+      return data.id;
+    }
+    return categoryId || null;
+  }
+
   async function handleSubmit() {
+    if (!title.trim()) {
+      toast("タイトルを入力してください");
+      return;
+    }
     if (files.length === 0) {
       toast("ファイルを選んでください");
       return;
     }
     setSaving(true);
+    const resolvedCategoryId = await resolveCategoryId();
+    const { data: item, error } = await supabase
+      .from("library_items")
+      .insert({
+        team_id: teamId,
+        uploader_id: userId,
+        category_id: resolvedCategoryId,
+        title: title.trim(),
+      })
+      .select()
+      .single();
+    if (error || !item) {
+      setSaving(false);
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      return;
+    }
     for (const file of files) {
-      const path = `${teamId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(file.name)}`;
+      const path = `${teamId}/${item.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("library-files").upload(path, file);
       if (uploadError) {
         toast(`${file.name}のアップロードに失敗しました: ${uploadError.message}`);
         continue;
       }
       const { error: insertError } = await supabase.from("library_files").insert({
-        team_id: teamId,
-        uploader_id: userId,
+        library_item_id: item.id,
         storage_path: path,
         file_name: file.name,
       });
@@ -67,33 +131,65 @@ export function NewLibraryFileModal({
 
   return (
     <Modal open={open} onClose={onClose} title="ファイルを追加">
-      <FieldLabel>画像・資料</FieldLabel>
-      <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
-        📎 ファイルを選ぶ
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            addFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-      </label>
-      {files.length > 0 && (
-        <div className="mt-1.5 space-y-1">
-          {files.map((f, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
-              <span className="truncate">{f.name}</span>
-              <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
-                削除
-              </button>
-            </div>
+      <FieldLabel>タイトル</FieldLabel>
+      <input
+        className={inputClass()}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="例:新人歓迎会の写真"
+      />
+
+      <div className="mt-3">
+        <FieldLabel>カテゴリー</FieldLabel>
+        <select className={inputClass()} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <option value="">カテゴリーなし</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
           ))}
-        </div>
-      )}
-      <div className="text-xs text-ink-soft mt-1.5">※タップすると端末の「カメラロール」「ファイル」などから選べます</div>
+          <option value={NEW_CATEGORY_VALUE}>+ 新しいカテゴリーを作る</option>
+        </select>
+        {categoryId === NEW_CATEGORY_VALUE && (
+          <input
+            className={inputClass("mt-2")}
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="新しいカテゴリー名"
+          />
+        )}
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>画像・資料</FieldLabel>
+        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
+          📎 ファイルを選ぶ
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {files.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
+                <span className="truncate">{f.name}</span>
+                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
+                  削除
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="text-xs text-ink-soft mt-1.5">※タップすると端末の「カメラロール」「ファイル」などから選べます</div>
+      </div>
+
       <SubmitButton onClick={handleSubmit} disabled={saving}>
         {saving ? "アップロード中…" : "追加する"}
       </SubmitButton>

@@ -6,18 +6,22 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { SegButton } from "@/components/ui/SegButton";
 import { Fab } from "@/components/ui/Modal";
 import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile } from "@/lib/storagePath";
 import { formatDateLabel } from "@/lib/format";
-import type { LibraryFile } from "@/lib/database.types";
+import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
 
 type FileWithUrl = LibraryFile & { url: string | null };
+type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
 
 export default function LibraryPage() {
   const toast = useToast();
-  const [files, setFiles] = useState<FileWithUrl[]>([]);
+  const [items, setItems] = useState<ItemWithFiles[]>([]);
+  const [categories, setCategories] = useState<LibraryCategory[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -26,18 +30,31 @@ export default function LibraryPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: f }, profMap] = await Promise.all([
-      supabase.from("library_files").select("*").order("created_at", { ascending: false }),
+    const [{ data: cats }, { data: libItems }, profMap] = await Promise.all([
+      supabase.from("library_categories").select("*").order("name", { ascending: true }),
+      supabase.from("library_items").select("*").order("created_at", { ascending: false }),
       loadProfilesMap(supabase),
     ]);
+    setCategories(cats ?? []);
     setProfiles(profMap);
-    const withUrls = await Promise.all(
-      (f ?? []).map(async (item) => {
-        const { data: signed } = await supabase.storage.from("library-files").createSignedUrl(item.storage_path, 60 * 60);
-        return { ...item, url: signed?.signedUrl ?? null };
-      }),
-    );
-    setFiles(withUrls);
+
+    const itemIds = (libItems ?? []).map((i) => i.id);
+    let filesByItem: Record<string, FileWithUrl[]> = {};
+    if (itemIds.length > 0) {
+      const { data: files } = await supabase.from("library_files").select("*").in("library_item_id", itemIds);
+      const entries = await Promise.all(
+        (files ?? []).map(async (f) => {
+          const { data: signed } = await supabase.storage.from("library-files").createSignedUrl(f.storage_path, 60 * 60);
+          return { ...f, url: signed?.signedUrl ?? null };
+        }),
+      );
+      filesByItem = {};
+      entries.forEach((f) => {
+        (filesByItem[f.library_item_id] ??= []).push(f);
+      });
+    }
+
+    setItems((libItems ?? []).map((i) => ({ ...i, files: filesByItem[i.id] ?? [] })));
     setLoading(false);
   }, []);
 
@@ -45,7 +62,7 @@ export default function LibraryPage() {
     load();
   }, [load]);
 
-  async function handleDelete(item: FileWithUrl) {
+  async function handleDelete(item: ItemWithFiles) {
     if (deleteConfirmId !== item.id) {
       setDeleteConfirmId(item.id);
       setTimeout(() => setDeleteConfirmId((cur) => (cur === item.id ? null : cur)), 3000);
@@ -53,15 +70,19 @@ export default function LibraryPage() {
     }
     setDeleteConfirmId(null);
     const supabase = createClient();
-    await supabase.storage.from("library-files").remove([item.storage_path]);
-    const { error } = await supabase.from("library_files").delete().eq("id", item.id);
+    if (item.files.length > 0) {
+      await supabase.storage.from("library-files").remove(item.files.map((f) => f.storage_path));
+    }
+    const { error } = await supabase.from("library_items").delete().eq("id", item.id);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);
       return;
     }
-    setFiles((prev) => prev.filter((f) => f.id !== item.id));
+    setItems((prev) => prev.filter((i) => i.id !== item.id));
     toast("削除しました");
   }
+
+  const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
 
   return (
     <PageShell
@@ -81,49 +102,84 @@ export default function LibraryPage() {
         </>
       }
     >
+      {categories.length > 0 && (
+        <div className="flex gap-2 mb-3.5 flex-wrap">
+          <SegButton variant="small" active={selectedCategoryId === "all"} onClick={() => setSelectedCategoryId("all")}>
+            すべて
+          </SegButton>
+          {categories.map((c) => (
+            <SegButton
+              key={c.id}
+              variant="small"
+              active={selectedCategoryId === c.id}
+              onClick={() => setSelectedCategoryId(c.id)}
+            >
+              {c.name}
+            </SegButton>
+          ))}
+        </div>
+      )}
+
       <SectionLabel>共有ファイル</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
-      ) : files.length === 0 ? (
+      ) : visibleItems.length === 0 ? (
         <EmptyState>まだファイルがありません</EmptyState>
       ) : (
-        files.map((f) => (
-          <Card key={f.id}>
-            {f.url && isImageFile(f.file_name) ? (
-              <a href={f.url} target="_blank" rel="noreferrer">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.url} alt={f.file_name} className="w-full rounded-[10px] border border-line object-contain mb-2" />
-              </a>
-            ) : null}
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                {f.url && !isImageFile(f.file_name) ? (
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-bold text-[13.5px] text-orange truncate block"
-                  >
-                    📎 {f.file_name}
-                  </a>
-                ) : (
-                  <div className="font-bold text-[13.5px] truncate">{f.file_name}</div>
+        visibleItems.map((item) => {
+          const category = categories.find((c) => c.id === item.category_id);
+          return (
+            <Card key={item.id}>
+              <div className="font-bold text-[14.5px]">
+                {category && (
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
+                    {category.name}
+                  </span>
                 )}
-                <div className="text-[11px] text-ink-soft mt-0.5">
-                  {f.uploader_id ? (profiles[f.uploader_id] ?? "") : ""} ・ {formatDateLabel(f.created_at.slice(0, 10))}
-                </div>
+                {item.title}
               </div>
+              <div className="text-[11px] text-ink-soft mt-1">
+                {item.uploader_id ? (profiles[item.uploader_id] ?? "") : ""} ・ {formatDateLabel(item.created_at.slice(0, 10))}
+              </div>
+
+              {item.files.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {item.files.map((f) =>
+                    f.url && isImageFile(f.file_name) ? (
+                      <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={f.url}
+                          alt={f.file_name}
+                          className="w-full rounded-[10px] border border-line object-contain"
+                        />
+                      </a>
+                    ) : f.url ? (
+                      <a
+                        key={f.id}
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-orange font-bold text-xs"
+                      >
+                        📎 {f.file_name}
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={() => handleDelete(f)}
-                className="flex-none px-2.5 py-1.5 text-[11px] font-bold border rounded-[10px] bg-white"
+                onClick={() => handleDelete(item)}
+                className="mt-2.5 w-full text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
                 style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
               >
-                {deleteConfirmId === f.id ? "もう一度タップで削除確定" : "削除"}
+                {deleteConfirmId === item.id ? "もう一度タップで削除確定" : "削除"}
               </button>
-            </div>
-          </Card>
-        ))
+            </Card>
+          );
+        })
       )}
     </PageShell>
   );
