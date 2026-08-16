@@ -302,10 +302,10 @@ export default function PlayerNotesPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteNote(n.id)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
                         style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                       >
-                        {deleteNoteConfirmId === n.id ? "もう一度タップで削除確定" : "削除"}
+                        {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
                       </button>
                     </div>
                   )}

@@ -473,10 +473,10 @@ export default function CoachNotePage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(r.id)}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
                       style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                     >
-                      {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "削除"}
+                      {deleteConfirmId === r.id ? "再タップで削除確定" : "削除"}
                     </button>
                   </div>
                 )}
@@ -536,10 +536,10 @@ export default function CoachNotePage() {
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(c.id)}
-                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white"
+                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white whitespace-nowrap"
                               style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                             >
-                              {deleteCommentConfirmId === c.id ? "もう一度タップで削除確定" : "削除"}
+                              {deleteCommentConfirmId === c.id ? "再タップで削除確定" : "削除"}
                             </button>
                           </div>
                         )}
