@@ -65,10 +65,10 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // player_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
 // (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
-  一般: ["schedule", "notice", "report", "karte", "game", "library", "settings"],
-  運営: ["schedule", "notice", "report", "karte", "game", "library", "users", "settings"],
-  指導者: ["schedule", "notice", "report", "coachNote", "karte", "game", "library", "settings"],
-  管理者: ["schedule", "notice", "report", "coachNote", "karte", "game", "library", "users", "settings"],
+  一般: ["schedule", "notice", "report", "game", "karte", "library", "settings"],
+  運営: ["schedule", "notice", "report", "game", "karte", "library", "users", "settings"],
+  指導者: ["schedule", "notice", "report", "coachNote", "game", "karte", "library", "settings"],
+  管理者: ["schedule", "notice", "report", "coachNote", "game", "karte", "library", "users", "settings"],
 };
 
 export function tabsForRole(role: Role): TabKey[] {
