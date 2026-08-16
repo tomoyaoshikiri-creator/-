@@ -936,8 +936,12 @@ export interface Database {
         Args: { invite_token: string };
         Returns: { team_name: string; role: string; valid: boolean }[];
       };
+      get_invite_players: {
+        Args: { invite_token: string };
+        Returns: { id: string; sei: string; mei: string; grade: string | null; number: string | null }[];
+      };
       accept_invite: {
-        Args: { invite_token: string; member_name: string };
+        Args: { invite_token: string; member_name: string; player_ids?: string[] };
         Returns: string;
       };
       advance_academic_year: {

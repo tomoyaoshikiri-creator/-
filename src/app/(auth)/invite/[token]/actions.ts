@@ -16,6 +16,7 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   const name = `${sei}${mei}`;
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const playerIds = formData.getAll("playerId").map(String).filter((id) => id !== "");
 
   if (!token || !sei || !mei || !email || !password) {
     return { error: "すべての項目を入力してください" };
@@ -26,6 +27,7 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
 
   const origin = await getRequestOrigin();
   const completeParams = new URLSearchParams({ kind: "invite", token, name });
+  if (playerIds.length > 0) completeParams.set("playerIds", playerIds.join(","));
   const next = `/auth/complete?${completeParams.toString()}`;
   const emailRedirectTo = `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
 
@@ -47,6 +49,7 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   const { error: rpcError } = await supabase.rpc("accept_invite", {
     invite_token: token,
     member_name: name,
+    player_ids: playerIds,
   });
   if (rpcError) return { error: rpcError.message };
 

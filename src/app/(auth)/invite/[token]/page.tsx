@@ -31,13 +31,18 @@ export default async function InvitePage({
 
   const roleLabel = ROLE_LABEL[data.role] ?? data.role;
 
+  const players =
+    data.role === "一般"
+      ? (await supabase.rpc("get_invite_players", { invite_token: token })).data ?? []
+      : [];
+
   return (
     <div>
       <AuthHeading />
       <div className="text-center text-[13px] text-ink-soft mb-4">
         <span className="font-bold text-navy">{data.team_name}</span> への招待({roleLabel}用)
       </div>
-      <InviteForm token={token} roleLabel={roleLabel} />
+      <InviteForm token={token} roleLabel={roleLabel} players={players} />
     </div>
   );
 }
