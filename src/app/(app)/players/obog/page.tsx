@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -9,10 +8,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/SegButton";
-import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
+import { PlayerRow } from "@/components/PlayerRow";
 import { canAccessTab, canManagePlayers } from "@/lib/permissions";
-import { fiscalYearOf, obogGraduationFiscalYear, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
+import { fiscalYearOf, obogGraduationFiscalYear, sortPlayers, todayDateStr } from "@/lib/format";
+import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
@@ -22,6 +22,8 @@ export default function ObogPage() {
   const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [unseenNoteIds, setUnseenNoteIds] = useState<Set<string>>(new Set());
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -35,7 +37,21 @@ export default function ObogPage() {
       const supabase = createClient();
       setLoading(true);
       const { data } = await supabase.from("players").select("*").eq("status", "OB・OG");
-      setPlayers(sortPlayers(data ?? []));
+      const list = sortPlayers(data ?? []);
+      setPlayers(list);
+      // メモは指導者・管理者専用の情報なので、それ以外のロール(保護者)では取得しない。
+      if (list.length > 0 && isStaff) {
+        const { data: notes } = await supabase.from("player_notes").select("player_id");
+        const counts: Record<string, number> = {};
+        (notes ?? []).forEach((n) => {
+          counts[n.player_id] = (counts[n.player_id] ?? 0) + 1;
+        });
+        setNoteCounts(counts);
+        computeUnseenPlayerNoteIds(userId).then(setUnseenNoteIds);
+      } else {
+        setNoteCounts({});
+        setUnseenNoteIds(new Set());
+      }
       // 保護者(一般・運営)は一覧にチーム全OB・OGが出るが、自分の子ども以外は選べないようにする。
       if (!isStaff) {
         const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
@@ -84,35 +100,16 @@ export default function ObogPage() {
             {yearMembers.length === 0 ? (
               <EmptyState>この年度に卒団した選手はいません</EmptyState>
             ) : (
-              yearMembers.map((p) => {
-                const selectable = isStaff || ownPlayerIds.has(p.id);
-                const content = (
-                  <>
-                    <NumChip num={p.number ?? "-"} muted />
-                    <div className="flex-1">
-                      <div className="font-bold text-[13.5px]">{playerFullName(p)}</div>
-                      <div className="text-[11px] text-ink-soft mt-0.5">{p.positions.join("/")}</div>
-                    </div>
-                    {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
-                  </>
-                );
-                return selectable ? (
-                  <Link
-                    key={p.id}
-                    href={`/players/${p.id}`}
-                    className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-                  >
-                    {content}
-                  </Link>
-                ) : (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 opacity-40"
-                  >
-                    {content}
-                  </div>
-                );
-              })
+              yearMembers.map((p) => (
+                <PlayerRow
+                  key={p.id}
+                  player={p}
+                  noteCount={noteCounts[p.id] ?? 0}
+                  showNotes={isStaff}
+                  selectable={isStaff || ownPlayerIds.has(p.id)}
+                  hasUnseenNotes={unseenNoteIds.has(p.id)}
+                />
+              ))
             )}
           </Card>
         </>
