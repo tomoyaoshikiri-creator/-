@@ -42,6 +42,7 @@ export interface Database {
           theme_primary: string | null;
           theme_accent: string | null;
           logo_path: string | null;
+          storage_limit_bytes: number;
           created_at: string;
         };
         Insert: {
@@ -51,6 +52,7 @@ export interface Database {
           theme_primary?: string | null;
           theme_accent?: string | null;
           logo_path?: string | null;
+          storage_limit_bytes?: number;
           created_at?: string;
         };
         Update: Partial<{
@@ -58,6 +60,7 @@ export interface Database {
           theme_primary: string | null;
           theme_accent: string | null;
           logo_path: string | null;
+          storage_limit_bytes: number;
         }>;
         Relationships: [];
       };
@@ -211,6 +214,7 @@ export interface Database {
           kind: AttachmentKind;
           storage_path: string;
           file_name: string;
+          size_bytes: number;
           created_at: string;
         };
         Insert: {
@@ -219,6 +223,7 @@ export interface Database {
           kind: AttachmentKind;
           storage_path: string;
           file_name: string;
+          size_bytes?: number;
         };
         Update: Record<string, never>;
         Relationships: [];
@@ -229,6 +234,7 @@ export interface Database {
           daily_report_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes: number;
           created_at: string;
         };
         Insert: {
@@ -236,6 +242,7 @@ export interface Database {
           daily_report_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes?: number;
         };
         Update: Record<string, never>;
         Relationships: [];
@@ -246,6 +253,7 @@ export interface Database {
           report_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes: number;
           created_at: string;
         };
         Insert: {
@@ -253,6 +261,7 @@ export interface Database {
           report_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes?: number;
         };
         Update: Record<string, never>;
         Relationships: [];
@@ -297,6 +306,7 @@ export interface Database {
           library_item_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes: number;
           created_at: string;
         };
         Insert: {
@@ -304,6 +314,7 @@ export interface Database {
           library_item_id: string;
           storage_path: string;
           file_name: string;
+          size_bytes?: number;
         };
         Update: Record<string, never>;
         Relationships: [];
@@ -1058,6 +1069,10 @@ export interface Database {
       advance_academic_year: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      team_storage_usage_bytes: {
+        Args: Record<string, never>;
+        Returns: number;
       };
       get_default_team_logo_path: {
         Args: Record<string, never>;

@@ -114,6 +114,7 @@ export function NewNoticeModal({
         kind,
         storage_path: path,
         file_name: file.name,
+        size_bytes: uploadFile.size,
       });
       if (attachError) {
         toast(`${kind}の登録に失敗しました: ${attachError.message}`);

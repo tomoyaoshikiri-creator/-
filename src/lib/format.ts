@@ -1,5 +1,17 @@
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex++;
+  }
+  return `${value.toFixed(value < 10 ? 1 : 0)}${units[unitIndex]}`;
+}
+
 export function formatDateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;

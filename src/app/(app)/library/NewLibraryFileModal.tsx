@@ -121,6 +121,7 @@ export function NewLibraryFileModal({
         library_item_id: item.id,
         storage_path: path,
         file_name: file.name,
+        size_bytes: uploadFile.size,
       });
       if (insertError) {
         toast(`${file.name}の登録に失敗しました: ${insertError.message}`);

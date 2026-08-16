@@ -80,6 +80,7 @@ export function NewCoachNoteModal({
         report_id: report.id,
         storage_path: path,
         file_name: file.name,
+        size_bytes: uploadFile.size,
       });
       if (attachError) {
         toast(`${file.name}の登録に失敗しました: ${attachError.message}`);
