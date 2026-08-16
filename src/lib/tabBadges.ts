@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { TabKey } from "@/lib/permissions";
 import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
@@ -12,6 +13,11 @@ import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnsee
 export type BadgeTab = "notice" | "report" | "coachNote";
 
 export function useTabBadges(userId: string, teamId: string): Partial<Record<TabKey, boolean>> {
+  // AppNavはレイアウト側で1回しかマウントされず、タブ間の遷移では再マウントされない。
+  // そのため素朴にuseEffect(..., [userId, teamId])だけだと初回にしか判定されず、
+  // 既読にした後もタブの赤丸が消えないままになる。pathnameを依存に加え、画面遷移の
+  // たびに再判定させることで、タブを開いて既読にした結果を反映させる。
+  const pathname = usePathname();
   const [badges, setBadges] = useState<Partial<Record<TabKey, boolean>>>({});
 
   const load = useCallback(async () => {
@@ -66,7 +72,7 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, pathname]);
 
   return badges;
 }
