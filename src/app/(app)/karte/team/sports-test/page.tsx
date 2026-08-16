@@ -2,30 +2,44 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState } from "@/components/ui/Card";
+import { Card, EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { SPORTS_TEST_RANKING_METRICS, type SportsTestMetric } from "@/lib/karteAggregate";
 import { fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
-import type { Player, SportsTestRecord } from "@/lib/database.types";
+import type { Database, Player, SportsTestRecord } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
 const QUARTERS = [1, 2, 3, 4] as const;
 
 type SportsTestValues = Partial<Record<SportsTestMetric, number | null>>;
+type TeamAverageRow = Database["public"]["Functions"]["team_sports_test_averages"]["Returns"][number];
+
+function SportsTestLegend() {
+  return (
+    <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
+      {SPORTS_TEST_RANKING_METRICS.map((m) => (
+        <li key={m.value}>
+          {m.abbrLines.join("")}:{m.label}
+          {m.unit ? `(${m.unit})` : ""}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function KarteTeamSportsTestPage() {
-  const router = useRouter();
   const { role } = useSession();
+  const isStaff = canViewKarte(role);
   const [players, setPlayers] = useState<Player[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
+  const [teamAverageRow, setTeamAverageRow] = useState<TeamAverageRow | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [quarter, setQuarter] = useState<number>(1);
   const [rankingMode, setRankingMode] = useState(false);
@@ -33,18 +47,16 @@ export default function KarteTeamSportsTestPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
-
-  useEffect(() => {
+    if (!isStaff) return;
     (async () => {
       const supabase = createClient();
       const { data: p } = await supabase.from("players").select("*");
       setPlayers(sortPlayers(p ?? []));
     })();
-  }, []);
+  }, [isStaff]);
 
   useEffect(() => {
+    if (!isStaff) return;
     (async () => {
       setLoading(true);
       const supabase = createClient();
@@ -57,7 +69,21 @@ export default function KarteTeamSportsTestPage() {
       setSportsTestRecords(data ?? []);
       setLoading(false);
     })();
-  }, [fiscalYear, quarter]);
+  }, [isStaff, fiscalYear, quarter]);
+
+  useEffect(() => {
+    if (isStaff) return;
+    setLoading(true);
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("team_sports_test_averages", {
+        p_fiscal_year: fiscalYear,
+        p_quarter: quarter,
+      });
+      setTeamAverageRow(data?.[0] ?? null);
+      setLoading(false);
+    })();
+  }, [isStaff, fiscalYear, quarter]);
 
   // 在籍中の選手は常に表示。OB・OGは選んだ年度・四半期に記録がある場合だけ一覧に含める。
   const sportsTestPlayers = players.filter(
@@ -95,7 +121,14 @@ export default function KarteTeamSportsTestPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="スポーツテスト" variant="detail" backHref="/karte/team" accessBadge="coach" />}
+      header={
+        <AppHeader
+          title="スポーツテスト"
+          variant="detail"
+          backHref="/karte/team"
+          accessBadge={isStaff ? "coach" : undefined}
+        />
+      }
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="relative inline-block">
@@ -112,15 +145,17 @@ export default function KarteTeamSportsTestPage() {
           </select>
           <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
         </div>
-        <button
-          type="button"
-          onClick={() => setRankingMode((v) => !v)}
-          className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
-            rankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
-          }`}
-        >
-          {rankingMode ? "ランキング中" : "ランキングで見る"}
-        </button>
+        {isStaff && (
+          <button
+            type="button"
+            onClick={() => setRankingMode((v) => !v)}
+            className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
+              rankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+            }`}
+          >
+            {rankingMode ? "ランキング中" : "ランキングで見る"}
+          </button>
+        )}
       </div>
 
       <FieldLabel>四半期</FieldLabel>
@@ -134,6 +169,31 @@ export default function KarteTeamSportsTestPage() {
 
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
+      ) : !isStaff ? (
+        <>
+          <Card>
+            <div className="text-[11.5px] font-bold text-ink-soft mb-3">チーム平均</div>
+            {!teamAverageRow || teamAverageRow.record_count === 0 ? (
+              <div className="text-xs text-ink-soft">この四半期の記録はありません</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-y-3 text-center">
+                {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                  const v = teamAverageRow[m.value];
+                  return (
+                    <div key={m.value}>
+                      <div className="text-[10px] text-ink-soft font-bold leading-tight">
+                        <div>{m.abbrLines[0]}</div>
+                        <div>{m.abbrLines[1]}</div>
+                      </div>
+                      <div className="font-mono font-bold text-[13px] mt-0.5">{v === null || v === undefined ? "-" : v}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+          <SportsTestLegend />
+        </>
       ) : (
         <>
           {rankingMode && (
@@ -202,14 +262,7 @@ export default function KarteTeamSportsTestPage() {
             </table>
           </div>
 
-          <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
-            {SPORTS_TEST_RANKING_METRICS.map((m) => (
-              <li key={m.value}>
-                {m.abbrLines.join("")}:{m.label}
-                {m.unit ? `(${m.unit})` : ""}
-              </li>
-            ))}
-          </ul>
+          <SportsTestLegend />
         </>
       )}
     </PageShell>

@@ -27,23 +27,25 @@ export default function KarteTopPage() {
 
   return (
     <PageShell header={<AppHeader title="カルテ" accessBadge={isStaff ? "coach" : undefined} />}>
+      <Link href="/karte/team">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px] flex items-center gap-1.5">
+                {teamAnalysisUnseen && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+                チームカルテ
+              </div>
+              <div className="text-[11.5px] text-ink-soft mt-1">
+                {isStaff ? "項目別ランキングでチーム全体を見る・分析する" : "試合記録・チーム平均のスタッツ・スポーツテストを見る"}
+              </div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
       {isStaff && (
         <>
-          <Link href="/karte/team">
-            <Card className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-[15px] flex items-center gap-1.5">
-                    {teamAnalysisUnseen && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
-                    チームカルテ
-                  </div>
-                  <div className="text-[11.5px] text-ink-soft mt-1">項目別ランキングでチーム全体を見る・分析する</div>
-                </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Card>
-          </Link>
-
           <Link href="/karte/players">
             <Card className="cursor-pointer">
               <div className="flex items-center justify-between">

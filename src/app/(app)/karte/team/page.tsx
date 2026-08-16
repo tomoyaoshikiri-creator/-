@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -46,9 +45,9 @@ interface StatLineWithDate extends GamePlayerStatLine {
 }
 
 export default function KarteTeamPage() {
-  const router = useRouter();
   const { role, userId, teamId } = useSession();
   const toast = useToast();
+  const isStaff = canViewKarte(role);
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisFiscalYear, setAnalysisFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -79,10 +78,6 @@ export default function KarteTeamPage() {
 
   const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
-
-  useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
 
   const loadNotes = useCallback(async () => {
     if (!hasCachedValue("karteTeam:notes")) setNotesLoading(true);
@@ -138,12 +133,12 @@ export default function KarteTeamPage() {
   }
 
   useEffect(() => {
-    loadNotes();
-  }, [loadNotes]);
+    if (isStaff) loadNotes();
+  }, [isStaff, loadNotes]);
 
   useEffect(() => {
-    markItemSeen(userId, "team_analysis", teamId);
-  }, [userId, teamId]);
+    if (isStaff) markItemSeen(userId, "team_analysis", teamId);
+  }, [isStaff, userId, teamId]);
 
   useEffect(() => {
     if (!analysisOpen) return;
@@ -306,7 +301,11 @@ export default function KarteTeamPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge="coach" />}>
+    <PageShell
+      header={
+        <AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge={isStaff ? "coach" : undefined} />
+      }
+    >
       <Link href="/game">
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">
@@ -324,7 +323,9 @@ export default function KarteTeamPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">スタッツ</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとの試合スタッツ</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">
+                {isStaff ? "選手ごとの試合スタッツ" : "チーム平均の試合スタッツ"}
+              </div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
@@ -336,24 +337,28 @@ export default function KarteTeamPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">スポーツテスト</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとのスポーツテスト結果</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">
+                {isStaff ? "選手ごとのスポーツテスト結果" : "チーム平均のスポーツテスト結果"}
+              </div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
         </Card>
       </Link>
 
-      <Link href="/karte/team/workout">
-        <Card className="cursor-pointer">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-[15px]">ワークアウト</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">いつどんな練習をしたかの履歴</div>
+      {isStaff && (
+        <Link href="/karte/team/workout">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold text-[15px]">ワークアウト</div>
+                <div className="text-[11.5px] text-ink-soft mt-1">いつどんな練習をしたかの履歴</div>
+              </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-          </div>
-        </Card>
-      </Link>
+          </Card>
+        </Link>
+      )}
 
       {role === "管理者" && (
         <button
@@ -407,94 +412,100 @@ export default function KarteTeamPage() {
         </Modal>
       )}
 
-      <SectionLabel>チーム分析フィードバック</SectionLabel>
-      {notesLoading ? (
-        <EmptyState>読み込み中…</EmptyState>
-      ) : analysisNotes.length === 0 ? (
-        <Card>
-          <div className="text-xs text-ink-soft">まだコメントがありません</div>
-        </Card>
-      ) : (
-        analysisNotes.map((n) =>
-          editingNoteId === n.id ? (
-            <Card key={n.id}>
-              <textarea
-                rows={3}
-                className={inputClass()}
-                value={editNoteBody}
-                onChange={(e) => setEditNoteBody(e.target.value)}
-              />
-              <div className="flex gap-2 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSaveNoteEdit(n.id)}
-                  disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
-                >
-                  {savingNoteEdit ? "保存中…" : "保存"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingNoteId(null)}
-                  disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
-                >
-                  キャンセル
-                </button>
-              </div>
+      {isStaff && (
+        <>
+          <SectionLabel>チーム分析フィードバック</SectionLabel>
+          {notesLoading ? (
+            <EmptyState>読み込み中…</EmptyState>
+          ) : analysisNotes.length === 0 ? (
+            <Card>
+              <div className="text-xs text-ink-soft">まだコメントがありません</div>
             </Card>
           ) : (
-            <Card
-              key={n.id}
-              className={canManagePlayers(role) ? "cursor-pointer" : ""}
-              onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
-            >
-              <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                {formatDateLabel(n.created_at.slice(0, 10))}
-                {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
-              </div>
-              <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
-              <ReactionButtons
-                reactions={noteReactions.filter((r) => r.note_id === n.id)}
-                onToggle={(type) => toggleNoteReaction(n.id, type)}
-              />
-              {canManagePlayers(role) && expandedNoteId === n.id && (
-                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => startEditNote(n)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
-                  >
-                    編集
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteNote(n.id)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
-                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                  >
-                    {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
-                  </button>
-                </div>
-              )}
-            </Card>
-          ),
-        )
-      )}
+            analysisNotes.map((n) =>
+              editingNoteId === n.id ? (
+                <Card key={n.id}>
+                  <textarea
+                    rows={3}
+                    className={inputClass()}
+                    value={editNoteBody}
+                    onChange={(e) => setEditNoteBody(e.target.value)}
+                  />
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveNoteEdit(n.id)}
+                      disabled={savingNoteEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                    >
+                      {savingNoteEdit ? "保存中…" : "保存"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingNoteId(null)}
+                      disabled={savingNoteEdit}
+                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </Card>
+              ) : (
+                <Card
+                  key={n.id}
+                  className={canManagePlayers(role) ? "cursor-pointer" : ""}
+                  onClick={
+                    canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined
+                  }
+                >
+                  <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                    {formatDateLabel(n.created_at.slice(0, 10))}
+                    {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                  </div>
+                  <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+                  <ReactionButtons
+                    reactions={noteReactions.filter((r) => r.note_id === n.id)}
+                    onToggle={(type) => toggleNoteReaction(n.id, type)}
+                  />
+                  {canManagePlayers(role) && expandedNoteId === n.id && (
+                    <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => startEditNote(n)}
+                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                      >
+                        編集
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNote(n.id)}
+                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      >
+                        {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              ),
+            )
+          )}
 
-      {canManagePlayers(role) && (
-        <>
-          <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを登録</SubmitButton>
-          <AddFeedbackModal
-            open={addFeedbackOpen}
-            onClose={() => setAddFeedbackOpen(false)}
-            onCreated={() => {
-              setAddFeedbackOpen(false);
-              toast("フィードバックを登録しました");
-              loadNotes();
-            }}
-            insert={handleAddNote}
-          />
+          {canManagePlayers(role) && (
+            <>
+              <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを登録</SubmitButton>
+              <AddFeedbackModal
+                open={addFeedbackOpen}
+                onClose={() => setAddFeedbackOpen(false)}
+                onCreated={() => {
+                  setAddFeedbackOpen(false);
+                  toast("フィードバックを登録しました");
+                  loadNotes();
+                }}
+                insert={handleAddNote}
+              />
+            </>
+          )}
         </>
       )}
     </PageShell>

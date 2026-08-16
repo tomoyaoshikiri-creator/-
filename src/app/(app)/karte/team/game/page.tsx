@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState } from "@/components/ui/Card";
+import { Card, EmptyState } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { StatCell } from "@/components/karte/StatCell";
@@ -18,7 +17,7 @@ import {
   type SeasonStatAverages,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, Player } from "@/lib/database.types";
+import type { Database, GamePlayerStatLine, Player } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -27,25 +26,66 @@ interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
 
+type TeamAverageRow = Database["public"]["Functions"]["team_game_stat_averages"]["Returns"][number];
+
+function toSeasonStatAverages(row: TeamAverageRow): SeasonStatAverages {
+  return {
+    gp: 0,
+    pts: row.pts ?? 0,
+    fgMade: 0,
+    ftMade: 0,
+    reb: 0,
+    rebOff: row.reb_off ?? 0,
+    rebDef: row.reb_def ?? 0,
+    ast: row.ast ?? 0,
+    stl: row.stl ?? 0,
+    blk: row.blk ?? 0,
+    tov: row.tov ?? 0,
+    fouls: 0,
+    eff: row.eff ?? 0,
+    fgPct: row.fg_pct,
+    ftPct: row.ft_pct,
+    fgMadeTotal: row.fg_made_total,
+    fgAttTotal: row.fg_att_total,
+    ftMadeTotal: row.ft_made_total,
+    ftAttTotal: row.ft_att_total,
+  };
+}
+
 // FG/FTは「成功数/試投数」の分数表示になるため、他の列より少し幅を広げる。
 const colWidthClass = (key: keyof SeasonStatAverages) =>
   key === "fgPct" || key === "ftPct" ? "w-[58px] min-w-[58px]" : "w-[50px] min-w-[50px]";
 
+function GameStatLegend() {
+  return (
+    <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
+      <li>PTS:得点</li>
+      <li>FG%:フィールドゴール成功率(下段は成功数/試投数)</li>
+      <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
+      <li>AST:アシスト</li>
+      <li>OREB:オフェンスリバウンド</li>
+      <li>DREB:ディフェンスリバウンド</li>
+      <li>STL:スティール</li>
+      <li>BLK:ブロック</li>
+      <li>TO:ターンオーバー</li>
+      <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
+    </ul>
+  );
+}
+
 export default function KarteTeamGamePage() {
-  const router = useRouter();
   const { role } = useSession();
+  const isStaff = canViewKarte(role);
   const [players, setPlayers] = useState<Player[]>([]);
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
+  const [teamAverageRow, setTeamAverageRow] = useState<TeamAverageRow | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [rankingMode, setRankingMode] = useState(false);
   const [sortKey, setSortKey] = useState<keyof SeasonStatAverages>("pts");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
-
-  useEffect(() => {
+    if (!isStaff) return;
     (async () => {
       const supabase = createClient();
       const [{ data: p }, { data: lines }] = await Promise.all([
@@ -59,7 +99,18 @@ export default function KarteTeamGamePage() {
       setStatLines(lines ?? []);
       setLoading(false);
     })();
-  }, []);
+  }, [isStaff]);
+
+  useEffect(() => {
+    if (isStaff) return;
+    setLoading(true);
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("team_game_stat_averages", { p_fiscal_year: fiscalYear });
+      setTeamAverageRow(data?.[0] ?? null);
+      setLoading(false);
+    })();
+  }, [isStaff, fiscalYear]);
 
   const linesForYear = statLines.filter((l) => {
     const date = l.game_matches?.schedules?.date;
@@ -86,7 +137,14 @@ export default function KarteTeamGamePage() {
 
   return (
     <PageShell
-      header={<AppHeader title="スタッツ" variant="detail" backHref="/karte/team" accessBadge="coach" />}
+      header={
+        <AppHeader
+          title="スタッツ"
+          variant="detail"
+          backHref="/karte/team"
+          accessBadge={isStaff ? "coach" : undefined}
+        />
+      }
     >
       <div className="flex items-center gap-2 mb-3">
         <div className="relative inline-block">
@@ -103,19 +161,42 @@ export default function KarteTeamGamePage() {
           </select>
           <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
         </div>
-        <button
-          type="button"
-          onClick={() => setRankingMode((v) => !v)}
-          className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
-            rankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
-          }`}
-        >
-          {rankingMode ? "ランキング中" : "ランキングで見る"}
-        </button>
+        {isStaff && (
+          <button
+            type="button"
+            onClick={() => setRankingMode((v) => !v)}
+            className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
+              rankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
+            }`}
+          >
+            {rankingMode ? "ランキング中" : "ランキングで見る"}
+          </button>
+        )}
       </div>
 
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
+      ) : !isStaff ? (
+        <>
+          <Card>
+            <div className="text-[11.5px] font-bold text-ink-soft mb-3">チーム平均</div>
+            {!teamAverageRow || teamAverageRow.player_count === 0 ? (
+              <div className="text-xs text-ink-soft">この年度の出場記録はありません</div>
+            ) : (
+              <div className="grid grid-cols-5 gap-y-3 text-center">
+                {GAME_COLUMNS.map((c) => (
+                  <div key={c.key}>
+                    <div className="text-[10px] text-ink-soft font-bold">{c.abbr}</div>
+                    <div className="font-mono font-bold text-[13px] mt-0.5">
+                      <StatCell statKey={c.key} averages={toSeasonStatAverages(teamAverageRow)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+          <GameStatLegend />
+        </>
       ) : (
         <>
           {rankingMode && (
@@ -187,18 +268,7 @@ export default function KarteTeamGamePage() {
             </table>
           </div>
 
-          <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
-            <li>PTS:得点</li>
-            <li>FG%:フィールドゴール成功率(下段は成功数/試投数)</li>
-            <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
-            <li>AST:アシスト</li>
-            <li>OREB:オフェンスリバウンド</li>
-            <li>DREB:ディフェンスリバウンド</li>
-            <li>STL:スティール</li>
-            <li>BLK:ブロック</li>
-            <li>TO:ターンオーバー</li>
-            <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
-          </ul>
+          <GameStatLegend />
         </>
       )}
     </PageShell>

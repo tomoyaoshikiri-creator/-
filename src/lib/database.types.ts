@@ -1078,6 +1078,43 @@ export interface Database {
         Args: Record<string, never>;
         Returns: number;
       };
+      team_game_stat_averages: {
+        Args: { p_fiscal_year: number };
+        Returns: {
+          player_count: number;
+          pts: number | null;
+          fg_pct: number | null;
+          ft_pct: number | null;
+          ast: number | null;
+          reb_off: number | null;
+          reb_def: number | null;
+          stl: number | null;
+          blk: number | null;
+          tov: number | null;
+          eff: number | null;
+          fg_made_total: number;
+          fg_att_total: number;
+          ft_made_total: number;
+          ft_att_total: number;
+        }[];
+      };
+      team_sports_test_averages: {
+        Args: { p_fiscal_year: number; p_quarter: number };
+        Returns: {
+          record_count: number;
+          wingspan_cm: number | null;
+          sprint20m: number | null;
+          lane_agility: number | null;
+          side_step: number | null;
+          shuttle_20m_x3: number | null;
+          long_jump: number | null;
+          ball_throw: number | null;
+          back_fist_right: number | null;
+          back_fist_left: number | null;
+          ft_golf: number | null;
+          beep_test_reps: number | null;
+        }[];
+      };
       get_default_team_logo_path: {
         Args: Record<string, never>;
         Returns: string | null;
