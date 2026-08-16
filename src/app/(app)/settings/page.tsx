@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { canManageSettings } from "@/lib/permissions";
 
 function SettingsRow({ href, label }: { href: string; label: string }) {
@@ -27,6 +28,7 @@ export default function SettingsPage() {
       <Card>
         <SettingsRow href="/settings/name" label="表示名の変更" />
         <SettingsRow href="/settings/password" label="パスワードを変更" />
+        <PushNotificationToggle />
       </Card>
 
       {canManageTeam && (
