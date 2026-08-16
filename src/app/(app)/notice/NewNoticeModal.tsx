@@ -117,24 +117,15 @@ export function NewNoticeModal({
 
     setSaving(false);
     reset();
+    // プッシュ通知の送信はベストエフォート。鍵未設定や送信失敗があっても
+    // お知らせの登録自体は完了しているので、ここでは結果を待たず・エラーも無視する
+    // (失敗の詳細はサーバー側のログ(/api/push/notify)に残る)。
+    fetch("/api/push/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` }),
+    }).catch(() => {});
     onCreated();
-    // プッシュ通知の送信はベストエフォート。ここでの結果はお知らせの登録自体には
-    // 影響させないが、送信件数だけは分かるようにトーストで知らせる(動作確認用)。
-    try {
-      const res = await fetch("/api/push/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` }),
-      });
-      const result = await res.json().catch(() => null);
-      if (!res.ok) {
-        toast(`通知の送信でエラーが発生しました: ${result?.error ?? res.status}`);
-      } else if (!result?.skipped) {
-        toast(`通知を${result?.sent ?? 0}/${result?.target ?? 0}件送信しました`);
-      }
-    } catch {
-      toast("通知の送信リクエストに失敗しました");
-    }
   }
 
   return (
