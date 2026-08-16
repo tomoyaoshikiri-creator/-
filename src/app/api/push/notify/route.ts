@@ -40,21 +40,32 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  const { data: subs } = await adminClient
+  const { data: subs, error: subsError } = await adminClient
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth_key")
     .eq("team_id", profile.team_id)
     .neq("user_id", user.id);
 
+  if (subsError) {
+    console.error("[push/notify] failed to load subscriptions", subsError);
+    return NextResponse.json({ ok: false, error: subsError.message }, { status: 500 });
+  }
+
   const payload = JSON.stringify({ title, body: body ?? "", url: url ?? "/" });
+  let sent = 0;
+  const failures: string[] = [];
 
   await Promise.all(
     (subs ?? []).map(async (s) => {
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth_key } }, payload);
+        sent += 1;
       } catch (err) {
         // 端末側で解除済み/期限切れの購読は410 Goneや404で返るので、DBからも掃除しておく。
         const statusCode = (err as { statusCode?: number } | null)?.statusCode;
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[push/notify] send failed (subscription ${s.id}, status ${statusCode})`, message);
+        failures.push(`${statusCode ?? "?"}: ${message}`);
         if (statusCode === 404 || statusCode === 410) {
           await adminClient.from("push_subscriptions").delete().eq("id", s.id);
         }
@@ -62,5 +73,5 @@ export async function POST(request: Request) {
     }),
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, target: (subs ?? []).length, sent, failures });
 }
