@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
@@ -21,11 +22,16 @@ export default function UsersPage() {
   const router = useRouter();
   const { userId, teamId, role } = useSession();
   const toast = useToast();
-  const [profiles, setProfiles] = useState<TeamMember[]>([]);
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [guardianLinks, setGuardianLinks] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
+  const isAdmin = canManageUsers(role);
+  const cacheKey = useCallback((field: string) => `users:${isAdmin}:${field}`, [isAdmin]);
+  const [profiles, setProfiles] = useCachedState<TeamMember[]>(cacheKey("profiles"), []);
+  const [invites, setInvites] = useCachedState<Invite[]>(cacheKey("invites"), []);
+  const [players, setPlayers] = useCachedState<Player[]>(cacheKey("players"), []);
+  const [guardianLinks, setGuardianLinks] = useCachedState<Record<string, string[]>>(
+    cacheKey("guardianLinks"),
+    {},
+  );
+  const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites")));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -33,15 +39,13 @@ export default function UsersPage() {
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
 
-  const isAdmin = canManageUsers(role);
-
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    setLoading(true);
+    if (!hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites"))) setLoading(true);
     if (isAdmin) {
       const [{ data: p }, { data: inv }, { data: pl }, { data: links }] = await Promise.all([
         supabase.rpc("list_team_members"),
@@ -63,7 +67,7 @@ export default function UsersPage() {
       setInvites(inv ?? []);
     }
     setLoading(false);
-  }, [isAdmin]);
+  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks]);
 
   useEffect(() => {
     load();

@@ -15,6 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
 import {
@@ -62,10 +63,13 @@ export default function KarteTeamPage() {
   const [practicesHeld, setPracticesHeld] = useState(0);
   const [averageAttendanceRate, setAverageAttendanceRate] = useState<number | null>(null);
 
-  const [analysisNotes, setAnalysisNotes] = useState<TeamAnalysisNote[]>([]);
-  const [noteReactions, setNoteReactions] = useState<TeamAnalysisNoteReaction[]>([]);
-  const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
-  const [notesLoading, setNotesLoading] = useState(true);
+  const [analysisNotes, setAnalysisNotes] = useCachedState<TeamAnalysisNote[]>("karteTeam:notes", []);
+  const [noteReactions, setNoteReactions] = useCachedState<TeamAnalysisNoteReaction[]>(
+    "karteTeam:noteReactions",
+    [],
+  );
+  const [noteProfiles, setNoteProfiles] = useCachedState<Record<string, string>>("karteTeam:noteProfiles", {});
+  const [notesLoading, setNotesLoading] = useState(() => !hasCachedValue("karteTeam:notes"));
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -81,7 +85,7 @@ export default function KarteTeamPage() {
   }, [role, router]);
 
   const loadNotes = useCallback(async () => {
-    setNotesLoading(true);
+    if (!hasCachedValue("karteTeam:notes")) setNotesLoading(true);
     const supabase = createClient();
     const [{ data: notes }, profMap] = await Promise.all([
       supabase.from("team_analysis_notes").select("*").order("created_at", { ascending: false }),
@@ -97,7 +101,7 @@ export default function KarteTeamPage() {
       setNoteReactions([]);
     }
     setNotesLoading(false);
-  }, []);
+  }, [setAnalysisNotes, setNoteProfiles, setNoteReactions]);
 
   async function loadNoteReactions() {
     const noteIds = analysisNotes.map((n) => n.id);

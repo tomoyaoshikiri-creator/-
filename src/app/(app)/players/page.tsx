@@ -12,6 +12,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab, canManagePlayers } from "@/lib/permissions";
 import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
@@ -74,18 +75,19 @@ export default function PlayersPage() {
   const { role, userId } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
-  const [unseenNoteIds, setUnseenNoteIds] = useState<Set<string>>(new Set());
-  const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const cacheKey = useCallback((field: string) => `players:${userId}:${field}`, [userId]);
+  const [players, setPlayers] = useCachedState<Player[]>(cacheKey("players"), []);
+  const [noteCounts, setNoteCounts] = useCachedState<Record<string, number>>(cacheKey("noteCounts"), {});
+  const [unseenNoteIds, setUnseenNoteIds] = useCachedState<Set<string>>(cacheKey("unseenNoteIds"), new Set());
+  const [ownPlayerIds, setOwnPlayerIds] = useCachedState<Set<string>>(cacheKey("ownPlayerIds"), new Set());
+  const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("players")));
   const [modalOpen, setModalOpen] = useState(false);
   const [yearConfirm, setYearConfirm] = useState(false);
   const yearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    setLoading(true);
+    if (!hasCachedValue(cacheKey("players"))) setLoading(true);
     const { data: p } = await supabase.from("players").select("*");
     const list = sortPlayers(p ?? []);
     setPlayers(list);
@@ -114,7 +116,7 @@ export default function PlayersPage() {
       setUnseenNoteIds(new Set());
     }
     setLoading(false);
-  }, [isStaff, userId]);
+  }, [isStaff, userId, cacheKey, setPlayers, setNoteCounts, setOwnPlayerIds, setUnseenNoteIds]);
 
   useEffect(() => {
     load();

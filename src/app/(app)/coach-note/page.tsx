@@ -13,6 +13,7 @@ import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { MonthPicker } from "@/components/MonthPicker";
 import { CollapsibleList } from "@/components/CollapsibleList";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -32,10 +33,6 @@ export default function CoachNotePage() {
   const router = useRouter();
   const { userId, teamId, role } = useSession();
   const toast = useToast();
-  const [reports, setReports] = useState<Report[]>([]);
-  const [reactions, setReactions] = useState<ReportReaction[]>([]);
-  const [comments, setComments] = useState<ReportComment[]>([]);
-  const [commentReactions, setCommentReactions] = useState<ReportCommentReaction[]>([]);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
   const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
@@ -43,12 +40,20 @@ export default function CoachNotePage() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentBody, setEditCommentBody] = useState("");
   const [savingCommentEdit, setSavingCommentEdit] = useState(false);
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const todayValue = DATE_OPTIONS[DATE_OPTIONS.length - 1].value;
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [monthValue, setMonthValue] = useState(currentYearMonth());
   const [showAll, setShowAll] = useState(false);
+  const cacheKey = useCallback((field: string) => `coachNote:${monthValue}:${field}`, [monthValue]);
+  const [reports, setReports] = useCachedState<Report[]>(cacheKey("reports"), []);
+  const [reactions, setReactions] = useCachedState<ReportReaction[]>(cacheKey("reactions"), []);
+  const [comments, setComments] = useCachedState<ReportComment[]>(cacheKey("comments"), []);
+  const [commentReactions, setCommentReactions] = useCachedState<ReportCommentReaction[]>(
+    cacheKey("commentReactions"),
+    [],
+  );
+  const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState(todayValue);
@@ -63,7 +68,7 @@ export default function CoachNotePage() {
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    setLoading(true);
+    if (!hasCachedValue(cacheKey("reports"))) setLoading(true);
     const { start, end } = monthRangeBounds(monthValue);
     const [{ data: r }, profMap] = await Promise.all([
       supabase
@@ -97,7 +102,7 @@ export default function CoachNotePage() {
       setCommentReactions([]);
     }
     setLoading(false);
-  }, [monthValue]);
+  }, [monthValue, cacheKey, setReports, setProfiles, setReactions, setComments, setCommentReactions]);
 
   useEffect(() => {
     load();

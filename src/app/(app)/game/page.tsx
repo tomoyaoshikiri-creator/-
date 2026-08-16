@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canRecordGames } from "@/lib/permissions";
 import { formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule } from "@/lib/database.types";
@@ -23,9 +24,9 @@ const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
 export default function GameListPage() {
   const router = useRouter();
   const { role } = useSession();
-  const [games, setGames] = useState<Schedule[]>([]);
+  const [games, setGames] = useCachedState<Schedule[]>("game:games", []);
   const [category, setCategory] = useState<GameCategory | "all">("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !hasCachedValue("game:games"));
 
   useEffect(() => {
     (async () => {
@@ -38,7 +39,7 @@ export default function GameListPage() {
       setGames(data ?? []);
       setLoading(false);
     })();
-  }, []);
+  }, [setGames]);
 
   useEffect(() => {
     if (!canRecordGames(role)) router.replace("/game/results");

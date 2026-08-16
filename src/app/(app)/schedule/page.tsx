@@ -7,6 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
@@ -23,17 +24,19 @@ export default function SchedulePage() {
   const { userId, role } = useSession();
   const toast = useToast();
   const [view, setView] = useState<"list" | "calendar">("calendar");
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [attendances, setAttendances] = useState<Record<string, Attendance>>({});
-  const [birthdays, setBirthdays] = useState<Birthday[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [schedules, setSchedules] = useCachedState<Schedule[]>(`schedule:${userId}:schedules`, []);
+  const [attendances, setAttendances] = useCachedState<Record<string, Attendance>>(
+    `schedule:${userId}:attendances`,
+    {},
+  );
+  const [birthdays, setBirthdays] = useCachedState<Birthday[]>(`schedule:${userId}:birthdays`, []);
+  const [loading, setLoading] = useState(() => !hasCachedValue(`schedule:${userId}:schedules`));
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [calendarSelectedDate, setCalendarSelectedDate] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    setLoading(true);
     const [{ data: sch }, { data: att }, { data: roster }] = await Promise.all([
       supabase.from("schedules").select("*").order("date", { ascending: true }),
       supabase.from("attendances").select("*").eq("user_id", userId),
@@ -51,7 +54,7 @@ export default function SchedulePage() {
         .map((p) => ({ name: playerFullName(p), birthday: p.birthday as string })),
     );
     setLoading(false);
-  }, [userId]);
+  }, [userId, setSchedules, setAttendances, setBirthdays]);
 
   useEffect(() => {
     load();

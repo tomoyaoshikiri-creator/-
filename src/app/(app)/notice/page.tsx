@@ -12,6 +12,7 @@ import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { MonthPicker } from "@/components/MonthPicker";
 import { CollapsibleList } from "@/components/CollapsibleList";
+import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
@@ -23,19 +24,23 @@ export default function NoticePage() {
   const router = useRouter();
   const { role, teamId, userId } = useSession();
   const toast = useToast();
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [attachmentsByNotice, setAttachmentsByNotice] = useState<Record<string, NoticeAttachment[]>>({});
-  const [reactions, setReactions] = useState<NoticeReaction[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [monthValue, setMonthValue] = useState(currentYearMonth());
   const [showAll, setShowAll] = useState(false);
+  const cacheKey = useCallback((field: string) => `notice:${monthValue}:${field}`, [monthValue]);
+  const [notices, setNotices] = useCachedState<Notice[]>(cacheKey("notices"), []);
+  const [attachmentsByNotice, setAttachmentsByNotice] = useCachedState<Record<string, NoticeAttachment[]>>(
+    cacheKey("attachments"),
+    {},
+  );
+  const [reactions, setReactions] = useCachedState<NoticeReaction[]>(cacheKey("reactions"), []);
+  const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    setLoading(true);
+    if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
     const { start, end } = monthRangeBounds(monthValue);
     const [{ data: n }, profMap] = await Promise.all([
       supabase
@@ -65,7 +70,7 @@ export default function NoticePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue]);
+  }, [monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions]);
 
   useEffect(() => {
     load();
