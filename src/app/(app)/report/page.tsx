@@ -19,14 +19,18 @@ import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenDailyReportIds, markItemSeen } from "@/lib/itemBadges";
+import { isImageFile } from "@/lib/storagePath";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import type {
   DailyReport,
+  DailyReportAttachment,
   DailyReportReaction,
   DailyReportComment,
   DailyReportCommentReaction,
   ReactionType,
 } from "@/lib/database.types";
+
+type AttachmentWithUrl = DailyReportAttachment & { url: string | null };
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 import { NewDailyReportModal } from "./NewDailyReportModal";
 
@@ -54,6 +58,10 @@ export default function ReportPage() {
     [],
   );
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [attachmentsByReport, setAttachmentsByReport] = useCachedState<Record<string, AttachmentWithUrl[]>>(
+    cacheKey("attachments"),
+    {},
+  );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("report:unseenIds", new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -85,13 +93,14 @@ export default function ReportPage() {
     setProfiles(profMap);
     if (r && r.length > 0) {
       const reportIds = r.map((x) => x.id);
-      const [{ data: rc }, { data: cm }] = await Promise.all([
+      const [{ data: rc }, { data: cm }, { data: atts }] = await Promise.all([
         supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds),
         supabase
           .from("daily_report_comments")
           .select("*")
           .in("daily_report_id", reportIds)
           .order("created_at", { ascending: true }),
+        supabase.from("daily_report_attachments").select("*").in("daily_report_id", reportIds),
       ]);
       setReactions(rc ?? []);
       setComments(cm ?? []);
@@ -102,13 +111,33 @@ export default function ReportPage() {
       } else {
         setCommentReactions([]);
       }
+      const attachmentMap: Record<string, AttachmentWithUrl[]> = {};
+      await Promise.all(
+        (atts ?? []).map(async (a) => {
+          const { data: signed } = await supabase.storage
+            .from("daily-report-attachments")
+            .createSignedUrl(a.storage_path, 60 * 60);
+          (attachmentMap[a.daily_report_id] ??= []).push({ ...a, url: signed?.signedUrl ?? null });
+        }),
+      );
+      setAttachmentsByReport(attachmentMap);
     } else {
       setReactions([]);
       setComments([]);
       setCommentReactions([]);
+      setAttachmentsByReport({});
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setReports, setProfiles, setReactions, setComments, setCommentReactions]);
+  }, [
+    monthValue,
+    cacheKey,
+    setReports,
+    setProfiles,
+    setReactions,
+    setComments,
+    setCommentReactions,
+    setAttachmentsByReport,
+  ]);
 
   useEffect(() => {
     load();
@@ -299,7 +328,7 @@ export default function ReportPage() {
       toast(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("日報を更新しました");
+    toast("チーム日報を更新しました");
     setEditingId(null);
     load();
   }
@@ -318,13 +347,13 @@ export default function ReportPage() {
     }
     setDeleteConfirmId(null);
     setExpandedId(null);
-    toast("日報を削除しました");
+    toast("チーム日報を削除しました");
     load();
   }
 
   return (
     <PageShell
-      header={<AppHeader title="練習日報" />}
+      header={<AppHeader title="チーム日報" />}
       fab={
         canWriteReport(role) && (
           <>
@@ -335,19 +364,19 @@ export default function ReportPage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("日報を登録しました");
+                toast("チーム日報を登録しました");
               }}
             />
           </>
         )
       }
     >
-      <SectionLabel>日報一覧</SectionLabel>
+      <SectionLabel>チーム日報一覧</SectionLabel>
       <MonthPicker value={monthValue} onChange={setMonthValue} />
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : reports.length === 0 ? (
-        <EmptyState>この月の日報はありません</EmptyState>
+        <EmptyState>この月のチーム日報はありません</EmptyState>
       ) : (
         <CollapsibleList
           items={reports}
@@ -401,6 +430,32 @@ export default function ReportPage() {
                 {formatFullDateLabel(r.date)}
               </div>
               <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
+              {(attachmentsByReport[r.id]?.length ?? 0) > 0 && (
+                <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                  {attachmentsByReport[r.id].map((a) =>
+                    a.url && isImageFile(a.file_name) ? (
+                      <a key={a.id} href={a.url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={a.url}
+                          alt={a.file_name}
+                          className="w-full rounded-[10px] border border-line object-contain"
+                        />
+                      </a>
+                    ) : a.url ? (
+                      <a
+                        key={a.id}
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-orange font-bold text-xs"
+                      >
+                        📎 {a.file_name}
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              )}
               <div className="text-xs text-ink-soft mt-1.5">
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}
               </div>

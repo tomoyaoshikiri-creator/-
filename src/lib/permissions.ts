@@ -8,17 +8,19 @@ export type TabKey =
   | "players"
   | "game"
   | "karte"
+  | "library"
   | "users"
   | "settings";
 
 export const TAB_LABELS: Record<TabKey, string> = {
   schedule: "スケジュール",
   notice: "お知らせ",
-  report: "日報",
-  coachNote: "コーチノート",
+  report: "チーム日報",
+  coachNote: "コーチ日報",
   players: "選手一覧",
   game: "試合記録",
   karte: "カルテ",
+  library: "ライブラリ",
   users: "管理",
   settings: "設定",
 };
@@ -31,6 +33,7 @@ export const TAB_PATHS: Record<TabKey, string> = {
   players: "/players",
   game: "/game",
   karte: "/karte",
+  library: "/library",
   users: "/users",
   settings: "/settings",
 };
@@ -38,11 +41,12 @@ export const TAB_PATHS: Record<TabKey, string> = {
 export const PAGE_TITLES: Record<TabKey, string> = {
   schedule: "スケジュール",
   notice: "お知らせ",
-  report: "練習日報",
-  coachNote: "コーチノート",
+  report: "チーム日報",
+  coachNote: "コーチ日報",
   players: "選手一覧",
   game: "試合記録",
   karte: "カルテ",
+  library: "ライブラリ",
   users: "ユーザー管理",
   settings: "設定",
 };
@@ -51,7 +55,8 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
 // 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
-// 「コーチノート」は指導者・管理者専用。「日報」(全ロール共有)とはテーブルごと分離している。
+// 「コーチ日報」は指導者・管理者専用。「チーム日報」(全ロール共有)とはテーブルごと分離している。
+// 「ライブラリ」(画像・資料の共有置き場)は全ロールに開放している。
 // 「試合記録」タブは一般・運営にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
 // 操作できるため、一般・運営がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
 // 「選手一覧」は専用タブを廃止し、「カルテ」タブの中の1カードとして統合した(/karte)。
@@ -60,10 +65,10 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // player_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
 // (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
-  一般: ["schedule", "notice", "report", "karte", "game", "settings"],
-  運営: ["schedule", "notice", "report", "karte", "game", "users", "settings"],
-  指導者: ["schedule", "notice", "report", "coachNote", "karte", "game", "settings"],
-  管理者: ["schedule", "notice", "report", "coachNote", "karte", "game", "users", "settings"],
+  一般: ["schedule", "notice", "report", "karte", "game", "library", "settings"],
+  運営: ["schedule", "notice", "report", "karte", "game", "library", "users", "settings"],
+  指導者: ["schedule", "notice", "report", "coachNote", "karte", "game", "library", "settings"],
+  管理者: ["schedule", "notice", "report", "coachNote", "karte", "game", "library", "users", "settings"],
 };
 
 export function tabsForRole(role: Role): TabKey[] {

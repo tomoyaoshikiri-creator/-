@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { safeExt } from "@/lib/storagePath";
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 
 export function NewDailyReportModal({
@@ -25,13 +26,24 @@ export function NewDailyReportModal({
 
   const [dateValue, setDateValue] = useState(todayValue);
   const [body, setBody] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useUnsavedChangesGuard(open && body.trim() !== "");
+  useUnsavedChangesGuard(open && (body.trim() !== "" || files.length > 0));
 
   function reset() {
     setDateValue(todayValue);
     setBody("");
+    setFiles([]);
+  }
+
+  function addFiles(newFiles: FileList | null) {
+    if (!newFiles) return;
+    setFiles((prev) => [...prev, ...Array.from(newFiles)]);
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit() {
@@ -40,23 +52,44 @@ export function NewDailyReportModal({
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("daily_reports").insert({
-      team_id: teamId,
-      author_id: userId,
-      date: dateValue,
-      body: body.trim(),
-    });
-    setSaving(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+    const { data: report, error } = await supabase
+      .from("daily_reports")
+      .insert({
+        team_id: teamId,
+        author_id: userId,
+        date: dateValue,
+        body: body.trim(),
+      })
+      .select()
+      .single();
+    if (error || !report) {
+      setSaving(false);
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
+    for (const file of files) {
+      const path = `${teamId}/${report.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(file.name)}`;
+      const { error: uploadError } = await supabase.storage.from("daily-report-attachments").upload(path, file);
+      if (uploadError) {
+        toast(`${file.name}のアップロードに失敗しました: ${uploadError.message}`);
+        continue;
+      }
+      const { error: attachError } = await supabase.from("daily_report_attachments").insert({
+        daily_report_id: report.id,
+        storage_path: path,
+        file_name: file.name,
+      });
+      if (attachError) {
+        toast(`${file.name}の登録に失敗しました: ${attachError.message}`);
+      }
+    }
+    setSaving(false);
     reset();
     onCreated();
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="日報を書く">
+    <Modal open={open} onClose={onClose} title="チーム日報を書く">
       <FieldLabel>日付</FieldLabel>
       <DateSelect value={dateValue} onChange={setDateValue} />
       <div className="mt-3">
@@ -68,6 +101,35 @@ export function NewDailyReportModal({
           onChange={(e) => setBody(e.target.value)}
           placeholder="今日の練習についての気づきや共有事項"
         />
+      </div>
+      <div className="mt-3">
+        <FieldLabel>画像・資料を添付</FieldLabel>
+        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
+          📎 ファイルを選ぶ
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {files.length > 0 && (
+          <div className="mt-1.5 space-y-1">
+            {files.map((f, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
+                <span className="truncate">{f.name}</span>
+                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
+                  削除
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="text-xs text-ink-soft mt-1.5">※タップすると端末の「カメラロール」「ファイル」などから選べます</div>
       </div>
       <SubmitButton onClick={handleSubmit} disabled={saving}>
         {saving ? "登録中…" : "登録する"}

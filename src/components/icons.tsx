@@ -100,6 +100,17 @@ export function KarteIcon(props: IconProps) {
   );
 }
 
+export function LibraryIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 4v16" />
+      <path d="M4 4h3v16H4z" />
+      <path d="M9 4h3v16H9z" />
+      <path d="M14.5 4.6l3 15.7-2.9.6-3-15.7z" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

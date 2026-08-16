@@ -3,6 +3,7 @@ import {
   CoachNoteIcon,
   GameIcon,
   KarteIcon,
+  LibraryIcon,
   NoticeIcon,
   PlayersIcon,
   ReportIcon,
@@ -19,6 +20,7 @@ export const TAB_ICONS: Record<TabKey, (props: { className?: string }) => React.
   players: PlayersIcon,
   game: GameIcon,
   karte: KarteIcon,
+  library: LibraryIcon,
   users: UsersIcon,
   settings: SettingsIcon,
 };

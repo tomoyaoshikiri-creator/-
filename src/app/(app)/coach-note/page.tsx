@@ -19,14 +19,18 @@ import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenCoachNoteIds, markItemSeen } from "@/lib/itemBadges";
+import { isImageFile } from "@/lib/storagePath";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import type {
   Report,
+  ReportAttachment,
   ReportReaction,
   ReportComment,
   ReportCommentReaction,
   ReactionType,
 } from "@/lib/database.types";
+
+type AttachmentWithUrl = ReportAttachment & { url: string | null };
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 import { NewCoachNoteModal } from "./NewCoachNoteModal";
 
@@ -54,6 +58,10 @@ export default function CoachNotePage() {
     [],
   );
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [attachmentsByReport, setAttachmentsByReport] = useCachedState<Record<string, AttachmentWithUrl[]>>(
+    cacheKey("attachments"),
+    {},
+  );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("coachNote:unseenIds", new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -85,9 +93,10 @@ export default function CoachNotePage() {
     setProfiles(profMap);
     if (r && r.length > 0) {
       const reportIds = r.map((x) => x.id);
-      const [{ data: rc }, { data: cm }] = await Promise.all([
+      const [{ data: rc }, { data: cm }, { data: atts }] = await Promise.all([
         supabase.from("report_reactions").select("*").in("report_id", reportIds),
         supabase.from("report_comments").select("*").in("report_id", reportIds).order("created_at", { ascending: true }),
+        supabase.from("report_attachments").select("*").in("report_id", reportIds),
       ]);
       setReactions(rc ?? []);
       setComments(cm ?? []);
@@ -98,13 +107,33 @@ export default function CoachNotePage() {
       } else {
         setCommentReactions([]);
       }
+      const attachmentMap: Record<string, AttachmentWithUrl[]> = {};
+      await Promise.all(
+        (atts ?? []).map(async (a) => {
+          const { data: signed } = await supabase.storage
+            .from("report-attachments")
+            .createSignedUrl(a.storage_path, 60 * 60);
+          (attachmentMap[a.report_id] ??= []).push({ ...a, url: signed?.signedUrl ?? null });
+        }),
+      );
+      setAttachmentsByReport(attachmentMap);
     } else {
       setReactions([]);
       setComments([]);
       setCommentReactions([]);
+      setAttachmentsByReport({});
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setReports, setProfiles, setReactions, setComments, setCommentReactions]);
+  }, [
+    monthValue,
+    cacheKey,
+    setReports,
+    setProfiles,
+    setReactions,
+    setComments,
+    setCommentReactions,
+    setAttachmentsByReport,
+  ]);
 
   useEffect(() => {
     load();
@@ -295,7 +324,7 @@ export default function CoachNotePage() {
       toast(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("コーチノートを更新しました");
+    toast("コーチ日報を更新しました");
     setEditingId(null);
     load();
   }
@@ -314,13 +343,13 @@ export default function CoachNotePage() {
     }
     setDeleteConfirmId(null);
     setExpandedId(null);
-    toast("コーチノートを削除しました");
+    toast("コーチ日報を削除しました");
     load();
   }
 
   return (
     <PageShell
-      header={<AppHeader title="コーチノート" accessBadge="coach" />}
+      header={<AppHeader title="コーチ日報" accessBadge="coach" />}
       fab={
         canWriteCoachNote(role) && (
           <>
@@ -331,19 +360,19 @@ export default function CoachNotePage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("コーチノートを登録しました");
+                toast("コーチ日報を登録しました");
               }}
             />
           </>
         )
       }
     >
-      <SectionLabel>コーチノート一覧</SectionLabel>
+      <SectionLabel>コーチ日報一覧</SectionLabel>
       <MonthPicker value={monthValue} onChange={setMonthValue} />
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : reports.length === 0 ? (
-        <EmptyState>この月のコーチノートはありません</EmptyState>
+        <EmptyState>この月のコーチ日報はありません</EmptyState>
       ) : (
         <CollapsibleList
           items={reports}
@@ -397,6 +426,32 @@ export default function CoachNotePage() {
                 {formatFullDateLabel(r.date)}
               </div>
               <div className="text-xs text-ink-soft mt-1 whitespace-pre-wrap">{r.body}</div>
+              {(attachmentsByReport[r.id]?.length ?? 0) > 0 && (
+                <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                  {attachmentsByReport[r.id].map((a) =>
+                    a.url && isImageFile(a.file_name) ? (
+                      <a key={a.id} href={a.url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={a.url}
+                          alt={a.file_name}
+                          className="w-full rounded-[10px] border border-line object-contain"
+                        />
+                      </a>
+                    ) : a.url ? (
+                      <a
+                        key={a.id}
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-orange font-bold text-xs"
+                      >
+                        📎 {a.file_name}
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              )}
               <div className="text-xs text-ink-soft mt-1.5">
                 {r.author_id ? (profiles[r.author_id] ?? "") : ""}
               </div>

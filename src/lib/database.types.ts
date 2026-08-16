@@ -223,6 +223,59 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      daily_report_attachments: {
+        Row: {
+          id: string;
+          daily_report_id: string;
+          storage_path: string;
+          file_name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          daily_report_id: string;
+          storage_path: string;
+          file_name: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      report_attachments: {
+        Row: {
+          id: string;
+          report_id: string;
+          storage_path: string;
+          file_name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          report_id: string;
+          storage_path: string;
+          file_name: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      library_files: {
+        Row: {
+          id: string;
+          team_id: string;
+          uploader_id: string | null;
+          storage_path: string;
+          file_name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          uploader_id?: string | null;
+          storage_path: string;
+          file_name: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       reports: {
         Row: {
           id: string;
@@ -1101,6 +1154,9 @@ export type DailyReportReaction = Database["public"]["Tables"]["daily_report_rea
 export type DailyReportComment = Database["public"]["Tables"]["daily_report_comments"]["Row"];
 export type ReportCommentReaction = Database["public"]["Tables"]["report_comment_reactions"]["Row"];
 export type DailyReportCommentReaction = Database["public"]["Tables"]["daily_report_comment_reactions"]["Row"];
+export type DailyReportAttachment = Database["public"]["Tables"]["daily_report_attachments"]["Row"];
+export type ReportAttachment = Database["public"]["Tables"]["report_attachments"]["Row"];
+export type LibraryFile = Database["public"]["Tables"]["library_files"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];
 export type PlayerGuardian = Database["public"]["Tables"]["player_guardians"]["Row"];
 export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
