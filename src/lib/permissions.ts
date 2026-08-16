@@ -99,6 +99,13 @@ export function canWriteNotice(role: Role): boolean {
   return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }
 
+// 「指導者のみ」向けのお知らせを投稿できるロール。一般・運営がこの公開範囲で投稿すると、
+// notices_selectポリシー上、投稿した本人が自分の投稿を読み返せず登録エラーになってしまうため、
+// この選択肢自体を指導者・管理者だけに絞る(NewNoticeModal.tsx参照)。
+export function canPostTeacherOnlyNotice(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 export function canWriteReport(role: Role): boolean {
   return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
 }

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { canPostTeacherOnlyNotice } from "@/lib/permissions";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
@@ -28,8 +29,10 @@ export function NewNoticeModal({
   onCreated: () => void;
 }) {
   const supabase = createClient();
-  const { userId, teamId } = useSession();
+  const { userId, teamId, role } = useSession();
   const toast = useToast();
+
+  const audiences = canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ");
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -152,7 +155,7 @@ export function NewNoticeModal({
       <div className="mt-3">
         <FieldLabel>公開範囲</FieldLabel>
         <div className="flex gap-1.5 flex-wrap">
-          {AUDIENCES.map((a) => (
+          {audiences.map((a) => (
             <SegButton key={a} variant="small" active={audience === a} onClick={() => setAudience(a)} className="flex-none px-3">
               {a}
             </SegButton>

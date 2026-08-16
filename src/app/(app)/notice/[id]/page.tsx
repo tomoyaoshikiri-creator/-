@@ -11,7 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import { canWriteNotice } from "@/lib/permissions";
+import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel } from "@/lib/format";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
@@ -39,6 +39,7 @@ export default function NoticeDetailPage() {
   const router = useRouter();
   const { teamId, role, userId } = useSession();
   const toast = useToast();
+  const audiences = canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
   const [reactions, setReactions] = useState<NoticeReaction[]>([]);
@@ -260,7 +261,7 @@ export default function NoticeDetailPage() {
             <div className="mt-3">
               <FieldLabel>公開範囲</FieldLabel>
               <div className="flex gap-1.5 flex-wrap">
-                {AUDIENCES.map((a) => (
+                {audiences.map((a) => (
                   <SegButton
                     key={a}
                     variant="small"
