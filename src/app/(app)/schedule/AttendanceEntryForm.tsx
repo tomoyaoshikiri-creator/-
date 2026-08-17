@@ -15,6 +15,7 @@ export function AttendanceEntryForm({
   label,
   isGame,
   venueType,
+  collectCarInfo = false,
   allowDelete = false,
   onChanged,
 }: {
@@ -25,11 +26,14 @@ export function AttendanceEntryForm({
   isGame: boolean;
   // type="game"の予定にのみ意味を持つ。nullは既存データ互換のためアウェイ(車出し)として扱う。
   venueType?: VenueType | null;
+  // 練習・イベントの予定でのみ意味を持つ(試合はvenueTypeで車出しの要否が決まる)。
+  collectCarInfo?: boolean;
   allowDelete?: boolean;
   onChanged?: () => void;
 }) {
   const isSelf = playerId === null;
   const isHome = venueType === "ホーム";
+  const showCarSection = isGame ? !isHome : collectCarInfo;
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
@@ -85,8 +89,8 @@ export function AttendanceEntryForm({
         status,
         accompany: isGame && !isSelf ? accompany : null,
         accompany_count: isGame && !isSelf && accompany === "あり" && accompanyCount ? Number(accompanyCount) : null,
-        car: isGame && !isHome ? car : null,
-        seats: isGame && !isHome && car === "可" && seats ? Number(seats) : null,
+        car: showCarSection ? car : null,
+        seats: showCarSection && car === "可" && seats ? Number(seats) : null,
         setup_available: isGame && isHome ? setupAvailable : null,
         setup_count: isGame && isHome && setupAvailable === "あり" && setupCount ? Number(setupCount) : null,
         note: note || null,
@@ -188,142 +192,140 @@ export function AttendanceEntryForm({
               )}
             </div>
 
-            {isGame && (
+            {isGame && !isSelf && (
               <>
-                {!isSelf && (
-                  <>
-                    <div className="mt-3">
-                      <FieldLabel>保護者の帯同</FieldLabel>
-                      <div className="flex gap-2">
-                        <SegButton
-                          variant="small"
-                          active={accompany === "あり"}
-                          onClick={() => {
-                            setAccompany("あり");
-                            setRegistered(false);
-                          }}
-                        >
-                          あり
-                        </SegButton>
-                        <SegButton
-                          variant="small"
-                          active={accompany === "なし"}
-                          onClick={() => {
-                            setAccompany("なし");
-                            setRegistered(false);
-                          }}
-                        >
-                          なし
-                        </SegButton>
-                      </div>
-                    </div>
-                    {accompany === "あり" && (
-                      <div className="mt-3">
-                        <FieldLabel>帯同人数</FieldLabel>
-                        <input
-                          type="number"
-                          min={1}
-                          className={inputClass()}
-                          value={accompanyCount}
-                          onChange={(e) => {
-                            setAccompanyCount(e.target.value);
-                            setRegistered(false);
-                          }}
-                          placeholder="例:2"
-                        />
-                      </div>
-                    )}
-                  </>
+                <div className="mt-3">
+                  <FieldLabel>保護者の帯同</FieldLabel>
+                  <div className="flex gap-2">
+                    <SegButton
+                      variant="small"
+                      active={accompany === "あり"}
+                      onClick={() => {
+                        setAccompany("あり");
+                        setRegistered(false);
+                      }}
+                    >
+                      あり
+                    </SegButton>
+                    <SegButton
+                      variant="small"
+                      active={accompany === "なし"}
+                      onClick={() => {
+                        setAccompany("なし");
+                        setRegistered(false);
+                      }}
+                    >
+                      なし
+                    </SegButton>
+                  </div>
+                </div>
+                {accompany === "あり" && (
+                  <div className="mt-3">
+                    <FieldLabel>帯同人数</FieldLabel>
+                    <input
+                      type="number"
+                      min={1}
+                      className={inputClass()}
+                      value={accompanyCount}
+                      onChange={(e) => {
+                        setAccompanyCount(e.target.value);
+                        setRegistered(false);
+                      }}
+                      placeholder="例:2"
+                    />
+                  </div>
                 )}
+              </>
+            )}
 
-                {isHome ? (
-                  <>
-                    <div className="mt-3">
-                      <FieldLabel>会場設営</FieldLabel>
-                      <div className="flex gap-2">
-                        <SegButton
-                          variant="small"
-                          active={setupAvailable === "あり"}
-                          onClick={() => {
-                            setSetupAvailable("あり");
-                            setRegistered(false);
-                          }}
-                        >
-                          可能
-                        </SegButton>
-                        <SegButton
-                          variant="small"
-                          active={setupAvailable === "なし"}
-                          onClick={() => {
-                            setSetupAvailable("なし");
-                            setRegistered(false);
-                          }}
-                        >
-                          不可
-                        </SegButton>
-                      </div>
-                    </div>
-                    {setupAvailable === "あり" && (
-                      <div className="mt-3">
-                        <FieldLabel>設営可能人数</FieldLabel>
-                        <input
-                          type="number"
-                          min={1}
-                          className={inputClass()}
-                          value={setupCount}
-                          onChange={(e) => {
-                            setSetupCount(e.target.value);
-                            setRegistered(false);
-                          }}
-                          placeholder="例:2"
-                        />
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="mt-3">
-                      <FieldLabel>車出し</FieldLabel>
-                      <div className="flex gap-2">
-                        <SegButton
-                          variant="small"
-                          active={car === "可"}
-                          onClick={() => {
-                            setCar("可");
-                            setRegistered(false);
-                          }}
-                        >
-                          可
-                        </SegButton>
-                        <SegButton
-                          variant="small"
-                          active={car === "不可"}
-                          onClick={() => {
-                            setCar("不可");
-                            setRegistered(false);
-                          }}
-                        >
-                          不可
-                        </SegButton>
-                      </div>
-                    </div>
-                    {car === "可" && (
-                      <div className="mt-3">
-                        <FieldLabel>乗車可能人数</FieldLabel>
-                        <input
-                          type="number"
-                          min={0}
-                          className={inputClass()}
-                          value={seats}
-                          onChange={(e) => {
-                            setSeats(e.target.value);
-                            setRegistered(false);
-                          }}
-                          placeholder="例:3"
-                        />
-                      </div>
-                    )}
-                  </>
+            {isGame && isHome && (
+              <>
+                <div className="mt-3">
+                  <FieldLabel>会場設営</FieldLabel>
+                  <div className="flex gap-2">
+                    <SegButton
+                      variant="small"
+                      active={setupAvailable === "あり"}
+                      onClick={() => {
+                        setSetupAvailable("あり");
+                        setRegistered(false);
+                      }}
+                    >
+                      可能
+                    </SegButton>
+                    <SegButton
+                      variant="small"
+                      active={setupAvailable === "なし"}
+                      onClick={() => {
+                        setSetupAvailable("なし");
+                        setRegistered(false);
+                      }}
+                    >
+                      不可
+                    </SegButton>
+                  </div>
+                </div>
+                {setupAvailable === "あり" && (
+                  <div className="mt-3">
+                    <FieldLabel>設営可能人数</FieldLabel>
+                    <input
+                      type="number"
+                      min={1}
+                      className={inputClass()}
+                      value={setupCount}
+                      onChange={(e) => {
+                        setSetupCount(e.target.value);
+                        setRegistered(false);
+                      }}
+                      placeholder="例:2"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {showCarSection && (
+              <>
+                <div className="mt-3">
+                  <FieldLabel>車出し</FieldLabel>
+                  <div className="flex gap-2">
+                    <SegButton
+                      variant="small"
+                      active={car === "可"}
+                      onClick={() => {
+                        setCar("可");
+                        setRegistered(false);
+                      }}
+                    >
+                      可
+                    </SegButton>
+                    <SegButton
+                      variant="small"
+                      active={car === "不可"}
+                      onClick={() => {
+                        setCar("不可");
+                        setRegistered(false);
+                      }}
+                    >
+                      不可
+                    </SegButton>
+                  </div>
+                </div>
+                {car === "可" && (
+                  <div className="mt-3">
+                    <FieldLabel>乗車可能人数</FieldLabel>
+                    <input
+                      type="number"
+                      min={0}
+                      className={inputClass()}
+                      value={seats}
+                      onChange={(e) => {
+                        setSeats(e.target.value);
+                        setRegistered(false);
+                      }}
+                      placeholder="例:3"
+                    />
+                  </div>
                 )}
               </>
             )}

@@ -254,6 +254,7 @@ export default function ScheduleDetailPage() {
               label={subject.label}
               isGame={isGame}
               venueType={schedule.venue_type}
+              collectCarInfo={schedule.collect_car_info}
             />
           ))}
 
@@ -286,6 +287,7 @@ export default function ScheduleDetailPage() {
                   label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
                   isGame={isGame}
                   venueType={schedule.venue_type}
+                  collectCarInfo={schedule.collect_car_info}
                 />
               )}
             </>
@@ -318,6 +320,7 @@ export default function ScheduleDetailPage() {
                   label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
                   isGame={isGame}
                   venueType={schedule.venue_type}
+                  collectCarInfo={schedule.collect_car_info}
                   allowDelete
                 />
               )}

@@ -134,6 +134,9 @@ export interface Database {
           game_category: GameCategory | null;
           // type="game"の予定にのみ意味を持つ(ホーム/アウェイ)。それ以外はnull。
           venue_type: VenueType | null;
+          // 練習・イベントの予定で、任意で車出し(乗り合わせ)のヒアリングを集約するかどうか。
+          // 試合はvenue_typeでヒアリング内容が決まるため、この列は無視する。
+          collect_car_info: boolean;
           // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
           fiscal_year_override: number | null;
           created_by: string | null;
@@ -153,6 +156,7 @@ export interface Database {
           target_grade_min?: string | null;
           game_category?: GameCategory | null;
           venue_type?: VenueType | null;
+          collect_car_info?: boolean;
           fiscal_year_override?: number | null;
           created_by?: string | null;
         };

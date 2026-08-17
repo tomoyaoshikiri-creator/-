@@ -28,6 +28,7 @@ function AttendanceGroup({
   scheduleId,
   isGame,
   venueType,
+  collectCarInfo,
   editorUserId,
   onChanged,
 }: {
@@ -44,10 +45,13 @@ function AttendanceGroup({
   scheduleId: string;
   isGame: boolean;
   venueType: VenueType | null;
+  // 練習・イベントの予定でのみ意味を持つ(試合はvenueTypeで車出しの要否が決まる)。
+  collectCarInfo: boolean;
   editorUserId: string;
   onChanged: () => void;
 }) {
   const isHome = venueType === "ホーム";
+  const showCarSection = isGame ? !isHome : collectCarInfo;
   if (rows.length === 0) return null;
   return (
     <div className="mb-3 last:mb-0">
@@ -84,41 +88,40 @@ function AttendanceGroup({
                 {r.attendance &&
                   (() => {
                     const parts: string[] = [];
-                    // 帯同・車出しは試合の出欠でのみ収集しており、練習では常にnullのため、
-                    // 練習の一覧に「未回答」を出し続けないよう試合のときだけ表示する。
-                    if (isGame) {
-                      if (showAccompany) {
-                        parts.push(
-                          `帯同: ${
-                            r.attendance.accompany === "あり"
-                              ? `あり(${r.attendance.accompany_count ?? "-"}名)`
-                              : r.attendance.accompany === "なし"
-                                ? "なし"
-                                : "未回答"
-                          }`,
-                        );
-                      }
-                      if (isHome) {
-                        parts.push(
-                          `会場設営: ${
-                            r.attendance.setup_available === "あり"
-                              ? `可能(${r.attendance.setup_count ?? "-"}人)`
-                              : r.attendance.setup_available === "なし"
-                                ? "不可"
-                                : "未回答"
-                          }`,
-                        );
-                      } else {
-                        parts.push(
-                          `車出し: ${
-                            r.attendance.car === "可"
-                              ? `可(乗車${r.attendance.seats ?? "-"}人)`
-                              : r.attendance.car === "不可"
-                                ? "不可"
-                                : "未回答"
-                          }`,
-                        );
-                      }
+                    // 帯同・車出し・会場設営は、それぞれ収集対象の予定でのみ表示する
+                    // (対象外の予定では常にnullのため、「未回答」を出し続けないようにする)。
+                    if (isGame && showAccompany) {
+                      parts.push(
+                        `帯同: ${
+                          r.attendance.accompany === "あり"
+                            ? `あり(${r.attendance.accompany_count ?? "-"}名)`
+                            : r.attendance.accompany === "なし"
+                              ? "なし"
+                              : "未回答"
+                        }`,
+                      );
+                    }
+                    if (isGame && isHome) {
+                      parts.push(
+                        `会場設営: ${
+                          r.attendance.setup_available === "あり"
+                            ? `可能(${r.attendance.setup_count ?? "-"}人)`
+                            : r.attendance.setup_available === "なし"
+                              ? "不可"
+                              : "未回答"
+                        }`,
+                      );
+                    }
+                    if (showCarSection) {
+                      parts.push(
+                        `車出し: ${
+                          r.attendance.car === "可"
+                            ? `可(乗車${r.attendance.seats ?? "-"}人)`
+                            : r.attendance.car === "不可"
+                              ? "不可"
+                              : "未回答"
+                        }`,
+                      );
                     }
                     if (r.attendance.note) parts.push(`備考:${r.attendance.note}`);
                     if (parts.length === 0) return null;
@@ -134,6 +137,7 @@ function AttendanceGroup({
                     label={r.name}
                     isGame={isGame}
                     venueType={venueType}
+                    collectCarInfo={collectCarInfo}
                     allowDelete
                     onChanged={onChanged}
                   />
@@ -220,6 +224,7 @@ export function AttendanceRosterModal({
   const isAdmin = role === "管理者";
   const isGame = schedule.type === "game";
   const isHome = schedule.venue_type === "ホーム";
+  const showCarSection = isGame ? !isHome : schedule.collect_car_info;
   const allRows = [...playerRows, ...staffRows, ...otherRows];
   const attendingCount = allRows.filter((r) => r.attendance?.status === "出席").length;
   const absentCount = allRows.filter((r) => r.attendance?.status === "欠席").length;
@@ -269,16 +274,19 @@ export function AttendanceRosterModal({
             </span>
           </div>
 
-          {isGame && (
+          {(isGame || showCarSection) && (
             <div className="flex flex-wrap gap-1.5 mb-3">
-              <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
-                帯同合計 {totalAccompany}名
-              </span>
-              {isHome ? (
+              {isGame && (
+                <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
+                  帯同合計 {totalAccompany}名
+                </span>
+              )}
+              {isGame && isHome && (
                 <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
                   会場設営可 {setupAvailableCount}名(合計{totalSetupCount}人)
                 </span>
-              ) : (
+              )}
+              {showCarSection && (
                 <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-navy/8 text-navy">
                   車出し可 {carAvailableCount}名(乗車可能 合計{totalSeats}人)
                 </span>
@@ -300,6 +308,7 @@ export function AttendanceRosterModal({
                 scheduleId={schedule.id}
                 isGame={isGame}
                 venueType={schedule.venue_type}
+                collectCarInfo={schedule.collect_car_info}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />
@@ -313,6 +322,7 @@ export function AttendanceRosterModal({
                 scheduleId={schedule.id}
                 isGame={isGame}
                 venueType={schedule.venue_type}
+                collectCarInfo={schedule.collect_car_info}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />
@@ -326,6 +336,7 @@ export function AttendanceRosterModal({
                 scheduleId={schedule.id}
                 isGame={isGame}
                 venueType={schedule.venue_type}
+                collectCarInfo={schedule.collect_car_info}
                 editorUserId={userId}
                 onChanged={handleChanged}
               />

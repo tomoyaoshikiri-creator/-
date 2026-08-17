@@ -42,6 +42,7 @@ export function NewScheduleModal({
   const [type, setType] = useState<ScheduleType>("practice");
   const [gameCategory, setGameCategory] = useState<GameCategory>("練習試合");
   const [venueType, setVenueType] = useState<VenueType>("アウェイ");
+  const [collectCarInfo, setCollectCarInfo] = useState(false);
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -61,6 +62,7 @@ export function NewScheduleModal({
     type,
     gameCategory,
     venueType,
+    collectCarInfo,
     title,
     dates,
     startHour,
@@ -78,6 +80,7 @@ export function NewScheduleModal({
     setType("practice");
     setGameCategory("練習試合");
     setVenueType("アウェイ");
+    setCollectCarInfo(false);
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -105,6 +108,7 @@ export function NewScheduleModal({
         type: source.type,
         gameCategory: source.game_category ?? ("練習試合" as GameCategory),
         venueType: source.venue_type ?? ("アウェイ" as VenueType),
+        collectCarInfo: source.collect_car_info,
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -120,6 +124,7 @@ export function NewScheduleModal({
       setType(fields.type);
       setGameCategory(fields.gameCategory);
       setVenueType(fields.venueType);
+      setCollectCarInfo(fields.collectCarInfo);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -138,6 +143,7 @@ export function NewScheduleModal({
         type: "practice" as ScheduleType,
         gameCategory: "練習試合" as GameCategory,
         venueType: "アウェイ" as VenueType,
+        collectCarInfo: false,
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -177,6 +183,7 @@ export function NewScheduleModal({
       target_grade_min: targetGradeMin || null,
       game_category: type === "game" ? gameCategory : null,
       venue_type: type === "game" ? venueType : null,
+      collect_car_info: type !== "game" && collectCarInfo,
       fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
     };
     const { error } = editSchedule
@@ -380,6 +387,23 @@ export function NewScheduleModal({
           placeholder="例:体育館A面"
         />
       </div>
+
+      {type !== "game" && (
+        <div className="mt-3">
+          <FieldLabel>車出しの集約</FieldLabel>
+          <div className="flex gap-2">
+            <SegButton active={!collectCarInfo} onClick={() => setCollectCarInfo(false)}>
+              しない
+            </SegButton>
+            <SegButton active={collectCarInfo} onClick={() => setCollectCarInfo(true)}>
+              する
+            </SegButton>
+          </div>
+          <div className="text-xs text-ink-soft mt-1">
+            「する」にすると、出欠登録で車出し可否・乗車可能人数を聞くようになります。
+          </div>
+        </div>
+      )}
 
       <div className="mt-3">
         <FieldLabel>対象</FieldLabel>
