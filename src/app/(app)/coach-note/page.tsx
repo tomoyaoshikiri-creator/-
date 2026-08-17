@@ -458,6 +458,7 @@ export default function CoachNotePage() {
               <ReactionButtons
                 reactions={reactions.filter((rc) => rc.report_id === r.id)}
                 onToggle={(type) => toggleReaction(r.id, type)}
+                profiles={profiles}
               />
 
               <div className="mt-2.5 pt-2.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
@@ -523,6 +524,7 @@ export default function CoachNotePage() {
                         <ReactionButtons
                           reactions={commentReactions.filter((cr) => cr.comment_id === c.id)}
                           onToggle={(type) => toggleCommentReaction(c.id, type)}
+                          profiles={profiles}
                         />
                         {c.profile_id === userId && expandedCommentId === c.id && (
                           <div className="flex gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>

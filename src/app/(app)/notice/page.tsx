@@ -172,6 +172,7 @@ export default function NoticePage() {
         <ReactionButtons
           reactions={reactions.filter((r) => r.notice_id === n.id)}
           onToggle={(type) => toggleReaction(n.id, type)}
+          profiles={profiles}
         />
       </Card>
     );

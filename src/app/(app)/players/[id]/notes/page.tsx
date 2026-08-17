@@ -289,6 +289,7 @@ export default function PlayerNotesPage() {
                   <ReactionButtons
                     reactions={reactions.filter((r) => r.note_id === n.id)}
                     onToggle={(type) => toggleReaction(n.id, type)}
+                    profiles={profiles}
                   />
                   {expandedNoteId === n.id && (
                     <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>

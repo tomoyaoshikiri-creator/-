@@ -45,6 +45,7 @@ export default function NoticeDetailPage() {
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
   const [reactions, setReactions] = useState<NoticeReaction[]>([]);
   const [senderName, setSenderName] = useState("");
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -70,13 +71,14 @@ export default function NoticeDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: n }, profiles] = await Promise.all([
+    const [{ data: n }, profMap] = await Promise.all([
       supabase.from("notices").select("*").eq("id", params.id).single(),
       loadProfilesMap(supabase),
     ]);
+    setProfiles(profMap);
     if (n) {
       setNotice(n);
-      setSenderName(n.sender_id ? (profiles[n.sender_id] ?? "") : "");
+      setSenderName(n.sender_id ? (profMap[n.sender_id] ?? "") : "");
       const { data: atts } = await supabase.from("notice_attachments").select("*").eq("notice_id", n.id);
       const withUrls = await Promise.all(
         (atts ?? []).map(async (a) => {
@@ -427,7 +429,7 @@ export default function NoticeDetailPage() {
             </>
           )}
 
-          <ReactionButtons reactions={reactions} onToggle={toggleReaction} />
+          <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
 
           {canWriteNotice(role) && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>

@@ -466,6 +466,7 @@ export default function KarteTeamPage() {
                   <ReactionButtons
                     reactions={noteReactions.filter((r) => r.note_id === n.id)}
                     onToggle={(type) => toggleNoteReaction(n.id, type)}
+                    profiles={noteProfiles}
                   />
                   {canManagePlayers(role) && expandedNoteId === n.id && (
                     <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
