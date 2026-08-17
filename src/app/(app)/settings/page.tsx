@@ -8,18 +8,22 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { canManageSettings } from "@/lib/permissions";
+import { PLAN_DISPLAY_LABELS } from "@/lib/format";
 
-function SettingsRow({ href, label }: { href: string; label: string }) {
+function SettingsRow({ href, label, value }: { href: string; label: string; value?: string }) {
   return (
     <Link href={href} className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0">
       <div className="font-bold text-[13.5px]">{label}</div>
-      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+      <div className="flex items-center gap-1.5">
+        {value && <div className="text-[12.5px] text-ink-soft">{value}</div>}
+        <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+      </div>
     </Link>
   );
 }
 
 export default function SettingsPage() {
-  const { role } = useSession();
+  const { role, plan } = useSession();
   const canManageTeam = canManageSettings(role);
 
   return (
@@ -38,7 +42,7 @@ export default function SettingsPage() {
             <SettingsRow href="/settings/logo" label="ログイン画面" />
             <SettingsRow href="/settings/color" label="配色" />
             <SettingsRow href="/settings/storage" label="使用量" />
-            <SettingsRow href="/settings/plan" label="プラン" />
+            <SettingsRow href="/settings/plan" label="プラン" value={`現在のプラン: ${PLAN_DISPLAY_LABELS[plan]}`} />
           </Card>
         </>
       )}
