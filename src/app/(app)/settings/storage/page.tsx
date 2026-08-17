@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
-import { formatBytes } from "@/lib/format";
+import { formatBytes, PLAN_DISPLAY_LABELS } from "@/lib/format";
 import type { TeamPlan } from "@/lib/database.types";
 
 export default function SettingsStoragePage() {
@@ -96,7 +96,7 @@ export default function SettingsStoragePage() {
       ) : (
         <>
           <Card>
-            {plan && <div className="text-[11px] font-bold text-orange mb-1">{plan}プラン</div>}
+            {plan && <div className="text-[11px] font-bold text-orange mb-1">{PLAN_DISPLAY_LABELS[plan]}プラン</div>}
             <div className="flex items-end justify-between">
               <div className="font-bold text-[20px]">{formatBytes(usedBytes)}</div>
               <div className="text-[12.5px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
@@ -136,10 +136,10 @@ export default function SettingsStoragePage() {
                   disabled={billingLoading !== null}
                   className="!mt-0"
                 >
-                  {billingLoading === "中間" ? "処理中…" : "中間プランに申し込む"}
+                  {billingLoading === "中間" ? "処理中…" : `${PLAN_DISPLAY_LABELS["中間"]}プランに申し込む`}
                 </SubmitButton>
                 <SubmitButton onClick={() => startCheckout("フル")} disabled={billingLoading !== null}>
-                  {billingLoading === "フル" ? "処理中…" : "フルプランに申し込む"}
+                  {billingLoading === "フル" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フル"]}プランに申し込む`}
                 </SubmitButton>
               </>
             )}

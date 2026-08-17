@@ -1,4 +1,14 @@
+import type { TeamPlan } from "@/lib/database.types";
+
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+// 内部の管理・DB上の値(お試し/中間/フル)は変えず、ユーザー向けの表示名だけ
+// Free/Standard/Proにする。
+export const PLAN_DISPLAY_LABELS: Record<TeamPlan, string> = {
+  お試し: "Free",
+  中間: "Standard",
+  フル: "Pro",
+};
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`;
