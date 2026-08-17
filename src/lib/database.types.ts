@@ -1180,6 +1180,7 @@ export interface Database {
           sei: string;
           mei: string;
           grade: string | null;
+          number: string | null;
           status: string;
           birthday: string | null;
         }[];

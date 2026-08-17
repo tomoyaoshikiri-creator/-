@@ -5,9 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
-import { isTargetEligible, playerFullName } from "@/lib/format";
+import { isTargetEligible, playerFullName, sortPlayers } from "@/lib/format";
 import type { Attendance, Role, Schedule, VenueType } from "@/lib/database.types";
 import { AttendanceEntryForm } from "./AttendanceEntryForm";
+
+// コーチ陣は管理者を最上段、指導者をその下に表示する。
+const STAFF_ROLE_ORDER: Record<string, number> = { 管理者: 0, 指導者: 1 };
 
 interface Row {
   key: string;
@@ -187,16 +190,16 @@ export function AttendanceRosterModal({
     const attByUser = new Map((attendances ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
 
     setPlayerRows(
-      (players ?? [])
-        .filter((p) => isTargetEligible(p.grade, schedule.target_grade_min))
-        .map((p) => ({
-          key: p.id,
-          name: playerFullName(p),
-          attendance: attByPlayer.get(p.id) ?? null,
-        })),
+      sortPlayers((players ?? []).filter((p) => isTargetEligible(p.grade, schedule.target_grade_min))).map((p) => ({
+        key: p.id,
+        name: playerFullName(p),
+        attendance: attByPlayer.get(p.id) ?? null,
+      })),
     );
 
-    const staff = (profiles ?? []).filter((p) => p.role === "指導者" || p.role === "管理者");
+    const staff = (profiles ?? [])
+      .filter((p) => p.role === "指導者" || p.role === "管理者")
+      .sort((a, b) => STAFF_ROLE_ORDER[a.role] - STAFF_ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
     setStaffRows(staff.map((p) => ({ key: p.id, name: p.name, attendance: attByUser.get(p.id) ?? null })));
 
     const staffIds = new Set(staff.map((p) => p.id));
