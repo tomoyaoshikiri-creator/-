@@ -14,8 +14,8 @@ export const GRADES: { value: Grade; label: string }[] = [
 export const POSITIONS_BY_SPORT: Record<TeamSport, Position[]> = {
   バスケットボール: ["PG", "SG", "SF", "PF", "C"],
   ミニバスケットボール: ["PG", "SG", "SF", "PF", "C"],
-  "サッカー・ミニサッカー": ["GK", "DF", "MF", "FW"],
-  "野球・軟式野球": ["投", "捕", "一", "二", "三", "遊", "左", "中", "右"],
+  サッカー: ["GK", "DF", "MF", "FW"],
+  野球: ["投", "捕", "一", "二", "三", "遊", "左", "中", "右"],
   バレーボール: ["S", "OH", "MB", "OP", "L"],
 };
 

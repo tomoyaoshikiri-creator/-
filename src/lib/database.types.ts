@@ -18,8 +18,8 @@ export type TeamPlan = "お試し" | "中間" | "フル" | "Max";
 export type TeamSport =
   | "バスケットボール"
   | "ミニバスケットボール"
-  | "サッカー・ミニサッカー"
-  | "野球・軟式野球"
+  | "サッカー"
+  | "野球"
   | "バレーボール";
 // 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
 // deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
@@ -34,8 +34,8 @@ export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position =
   | "PG" | "SG" | "SF" | "PF" | "C"                          // バスケットボール・ミニバスケットボール共通
-  | "GK" | "DF" | "MF" | "FW"                                  // サッカー・ミニサッカー
-  | "投" | "捕" | "一" | "二" | "三" | "遊" | "左" | "中" | "右"  // 野球・軟式野球(投手/捕手/一塁/二塁/三塁/遊撃/左翼/中堅/右翼)
+  | "GK" | "DF" | "MF" | "FW"                                  // サッカー
+  | "投" | "捕" | "一" | "二" | "三" | "遊" | "左" | "中" | "右"  // 野球(投手/捕手/一塁/二塁/三塁/遊撃/左翼/中堅/右翼)
   | "S" | "OH" | "MB" | "OP" | "L";                            // バレーボール(セッター/アウトサイドヒッター/ミドルブロッカー/オポジット/リベロ)
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
 export type ReactionType = "thumbs_up" | "ok_gesture" | "bow" | "pray";
