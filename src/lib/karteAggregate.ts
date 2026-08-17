@@ -1,4 +1,11 @@
-import type { GamePlayerStatLine, Player, PlayerGrowthRecord, SportsTestRecord } from "@/lib/database.types";
+import type {
+  GamePlayerStatEntry,
+  GamePlayerStatLine,
+  Player,
+  PlayerGrowthRecord,
+  SportsTestRecord,
+  TeamStatCategory,
+} from "@/lib/database.types";
 import { fiscalYearLabel, formatDateLabel, gradeLabel, playerFullName } from "@/lib/format";
 
 export interface SeasonStatAverages {
@@ -21,6 +28,14 @@ export interface SeasonStatAverages {
   fgAttTotal: number;
   ftMadeTotal: number;
   ftAttTotal: number;
+  // fg_made/fg_attは2P+3P合算のため、2P%はその内訳(fg-three)として算出する。
+  // バスケットボール(3ポイントあり)チームでのみ意味を持つ(ミニバスケは常にthreeAtt=0)。
+  twoPct: number | null;
+  threePct: number | null;
+  twoMadeTotal: number;
+  twoAttTotal: number;
+  threeMadeTotal: number;
+  threeAttTotal: number;
 }
 
 // 得点・FG成功率・FT成功率・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・
@@ -38,6 +53,13 @@ export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "eff", abbr: "EFF" },
 ];
 
+// バスケットボール(usesThreePointScoring(sport)がtrue)のチームだけ、GAME_COLUMNSに
+// 追加で連結して表示する列。
+export const THREE_POINT_GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
+  { key: "twoPct", abbr: "2P%" },
+  { key: "threePct", abbr: "3P%" },
+];
+
 export interface GameStatCellParts {
   primary: string;
   // FG/FTだけは分母(試投数)も併記するため、成功率の下に「成功数/試投数」を2段目として持たせる。
@@ -45,9 +67,23 @@ export interface GameStatCellParts {
 }
 
 export function gameStatCellParts(key: keyof SeasonStatAverages, a: SeasonStatAverages): GameStatCellParts {
-  if (key === "fgPct" || key === "ftPct") {
-    const madeTotal = key === "fgPct" ? a.fgMadeTotal : a.ftMadeTotal;
-    const attTotal = key === "fgPct" ? a.fgAttTotal : a.ftAttTotal;
+  if (key === "fgPct" || key === "ftPct" || key === "twoPct" || key === "threePct") {
+    const madeTotal =
+      key === "fgPct"
+        ? a.fgMadeTotal
+        : key === "ftPct"
+          ? a.ftMadeTotal
+          : key === "twoPct"
+            ? a.twoMadeTotal
+            : a.threeMadeTotal;
+    const attTotal =
+      key === "fgPct"
+        ? a.fgAttTotal
+        : key === "ftPct"
+          ? a.ftAttTotal
+          : key === "twoPct"
+            ? a.twoAttTotal
+            : a.threeAttTotal;
     const pct = a[key];
     if (attTotal === 0 || pct === null) return { primary: "-" };
     return { primary: `${pct}%`, secondary: `${madeTotal}/${attTotal}` };
@@ -82,6 +118,12 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
       fgAttTotal: 0,
       ftMadeTotal: 0,
       ftAttTotal: 0,
+      twoPct: null,
+      threePct: null,
+      twoMadeTotal: 0,
+      twoAttTotal: 0,
+      threeMadeTotal: 0,
+      threeAttTotal: 0,
     };
   }
   const sum = lines.reduce(
@@ -98,6 +140,8 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
       eff: acc.eff + l.eff,
       fgMade: acc.fgMade + l.fg_made,
       fgAtt: acc.fgAtt + l.fg_att,
+      threeMade: acc.threeMade + l.three_made,
+      threeAtt: acc.threeAtt + l.three_att,
       ftMade: acc.ftMade + l.ft_made,
       ftAtt: acc.ftAtt + l.ft_att,
     }),
@@ -114,10 +158,14 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
       eff: 0,
       fgMade: 0,
       fgAtt: 0,
+      threeMade: 0,
+      threeAtt: 0,
       ftMade: 0,
       ftAtt: 0,
     },
   );
+  const twoMade = sum.fgMade - sum.threeMade;
+  const twoAtt = sum.fgAtt - sum.threeAtt;
   return {
     gp,
     pts: round1(sum.pts / gp),
@@ -138,6 +186,12 @@ export function computeSeasonAverages(lines: GamePlayerStatLine[]): SeasonStatAv
     fgAttTotal: sum.fgAtt,
     ftMadeTotal: sum.ftMade,
     ftAttTotal: sum.ftAtt,
+    twoPct: twoAtt > 0 ? round1((twoMade / twoAtt) * 100) : null,
+    threePct: sum.threeAtt > 0 ? round1((sum.threeMade / sum.threeAtt) * 100) : null,
+    twoMadeTotal: twoMade,
+    twoAttTotal: twoAtt,
+    threeMadeTotal: sum.threeMade,
+    threeAttTotal: sum.threeAtt,
   };
 }
 
@@ -158,11 +212,15 @@ export function computeTeamAverages(
     (acc, l) => ({
       fgMade: acc.fgMade + l.fg_made,
       fgAtt: acc.fgAtt + l.fg_att,
+      threeMade: acc.threeMade + l.three_made,
+      threeAtt: acc.threeAtt + l.three_att,
       ftMade: acc.ftMade + l.ft_made,
       ftAtt: acc.ftAtt + l.ft_att,
     }),
-    { fgMade: 0, fgAtt: 0, ftMade: 0, ftAtt: 0 },
+    { fgMade: 0, fgAtt: 0, threeMade: 0, threeAtt: 0, ftMade: 0, ftAtt: 0 },
   );
+  const twoMade = totals.fgMade - totals.threeMade;
+  const twoAtt = totals.fgAtt - totals.threeAtt;
 
   return {
     gp: n,
@@ -184,7 +242,59 @@ export function computeTeamAverages(
     fgAttTotal: totals.fgAtt,
     ftMadeTotal: totals.ftMade,
     ftAttTotal: totals.ftAtt,
+    twoPct: twoAtt > 0 ? round1((twoMade / twoAtt) * 100) : null,
+    threePct: totals.threeAtt > 0 ? round1((totals.threeMade / totals.threeAtt) * 100) : null,
+    twoMadeTotal: twoMade,
+    twoAttTotal: twoAtt,
+    threeMadeTotal: totals.threeMade,
+    threeAttTotal: totals.threeAtt,
   };
+}
+
+// ここから下は、バスケットボール・ミニバスケットボール以外の競技向けの
+// カスタムスタッツ(チームが自由に定義する項目)の集計。上のGAME_COLUMNS/
+// computeSeasonAverages/computeTeamAveragesとは別の、汎用的な集計ロジック。
+
+export interface CustomStatSeasonAverages {
+  gp: number;
+  totals: Record<string, number>;
+  averages: Record<string, number>;
+}
+
+// 出場した試合(この選手のエントリが1件でもある試合)だけをGPとして数える
+// (computeSeasonAveragesと同じ考え方)。
+export function computeCustomSeasonAverages(
+  entries: GamePlayerStatEntry[],
+  categories: TeamStatCategory[],
+): CustomStatSeasonAverages {
+  const gp = new Set(entries.map((e) => e.match_id)).size;
+  const totals: Record<string, number> = {};
+  categories.forEach((c) => {
+    totals[c.id] = round1(entries.filter((e) => e.category_id === c.id).reduce((sum, e) => sum + e.value, 0));
+  });
+  const averages: Record<string, number> = {};
+  categories.forEach((c) => {
+    averages[c.id] = gp > 0 ? round1(totals[c.id] / gp) : 0;
+  });
+  return { gp, totals, averages };
+}
+
+// 元のバスケ用computeTeamAveragesと同じく、出場した各選手の個人平均をそのまま単純平均する
+// (試合数の重み付けはしない)。
+export function computeCustomTeamAverages(
+  playerAverages: CustomStatSeasonAverages[],
+  categories: TeamStatCategory[],
+): CustomStatSeasonAverages {
+  const played = playerAverages.filter((a) => a.gp > 0);
+  const n = played.length;
+  const averages: Record<string, number> = {};
+  const totals: Record<string, number> = {};
+  categories.forEach((c) => {
+    // totalsはチーム合計(出場選手の個人合計を足し上げたもの)、averagesは個人平均の単純平均。
+    totals[c.id] = round1(played.reduce((sum, a) => sum + (a.totals[c.id] ?? 0), 0));
+    averages[c.id] = n > 0 ? round1(played.reduce((sum, a) => sum + (a.averages[c.id] ?? 0), 0) / n) : 0;
+  });
+  return { gp: n, totals, averages };
 }
 
 export type RankingMetric = "pts" | "reb" | "ast" | "stl" | "blk" | "eff" | "fgPct" | "ftPct";

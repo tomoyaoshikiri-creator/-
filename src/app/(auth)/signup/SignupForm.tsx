@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUpTeam, type FormState } from "./actions";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 
 const initialState: FormState = {};
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpTeam, initialState);
+  const [sport, setSport] = useState(SPORTS[0]);
 
   if (state.message) {
     return (
@@ -25,6 +27,18 @@ export function SignupForm() {
       </div>
       <FieldLabel>チーム名</FieldLabel>
       <input name="teamName" className={inputClass()} placeholder="例:〇〇クラブ" required />
+
+      <div className="mt-3">
+        <FieldLabel>競技を選択</FieldLabel>
+        <input type="hidden" name="sport" value={sport} />
+        <div className="flex gap-1.5 flex-wrap">
+          {SPORTS.map((s) => (
+            <SegButton key={s} variant="small" active={sport === s} onClick={() => setSport(s)} className="flex-none px-3.5">
+              {SPORT_DISPLAY_LABELS[s]}
+            </SegButton>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-3">
         <FieldLabel>あなたの氏名</FieldLabel>

@@ -11,7 +11,8 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
-import { canRecordGames } from "@/lib/permissions";
+import { canManageStatCategories, canRecordGames } from "@/lib/permissions";
+import { usesDetailedBasketballStats } from "@/lib/sport";
 import { formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule } from "@/lib/database.types";
 
@@ -23,7 +24,8 @@ const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
 
 export default function GameListPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, sport } = useSession();
+  const showStatCategoriesLink = !usesDetailedBasketballStats(sport) && canManageStatCategories(role);
   const [games, setGames] = useCachedState<Schedule[]>("game:games", []);
   const [category, setCategory] = useState<GameCategory | "all">("all");
   const [loading, setLoading] = useState(() => !hasCachedValue("game:games"));
@@ -56,6 +58,16 @@ export default function GameListPage() {
         試合結果一覧を見る
         <ChevronRightIcon className="w-3 h-3" />
       </Link>
+
+      {showStatCategoriesLink && (
+        <Link
+          href="/game/stat-categories"
+          className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-[10px] border border-line text-[12.5px] font-bold text-ink-soft bg-white"
+        >
+          スタッツ項目を編集
+          <ChevronRightIcon className="w-3 h-3" />
+        </Link>
+      )}
 
       <div className="flex gap-2 mb-3.5">
         {CATEGORY_TABS.map((t) => (

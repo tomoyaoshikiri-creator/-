@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Role, TeamPlan } from "@/lib/database.types";
+import type { Role, TeamPlan, TeamSport } from "@/lib/database.types";
 
 export interface SessionInfo {
   userId: string;
@@ -11,6 +11,7 @@ export interface SessionInfo {
   name: string;
   role: Role;
   plan: TeamPlan;
+  sport: TeamSport;
 }
 
 const SessionContext = createContext<SessionInfo | null>(null);

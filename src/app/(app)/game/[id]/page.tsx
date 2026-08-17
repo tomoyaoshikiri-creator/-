@@ -11,6 +11,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canRecordGames } from "@/lib/permissions";
+import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { scheduleMeta } from "@/lib/format";
 import type { GameMatch, Schedule } from "@/lib/database.types";
@@ -19,7 +20,7 @@ export default function GameDetailPage() {
   const params = useParams<{ id: string }>();
   const gameId = params.id;
   const router = useRouter();
-  const { teamId, role } = useSession();
+  const { teamId, role, sport } = useSession();
   const toast = useToast();
   const [game, setGame] = useState<Schedule | null>(null);
   const [matches, setMatches] = useState<GameMatch[]>([]);
@@ -210,7 +211,16 @@ export default function GameDetailPage() {
           </div>
 
           {selectedMatch && (
-            <SubmitButton onClick={() => router.push(`/game/stats/${selectedMatch.id}`)} className="bg-orange">
+            <SubmitButton
+              onClick={() =>
+                router.push(
+                  usesDetailedBasketballStats(sport)
+                    ? `/game/stats/${selectedMatch.id}`
+                    : `/game/custom-stats/${selectedMatch.id}`,
+                )
+              }
+              className="bg-orange"
+            >
               スタッツを入力
             </SubmitButton>
           )}

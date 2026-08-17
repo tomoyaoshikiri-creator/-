@@ -8,6 +8,8 @@ export type { StatEvent };
 export interface StatTotals {
   fg_made: number;
   fg_att: number;
+  three_made: number;
+  three_att: number;
   ft_made: number;
   ft_att: number;
   pts: number;
@@ -25,6 +27,8 @@ export interface StatTotals {
 export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "fg_make", label: "2P in" },
   { event: "fg_miss", label: "2P miss" },
+  { event: "three_make", label: "3P in" },
+  { event: "three_miss", label: "3P miss" },
   { event: "ft_make", label: "FT成功" },
   { event: "ft_miss", label: "FT失敗" },
   { event: "ast", label: "アシスト" },
@@ -43,6 +47,10 @@ export function statEventCount(row: StatTotals | undefined, event: StatEvent): n
       return row.fg_made;
     case "fg_miss":
       return row.fg_att - row.fg_made;
+    case "three_make":
+      return row.three_made;
+    case "three_miss":
+      return row.three_att - row.three_made;
     case "ft_make":
       return row.ft_made;
     case "ft_miss":
@@ -64,9 +72,25 @@ export function statEventCount(row: StatTotals | undefined, event: StatEvent): n
   }
 }
 
+// fg_made/fg_attは2P+3P合算のため、FG%はバスケットボール・ミニバスケットボール共通で
+// 今まで通り成立する。
 export function fgPct(row: StatTotals | undefined): string {
   if (!row || row.fg_att === 0) return "-";
   return `${Math.round((row.fg_made / row.fg_att) * 100)}%`;
+}
+
+// 2P%はFG%から3Pの内訳を差し引いて算出する(2P専用の列は持たない)。
+export function twoPct(row: StatTotals | undefined): string {
+  if (!row) return "-";
+  const made = row.fg_made - row.three_made;
+  const att = row.fg_att - row.three_att;
+  if (att === 0) return "-";
+  return `${Math.round((made / att) * 100)}%`;
+}
+
+export function threePct(row: StatTotals | undefined): string {
+  if (!row || row.three_att === 0) return "-";
+  return `${Math.round((row.three_made / row.three_att) * 100)}%`;
 }
 
 export function ftPct(row: StatTotals | undefined): string {
@@ -82,6 +106,8 @@ export function emptyStatLine(teamId: string, matchId: string, playerId: string)
     player_id: playerId,
     fg_made: 0,
     fg_att: 0,
+    three_made: 0,
+    three_att: 0,
     ft_made: 0,
     ft_att: 0,
     pts: 0,
@@ -106,6 +132,8 @@ export function emptyOpponentStatLine(teamId: string, matchId: string, opponentP
     opponent_player_id: opponentPlayerId,
     fg_made: 0,
     fg_att: 0,
+    three_made: 0,
+    three_att: 0,
     ft_made: 0,
     ft_att: 0,
     pts: 0,
@@ -133,6 +161,17 @@ export function applyStatEventLocally<T extends StatTotals>(row: T, event: StatE
       break;
     case "fg_miss":
       next.fg_att += delta;
+      break;
+    case "three_make":
+      next.fg_made += delta;
+      next.fg_att += delta;
+      next.three_made += delta;
+      next.three_att += delta;
+      next.pts += delta * 3;
+      break;
+    case "three_miss":
+      next.fg_att += delta;
+      next.three_att += delta;
       break;
     case "ft_make":
       next.ft_made += delta;
@@ -230,6 +269,7 @@ export function statEventLabel(event: StatEvent): string {
 
 export function statEventPoints(event: StatEvent, delta: number): number {
   if (event === "fg_make") return delta * 2;
+  if (event === "three_make") return delta * 3;
   if (event === "ft_make") return delta;
   return 0;
 }

@@ -1,4 +1,4 @@
-import type { Grade, PlayerStatus, Position } from "@/lib/database.types";
+import type { Grade, PlayerStatus, Position, TeamSport } from "@/lib/database.types";
 
 export const GRADES: { value: Grade; label: string }[] = [
   { value: "0", label: "未就学" },
@@ -10,6 +10,13 @@ export const GRADES: { value: Grade; label: string }[] = [
   { value: "6", label: "6年" },
 ];
 
-export const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
+// 競技ごとのポジション選択肢。バスケットボールとミニバスケットボールは同じ体系(PG/SG/SF/PF/C)。
+export const POSITIONS_BY_SPORT: Record<TeamSport, Position[]> = {
+  バスケットボール: ["PG", "SG", "SF", "PF", "C"],
+  ミニバスケットボール: ["PG", "SG", "SF", "PF", "C"],
+  "サッカー・ミニサッカー": ["GK", "DF", "MF", "FW"],
+  "野球・軟式野球": ["投", "捕", "一", "二", "三", "遊", "左", "中", "右"],
+  バレーボール: ["S", "OH", "MB", "OP", "L"],
+};
 
 export const STATUS_OPTIONS: PlayerStatus[] = ["在籍", "休部", "退団", "OB・OG"];

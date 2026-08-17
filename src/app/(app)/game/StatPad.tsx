@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { useSession } from "@/lib/session-context";
+import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
 import { STAT_BUTTONS, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
 import type { GameStatEvent, GameOpponentStatEvent } from "@/lib/database.types";
@@ -24,7 +26,7 @@ function statCell(event: StatEvent): GridCell {
   return { type: "stat", event, label };
 }
 
-export const GRID_CELLS: GridCell[] = [
+const BASE_GRID_CELLS: GridCell[] = [
   statCell("fg_make"),
   statCell("fg_miss"),
   statCell("ast"),
@@ -36,6 +38,15 @@ export const GRID_CELLS: GridCell[] = [
   statCell("reb_off"),
   statCell("reb_def"),
 ];
+
+// バスケットボール(usesThreePointScoring(sport)がtrue)のときだけ、2P成功/失敗の直後に
+// 3P成功/失敗のマスを挿入する。ミニバスケットボールでは今まで通りBASE_GRID_CELLSのまま。
+const THREE_POINT_CELLS: GridCell[] = [statCell("three_make"), statCell("three_miss")];
+
+export function buildGridCells(showThreePoint: boolean): GridCell[] {
+  if (!showThreePoint) return BASE_GRID_CELLS;
+  return [BASE_GRID_CELLS[0], BASE_GRID_CELLS[1], ...THREE_POINT_CELLS, ...BASE_GRID_CELLS.slice(2)];
+}
 
 function ChipRow({
   entrants,
@@ -132,6 +143,8 @@ export function StatPad({
   onDeleteStatEvent: (eventId: string) => Promise<void>;
   onDeleteOpponentStatEvent: (eventId: string) => Promise<void>;
 }) {
+  const { sport } = useSession();
+  const gridCells = buildGridCells(usesThreePointScoring(sport));
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
 
@@ -216,7 +229,7 @@ export function StatPad({
           </button>
           <Card className="mt-2">
             <div className="grid grid-cols-2 gap-1.5">
-              {GRID_CELLS.map((cell) => {
+              {gridCells.map((cell) => {
                 if (cell.type === "ft") {
                   return (
                     <button

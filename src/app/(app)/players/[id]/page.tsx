@@ -11,7 +11,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
+import { GRADES, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -23,9 +23,10 @@ import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId, plan } = useSession();
+  const { role, userId, plan, sport } = useSession();
   const isStaff = canManagePlayers(role);
   const hasKarte = hasKarteTabAccess(plan);
+  const positionOptions = POSITIONS_BY_SPORT[sport];
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
@@ -293,7 +294,7 @@ export default function PlayerDetailPage() {
             <div className="mt-3">
               <FieldLabel>ポジション(複数選択可)</FieldLabel>
               <div className="flex gap-1.5 flex-wrap">
-                {POSITIONS.map((p) => (
+                {positionOptions.map((p) => (
                   <SegButton
                     key={p}
                     variant="small"

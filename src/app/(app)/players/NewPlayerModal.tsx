@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { GRADES, POSITIONS } from "@/lib/playerOptions";
+import { GRADES, POSITIONS_BY_SPORT } from "@/lib/playerOptions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "./BirthdaySelect";
 import type { Grade, Position } from "@/lib/database.types";
@@ -21,8 +21,9 @@ export function NewPlayerModal({
   onCreated: () => void;
 }) {
   const supabase = createClient();
-  const { teamId } = useSession();
+  const { teamId, sport } = useSession();
   const toast = useToast();
+  const positionOptions = POSITIONS_BY_SPORT[sport];
 
   const [sei, setSei] = useState("");
   const [mei, setMei] = useState("");
@@ -146,7 +147,7 @@ export function NewPlayerModal({
       <div className="mt-3">
         <FieldLabel>ポジション(複数選択可)</FieldLabel>
         <div className="flex gap-1.5 flex-wrap">
-          {POSITIONS.map((p) => (
+          {positionOptions.map((p) => (
             <SegButton key={p} variant="small" active={positions.includes(p)} onClick={() => togglePos(p)} className="flex-none px-3.5">
               {p}
             </SegButton>

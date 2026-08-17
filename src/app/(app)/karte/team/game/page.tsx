@@ -11,11 +11,13 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
+import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
   computeTeamAverages,
   GAME_COLUMNS,
+  THREE_POINT_GAME_COLUMNS,
   type SeasonStatAverages,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
@@ -31,6 +33,8 @@ interface StatLineWithDate extends GamePlayerStatLine {
 type TeamAverageRow = Database["public"]["Functions"]["team_game_stat_averages"]["Returns"][number];
 
 function toSeasonStatAverages(row: TeamAverageRow): SeasonStatAverages {
+  const twoMadeTotal = row.fg_made_total - row.three_made_total;
+  const twoAttTotal = row.fg_att_total - row.three_att_total;
   return {
     gp: 0,
     pts: row.pts ?? 0,
@@ -51,18 +55,32 @@ function toSeasonStatAverages(row: TeamAverageRow): SeasonStatAverages {
     fgAttTotal: row.fg_att_total,
     ftMadeTotal: row.ft_made_total,
     ftAttTotal: row.ft_att_total,
+    twoPct: twoAttTotal > 0 ? Math.round((twoMadeTotal / twoAttTotal) * 1000) / 10 : null,
+    threePct: row.three_att_total > 0 ? Math.round((row.three_made_total / row.three_att_total) * 1000) / 10 : null,
+    twoMadeTotal,
+    twoAttTotal,
+    threeMadeTotal: row.three_made_total,
+    threeAttTotal: row.three_att_total,
   };
 }
 
 // FG/FTは「成功数/試投数」の分数表示になるため、他の列より少し幅を広げる。
 const colWidthClass = (key: keyof SeasonStatAverages) =>
-  key === "fgPct" || key === "ftPct" ? "w-[58px] min-w-[58px]" : "w-[50px] min-w-[50px]";
+  key === "fgPct" || key === "ftPct" || key === "twoPct" || key === "threePct"
+    ? "w-[58px] min-w-[58px]"
+    : "w-[50px] min-w-[50px]";
 
-function GameStatLegend() {
+function GameStatLegend({ showThreePoint }: { showThreePoint: boolean }) {
   return (
     <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
       <li>PTS:得点</li>
       <li>FG%:フィールドゴール成功率(下段は成功数/試投数)</li>
+      {showThreePoint && (
+        <>
+          <li>2P%:2ポイントシュート成功率(下段は成功数/試投数)</li>
+          <li>3P%:3ポイントシュート成功率(下段は成功数/試投数)</li>
+        </>
+      )}
       <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
       <li>AST:アシスト</li>
       <li>OREB:オフェンスリバウンド</li>
@@ -77,12 +95,15 @@ function GameStatLegend() {
 
 export default function KarteTeamGamePage() {
   const router = useRouter();
-  const { role, plan } = useSession();
+  const { role, plan, sport } = useSession();
   const isStaff = canViewKarte(role);
+  const showThreePoint = usesThreePointScoring(sport);
+  const columns = showThreePoint ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
 
   useEffect(() => {
     if (!hasKarteTabAccess(plan)) router.replace("/karte");
-  }, [plan, router]);
+    else if (!usesDetailedBasketballStats(sport)) router.replace("/karte/team");
+  }, [plan, sport, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
@@ -192,7 +213,7 @@ export default function KarteTeamGamePage() {
               <div className="text-xs text-ink-soft">この年度の出場記録はありません</div>
             ) : (
               <div className="grid grid-cols-5 gap-y-3 text-center">
-                {GAME_COLUMNS.map((c) => (
+                {columns.map((c) => (
                   <div key={c.key}>
                     <div className="text-[10px] text-ink-soft font-bold">{c.abbr}</div>
                     <div className="font-mono font-bold text-[13px] mt-0.5">
@@ -203,7 +224,7 @@ export default function KarteTeamGamePage() {
               </div>
             )}
           </Card>
-          <GameStatLegend />
+          <GameStatLegend showThreePoint={showThreePoint} />
         </>
       ) : (
         <>
@@ -218,7 +239,7 @@ export default function KarteTeamGamePage() {
                   <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                     選手
                   </th>
-                  {GAME_COLUMNS.map((c) => (
+                  {columns.map((c) => (
                     <th
                       key={c.key}
                       onClick={() => rankingMode && setSortKey(c.key)}
@@ -234,7 +255,7 @@ export default function KarteTeamGamePage() {
                   <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     チーム平均
                   </th>
-                  {GAME_COLUMNS.map((c) => {
+                  {columns.map((c) => {
                     const v = teamAverages[c.key] as number | null;
                     return (
                       <th
@@ -257,7 +278,7 @@ export default function KarteTeamGamePage() {
                         #{p.number ?? "-"} {playerFullName(p)}
                       </Link>
                     </td>
-                    {GAME_COLUMNS.map((c) => {
+                    {columns.map((c) => {
                       const v = averages[c.key] as number | null;
                       return (
                         <td
@@ -276,7 +297,7 @@ export default function KarteTeamGamePage() {
             </table>
           </div>
 
-          <GameStatLegend />
+          <GameStatLegend showThreePoint={showThreePoint} />
         </>
       )}
     </PageShell>

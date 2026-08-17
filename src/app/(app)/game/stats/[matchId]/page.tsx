@@ -16,6 +16,7 @@ import { OpponentRoster } from "../../OpponentRoster";
 import { StartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
+import { usesDetailedBasketballStats } from "@/lib/sport";
 import { playerFullName, sortPlayers, sortOpponentPlayers } from "@/lib/format";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
@@ -45,8 +46,12 @@ export default function GameStatsPage() {
   const params = useParams<{ matchId: string }>();
   const matchId = params.matchId;
   const router = useRouter();
-  const { teamId, role } = useSession();
+  const { teamId, role, sport } = useSession();
   const toast = useToast();
+
+  useEffect(() => {
+    if (!usesDetailedBasketballStats(sport)) router.replace("/game");
+  }, [sport, router]);
   const [match, setMatch] = useState<GameMatch | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);

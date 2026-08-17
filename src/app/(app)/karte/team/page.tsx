@@ -15,6 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
+import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -48,7 +49,8 @@ interface StatLineWithDate extends GamePlayerStatLine {
 
 export default function KarteTeamPage() {
   const router = useRouter();
-  const { role, userId, teamId, plan } = useSession();
+  const { role, userId, teamId, plan, sport } = useSession();
+  const showBasketballStats = usesDetailedBasketballStats(sport);
   const toast = useToast();
   const isStaff = canViewKarte(role);
 
@@ -325,7 +327,7 @@ export default function KarteTeamPage() {
         </Card>
       </Link>
 
-      <Link href="/karte/team/game">
+      <Link href={showBasketballStats ? "/karte/team/game" : "/karte/team/custom-stats"}>
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">
             <div>

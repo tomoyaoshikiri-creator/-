@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SPORTS } from "@/lib/sport";
+import type { TeamSport } from "@/lib/database.types";
 
 export interface FormState {
   error?: string;
@@ -15,9 +17,13 @@ export async function completeSetup(_prev: FormState, formData: FormData): Promi
   const adminSei = String(formData.get("adminSei") ?? "").trim();
   const adminMei = String(formData.get("adminMei") ?? "").trim();
   const adminName = `${adminSei}${adminMei}`;
+  const sport = String(formData.get("sport") ?? "") as TeamSport;
 
   if (!teamName || !adminSei || !adminMei) {
     return { error: "すべての項目を入力してください" };
+  }
+  if (!SPORTS.includes(sport)) {
+    return { error: "競技を選択してください" };
   }
 
   const supabase = await createClient();
@@ -29,6 +35,7 @@ export async function completeSetup(_prev: FormState, formData: FormData): Promi
   const { error } = await supabase.rpc("create_team_and_admin", {
     team_name: teamName,
     admin_name: adminName,
+    team_sport: sport,
   });
   if (error) return { error: error.message };
 

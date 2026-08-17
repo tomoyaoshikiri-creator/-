@@ -129,6 +129,11 @@ export function canManageSportsTests(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// バスケットボール・ミニバスケットボール以外の競技向けカスタムスタッツ項目の管理ができるロール。
+export function canManageStatCategories(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 // カルテタブ(選手ごとのスタッツ・スポーツテスト横断ビュー)を見られるロール。
 export function canViewKarte(role: Role): boolean {
   return role === "指導者" || role === "管理者";

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "@/lib/session-context";
+import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
-import { GRID_CELLS, type StatEntrant } from "./StatPad";
+import { buildGridCells, type StatEntrant } from "./StatPad";
 import {
   STAT_BUTTONS,
   statEventCount,
@@ -126,6 +128,8 @@ export function GameStatsLandscape({
   resetting: boolean;
   onResetAll: () => void;
 }) {
+  const { sport } = useSession();
+  const gridCells = buildGridCells(usesThreePointScoring(sport));
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
   const [possession, setPossession] = useState<"own" | "opponent" | null>(null);
@@ -342,7 +346,7 @@ export function GameStatsLandscape({
             className="grid grid-cols-2 gap-1.5 w-full"
             style={{ gridAutoRows: "78px" }}
           >
-            {GRID_CELLS.map((cell) => {
+            {gridCells.map((cell) => {
               if (cell.type === "ft") {
                 return (
                   <button

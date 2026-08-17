@@ -12,6 +12,15 @@ export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "�
 // "Max"は都賀ビクトリーズ専用の非公開プラン(スポーツテスト機能を含む)。
 // 一般には販売しないため、Stripeのプラン申し込み導線には出さない。
 export type TeamPlan = "お試し" | "中間" | "フル" | "Max";
+// チーム作成時に選ぶ競技。バスケットボール・ミニバスケットボールは同じ詳細スタッツ機能
+// (クォーター制StatPad)を使うが、3ポイントの有無だけが異なる(src/lib/sport.ts参照)。
+// それ以外の競技はチームが自由に定義するカスタムスタッツ項目を使う。
+export type TeamSport =
+  | "バスケットボール"
+  | "ミニバスケットボール"
+  | "サッカー・ミニサッカー"
+  | "野球・軟式野球"
+  | "バレーボール";
 // 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
 // deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
 export type ReminderType = "baseline_2days" | "deadline_day" | "week_before";
@@ -23,12 +32,18 @@ export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
 // 選手登録時に選べる学年(在籍中の選手のみ)。OB・OGは年度更新のたびに
 // 卒団からの経過年数として6より先の値(文字列)まで内部的に伸びていく。
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
-export type Position = "PG" | "SG" | "SF" | "PF" | "C";
+export type Position =
+  | "PG" | "SG" | "SF" | "PF" | "C"                          // バスケットボール・ミニバスケットボール共通
+  | "GK" | "DF" | "MF" | "FW"                                  // サッカー・ミニサッカー
+  | "投" | "捕" | "一" | "二" | "三" | "遊" | "左" | "中" | "右"  // 野球・軟式野球(投手/捕手/一塁/二塁/三塁/遊撃/左翼/中堅/右翼)
+  | "S" | "OH" | "MB" | "OP" | "L";                            // バレーボール(セッター/アウトサイドヒッター/ミドルブロッカー/オポジット/リベロ)
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
 export type ReactionType = "thumbs_up" | "ok_gesture" | "bow" | "pray";
 export type StatEvent =
   | "fg_make"
   | "fg_miss"
+  | "three_make"
+  | "three_miss"
   | "ft_make"
   | "ft_miss"
   | "reb_off"
@@ -51,6 +66,7 @@ export interface Database {
           theme_accent: string | null;
           logo_path: string | null;
           plan: TeamPlan;
+          sport: TeamSport;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -67,6 +83,7 @@ export interface Database {
           theme_accent?: string | null;
           logo_path?: string | null;
           plan?: TeamPlan;
+          sport?: TeamSport;
           storage_limit_bytes?: number;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
@@ -79,6 +96,7 @@ export interface Database {
           theme_accent: string | null;
           logo_path: string | null;
           plan: TeamPlan;
+          sport: TeamSport;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -716,6 +734,8 @@ export interface Database {
           opponent_player_id: string;
           fg_made: number;
           fg_att: number;
+          three_made: number;
+          three_att: number;
           ft_made: number;
           ft_att: number;
           pts: number;
@@ -818,6 +838,8 @@ export interface Database {
           player_id: string;
           fg_made: number;
           fg_att: number;
+          three_made: number;
+          three_att: number;
           ft_made: number;
           ft_att: number;
           pts: number;
@@ -862,6 +884,49 @@ export interface Database {
           delta: number;
         };
         Update: { quarter?: number };
+        Relationships: [];
+      };
+      team_stat_categories: {
+        Row: {
+          id: string;
+          team_id: string;
+          name: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          name: string;
+          position?: number;
+        };
+        Update: Partial<{
+          name: string;
+          position: number;
+        }>;
+        Relationships: [];
+      };
+      game_player_stat_entries: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          player_id: string;
+          category_id: string;
+          value: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          player_id: string;
+          category_id: string;
+          value?: number;
+        };
+        Update: Partial<{
+          value: number;
+        }>;
         Relationships: [];
       };
       sports_test_records: {
@@ -1123,7 +1188,7 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       create_team_and_admin: {
-        Args: { team_name: string; admin_name: string };
+        Args: { team_name: string; admin_name: string; team_sport?: TeamSport };
         Returns: string;
       };
       get_invite_info: {
@@ -1146,6 +1211,16 @@ export interface Database {
         Args: Record<string, never>;
         Returns: number;
       };
+      team_stat_category_averages: {
+        Args: { p_fiscal_year: number };
+        Returns: {
+          category_id: string;
+          category_name: string;
+          position: number;
+          player_count: number;
+          avg_value: number;
+        }[];
+      };
       team_game_stat_averages: {
         Args: { p_fiscal_year: number };
         Returns: {
@@ -1164,6 +1239,8 @@ export interface Database {
           fg_att_total: number;
           ft_made_total: number;
           ft_att_total: number;
+          three_made_total: number;
+          three_att_total: number;
         }[];
       };
       team_sports_test_averages: {
@@ -1230,6 +1307,8 @@ export interface Database {
             player_id: string;
             fg_made: number;
             fg_att: number;
+            three_made: number;
+            three_att: number;
             ft_made: number;
             ft_att: number;
             pts: number;
@@ -1263,6 +1342,8 @@ export interface Database {
             opponent_player_id: string;
             fg_made: number;
             fg_att: number;
+            three_made: number;
+            three_att: number;
             ft_made: number;
             ft_att: number;
             pts: number;
@@ -1338,5 +1419,7 @@ export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_pla
 export type GameOpponentRecord = Database["public"]["Tables"]["game_opponent_records"]["Row"];
 export type GameOpponentStatLine = Database["public"]["Tables"]["game_opponent_stat_lines"]["Row"];
 export type GameOpponentStatEvent = Database["public"]["Tables"]["game_opponent_stat_events"]["Row"];
+export type TeamStatCategory = Database["public"]["Tables"]["team_stat_categories"]["Row"];
+export type GamePlayerStatEntry = Database["public"]["Tables"]["game_player_stat_entries"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];

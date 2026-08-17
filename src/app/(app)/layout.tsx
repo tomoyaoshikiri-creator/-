@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path, plan)")
+    .select("id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path, plan, sport)")
     .eq("id", session.user.id)
     .single<{
       id: string;
@@ -33,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         theme_accent: string | null;
         logo_path: string | null;
         plan: SessionInfo["plan"];
+        sport: SessionInfo["sport"];
       } | null;
     }>();
 
@@ -57,6 +58,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           name: profile.name,
           role: profile.role,
           plan: team?.plan ?? "お試し",
+          sport: team?.sport ?? "ミニバスケットボール",
         }}
       >
         <ToastProvider>

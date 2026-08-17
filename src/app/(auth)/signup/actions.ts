@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { SPORTS } from "@/lib/sport";
+import type { TeamSport } from "@/lib/database.types";
 
 export interface FormState {
   error?: string;
@@ -16,6 +18,7 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   const adminName = `${adminSei}${adminMei}`;
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const sport = String(formData.get("sport") ?? "") as TeamSport;
 
   if (!teamName || !adminSei || !adminMei || !email || !password) {
     return { error: "すべての項目を入力してください" };
@@ -23,9 +26,12 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   if (password.length < 8) {
     return { error: "パスワードは8文字以上で入力してください" };
   }
+  if (!SPORTS.includes(sport)) {
+    return { error: "競技を選択してください" };
+  }
 
   const origin = await getRequestOrigin();
-  const completeParams = new URLSearchParams({ kind: "team", teamName, adminName });
+  const completeParams = new URLSearchParams({ kind: "team", teamName, adminName, sport });
   const next = `/auth/complete?${completeParams.toString()}`;
   const emailRedirectTo = `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
 
@@ -47,6 +53,7 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   const { error: rpcError } = await supabase.rpc("create_team_and_admin", {
     team_name: teamName,
     admin_name: adminName,
+    team_sport: sport,
   });
   if (rpcError) return { error: rpcError.message };
 
