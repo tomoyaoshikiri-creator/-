@@ -19,7 +19,10 @@ export type TeamSport =
   | "バスケットボール"
   | "ミニバスケットボール"
   | "サッカー"
+  | "フットサル"
   | "野球"
+  | "ハンドボール"
+  | "ラグビー"
   | "バレーボール";
 // 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
 // deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
@@ -34,9 +37,11 @@ export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
 export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
 export type Position =
   | "PG" | "SG" | "SF" | "PF" | "C"                          // バスケットボール・ミニバスケットボール共通
-  | "GK" | "DF" | "MF" | "FW"                                  // サッカー
+  | "GK" | "DF" | "MF" | "FW"                                  // サッカー・フットサル共通
   | "投" | "捕" | "一" | "二" | "三" | "遊" | "左" | "中" | "右"  // 野球(投手/捕手/一塁/二塁/三塁/遊撃/左翼/中堅/右翼)
-  | "S" | "OH" | "MB" | "OP" | "L";                            // バレーボール(セッター/アウトサイドヒッター/ミドルブロッカー/オポジット/リベロ)
+  | "S" | "OH" | "MB" | "OP" | "L"                             // バレーボール(セッター/アウトサイドヒッター/ミドルブロッカー/オポジット/リベロ)
+  | "LB" | "CB" | "RB" | "LW" | "RW" | "PV"                    // ハンドボール(GKは共通、左右バック/センターバック/左右サイド/ピボット)
+  | "PR" | "HO" | "LO" | "FL" | "N8" | "SH" | "SO" | "CTB" | "WTB" | "FB"; // ラグビー(プロップ/フッカー/ロック/フランカー/No8/SH/SO/センター/ウイング/フルバック)
 export type AttachmentKind = "対戦表" | "配車表" | "その他";
 export type ReactionType = "thumbs_up" | "ok_gesture" | "bow" | "pray";
 export type StatEvent =

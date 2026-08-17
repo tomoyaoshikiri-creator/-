@@ -15,7 +15,10 @@ export const POSITIONS_BY_SPORT: Record<TeamSport, Position[]> = {
   バスケットボール: ["PG", "SG", "SF", "PF", "C"],
   ミニバスケットボール: ["PG", "SG", "SF", "PF", "C"],
   サッカー: ["GK", "DF", "MF", "FW"],
+  フットサル: ["GK", "DF", "MF", "FW"],
   野球: ["投", "捕", "一", "二", "三", "遊", "左", "中", "右"],
+  ハンドボール: ["GK", "LB", "CB", "RB", "LW", "RW", "PV"],
+  ラグビー: ["PR", "HO", "LO", "FL", "N8", "SH", "SO", "CTB", "WTB", "FB"],
   バレーボール: ["S", "OH", "MB", "OP", "L"],
 };
 
