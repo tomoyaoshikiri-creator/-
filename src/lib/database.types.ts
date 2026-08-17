@@ -50,6 +50,11 @@ export interface Database {
           logo_path: string | null;
           plan: TeamPlan;
           storage_limit_bytes: number;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          // StripeのSubscription.statusをそのまま保持する
+          // (active/trialing/past_due/canceled/unpaid/incomplete/incomplete_expired等)。
+          subscription_status: string | null;
           created_at: string;
         };
         Insert: {
@@ -61,6 +66,9 @@ export interface Database {
           logo_path?: string | null;
           plan?: TeamPlan;
           storage_limit_bytes?: number;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_status?: string | null;
           created_at?: string;
         };
         Update: Partial<{
@@ -70,6 +78,9 @@ export interface Database {
           logo_path: string | null;
           plan: TeamPlan;
           storage_limit_bytes: number;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          subscription_status: string | null;
         }>;
         Relationships: [];
       };
