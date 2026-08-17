@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { completeSetup, type FormState } from "./actions";
-import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 
 const initialState: FormState = {};
@@ -21,14 +21,13 @@ export function SetupForm() {
 
       <div className="mt-3">
         <FieldLabel>競技を選択</FieldLabel>
-        <input type="hidden" name="sport" value={sport} />
-        <div className="flex gap-1.5 flex-wrap">
+        <select name="sport" className={inputClass()} value={sport} onChange={(e) => setSport(e.target.value as (typeof SPORTS)[number])}>
           {SPORTS.map((s) => (
-            <SegButton key={s} variant="small" active={sport === s} onClick={() => setSport(s)} className="flex-none px-3.5">
+            <option key={s} value={s}>
               {SPORT_DISPLAY_LABELS[s]}
-            </SegButton>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       <div className="mt-3">
