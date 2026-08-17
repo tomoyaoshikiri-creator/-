@@ -6,6 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { Switch } from "@/components/ui/Switch";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule, ScheduleType, VenueType } from "@/lib/database.types";
@@ -44,6 +45,7 @@ export function NewScheduleModal({
   const [venueType, setVenueType] = useState<VenueType>("アウェイ");
   const [collectCarInfo, setCollectCarInfo] = useState(false);
   const [attendanceDeadline, setAttendanceDeadline] = useState("");
+  const [sendAttendanceReminders, setSendAttendanceReminders] = useState(true);
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -65,6 +67,7 @@ export function NewScheduleModal({
     venueType,
     collectCarInfo,
     attendanceDeadline,
+    sendAttendanceReminders,
     title,
     dates,
     startHour,
@@ -84,6 +87,7 @@ export function NewScheduleModal({
     setVenueType("アウェイ");
     setCollectCarInfo(false);
     setAttendanceDeadline("");
+    setSendAttendanceReminders(true);
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -113,6 +117,7 @@ export function NewScheduleModal({
         venueType: source.venue_type ?? ("アウェイ" as VenueType),
         collectCarInfo: source.collect_car_info,
         attendanceDeadline: editSchedule ? (source.attendance_deadline ?? "") : "",
+        sendAttendanceReminders: source.send_attendance_reminders,
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -130,6 +135,7 @@ export function NewScheduleModal({
       setVenueType(fields.venueType);
       setCollectCarInfo(fields.collectCarInfo);
       setAttendanceDeadline(fields.attendanceDeadline);
+      setSendAttendanceReminders(fields.sendAttendanceReminders);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -150,6 +156,7 @@ export function NewScheduleModal({
         venueType: "アウェイ" as VenueType,
         collectCarInfo: false,
         attendanceDeadline: "",
+        sendAttendanceReminders: true,
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -191,6 +198,7 @@ export function NewScheduleModal({
       venue_type: type === "game" ? venueType : null,
       collect_car_info: type !== "game" && collectCarInfo,
       attendance_deadline: type !== "practice" && attendanceDeadline ? attendanceDeadline : null,
+      send_attendance_reminders: sendAttendanceReminders,
       fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
     };
     const { error } = editSchedule
@@ -397,17 +405,12 @@ export function NewScheduleModal({
 
       {type !== "game" && (
         <div className="mt-3">
-          <FieldLabel>車出しの集約</FieldLabel>
-          <div className="flex gap-2">
-            <SegButton active={!collectCarInfo} onClick={() => setCollectCarInfo(false)}>
-              しない
-            </SegButton>
-            <SegButton active={collectCarInfo} onClick={() => setCollectCarInfo(true)}>
-              する
-            </SegButton>
+          <div className="flex items-center justify-between">
+            <FieldLabel>車出しの集約</FieldLabel>
+            <Switch checked={collectCarInfo} onChange={setCollectCarInfo} />
           </div>
           <div className="text-xs text-ink-soft mt-1">
-            「する」にすると、出欠登録で車出し可否・乗車可能人数を聞くようになります。
+            オンにすると、出欠登録で車出し可否・乗車可能人数を聞くようになります。
           </div>
         </div>
       )}
@@ -424,10 +427,20 @@ export function NewScheduleModal({
           />
           <div className="text-xs text-ink-soft mt-1">
             設定すると、期限日当日と(期限を過ぎてもなお未登録の場合)予定日の1週間前に追加でリマインド通知が届きます。
-            未設定でも、全ての予定に共通で予定日の2日前にリマインド通知が届きます。
+            未設定でも、下記がオンなら予定日の2日前にリマインド通知が届きます。
           </div>
         </div>
       )}
+
+      <div className="mt-3">
+        <div className="flex items-center justify-between">
+          <FieldLabel>出欠登録リマインド通知</FieldLabel>
+          <Switch checked={sendAttendanceReminders} onChange={setSendAttendanceReminders} />
+        </div>
+        <div className="text-xs text-ink-soft mt-1">
+          オンにすると、この予定について出欠未登録の人にプッシュ通知でリマインドします。
+        </div>
+      </div>
 
       <div className="mt-3">
         <FieldLabel>対象</FieldLabel>

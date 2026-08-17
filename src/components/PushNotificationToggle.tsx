@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
+import { Switch } from "@/components/ui/Switch";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -86,14 +87,9 @@ export function PushNotificationToggle() {
   if (!supported) return null;
 
   return (
-    <button
-      type="button"
-      onClick={subscribed ? unsubscribe : subscribe}
-      disabled={loading}
-      className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0 w-full text-left"
-    >
+    <div className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0">
       <div className="font-bold text-[13.5px]">プッシュ通知</div>
-      <div className="text-[11.5px] text-ink-soft">{subscribed ? "有効(タップで無効化)" : "無効(タップで有効化)"}</div>
-    </button>
+      <Switch checked={subscribed} onChange={() => (subscribed ? unsubscribe() : subscribe())} disabled={loading} />
+    </div>
   );
 }

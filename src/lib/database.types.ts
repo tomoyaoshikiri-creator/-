@@ -143,6 +143,8 @@ export interface Database {
           // 試合・イベントのみ任意で設定できる出欠登録の期限日。未設定でも予定日2日前の
           // 共通リマインドでカバーされる(src/app/api/cron/attendance-reminders/route.ts参照)。
           attendance_deadline: string | null;
+          // 出欠登録リマインドをこの予定で送るかどうか(既定true、全種別対象)。
+          send_attendance_reminders: boolean;
           // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
           fiscal_year_override: number | null;
           created_by: string | null;
@@ -164,6 +166,7 @@ export interface Database {
           venue_type?: VenueType | null;
           collect_car_info?: boolean;
           attendance_deadline?: string | null;
+          send_attendance_reminders?: boolean;
           fiscal_year_override?: number | null;
           created_by?: string | null;
         };
