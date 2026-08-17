@@ -11,7 +11,7 @@ export type VenueType = "ホーム" | "アウェイ";
 export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
 // "Max"は都賀ビクトリーズ専用の非公開プラン(スポーツテスト機能を含む)。
 // 一般には販売しないため、Stripeのプラン申し込み導線には出さない。
-export type TeamPlan = "お試し" | "中間" | "フル" | "Max";
+export type TeamPlan = "お試し" | "中間" | "フル" | "フルプラス" | "Max";
 // チーム作成時に選ぶ競技。バスケットボール・ミニバスケットボールは同じ詳細スタッツ機能
 // (クォーター制StatPad)を使うが、3ポイントの有無だけが異なる(src/lib/sport.ts参照)。
 // それ以外の競技はチームが自由に定義するカスタムスタッツ項目を使う。
@@ -1059,6 +1059,46 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      player_ai_analysis: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          fiscal_year: number;
+          body: string;
+          generated_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          fiscal_year: number;
+          body: string;
+          generated_by?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      team_ai_analysis: {
+        Row: {
+          id: string;
+          team_id: string;
+          fiscal_year: number;
+          body: string;
+          generated_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          fiscal_year: number;
+          body: string;
+          generated_by?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       team_analysis_note_reactions: {
         Row: {
           id: string;
@@ -1408,6 +1448,8 @@ export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type PlayerNoteReaction = Database["public"]["Tables"]["player_note_reactions"]["Row"];
 export type TeamAnalysisNote = Database["public"]["Tables"]["team_analysis_notes"]["Row"];
 export type PlayerAnalysisNote = Database["public"]["Tables"]["player_analysis_notes"]["Row"];
+export type PlayerAiAnalysis = Database["public"]["Tables"]["player_ai_analysis"]["Row"];
+export type TeamAiAnalysis = Database["public"]["Tables"]["team_ai_analysis"]["Row"];
 export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analysis_note_reactions"]["Row"];
 export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];

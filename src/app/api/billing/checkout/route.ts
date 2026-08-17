@@ -9,8 +9,8 @@ import type { Database } from "@/lib/database.types";
 // (0083のprotect_team_billing_columnsトリガーが通常ユーザーからの直接更新を弾くため)。
 export async function POST(request: Request) {
   const { plan } = await request.json();
-  if (plan !== "中間" && plan !== "フル") {
-    return NextResponse.json({ error: "plan は 中間 または フル を指定してください" }, { status: 400 });
+  if (plan !== "中間" && plan !== "フル" && plan !== "フルプラス") {
+    return NextResponse.json({ error: "plan は 中間・フル・フルプラス のいずれかを指定してください" }, { status: 400 });
   }
 
   const supabase = await createClient();

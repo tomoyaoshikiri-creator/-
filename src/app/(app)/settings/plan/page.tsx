@@ -49,7 +49,7 @@ export default function SettingsPlanPage() {
     })();
   }, [teamId]);
 
-  async function startCheckout(targetPlan: "中間" | "フル") {
+  async function startCheckout(targetPlan: "中間" | "フル" | "フルプラス") {
     setBillingLoading(targetPlan);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -112,6 +112,9 @@ export default function SettingsPlanPage() {
               </SubmitButton>
               <SubmitButton onClick={() => startCheckout("フル")} disabled={billingLoading !== null}>
                 {billingLoading === "フル" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フル"]}プランに申し込む`}
+              </SubmitButton>
+              <SubmitButton onClick={() => startCheckout("フルプラス")} disabled={billingLoading !== null}>
+                {billingLoading === "フルプラス" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フルプラス"]}プランに申し込む`}
               </SubmitButton>
               <a href="/tokushoho" target="_blank" className="block text-center text-[11px] text-ink-soft underline mt-3">
                 特定商取引法に基づく表記

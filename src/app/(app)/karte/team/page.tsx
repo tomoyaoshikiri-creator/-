@@ -14,7 +14,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
@@ -62,6 +62,8 @@ export default function KarteTeamPage() {
   const [analysisFiscalYear, setAnalysisFiscalYear] = useState(CURRENT_FISCAL_YEAR);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState<{ body: string; createdAt: string } | null>(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [teamAverages, setTeamAverages] = useState<SeasonStatAverages | null>(null);
   const [sportsTestQuarterAverages, setSportsTestQuarterAverages] = useState<
@@ -148,6 +150,53 @@ export default function KarteTeamPage() {
   useEffect(() => {
     if (isStaff) markItemSeen(userId, "team_analysis", teamId);
   }, [isStaff, userId, teamId]);
+
+  useEffect(() => {
+    if (!analysisOpen || !hasAiAnalysisAccess(plan)) return;
+    setAiResult(null);
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("team_ai_analysis")
+        .select("body, created_at")
+        .eq("fiscal_year", analysisFiscalYear)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setAiResult({ body: data.body, createdAt: data.created_at });
+    })();
+  }, [analysisOpen, analysisFiscalYear, plan]);
+
+  async function handleGenerateAiAnalysis() {
+    const text = buildTeamKarteAnalysisText({
+      promptText: analysisPrompt,
+      fiscalYear: analysisFiscalYear,
+      playerCount,
+      teamAverages: teamAverages ?? computeTeamAverages([], []),
+      sportsTestQuarterAverages,
+      workoutTallies,
+      practicesHeld,
+      averageAttendanceRate,
+    });
+    setAiGenerating(true);
+    try {
+      const res = await fetch("/api/ai-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: "team", fiscalYear: analysisFiscalYear, dataText: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast(data.error ?? "AI分析の生成に失敗しました");
+        return;
+      }
+      setAiResult({ body: data.body, createdAt: new Date().toISOString() });
+    } catch {
+      toast("AI分析の生成に失敗しました");
+    } finally {
+      setAiGenerating(false);
+    }
+  }
 
   useEffect(() => {
     if (!analysisOpen) return;
@@ -420,6 +469,24 @@ export default function KarteTeamPage() {
           <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
             {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
           </SubmitButton>
+
+          {hasAiAnalysisAccess(plan) && (
+            <>
+              <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating || analysisLoading}>
+                {aiGenerating ? "生成中…" : "AI分析を生成する"}
+              </SubmitButton>
+              {aiResult && (
+                <div className="mt-3 bg-paper border border-line rounded-[10px] p-3">
+                  <div className="text-[10.5px] text-ink-soft font-bold mb-1.5">
+                    {formatDateLabel(aiResult.createdAt.slice(0, 10))}生成
+                  </div>
+                  <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap max-h-[240px] overflow-y-auto">
+                    {aiResult.body}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </Modal>
       )}
 

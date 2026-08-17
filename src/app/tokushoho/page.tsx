@@ -28,6 +28,8 @@ export default function TokushohoPage() {
             <br />
             Proプラン 月額2,980円(税込)
             <br />
+            Pro AI Plusプラン 月額3,480円(税込)
+            <br />
             <span className="text-ink-soft">※各プランの内容は本サービス上に表示のとおりです。</span>
           </Row>
           <Row label="商品代金以外に必要な料金">

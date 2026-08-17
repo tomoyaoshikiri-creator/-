@@ -3,7 +3,7 @@ import type { TeamPlan } from "@/lib/database.types";
 // プランの序列(上位プランは下位プランの機能を全て含む)。Maxは商用プランではないため
 // 序列の最上位に置きつつも、スポーツテストの判定だけは`plan === "Max"`の完全一致で行う
 // (他チームには機能自体を見せない「存在しないプラン」として扱うため)。
-const PLAN_TIER: Record<TeamPlan, number> = { お試し: 0, 中間: 1, フル: 2, Max: 3 };
+const PLAN_TIER: Record<TeamPlan, number> = { お試し: 0, 中間: 1, フル: 2, フルプラス: 3, Max: 4 };
 
 export const FREE_PLAYER_LIMIT = 15;
 
@@ -31,4 +31,10 @@ export function hasKarteTabAccess(plan: TeamPlan): boolean {
 // 他チームには機能の存在自体を見せないため、ロック表示ではなく非表示にする。
 export function hasSportsTestAccess(plan: TeamPlan): boolean {
   return plan === "Max";
+}
+
+// AI分析(実際にAnthropic APIを呼び出して分析コメントを生成する)はフルプラス(Pro AI Plus)
+// 以上で利用可能。Maxはフルプラス以上の上位互換として自動的に含まれる。
+export function hasAiAnalysisAccess(plan: TeamPlan): boolean {
+  return PLAN_TIER[plan] >= PLAN_TIER["フルプラス"];
 }
