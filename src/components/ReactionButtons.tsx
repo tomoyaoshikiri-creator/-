@@ -73,12 +73,17 @@ export function ReactionButtons({
               onPointerLeave={cancelPress}
               onPointerCancel={cancelPress}
               onClick={() => handleClick(type)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full border select-none ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-full border select-none [-webkit-touch-callout:none] ${
                 active ? "border-orange bg-orange/8" : "border-line bg-paper"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={alt} className="w-4 h-4" />
+              <img
+                src={src}
+                alt={alt}
+                draggable={false}
+                className="w-4 h-4 pointer-events-none select-none [-webkit-touch-callout:none]"
+              />
               {active && <span className="text-[10.5px] font-bold text-orange">{forTarget.length}</span>}
             </button>
           );
