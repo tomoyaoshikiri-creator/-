@@ -38,6 +38,7 @@ export default function SettingsPage() {
             <SettingsRow href="/settings/logo" label="ログイン画面" />
             <SettingsRow href="/settings/color" label="配色" />
             <SettingsRow href="/settings/storage" label="使用量" />
+            <SettingsRow href="/settings/plan" label="プラン" />
           </Card>
         </>
       )}

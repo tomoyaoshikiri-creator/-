@@ -18,7 +18,7 @@ export function useUpgradePrompt() {
   return (message: string) => {
     if (canManageSettings(role)) {
       toast(message);
-      router.push("/settings/storage");
+      router.push("/settings/plan");
     } else {
       toast(`${message}(管理者にご相談ください)`);
     }

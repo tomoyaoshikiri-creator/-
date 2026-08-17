@@ -63,8 +63,8 @@ export async function POST(request: Request) {
     mode: "subscription",
     customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${origin}/settings/storage?checkout=success`,
-    cancel_url: `${origin}/settings/storage?checkout=cancel`,
+    success_url: `${origin}/settings/plan?checkout=success`,
+    cancel_url: `${origin}/settings/plan?checkout=cancel`,
     metadata: { team_id: team.id, plan },
     subscription_data: { metadata: { team_id: team.id, plan } },
   });
