@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path)")
+    .select("id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path, plan)")
     .eq("id", session.user.id)
     .single<{
       id: string;
@@ -27,7 +27,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       name: string;
       role: SessionInfo["role"];
       status: string;
-      teams: { name: string; theme_primary: string | null; theme_accent: string | null; logo_path: string | null } | null;
+      teams: {
+        name: string;
+        theme_primary: string | null;
+        theme_accent: string | null;
+        logo_path: string | null;
+        plan: SessionInfo["plan"];
+      } | null;
     }>();
 
   if (!profile) redirect("/setup");
@@ -50,6 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           teamLogoUrl: teamLogoUrl(supabase, team?.logo_path),
           name: profile.name,
           role: profile.role,
+          plan: team?.plan ?? "お試し",
         }}
       >
         <ToastProvider>

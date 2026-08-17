@@ -9,7 +9,9 @@ export type GameCategory = "練習試合" | "公式戦";
 // 種別が"game"の予定にのみ意味を持つ。アウェイは車出し、ホームは会場設営のヒアリングになる。
 export type VenueType = "ホーム" | "アウェイ";
 export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
-export type TeamPlan = "お試し" | "中間" | "フル";
+// "Max"は都賀ビクトリーズ専用の非公開プラン(スポーツテスト機能を含む)。
+// 一般には販売しないため、Stripeのプラン申し込み導線には出さない。
+export type TeamPlan = "お試し" | "中間" | "フル" | "Max";
 // 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
 // deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
 export type ReminderType = "baseline_2days" | "deadline_day" | "week_before";

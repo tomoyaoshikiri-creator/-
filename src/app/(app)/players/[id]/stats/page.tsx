@@ -9,6 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canManagePlayers } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { StatCell } from "@/components/karte/StatCell";
 import { computeSeasonAverages, GAME_COLUMNS } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
@@ -30,7 +31,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
 export default function PlayerStatsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const isStaff = canManagePlayers(role);
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -40,6 +41,11 @@ export default function PlayerStatsPage() {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (!hasKarteTabAccess(plan)) {
+      setAuthorized(false);
+      router.replace("/players");
+      return;
+    }
     if (isStaff) {
       setAuthorized(true);
       return;
@@ -59,7 +65,7 @@ export default function PlayerStatsPage() {
         router.replace("/players");
       }
     })();
-  }, [isStaff, userId, params.id, router]);
+  }, [isStaff, userId, params.id, plan, router]);
 
   const load = useCallback(async () => {
     setLoading(true);

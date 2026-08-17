@@ -13,15 +13,18 @@ import { Fab } from "@/components/ui/Modal";
 import { PlayerRow } from "@/components/PlayerRow";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canManagePlayers } from "@/lib/permissions";
+import { playerLimitForPlan } from "@/lib/plan";
+import { useUpgradePrompt } from "@/components/PlanLock";
 import { sortPlayers } from "@/lib/format";
 import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
 export default function PlayersPage() {
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
+  const promptUpgrade = useUpgradePrompt();
   const cacheKey = useCallback((field: string) => `players:${userId}:${field}`, [userId]);
   const [players, setPlayers] = useCachedState<Player[]>(cacheKey("players"), []);
   const [noteCounts, setNoteCounts] = useCachedState<Record<string, number>>(cacheKey("noteCounts"), {});
@@ -71,6 +74,16 @@ export default function PlayersPage() {
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");
+  const playerLimit = playerLimitForPlan(plan);
+  const atLimit = playerLimit !== null && activeList.length >= playerLimit;
+
+  function handleAddClick() {
+    if (atLimit) {
+      promptUpgrade(`Freeプランでは選手登録は${playerLimit}人までです`);
+      return;
+    }
+    setModalOpen(true);
+  }
 
   async function handleYearUpdate() {
     if (!yearConfirm) {
@@ -97,7 +110,7 @@ export default function PlayersPage() {
       fab={
         isStaff && (
           <>
-            <Fab onClick={() => setModalOpen(true)} />
+            <Fab onClick={handleAddClick} />
             <NewPlayerModal
               open={modalOpen}
               onClose={() => setModalOpen(false)}
@@ -113,7 +126,7 @@ export default function PlayersPage() {
     >
       <div className="flex items-center justify-between mb-2.5">
         <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft">
-          選手マスタ({activeList.length}名)
+          選手マスタ({activeList.length}{playerLimit !== null ? `/${playerLimit}` : ""}名)
         </div>
         {role === "管理者" && (
           <button

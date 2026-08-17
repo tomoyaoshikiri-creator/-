@@ -11,6 +11,7 @@ import { FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { fiscalYearOf, obogGraduationFiscalYear, sortPlayers, todayDateStr } from "@/lib/format";
 import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
@@ -19,15 +20,15 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KarteObogPage() {
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+  }, [role, plan, router]);
 
   useEffect(() => {
     (async () => {

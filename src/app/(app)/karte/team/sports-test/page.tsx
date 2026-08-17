@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
@@ -35,8 +36,14 @@ function SportsTestLegend() {
 }
 
 export default function KarteTeamSportsTestPage() {
-  const { role } = useSession();
+  const router = useRouter();
+  const { role, plan } = useSession();
   const isStaff = canViewKarte(role);
+
+  useEffect(() => {
+    if (plan !== "Max") router.replace("/karte");
+  }, [plan, router]);
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [teamAverageRow, setTeamAverageRow] = useState<TeamAverageRow | null>(null);

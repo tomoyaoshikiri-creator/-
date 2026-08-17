@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
@@ -9,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
@@ -74,8 +76,14 @@ function GameStatLegend() {
 }
 
 export default function KarteTeamGamePage() {
-  const { role } = useSession();
+  const router = useRouter();
+  const { role, plan } = useSession();
   const isStaff = canViewKarte(role);
+
+  useEffect(() => {
+    if (!hasKarteTabAccess(plan)) router.replace("/karte");
+  }, [plan, router]);
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
   const [teamAverageRow, setTeamAverageRow] = useState<TeamAverageRow | null>(null);

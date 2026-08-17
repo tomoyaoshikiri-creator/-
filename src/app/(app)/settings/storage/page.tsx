@@ -117,7 +117,11 @@ export default function SettingsStoragePage() {
 
           <SectionLabel>プラン</SectionLabel>
           <Card>
-            {hasCustomer ? (
+            {plan === "Max" ? (
+              <div className="text-xs text-ink-soft">
+                特別プランが適用されています。プラン内容についてのお問い合わせは運営までご連絡ください。
+              </div>
+            ) : hasCustomer ? (
               <>
                 <div className="text-xs text-ink-soft mb-2.5">
                   お支払い方法の変更・請求履歴の確認・解約は、Stripeのお支払い管理ページから行えます。

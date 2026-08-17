@@ -19,6 +19,8 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
+import { hasPracticeMenuAccess } from "@/lib/plan";
+import { LockedFeatureCard } from "@/components/PlanLock";
 import { formatDateLabel } from "@/lib/format";
 import type { PracticeMenu } from "@/lib/database.types";
 
@@ -29,9 +31,10 @@ interface CopyTarget {
 }
 
 export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
-  const { teamId, userId, role } = useSession();
+  const { teamId, userId, role, plan } = useSession();
   const toast = useToast();
   const canManage = canManagePracticeMenus(role);
+  const hasAccess = hasPracticeMenuAccess(plan);
 
   const [menus, setMenus] = useState<PracticeMenu[]>([]);
   const [input, setInput] = useState("");
@@ -179,6 +182,9 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
 
   if (loading) return null;
   if (!canManage && menus.length === 0) return null;
+  if (canManage && !hasAccess && menus.length === 0) {
+    return <LockedFeatureCard label="実施メニュー" description="練習メニューを記録する" requiredPlan="中間" />;
+  }
 
   return (
     <>
@@ -244,7 +250,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
             </div>
           </div>
         )}
-        {canManage && (
+        {canManage && hasAccess && (
           <div>
             <FieldLabel>入力欄</FieldLabel>
             <input

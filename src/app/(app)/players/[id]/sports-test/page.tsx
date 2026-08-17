@@ -125,7 +125,7 @@ function bestOf(a: number | null, b: number | null, direction: "asc" | "desc"): 
 export default function SportsTestPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const toast = useToast();
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -147,6 +147,11 @@ export default function SportsTestPage() {
   useUnsavedChangesGuard(!loading && isDirty);
 
   useEffect(() => {
+    if (plan !== "Max") {
+      setAuthorized(false);
+      router.replace("/players");
+      return;
+    }
     (async () => {
       if (canManageSportsTests(role)) {
         setAuthorized(true);
@@ -166,7 +171,7 @@ export default function SportsTestPage() {
         router.replace("/players");
       }
     })();
-  }, [role, userId, params.id, router]);
+  }, [role, userId, params.id, plan, router]);
 
   useEffect(() => {
     (async () => {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -13,6 +14,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -45,9 +47,14 @@ interface StatLineWithDate extends GamePlayerStatLine {
 }
 
 export default function KarteTeamPage() {
-  const { role, userId, teamId } = useSession();
+  const router = useRouter();
+  const { role, userId, teamId, plan } = useSession();
   const toast = useToast();
   const isStaff = canViewKarte(role);
+
+  useEffect(() => {
+    if (!hasKarteTabAccess(plan)) router.replace("/karte");
+  }, [plan, router]);
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisFiscalYear, setAnalysisFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -332,19 +339,21 @@ export default function KarteTeamPage() {
         </Card>
       </Link>
 
-      <Link href="/karte/team/sports-test">
-        <Card className="cursor-pointer">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-[15px]">スポーツテスト</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">
-                {isStaff ? "選手ごとのスポーツテスト結果" : "チーム平均のスポーツテスト結果"}
+      {plan === "Max" && (
+        <Link href="/karte/team/sports-test">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold text-[15px]">スポーツテスト</div>
+                <div className="text-[11.5px] text-ink-soft mt-1">
+                  {isStaff ? "選手ごとのスポーツテスト結果" : "チーム平均のスポーツテスト結果"}
+                </div>
               </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-          </div>
-        </Card>
-      </Link>
+          </Card>
+        </Link>
+      )}
 
       {isStaff && (
         <Link href="/karte/team/workout">

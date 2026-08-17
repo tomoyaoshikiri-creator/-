@@ -16,6 +16,7 @@ import { CollapsibleList } from "@/components/CollapsibleList";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
+import { hasCoachNoteAccess } from "@/lib/plan";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenCoachNoteIds, markItemSeen } from "@/lib/itemBadges";
@@ -36,7 +37,7 @@ import { NewCoachNoteModal } from "./NewCoachNoteModal";
 
 export default function CoachNotePage() {
   const router = useRouter();
-  const { userId, teamId, role } = useSession();
+  const { userId, teamId, role, plan } = useSession();
   const toast = useToast();
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
@@ -152,8 +153,8 @@ export default function CoachNotePage() {
   }, [userId, setUnseenIds]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "coachNote")) router.replace("/schedule");
-  }, [role, router]);
+    if (!canAccessTab(role, "coachNote") || !hasCoachNoteAccess(plan)) router.replace("/schedule");
+  }, [role, plan, router]);
 
   function openCoachNote(reportId: string) {
     markItemSeen(userId, "coach_note", reportId);

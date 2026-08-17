@@ -15,6 +15,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { StatCell } from "@/components/karte/StatCell";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -62,7 +63,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const toast = useToast();
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -92,8 +93,8 @@ export default function KartePlayerPage() {
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+  }, [role, plan, router]);
 
   const load = useCallback(async () => {
     setLoading(true);

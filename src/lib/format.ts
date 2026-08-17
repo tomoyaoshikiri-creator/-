@@ -8,6 +8,7 @@ export const PLAN_DISPLAY_LABELS: Record<TeamPlan, string> = {
   お試し: "Free",
   中間: "Standard",
   フル: "Pro",
+  Max: "Max",
 };
 
 export function formatBytes(bytes: number): string {

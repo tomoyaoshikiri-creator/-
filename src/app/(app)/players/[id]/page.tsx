@@ -14,6 +14,8 @@ import { ChevronRightIcon } from "@/components/icons";
 import { GRADES, POSITIONS, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
+import { LockedFeatureCard } from "@/components/PlanLock";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
 import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
@@ -21,8 +23,9 @@ import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const isStaff = canManagePlayers(role);
+  const hasKarte = hasKarteTabAccess(plan);
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
@@ -382,14 +385,18 @@ export default function PlayerDetailPage() {
           )}
 
           <SectionLabel>スタッツ</SectionLabel>
-          <Link href={`/players/${player.id}/stats`}>
-            <Card className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-[13.5px]">試合スタッツを見る</div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Card>
-          </Link>
+          {hasKarte ? (
+            <Link href={`/players/${player.id}/stats`}>
+              <Card className="cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-[13.5px]">試合スタッツを見る</div>
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                </div>
+              </Card>
+            </Link>
+          ) : (
+            <LockedFeatureCard label="試合スタッツを見る" requiredPlan="フル" />
+          )}
 
           <SectionLabel>身長・体重(週次)</SectionLabel>
           <Link href={`/players/${player.id}/growth`}>
@@ -401,15 +408,19 @@ export default function PlayerDetailPage() {
             </Card>
           </Link>
 
-          <SectionLabel>スポーツテスト</SectionLabel>
-          <Link href={`/players/${player.id}/sports-test`}>
-            <Card className="cursor-pointer">
-              <div className="flex items-center justify-between">
-                <div className="font-bold text-[13.5px]">記録を入力する・閲覧する</div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Card>
-          </Link>
+          {plan === "Max" && (
+            <>
+              <SectionLabel>スポーツテスト</SectionLabel>
+              <Link href={`/players/${player.id}/sports-test`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[13.5px]">記録を入力する・閲覧する</div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </div>
+                </Card>
+              </Link>
+            </>
+          )}
 
           {isStaff && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>

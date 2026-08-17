@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { PracticeMenu, Schedule } from "@/lib/database.types";
 
@@ -25,7 +26,7 @@ interface MenuTally {
 
 export default function KarteTeamWorkoutPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, plan } = useSession();
   const [practices, setPractices] = useState<PracticeWithMenus[]>([]);
   const [fiscalYear, setFiscalYear] = useState<number | "all">("all");
   const [yearInitialized, setYearInitialized] = useState(false);
@@ -34,8 +35,8 @@ export default function KarteTeamWorkoutPage() {
   const [expandedTheme, setExpandedTheme] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+  }, [role, plan, router]);
 
   useEffect(() => {
     (async () => {

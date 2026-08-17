@@ -14,6 +14,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { ChevronRightIcon } from "@/components/icons";
 import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
+import { hasKarteTabAccess } from "@/lib/plan";
 import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import {
   buildBulkKarteAnalysisText,
@@ -32,7 +33,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
 
 export default function KartePlayersPage() {
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, plan } = useSession();
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +58,8 @@ export default function KartePlayersPage() {
   }, [userId]);
 
   useEffect(() => {
-    if (!canViewKarte(role)) router.replace("/schedule");
-  }, [role, router]);
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+  }, [role, plan, router]);
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");
