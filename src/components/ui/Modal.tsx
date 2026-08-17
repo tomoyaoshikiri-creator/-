@@ -48,7 +48,7 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-green text-white flex items-center justify-center text-xl font-bold shadow-[0_10px_20px_-6px_rgba(62,132,98,0.55)] z-10"
+      className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-[#4fa377] text-white flex items-center justify-center text-xl font-bold shadow-[0_10px_20px_-6px_rgba(79,163,119,0.55)] z-10"
     >
       +
     </button>
