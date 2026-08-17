@@ -1021,6 +1021,7 @@ export interface Database {
           team_id: string;
           author_id: string | null;
           body: string;
+          source: "staff" | "ai";
           created_at: string;
           updated_at: string;
         };
@@ -1029,6 +1030,7 @@ export interface Database {
           team_id: string;
           author_id?: string | null;
           body: string;
+          source?: "staff" | "ai";
         };
         Update: Partial<{
           body: string;
@@ -1043,6 +1045,7 @@ export interface Database {
           player_id: string;
           author_id: string | null;
           body: string;
+          source: "staff" | "ai";
           created_at: string;
           updated_at: string;
         };
@@ -1052,51 +1055,12 @@ export interface Database {
           player_id: string;
           author_id?: string | null;
           body: string;
+          source?: "staff" | "ai";
         };
         Update: Partial<{
           body: string;
           updated_at: string;
         }>;
-        Relationships: [];
-      };
-      player_ai_analysis: {
-        Row: {
-          id: string;
-          team_id: string;
-          player_id: string;
-          fiscal_year: number;
-          body: string;
-          generated_by: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          team_id: string;
-          player_id: string;
-          fiscal_year: number;
-          body: string;
-          generated_by?: string | null;
-        };
-        Update: Record<string, never>;
-        Relationships: [];
-      };
-      team_ai_analysis: {
-        Row: {
-          id: string;
-          team_id: string;
-          fiscal_year: number;
-          body: string;
-          generated_by: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          team_id: string;
-          fiscal_year: number;
-          body: string;
-          generated_by?: string | null;
-        };
-        Update: Record<string, never>;
         Relationships: [];
       };
       team_analysis_note_reactions: {
@@ -1448,8 +1412,6 @@ export type PlayerNote = Database["public"]["Tables"]["player_notes"]["Row"];
 export type PlayerNoteReaction = Database["public"]["Tables"]["player_note_reactions"]["Row"];
 export type TeamAnalysisNote = Database["public"]["Tables"]["team_analysis_notes"]["Row"];
 export type PlayerAnalysisNote = Database["public"]["Tables"]["player_analysis_notes"]["Row"];
-export type PlayerAiAnalysis = Database["public"]["Tables"]["player_ai_analysis"]["Row"];
-export type TeamAiAnalysis = Database["public"]["Tables"]["team_ai_analysis"]["Row"];
 export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analysis_note_reactions"]["Row"];
 export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];

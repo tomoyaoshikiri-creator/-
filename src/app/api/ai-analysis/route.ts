@@ -11,19 +11,19 @@ const SYSTEM_PROMPT =
 
 // 選手カルテ・チームカルテの「分析用抽出」で使っている既存のテキスト整形関数
 // (buildKarteAnalysisText/buildTeamKarteAnalysisText)の出力をそのまま受け取り、
-// Anthropic APIに渡して分析コメントを生成する。生成結果はplayer_ai_analysis/
-// team_ai_analysisに追記型ログとして保存し、レート制限もこの2テーブルの当日件数を
-// 数えるだけで実現する(別途カウンタテーブルは設けない)。
+// Anthropic APIに渡して分析コメントを生成する。生成結果は選手分析フィードバック/
+// チーム分析フィードバックにsource:'ai'として追記し、レート制限もこの2テーブルの
+// 当日のAI生成件数を数えるだけで実現する(別途カウンタテーブルは設けない)。
 export async function POST(request: Request) {
-  const { scope, playerId, fiscalYear, dataText } = await request.json();
+  const { scope, playerId, dataText } = await request.json();
   if (scope !== "player" && scope !== "team") {
     return NextResponse.json({ error: "scope は player または team を指定してください" }, { status: 400 });
   }
   if (scope === "player" && !playerId) {
     return NextResponse.json({ error: "playerId が必要です" }, { status: 400 });
   }
-  if (!fiscalYear || !dataText) {
-    return NextResponse.json({ error: "fiscalYear と dataText が必要です" }, { status: 400 });
+  if (!dataText) {
+    return NextResponse.json({ error: "dataText が必要です" }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -53,14 +53,16 @@ export async function POST(request: Request) {
   todayStart.setHours(0, 0, 0, 0);
   const [{ count: playerCount }, { count: teamCount }] = await Promise.all([
     supabase
-      .from("player_ai_analysis")
+      .from("player_analysis_notes")
       .select("id", { count: "exact", head: true })
       .eq("team_id", profile.team_id)
+      .eq("source", "ai")
       .gte("created_at", todayStart.toISOString()),
     supabase
-      .from("team_ai_analysis")
+      .from("team_analysis_notes")
       .select("id", { count: "exact", head: true })
       .eq("team_id", profile.team_id)
+      .eq("source", "ai")
       .gte("created_at", todayStart.toISOString()),
   ]);
   if ((playerCount ?? 0) + (teamCount ?? 0) >= DAILY_LIMIT) {
@@ -95,13 +97,14 @@ export async function POST(request: Request) {
   const { error: insertError } =
     scope === "player"
       ? await supabase
-          .from("player_ai_analysis")
-          .insert({ team_id: profile.team_id, player_id: playerId, fiscal_year: fiscalYear, body, generated_by: user.id })
+          .from("player_analysis_notes")
+          .insert({ team_id: profile.team_id, player_id: playerId, author_id: user.id, body, source: "ai" })
       : await supabase
-          .from("team_ai_analysis")
-          .insert({ team_id: profile.team_id, fiscal_year: fiscalYear, body, generated_by: user.id });
+          .from("team_analysis_notes")
+          .insert({ team_id: profile.team_id, author_id: user.id, body, source: "ai" });
   if (insertError) {
     console.error("[api/ai-analysis] failed to save result", insertError);
+    return NextResponse.json({ error: "AI分析の保存に失敗しました" }, { status: 500 });
   }
 
   return NextResponse.json({ body });

@@ -93,7 +93,6 @@ export default function KartePlayerPage() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiResult, setAiResult] = useState<{ body: string; createdAt: string } | null>(null);
 
   const [analysisNotes, setAnalysisNotes] = useState<PlayerAnalysisNote[]>([]);
   const [noteReactions, setNoteReactions] = useState<PlayerAnalysisNoteReaction[]>([]);
@@ -325,27 +324,10 @@ export default function KartePlayerPage() {
     }
   }
 
-  useEffect(() => {
-    if (!analysisOpen || !player || !hasAiAnalysisAccess(plan)) return;
-    setAiResult(null);
-    (async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("player_ai_analysis")
-        .select("body, created_at")
-        .eq("player_id", player.id)
-        .eq("fiscal_year", fiscalYear)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data) setAiResult({ body: data.body, createdAt: data.created_at });
-    })();
-  }, [analysisOpen, player, fiscalYear, plan]);
-
   async function handleGenerateAiAnalysis() {
     if (!player) return;
     const text = buildKarteAnalysisText({
-      promptText: analysisPrompt,
+      promptText: DEFAULT_KARTE_ANALYSIS_PROMPT,
       player,
       fiscalYear,
       seasonAverages,
@@ -360,14 +342,15 @@ export default function KartePlayerPage() {
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "player", playerId: player.id, fiscalYear, dataText: text }),
+        body: JSON.stringify({ scope: "player", playerId: player.id, dataText: text }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast(data.error ?? "AI分析の生成に失敗しました");
         return;
       }
-      setAiResult({ body: data.body, createdAt: new Date().toISOString() });
+      toast("AI分析を生成し、フィードバック欄に追加しました");
+      load();
     } catch {
       toast("AI分析の生成に失敗しました");
     } finally {
@@ -539,24 +522,6 @@ export default function KartePlayerPage() {
             この指示文に続けて、選手のスタッツ・スポーツテスト・身長体重のデータがコピーされます
           </div>
           <SubmitButton onClick={handleCopyAnalysis}>この内容でコピーする</SubmitButton>
-
-          {hasAiAnalysisAccess(plan) && (
-            <>
-              <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating}>
-                {aiGenerating ? "生成中…" : "AI分析を生成する"}
-              </SubmitButton>
-              {aiResult && (
-                <div className="mt-3 bg-paper border border-line rounded-[10px] p-3">
-                  <div className="text-[10.5px] text-ink-soft font-bold mb-1.5">
-                    {formatDateLabel(aiResult.createdAt.slice(0, 10))}生成
-                  </div>
-                  <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap max-h-[240px] overflow-y-auto">
-                    {aiResult.body}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
         </Modal>
       )}
 
@@ -816,9 +781,16 @@ export default function KartePlayerPage() {
               className={canManagePlayers(role) ? "cursor-pointer" : ""}
               onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
             >
-              <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                {formatDateLabel(n.created_at.slice(0, 10))}
-                {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+              <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                <span>
+                  {formatDateLabel(n.created_at.slice(0, 10))}
+                  {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                </span>
+                {n.source === "ai" && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+                    AI分析
+                  </span>
+                )}
               </div>
               <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
               <ReactionButtons
@@ -864,6 +836,12 @@ export default function KartePlayerPage() {
             insert={handleAddNote}
           />
         </>
+      )}
+
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
+        <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating}>
+          {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+        </SubmitButton>
       )}
     </PageShell>
   );

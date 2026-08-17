@@ -63,7 +63,6 @@ export default function KarteTeamPage() {
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiResult, setAiResult] = useState<{ body: string; createdAt: string } | null>(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [teamAverages, setTeamAverages] = useState<SeasonStatAverages | null>(null);
   const [sportsTestQuarterAverages, setSportsTestQuarterAverages] = useState<
@@ -151,137 +150,137 @@ export default function KarteTeamPage() {
     if (isStaff) markItemSeen(userId, "team_analysis", teamId);
   }, [isStaff, userId, teamId]);
 
+  const loadAnalysisData = useCallback(async (year: number) => {
+    const supabase = createClient();
+
+    const [{ data: allPlayers }, { data: statLines }, { data: sportsTests }, { data: practiceSchedules }] = await Promise.all([
+      supabase.from("players").select("*"),
+      supabase
+        .from("game_player_stat_lines")
+        .select("*, game_matches(schedules(date, fiscal_year_override))")
+        .returns<StatLineWithDate[]>(),
+      supabase.from("sports_test_records").select("*").eq("fiscal_year", year).eq("not_conducted", false),
+      supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
+    ]);
+
+    const activePlayers = (allPlayers ?? []).filter((p) => p.status !== "OB・OG");
+
+    const linesForYear = (statLines ?? []).filter((l) => {
+      const date = l.game_matches?.schedules?.date;
+      if (!date) return false;
+      return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === year;
+    });
+    // 「スタッツ」ページ(karte/team/game)と同じ集計対象にする:
+    // 在籍選手に加えて、この年度に出場記録があるOB・OGも含める。
+    const gamePlayers = (allPlayers ?? []).filter(
+      (p) => p.status !== "OB・OG" || linesForYear.some((l) => l.player_id === p.id),
+    );
+    const playerAverages = gamePlayers.map((p) => computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)));
+    const teamAveragesResult = computeTeamAverages(playerAverages, linesForYear);
+
+    const sportsTestQuarterAveragesResult = QUARTERS.map((q) => ({
+      quarter: q,
+      records: (sportsTests ?? []).filter((r) => r.quarter === q),
+    }))
+      .filter((qa) => qa.records.length > 0)
+      .map((qa) => ({ quarter: qa.quarter, averages: computeSportsTestTeamAverages(qa.records) }));
+
+    const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === year);
+    const practiceIds = yearPractices.map((s) => s.id);
+
+    let menus: PracticeMenu[] = [];
+    let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
+    if (practiceIds.length > 0) {
+      const [{ data: m }, { data: a }] = await Promise.all([
+        supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
+        supabase
+          .from("attendances")
+          .select("schedule_id, player_id")
+          .in("schedule_id", practiceIds)
+          .in("status", ["出席", "遅刻早退"]),
+      ]);
+      menus = m ?? [];
+      attendanceRows = a ?? [];
+    }
+
+    const tallyMap = new Map<string, number>();
+    menus.forEach((m) => {
+      const theme = (m.theme ?? "").trim();
+      if (!theme) return;
+      tallyMap.set(theme, (tallyMap.get(theme) ?? 0) + 1);
+    });
+    const workoutTalliesResult = Array.from(tallyMap.entries())
+      .map(([theme, count]) => ({ theme, count }))
+      .sort((a, b) => b.count - a.count);
+
+    let averageAttendanceRateResult: number | null = null;
+    if (yearPractices.length > 0 && activePlayers.length > 0) {
+      const countByPlayer = new Map<string, number>();
+      attendanceRows.forEach((a) => {
+        if (!a.player_id) return;
+        countByPlayer.set(a.player_id, (countByPlayer.get(a.player_id) ?? 0) + 1);
+      });
+      const rates = activePlayers.map((p) => (countByPlayer.get(p.id) ?? 0) / yearPractices.length);
+      averageAttendanceRateResult = Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 1000) / 10;
+    }
+
+    return {
+      playerCount: activePlayers.length,
+      teamAverages: teamAveragesResult,
+      sportsTestQuarterAverages: sportsTestQuarterAveragesResult,
+      workoutTallies: workoutTalliesResult,
+      practicesHeld: yearPractices.length,
+      averageAttendanceRate: averageAttendanceRateResult,
+    };
+  }, []);
+
   useEffect(() => {
-    if (!analysisOpen || !hasAiAnalysisAccess(plan)) return;
-    setAiResult(null);
-    (async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("team_ai_analysis")
-        .select("body, created_at")
-        .eq("fiscal_year", analysisFiscalYear)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (data) setAiResult({ body: data.body, createdAt: data.created_at });
-    })();
-  }, [analysisOpen, analysisFiscalYear, plan]);
+    if (!analysisOpen) return;
+    setAnalysisLoading(true);
+    loadAnalysisData(analysisFiscalYear)
+      .then((result) => {
+        setPlayerCount(result.playerCount);
+        setTeamAverages(result.teamAverages);
+        setSportsTestQuarterAverages(result.sportsTestQuarterAverages);
+        setWorkoutTallies(result.workoutTallies);
+        setPracticesHeld(result.practicesHeld);
+        setAverageAttendanceRate(result.averageAttendanceRate);
+      })
+      .finally(() => setAnalysisLoading(false));
+  }, [analysisOpen, analysisFiscalYear, loadAnalysisData]);
 
   async function handleGenerateAiAnalysis() {
-    const text = buildTeamKarteAnalysisText({
-      promptText: analysisPrompt,
-      fiscalYear: analysisFiscalYear,
-      playerCount,
-      teamAverages: teamAverages ?? computeTeamAverages([], []),
-      sportsTestQuarterAverages,
-      workoutTallies,
-      practicesHeld,
-      averageAttendanceRate,
-    });
     setAiGenerating(true);
     try {
+      const data = await loadAnalysisData(CURRENT_FISCAL_YEAR);
+      const text = buildTeamKarteAnalysisText({
+        promptText: DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT,
+        fiscalYear: CURRENT_FISCAL_YEAR,
+        playerCount: data.playerCount,
+        teamAverages: data.teamAverages,
+        sportsTestQuarterAverages: data.sportsTestQuarterAverages,
+        workoutTallies: data.workoutTallies,
+        practicesHeld: data.practicesHeld,
+        averageAttendanceRate: data.averageAttendanceRate,
+      });
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "team", fiscalYear: analysisFiscalYear, dataText: text }),
+        body: JSON.stringify({ scope: "team", dataText: text }),
       });
-      const data = await res.json();
+      const resData = await res.json();
       if (!res.ok) {
-        toast(data.error ?? "AI分析の生成に失敗しました");
+        toast(resData.error ?? "AI分析の生成に失敗しました");
         return;
       }
-      setAiResult({ body: data.body, createdAt: new Date().toISOString() });
+      toast("AI分析を生成し、フィードバック欄に追加しました");
+      loadNotes();
     } catch {
       toast("AI分析の生成に失敗しました");
     } finally {
       setAiGenerating(false);
     }
   }
-
-  useEffect(() => {
-    if (!analysisOpen) return;
-    (async () => {
-      setAnalysisLoading(true);
-      const supabase = createClient();
-
-      const [{ data: allPlayers }, { data: statLines }, { data: sportsTests }, { data: practiceSchedules }] = await Promise.all([
-        supabase.from("players").select("*"),
-        supabase
-          .from("game_player_stat_lines")
-          .select("*, game_matches(schedules(date, fiscal_year_override))")
-          .returns<StatLineWithDate[]>(),
-        supabase.from("sports_test_records").select("*").eq("fiscal_year", analysisFiscalYear).eq("not_conducted", false),
-        supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
-      ]);
-
-      const activePlayers = (allPlayers ?? []).filter((p) => p.status !== "OB・OG");
-      setPlayerCount(activePlayers.length);
-
-      const linesForYear = (statLines ?? []).filter((l) => {
-        const date = l.game_matches?.schedules?.date;
-        if (!date) return false;
-        return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === analysisFiscalYear;
-      });
-      // 「スタッツ」ページ(karte/team/game)と同じ集計対象にする:
-      // 在籍選手に加えて、この年度に出場記録があるOB・OGも含める。
-      const gamePlayers = (allPlayers ?? []).filter(
-        (p) => p.status !== "OB・OG" || linesForYear.some((l) => l.player_id === p.id),
-      );
-      const playerAverages = gamePlayers.map((p) => computeSeasonAverages(linesForYear.filter((l) => l.player_id === p.id)));
-      setTeamAverages(computeTeamAverages(playerAverages, linesForYear));
-
-      setSportsTestQuarterAverages(
-        QUARTERS.map((q) => ({ quarter: q, records: (sportsTests ?? []).filter((r) => r.quarter === q) }))
-          .filter((qa) => qa.records.length > 0)
-          .map((qa) => ({ quarter: qa.quarter, averages: computeSportsTestTeamAverages(qa.records) })),
-      );
-
-      const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === analysisFiscalYear);
-      const practiceIds = yearPractices.map((s) => s.id);
-      setPracticesHeld(yearPractices.length);
-
-      let menus: PracticeMenu[] = [];
-      let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
-      if (practiceIds.length > 0) {
-        const [{ data: m }, { data: a }] = await Promise.all([
-          supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
-          supabase
-            .from("attendances")
-            .select("schedule_id, player_id")
-            .in("schedule_id", practiceIds)
-            .in("status", ["出席", "遅刻早退"]),
-        ]);
-        menus = m ?? [];
-        attendanceRows = a ?? [];
-      }
-
-      const tallyMap = new Map<string, number>();
-      menus.forEach((m) => {
-        const theme = (m.theme ?? "").trim();
-        if (!theme) return;
-        tallyMap.set(theme, (tallyMap.get(theme) ?? 0) + 1);
-      });
-      setWorkoutTallies(
-        Array.from(tallyMap.entries())
-          .map(([theme, count]) => ({ theme, count }))
-          .sort((a, b) => b.count - a.count),
-      );
-
-      if (yearPractices.length > 0 && activePlayers.length > 0) {
-        const countByPlayer = new Map<string, number>();
-        attendanceRows.forEach((a) => {
-          if (!a.player_id) return;
-          countByPlayer.set(a.player_id, (countByPlayer.get(a.player_id) ?? 0) + 1);
-        });
-        const rates = activePlayers.map((p) => (countByPlayer.get(p.id) ?? 0) / yearPractices.length);
-        setAverageAttendanceRate(Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 1000) / 10);
-      } else {
-        setAverageAttendanceRate(null);
-      }
-
-      setAnalysisLoading(false);
-    })();
-  }, [analysisOpen, analysisFiscalYear]);
 
   async function handleCopyAnalysis() {
     if (!teamAverages) return;
@@ -469,24 +468,6 @@ export default function KarteTeamPage() {
           <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
             {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
           </SubmitButton>
-
-          {hasAiAnalysisAccess(plan) && (
-            <>
-              <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating || analysisLoading}>
-                {aiGenerating ? "生成中…" : "AI分析を生成する"}
-              </SubmitButton>
-              {aiResult && (
-                <div className="mt-3 bg-paper border border-line rounded-[10px] p-3">
-                  <div className="text-[10.5px] text-ink-soft font-bold mb-1.5">
-                    {formatDateLabel(aiResult.createdAt.slice(0, 10))}生成
-                  </div>
-                  <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap max-h-[240px] overflow-y-auto">
-                    {aiResult.body}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
         </Modal>
       )}
 
@@ -536,9 +517,16 @@ export default function KarteTeamPage() {
                     canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined
                   }
                 >
-                  <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                    {formatDateLabel(n.created_at.slice(0, 10))}
-                    {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                  <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                    <span>
+                      {formatDateLabel(n.created_at.slice(0, 10))}
+                      {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                    </span>
+                    {n.source === "ai" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+                        AI分析
+                      </span>
+                    )}
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   <ReactionButtons
@@ -584,6 +572,12 @@ export default function KarteTeamPage() {
                 insert={handleAddNote}
               />
             </>
+          )}
+
+          {role === "管理者" && hasAiAnalysisAccess(plan) && (
+            <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating}>
+              {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+            </SubmitButton>
           )}
         </>
       )}
