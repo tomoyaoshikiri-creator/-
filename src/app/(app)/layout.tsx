@@ -5,6 +5,7 @@ import { NavigationGuardProvider } from "@/lib/navigationGuard";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppNav } from "@/components/AppNav";
 import { InactivityLogout } from "@/components/InactivityLogout";
+import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +20,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path, plan, sport)")
+    .select(
+      "id, team_id, name, role, status, teams(name, theme_primary, theme_accent, logo_path, plan, sport, deletion_requested_at)",
+    )
     .eq("id", session.user.id)
     .single<{
       id: string;
@@ -34,12 +37,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         logo_path: string | null;
         plan: SessionInfo["plan"];
         sport: SessionInfo["sport"];
+        deletion_requested_at: string | null;
       } | null;
     }>();
 
   if (!profile) redirect("/setup");
 
   const team = profile.teams;
+
+  if (team?.deletion_requested_at) {
+    const scheduledDeletionAt = new Date(team.deletion_requested_at);
+    scheduledDeletionAt.setDate(scheduledDeletionAt.getDate() + 7);
+    return (
+      <TeamDeletionScreen
+        isAdmin={profile.role === "管理者"}
+        scheduledDeletionAt={scheduledDeletionAt.toISOString()}
+      />
+    );
+  }
 
   // 「基調色」はヘッダー・タブなど画面全体で使われる --orange、
   // 「アクセントカラー」は詳細画面ヘッダーやボタンで使われる --navy に対応させる。

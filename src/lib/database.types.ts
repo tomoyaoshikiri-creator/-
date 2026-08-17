@@ -78,6 +78,10 @@ export interface Database {
           // StripeのSubscription.statusをそのまま保持する
           // (active/trialing/past_due/canceled/unpaid/incomplete/incomplete_expired等)。
           subscription_status: string | null;
+          // 退会申請日時(nullなら通常運用中)。設定後7日間は取り消し可能で、
+          // 経過後は日次バッチが完全削除する。書き込みはservice_role経由のみ。
+          deletion_requested_at: string | null;
+          deletion_requested_by: string | null;
           created_at: string;
         };
         Insert: {
@@ -93,6 +97,8 @@ export interface Database {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           subscription_status?: string | null;
+          deletion_requested_at?: string | null;
+          deletion_requested_by?: string | null;
           created_at?: string;
         };
         Update: Partial<{
@@ -106,6 +112,8 @@ export interface Database {
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           subscription_status: string | null;
+          deletion_requested_at: string | null;
+          deletion_requested_by: string | null;
         }>;
         Relationships: [];
       };

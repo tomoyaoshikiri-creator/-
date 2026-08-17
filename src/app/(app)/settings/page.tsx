@@ -66,6 +66,15 @@ export default function SettingsPage() {
         <SettingsRow href="/terms" label="利用規約" />
         <SettingsRow href="/tokushoho" label="特定商取引法に基づく表記" />
       </Card>
+
+      {canManageTeam && (
+        <>
+          <SectionLabel>危険な操作</SectionLabel>
+          <Card>
+            <SettingsRow href="/settings/close-account" label="チームを退会する" />
+          </Card>
+        </>
+      )}
     </PageShell>
   );
 }
