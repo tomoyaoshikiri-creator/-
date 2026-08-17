@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseJsClient, type SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { formatDateLabel, isTargetEligible, playerFullName } from "@/lib/format";
+import { runBirthdayReminders } from "@/lib/cron/birthdayJob";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 // ・試合/イベントでattendance_deadlineを設定した場合のみ: 期限日当日
 // ・同上: 期限を過ぎてもなお未登録の場合、予定日の1週間前に再通知
 // 同じ予定・同じ種類のリマインドを二重送信しないよう、attendance_reminder_logで管理する。
+// あわせて、Vercel Cronのジョブ数を増やさないよう、選手の誕生日プッシュ通知も
+// この日次バッチの中でまとめて処理する(runBirthdayReminders)。
 
 function jstToday(): Date {
   const jstMs = Date.now() + 9 * 60 * 60 * 1000;
@@ -163,6 +166,8 @@ export async function GET(request: Request) {
   const in2DaysStr = toDateStr(addDays(today, 2));
   const in7DaysStr = toDateStr(addDays(today, 7));
 
+  const birthdayResult = await runBirthdayReminders(supabase, todayStr);
+
   const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
     supabase.from("schedules").select("*").eq("date", in2DaysStr).eq("send_attendance_reminders", true),
     supabase
@@ -188,7 +193,7 @@ export async function GET(request: Request) {
   ];
 
   if (jobs.length === 0) {
-    return NextResponse.json({ ok: true, jobs: 0 });
+    return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult });
   }
 
   const { data: existingLogs } = await supabase
@@ -216,5 +221,11 @@ export async function GET(request: Request) {
       .insert({ schedule_id: job.schedule.id, reminder_type: job.reminderType });
   }
 
-  return NextResponse.json({ ok: true, jobs: jobs.length, processed: pendingJobs.length, results });
+  return NextResponse.json({
+    ok: true,
+    jobs: jobs.length,
+    processed: pendingJobs.length,
+    results,
+    birthdays: birthdayResult,
+  });
 }

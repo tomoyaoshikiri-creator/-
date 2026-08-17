@@ -1103,6 +1103,22 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      birthday_reminder_log: {
+        Row: {
+          id: string;
+          player_id: string;
+          notified_date: string;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          notified_date: string;
+          sent_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
