@@ -30,15 +30,15 @@ function toDateStr(d: Date): string {
 function buildMessage(schedule: Schedule, reminderType: ReminderType): { title: string; body: string } {
   const dateLabel = formatDateLabel(schedule.date);
   if (reminderType === "deadline_day") {
-    return { title: "出欠登録の期限日です", body: `「${schedule.title}」(${dateLabel})の出欠登録期限は本日です` };
+    return { title: "⏰ 本日が出欠登録の期限です", body: `「${schedule.title}」(${dateLabel})の出欠登録期限は本日です` };
   }
   if (reminderType === "week_before") {
     return {
-      title: "出欠登録のお願い(再通知)",
+      title: "⚠️ 出欠登録の期限を過ぎています",
       body: `「${schedule.title}」(${dateLabel})の出欠登録がまだ済んでいません(開催まで1週間)`,
     };
   }
-  return { title: "出欠登録のお願い", body: `「${schedule.title}」(${dateLabel})の出欠登録がまだ済んでいません` };
+  return { title: "📅 出欠登録はお済みですか?", body: `「${schedule.title}」(${dateLabel})の出欠登録がまだ済んでいません` };
 }
 
 // 出欠フォーム(schedule/[id]/page.tsx)と同じ対象範囲判定で、未登録の人を洗い出す。

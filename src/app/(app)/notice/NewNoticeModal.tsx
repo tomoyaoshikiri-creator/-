@@ -129,7 +129,7 @@ export function NewNoticeModal({
     fetch("/api/push/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` }),
+      body: JSON.stringify({ title: "📢 新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` }),
     }).catch(() => {});
     onCreated();
   }
