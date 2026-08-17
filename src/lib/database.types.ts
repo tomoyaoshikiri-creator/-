@@ -10,6 +10,9 @@ export type GameCategory = "練習試合" | "公式戦";
 export type VenueType = "ホーム" | "アウェイ";
 export type NoticeAudience = "全員" | "指導者のみ" | "運営以上" | "学年指定";
 export type TeamPlan = "お試し" | "中間" | "フル";
+// 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
+// deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
+export type ReminderType = "baseline_2days" | "deadline_day" | "week_before";
 // 練習は4択(出席・欠席・遅刻早退・見学)、試合は画面上は出席・欠席の2択のみ(UI側で制御)。
 export type AttendanceStatus = "出席" | "欠席" | "遅刻早退" | "見学";
 export type YesNo = "あり" | "なし";
@@ -137,6 +140,9 @@ export interface Database {
           // 練習・イベントの予定で、任意で車出し(乗り合わせ)のヒアリングを集約するかどうか。
           // 試合はvenue_typeでヒアリング内容が決まるため、この列は無視する。
           collect_car_info: boolean;
+          // 試合・イベントのみ任意で設定できる出欠登録の期限日。未設定でも予定日2日前の
+          // 共通リマインドでカバーされる(src/app/api/cron/attendance-reminders/route.ts参照)。
+          attendance_deadline: string | null;
           // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
           fiscal_year_override: number | null;
           created_by: string | null;
@@ -157,6 +163,7 @@ export interface Database {
           game_category?: GameCategory | null;
           venue_type?: VenueType | null;
           collect_car_info?: boolean;
+          attendance_deadline?: string | null;
           fiscal_year_override?: number | null;
           created_by?: string | null;
         };
@@ -1062,6 +1069,22 @@ export interface Database {
           p256dh: string;
           auth_key: string;
         }>;
+        Relationships: [];
+      };
+      attendance_reminder_log: {
+        Row: {
+          id: string;
+          schedule_id: string;
+          reminder_type: ReminderType;
+          sent_at: string;
+        };
+        Insert: {
+          id?: string;
+          schedule_id: string;
+          reminder_type: ReminderType;
+          sent_at?: string;
+        };
+        Update: Record<string, never>;
         Relationships: [];
       };
     };

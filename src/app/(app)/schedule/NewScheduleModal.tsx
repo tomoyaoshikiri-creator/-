@@ -43,6 +43,7 @@ export function NewScheduleModal({
   const [gameCategory, setGameCategory] = useState<GameCategory>("練習試合");
   const [venueType, setVenueType] = useState<VenueType>("アウェイ");
   const [collectCarInfo, setCollectCarInfo] = useState(false);
+  const [attendanceDeadline, setAttendanceDeadline] = useState("");
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -63,6 +64,7 @@ export function NewScheduleModal({
     gameCategory,
     venueType,
     collectCarInfo,
+    attendanceDeadline,
     title,
     dates,
     startHour,
@@ -81,6 +83,7 @@ export function NewScheduleModal({
     setGameCategory("練習試合");
     setVenueType("アウェイ");
     setCollectCarInfo(false);
+    setAttendanceDeadline("");
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -109,6 +112,7 @@ export function NewScheduleModal({
         gameCategory: source.game_category ?? ("練習試合" as GameCategory),
         venueType: source.venue_type ?? ("アウェイ" as VenueType),
         collectCarInfo: source.collect_car_info,
+        attendanceDeadline: editSchedule ? (source.attendance_deadline ?? "") : "",
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -125,6 +129,7 @@ export function NewScheduleModal({
       setGameCategory(fields.gameCategory);
       setVenueType(fields.venueType);
       setCollectCarInfo(fields.collectCarInfo);
+      setAttendanceDeadline(fields.attendanceDeadline);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -144,6 +149,7 @@ export function NewScheduleModal({
         gameCategory: "練習試合" as GameCategory,
         venueType: "アウェイ" as VenueType,
         collectCarInfo: false,
+        attendanceDeadline: "",
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -184,6 +190,7 @@ export function NewScheduleModal({
       game_category: type === "game" ? gameCategory : null,
       venue_type: type === "game" ? venueType : null,
       collect_car_info: type !== "game" && collectCarInfo,
+      attendance_deadline: type !== "practice" && attendanceDeadline ? attendanceDeadline : null,
       fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
     };
     const { error } = editSchedule
@@ -401,6 +408,23 @@ export function NewScheduleModal({
           </div>
           <div className="text-xs text-ink-soft mt-1">
             「する」にすると、出欠登録で車出し可否・乗車可能人数を聞くようになります。
+          </div>
+        </div>
+      )}
+
+      {type !== "practice" && (
+        <div className="mt-3">
+          <FieldLabel>出欠登録の期限日(任意)</FieldLabel>
+          <input
+            type="date"
+            className={inputClass()}
+            value={attendanceDeadline}
+            max={dates[0] || undefined}
+            onChange={(e) => setAttendanceDeadline(e.target.value)}
+          />
+          <div className="text-xs text-ink-soft mt-1">
+            設定すると、期限日当日と(期限を過ぎてもなお未登録の場合)予定日の1週間前に追加でリマインド通知が届きます。
+            未設定でも、全ての予定に共通で予定日の2日前にリマインド通知が届きます。
           </div>
         </div>
       )}
