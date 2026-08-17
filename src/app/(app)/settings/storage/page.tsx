@@ -141,6 +141,9 @@ export default function SettingsStoragePage() {
                 <SubmitButton onClick={() => startCheckout("フル")} disabled={billingLoading !== null}>
                   {billingLoading === "フル" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フル"]}プランに申し込む`}
                 </SubmitButton>
+                <a href="/tokushoho" target="_blank" className="block text-center text-[11px] text-ink-soft underline mt-3">
+                  特定商取引法に基づく表記
+                </a>
               </>
             )}
           </Card>

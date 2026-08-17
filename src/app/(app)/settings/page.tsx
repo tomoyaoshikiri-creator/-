@@ -46,6 +46,7 @@ export default function SettingsPage() {
       <Card>
         <SettingsRow href="/privacy" label="プライバシーポリシー" />
         <SettingsRow href="/terms" label="利用規約" />
+        <SettingsRow href="/tokushoho" label="特定商取引法に基づく表記" />
       </Card>
     </PageShell>
   );
