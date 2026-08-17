@@ -34,7 +34,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
             <span className="relative inline-flex">
               <Icon className="w-[19px] h-[19px]" />
               {badges[tab] && (
-                <span className="absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full bg-danger border border-white" />
+                <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
               )}
             </span>
             <span className="whitespace-nowrap">{TAB_LABELS[tab]}</span>
