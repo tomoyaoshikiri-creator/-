@@ -473,7 +473,7 @@ export default function KarteTeamPage() {
 
       {isStaff && (
         <>
-          <SectionLabel>チーム分析フィードバック</SectionLabel>
+          <SectionLabel>チームAI分析フィードバック</SectionLabel>
           {notesLoading ? (
             <EmptyState>読み込み中…</EmptyState>
           ) : analysisNotes.length === 0 ? (
