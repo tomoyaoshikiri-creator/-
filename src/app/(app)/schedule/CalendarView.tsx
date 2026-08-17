@@ -195,7 +195,7 @@ export function CalendarView({
               className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs relative ${
                 isColored ? "border-2" : "border"
               } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${
-                c.otherMonth ? "opacity-40" : ""
+                c.otherMonth ? "opacity-25" : ""
               } ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
