@@ -5,13 +5,29 @@ function fmt(v: number | null | undefined, unit = ""): string {
   return v === null || v === undefined ? "データなし" : `${v}${unit}`;
 }
 
-function statsToLines(stats: StatsData): string[] {
+function aggregationTypeLabel(aggregationType: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null, scope: "player" | "team"): string {
+  if (aggregationType === "SUM") return "集計方法: 合計値として見るべき項目";
+  if (aggregationType === "AVERAGE") return "集計方法: 平均値として見るべき項目";
+  if (aggregationType === "RATE") {
+    return scope === "team"
+      ? "集計方法: 割合・率(選手ごとの値の単純平均であり、チーム全体の分子/分母から算出した正確な合算率ではない可能性があります。参考値として扱ってください)"
+      : "集計方法: 割合・率";
+  }
+  return "集計方法: 指定なし(この項目のチーム集計方法は定義されていません。合計・平均どちらの意味を持つ数値かを断定しないでください)";
+}
+
+function statsToLines(stats: StatsData, scope: "player" | "team"): string[] {
   const lines: string[] = [];
   if (stats.kind === "basketball") {
     lines.push(`■ 試合スタッツ(シーズン平均、試合数: ${stats.gameCount})`);
     if (stats.gameCount === 0) {
       lines.push("この年度の出場記録はありません");
     } else {
+      if (scope === "team") {
+        lines.push(
+          "(PTS/AST/OREB/DREB/STL/BLK/TO/EFFは出場した各選手自身の平均を単純平均したチーム平均です。FG%/FT%/2P%/3P%はチーム全体の成功数合計÷試投数合計から算出した正確な値です。両者は算出方法が異なります)",
+        );
+      }
       Object.entries(stats.seasonAverages).forEach(([k, v]) => lines.push(`${k}: ${fmt(v)}`));
       if (stats.games.length > 0) {
         lines.push("");
@@ -48,7 +64,9 @@ function statsToLines(stats: StatsData): string[] {
         const meta = [c.unit ? `単位: ${c.unit}` : null, c.description ? `説明: ${c.description}` : null]
           .filter(Boolean)
           .join(", ");
-        lines.push(`${c.name}(${directionLabel}${meta ? `, ${meta}` : ""}): 合計 ${c.seasonTotal} / 平均 ${c.seasonAverage}`);
+        lines.push(`${c.name}(${directionLabel}${meta ? `, ${meta}` : ""})`);
+        lines.push(`  ${aggregationTypeLabel(c.aggregationType, scope)}`);
+        lines.push(`  合計 ${c.seasonTotal} / 平均 ${c.seasonAverage}`);
       });
       if (stats.games.length > 0) {
         lines.push("");
@@ -74,7 +92,7 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   lines.push(`対象年度: ${fiscalYearLabel(data.fiscalYear)}`);
   lines.push("");
 
-  lines.push(...statsToLines(data.stats));
+  lines.push(...statsToLines(data.stats, "player"));
   lines.push("");
 
   if (data.sportsTest) {
@@ -126,7 +144,7 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
   lines.push(`在籍選手数: ${data.playerCount}名`);
   lines.push("");
 
-  lines.push(...statsToLines(data.stats));
+  lines.push(...statsToLines(data.stats, "team"));
   lines.push("");
 
   if (data.sportsTest) {

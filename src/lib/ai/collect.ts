@@ -141,6 +141,7 @@ export async function collectPlayerAnalysisData(
       unit: c.unit,
       description: c.description,
       evaluationDirection: c.evaluation_direction,
+      aggregationType: c.aggregation_type,
       seasonTotal: seasonTotals.totals[c.id] ?? 0,
       seasonAverage: seasonTotals.averages[c.id] ?? 0,
     }));
@@ -342,6 +343,7 @@ export async function collectTeamAnalysisData(
         unit: c.unit,
         description: c.description,
         evaluationDirection: c.evaluation_direction,
+      aggregationType: c.aggregation_type,
         seasonTotal: Math.round(total * 10) / 10,
         seasonAverage: Math.round(avg * 10) / 10,
       };

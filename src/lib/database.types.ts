@@ -908,6 +908,7 @@ export interface Database {
           evaluation_direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
           unit: string | null;
           description: string | null;
+          aggregation_type: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null;
           created_at: string;
         };
         Insert: {
@@ -918,6 +919,7 @@ export interface Database {
           evaluation_direction?: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
           unit?: string | null;
           description?: string | null;
+          aggregation_type?: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null;
         };
         Update: Partial<{
           name: string;
@@ -925,6 +927,7 @@ export interface Database {
           evaluation_direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
           unit: string | null;
           description: string | null;
+          aggregation_type: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null;
         }>;
         Relationships: [];
       };

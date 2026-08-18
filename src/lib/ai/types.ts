@@ -27,6 +27,9 @@ export interface CustomStatCategoryInfo {
   unit: string | null;
   description: string | null;
   evaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
+  // チーム集計時にこの数値をどう解釈すべきか(合計/平均/割合・率/指定なし)。未設定(null)の
+  // 場合、AI側でこの項目の合計・平均どちらが意味を持つ集計かを勝手に断定しない。
+  aggregationType: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null;
   seasonTotal: number;
   seasonAverage: number;
 }

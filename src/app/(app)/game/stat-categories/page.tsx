@@ -34,6 +34,16 @@ const DIRECTION_LABELS: Record<EvaluationDirection, string> = {
   NEUTRAL: "単純な高低で評価しない",
 };
 
+type AggregationType = "" | "SUM" | "AVERAGE" | "RATE" | "NEUTRAL";
+
+const AGGREGATION_LABELS: Record<AggregationType, string> = {
+  "": "集計方法を指定しない",
+  SUM: "合計",
+  AVERAGE: "平均",
+  RATE: "割合・率",
+  NEUTRAL: "合計・平均どちらの意味も持たない",
+};
+
 export default function StatCategoriesPage() {
   const router = useRouter();
   const { teamId, role, sport } = useSession();
@@ -47,6 +57,7 @@ export default function StatCategoriesPage() {
   const [categories, setCategories] = useState<TeamStatCategory[]>([]);
   const [input, setInput] = useState("");
   const [newDirection, setNewDirection] = useState<EvaluationDirection>("");
+  const [newAggregation, setNewAggregation] = useState<AggregationType>("");
   const [newUnit, setNewUnit] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,18 +66,26 @@ export default function StatCategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [editDirection, setEditDirection] = useState<EvaluationDirection>("");
+  const [editAggregation, setEditAggregation] = useState<AggregationType>("");
   const [editUnit, setEditUnit] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  useUnsavedChangesGuard(input.trim() !== "" || newUnit.trim() !== "" || newDescription.trim() !== "" || newDirection !== "");
+  useUnsavedChangesGuard(
+    input.trim() !== "" ||
+      newUnit.trim() !== "" ||
+      newDescription.trim() !== "" ||
+      newDirection !== "" ||
+      newAggregation !== "",
+  );
   const editingCategory = categories.find((c) => c.id === editingId);
   useUnsavedChangesGuard(
     editingCategory !== undefined &&
       (editValue !== editingCategory.name ||
         editDirection !== (editingCategory.evaluation_direction ?? "") ||
+        editAggregation !== (editingCategory.aggregation_type ?? "") ||
         editUnit !== (editingCategory.unit ?? "") ||
         editDescription !== (editingCategory.description ?? "")),
   );
@@ -94,6 +113,7 @@ export default function StatCategoriesPage() {
       name: trimmed,
       position: nextPosition,
       evaluation_direction: newDirection || null,
+      aggregation_type: newAggregation || null,
       unit: newUnit.trim() || null,
       description: newDescription.trim() || null,
     });
@@ -104,6 +124,7 @@ export default function StatCategoriesPage() {
     }
     setInput("");
     setNewDirection("");
+    setNewAggregation("");
     setNewUnit("");
     setNewDescription("");
     load();
@@ -113,6 +134,7 @@ export default function StatCategoriesPage() {
     setEditingId(category.id);
     setEditValue(category.name);
     setEditDirection((category.evaluation_direction ?? "") as EvaluationDirection);
+    setEditAggregation((category.aggregation_type ?? "") as AggregationType);
     setEditUnit(category.unit ?? "");
     setEditDescription(category.description ?? "");
   }
@@ -127,6 +149,7 @@ export default function StatCategoriesPage() {
       .update({
         name: trimmed,
         evaluation_direction: editDirection || null,
+        aggregation_type: editAggregation || null,
         unit: editUnit.trim() || null,
         description: editDescription.trim() || null,
       })
@@ -200,6 +223,8 @@ export default function StatCategoriesPage() {
                     setEditValue={setEditValue}
                     editDirection={editDirection}
                     setEditDirection={setEditDirection}
+                    editAggregation={editAggregation}
+                    setEditAggregation={setEditAggregation}
                     editUnit={editUnit}
                     setEditUnit={setEditUnit}
                     editDescription={editDescription}
@@ -235,6 +260,20 @@ export default function StatCategoriesPage() {
                 {(Object.keys(DIRECTION_LABELS) as EvaluationDirection[]).map((v) => (
                   <option key={v} value={v}>
                     {DIRECTION_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-2.5">
+              <FieldLabel>チーム集計方法(任意、AI分析でこの数値の意味を判断する材料になります)</FieldLabel>
+              <select
+                className={inputClass()}
+                value={newAggregation}
+                onChange={(e) => setNewAggregation(e.target.value as AggregationType)}
+              >
+                {(Object.keys(AGGREGATION_LABELS) as AggregationType[]).map((v) => (
+                  <option key={v} value={v}>
+                    {AGGREGATION_LABELS[v]}
                   </option>
                 ))}
               </select>
@@ -276,6 +315,8 @@ function SortableCategoryRow({
   setEditValue,
   editDirection,
   setEditDirection,
+  editAggregation,
+  setEditAggregation,
   editUnit,
   setEditUnit,
   editDescription,
@@ -296,6 +337,8 @@ function SortableCategoryRow({
   setEditValue: (v: string) => void;
   editDirection: EvaluationDirection;
   setEditDirection: (v: EvaluationDirection) => void;
+  editAggregation: AggregationType;
+  setEditAggregation: (v: AggregationType) => void;
   editUnit: string;
   setEditUnit: (v: string) => void;
   editDescription: string;
@@ -318,6 +361,7 @@ function SortableCategoryRow({
   const metaLabel = [
     category.unit ? `単位: ${category.unit}` : null,
     category.evaluation_direction ? DIRECTION_LABELS[category.evaluation_direction] : null,
+    category.aggregation_type ? AGGREGATION_LABELS[category.aggregation_type] : null,
   ]
     .filter(Boolean)
     .join(" / ");
@@ -342,6 +386,20 @@ function SortableCategoryRow({
               {(Object.keys(DIRECTION_LABELS) as EvaluationDirection[]).map((v) => (
                 <option key={v} value={v}>
                   {DIRECTION_LABELS[v]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-2.5">
+            <FieldLabel>チーム集計方法(任意)</FieldLabel>
+            <select
+              className={inputClass()}
+              value={editAggregation}
+              onChange={(e) => setEditAggregation(e.target.value as AggregationType)}
+            >
+              {(Object.keys(AGGREGATION_LABELS) as AggregationType[]).map((v) => (
+                <option key={v} value={v}>
+                  {AGGREGATION_LABELS[v]}
                 </option>
               ))}
             </select>
