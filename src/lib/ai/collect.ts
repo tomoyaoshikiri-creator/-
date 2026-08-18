@@ -294,11 +294,27 @@ export async function collectTeamAnalysisData(
     const playerAverages = players.map((p) => computeSeasonAverages(seasonLines.filter((l) => l.player_id === p.id)));
     const teamAverages = computeTeamAverages(playerAverages, seasonLines);
     gameCount = teamAverages.gp;
+    // 試合ごとのチーム推移: その試合に出場した全選手の1試合分の記録をまとめて
+    // computeSeasonAverages()に渡すと、「その試合でのチーム全体の平均スタッツ」になる
+    // (個人のシーズン平均と同じ関数だが、渡すlinesを1試合分・全選手分にしているだけ)。
+    const matchIds = Array.from(new Set(seasonLines.map((l) => l.match_id)));
+    const games = matchIds
+      .map((matchId) => {
+        const matchLines = seasonLines.filter((l) => l.match_id === matchId);
+        const first = matchLines[0];
+        return {
+          date: first.game_matches?.schedules?.date ?? "",
+          label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
+          averages: basketballAveragesToRecord(computeSeasonAverages(matchLines), includeThreePoint),
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(({ label, averages }) => ({ label, averages }));
     stats = {
       kind: "basketball",
       gameCount,
       seasonAverages: basketballAveragesToRecord(teamAverages, includeThreePoint),
-      games: [],
+      games,
     };
   } else {
     const [{ data: categories }, { data: entries }] = await Promise.all([
@@ -330,7 +346,27 @@ export async function collectTeamAnalysisData(
         seasonAverage: Math.round(avg * 10) / 10,
       };
     });
-    stats = { kind: "custom", gameCount, categories: categoryInfos, games: [] };
+    const matchIds = Array.from(new Set(seasonEntries.map((e) => e.match_id)));
+    const games = matchIds
+      .map((matchId) => {
+        const matchEntries = seasonEntries.filter((e) => e.match_id === matchId);
+        const first = matchEntries[0];
+        const values: Record<string, number> = {};
+        cats.forEach((c) => {
+          const catEntries = matchEntries.filter((e) => e.category_id === c.id);
+          if (catEntries.length === 0) return;
+          const avg = catEntries.reduce((sum, e) => sum + e.value, 0) / catEntries.length;
+          values[c.name] = Math.round(avg * 10) / 10;
+        });
+        return {
+          date: first.game_matches?.schedules?.date ?? "",
+          label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
+          values,
+        };
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(({ label, values }) => ({ label, values }));
+    stats = { kind: "custom", gameCount, categories: categoryInfos, games };
   }
 
   let sportsTest: TeamSportsTestData | null = null;

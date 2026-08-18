@@ -31,6 +31,11 @@ function statsToLines(stats: StatsData): string[] {
     } else if (stats.gameCount === 0) {
       lines.push("この年度の出場記録はありません");
     } else {
+      if (stats.categories.some((c) => c.evaluationDirection === null)) {
+        lines.push(
+          "(評価方向が未設定の項目について: 数値の変化は確認できても、この項目の評価方向が設定されていないため改善・悪化の判断はしないこと。項目名が競技上一般的な指標に似ていても、チームが独自に定義した項目であり、名前だけから評価方向を推測しないこと)",
+        );
+      }
       stats.categories.forEach((c) => {
         const directionLabel =
           c.evaluationDirection === "HIGHER_IS_BETTER"

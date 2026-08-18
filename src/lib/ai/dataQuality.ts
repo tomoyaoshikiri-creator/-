@@ -20,6 +20,9 @@ export function assessPlayerDataQuality(input: PlayerDataQualityInput): DataQual
   else if (input.gameCount >= 2) score += 1;
   if (input.gameCount === 0) notes.push("この年度の試合出場記録がない");
   else if (input.gameCount === 1) notes.push("この年度の試合出場が1試合のみで、傾向の判断材料としては不十分");
+  else if (input.gameCount <= 3) {
+    notes.push(`この年度の出場試合数が${input.gameCount}試合と少なく、試合ごとの数値の変化を継続的な傾向として評価しないこと`);
+  }
 
   if (input.practicesHeld >= 8) score += 2;
   else if (input.practicesHeld >= 3) score += 1;
@@ -55,7 +58,12 @@ export function assessTeamDataQuality(input: TeamDataQualityInput): DataQualityA
 
   if (input.gameCount >= 5) score += 2;
   else if (input.gameCount >= 2) score += 1;
-  else notes.push("この年度のチームとしての試合数が少ない");
+  if (input.gameCount === 0) notes.push("この年度のチームとしての試合出場記録がない");
+  else if (input.gameCount <= 3) {
+    notes.push(
+      `この年度の試合数が${input.gameCount}試合と少なく、試合ごとの数値の変化を継続的な傾向として評価しないこと`,
+    );
+  }
 
   if (input.practicesHeld >= 8) score += 2;
   else if (input.practicesHeld >= 3) score += 1;

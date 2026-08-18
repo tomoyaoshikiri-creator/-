@@ -25,6 +25,15 @@ import { canManageStatCategories } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import type { TeamStatCategory } from "@/lib/database.types";
 
+type EvaluationDirection = "" | "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL";
+
+const DIRECTION_LABELS: Record<EvaluationDirection, string> = {
+  "": "未設定",
+  HIGHER_IS_BETTER: "数値が高いほど良い",
+  LOWER_IS_BETTER: "数値が低いほど良い",
+  NEUTRAL: "単純な高低で評価しない",
+};
+
 export default function StatCategoriesPage() {
   const router = useRouter();
   const { teamId, role, sport } = useSession();
@@ -37,18 +46,30 @@ export default function StatCategoriesPage() {
 
   const [categories, setCategories] = useState<TeamStatCategory[]>([]);
   const [input, setInput] = useState("");
+  const [newDirection, setNewDirection] = useState<EvaluationDirection>("");
+  const [newUnit, setNewUnit] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [editDirection, setEditDirection] = useState<EvaluationDirection>("");
+  const [editUnit, setEditUnit] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  useUnsavedChangesGuard(input.trim() !== "");
+  useUnsavedChangesGuard(input.trim() !== "" || newUnit.trim() !== "" || newDescription.trim() !== "" || newDirection !== "");
   const editingCategory = categories.find((c) => c.id === editingId);
-  useUnsavedChangesGuard(editingCategory !== undefined && editValue !== editingCategory.name);
+  useUnsavedChangesGuard(
+    editingCategory !== undefined &&
+      (editValue !== editingCategory.name ||
+        editDirection !== (editingCategory.evaluation_direction ?? "") ||
+        editUnit !== (editingCategory.unit ?? "") ||
+        editDescription !== (editingCategory.description ?? "")),
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +93,9 @@ export default function StatCategoriesPage() {
       team_id: teamId,
       name: trimmed,
       position: nextPosition,
+      evaluation_direction: newDirection || null,
+      unit: newUnit.trim() || null,
+      description: newDescription.trim() || null,
     });
     setSaving(false);
     if (error) {
@@ -79,7 +103,18 @@ export default function StatCategoriesPage() {
       return;
     }
     setInput("");
+    setNewDirection("");
+    setNewUnit("");
+    setNewDescription("");
     load();
+  }
+
+  function startEdit(category: TeamStatCategory) {
+    setEditingId(category.id);
+    setEditValue(category.name);
+    setEditDirection((category.evaluation_direction ?? "") as EvaluationDirection);
+    setEditUnit(category.unit ?? "");
+    setEditDescription(category.description ?? "");
   }
 
   async function handleEditSave(id: string) {
@@ -87,7 +122,15 @@ export default function StatCategoriesPage() {
     if (!trimmed) return;
     setSavingEdit(true);
     const supabase = createClient();
-    const { error } = await supabase.from("team_stat_categories").update({ name: trimmed }).eq("id", id);
+    const { error } = await supabase
+      .from("team_stat_categories")
+      .update({
+        name: trimmed,
+        evaluation_direction: editDirection || null,
+        unit: editUnit.trim() || null,
+        description: editDescription.trim() || null,
+      })
+      .eq("id", id);
     setSavingEdit(false);
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
@@ -136,7 +179,7 @@ export default function StatCategoriesPage() {
   return (
     <PageShell header={<AppHeader title="スタッツ項目を編集" variant="detail" backHref="/game" accessBadge="coach" />}>
       <div className="text-[12px] text-ink-soft mb-3">
-        試合スタッツ入力画面(選手×項目の表)に表示する項目です。チームで自由に追加・並び替えできます。
+        試合スタッツ入力画面(選手×項目の表)に表示する項目です。チームで自由に追加・並び替えできます。単位・説明・評価方向はAI分析でも参照されます。
       </div>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
@@ -155,8 +198,15 @@ export default function StatCategoriesPage() {
                     editingId={editingId}
                     editValue={editValue}
                     setEditValue={setEditValue}
+                    editDirection={editDirection}
+                    setEditDirection={setEditDirection}
+                    editUnit={editUnit}
+                    setEditUnit={setEditUnit}
+                    editDescription={editDescription}
+                    setEditDescription={setEditDescription}
                     savingEdit={savingEdit}
                     handleEditSave={handleEditSave}
+                    startEdit={startEdit}
                     setEditingId={setEditingId}
                     expandedId={expandedId}
                     setExpandedId={setExpandedId}
@@ -168,13 +218,46 @@ export default function StatCategoriesPage() {
             </DndContext>
           )}
           <div className={categories.length > 0 ? "mt-2.5" : ""}>
-            <FieldLabel>入力欄</FieldLabel>
+            <FieldLabel>項目名</FieldLabel>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               className={inputClass()}
               placeholder="例: ゴール"
             />
+            <div className="mt-2.5">
+              <FieldLabel>評価方向(任意、AI分析で数値の良し悪しを判断する材料になります)</FieldLabel>
+              <select
+                className={inputClass()}
+                value={newDirection}
+                onChange={(e) => setNewDirection(e.target.value as EvaluationDirection)}
+              >
+                {(Object.keys(DIRECTION_LABELS) as EvaluationDirection[]).map((v) => (
+                  <option key={v} value={v}>
+                    {DIRECTION_LABELS[v]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-2.5">
+              <FieldLabel>単位(任意)</FieldLabel>
+              <input
+                value={newUnit}
+                onChange={(e) => setNewUnit(e.target.value)}
+                className={inputClass()}
+                placeholder="例: %、回、本、点、m、秒"
+              />
+            </div>
+            <div className="mt-2.5">
+              <FieldLabel>説明(任意)</FieldLabel>
+              <textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                rows={2}
+                className={inputClass()}
+                placeholder="例: 相手陣内でボールを奪った回数"
+              />
+            </div>
             <SubmitButton onClick={handleAdd} disabled={saving || !input.trim()}>
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>
@@ -191,8 +274,15 @@ function SortableCategoryRow({
   editingId,
   editValue,
   setEditValue,
+  editDirection,
+  setEditDirection,
+  editUnit,
+  setEditUnit,
+  editDescription,
+  setEditDescription,
   savingEdit,
   handleEditSave,
+  startEdit,
   setEditingId,
   expandedId,
   setExpandedId,
@@ -204,8 +294,15 @@ function SortableCategoryRow({
   editingId: string | null;
   editValue: string;
   setEditValue: (v: string) => void;
+  editDirection: EvaluationDirection;
+  setEditDirection: (v: EvaluationDirection) => void;
+  editUnit: string;
+  setEditUnit: (v: string) => void;
+  editDescription: string;
+  setEditDescription: (v: string) => void;
   savingEdit: boolean;
   handleEditSave: (id: string) => void;
+  startEdit: (category: TeamStatCategory) => void;
   setEditingId: (id: string | null) => void;
   expandedId: string | null;
   setExpandedId: (id: string | null) => void;
@@ -218,6 +315,12 @@ function SortableCategoryRow({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const metaLabel = [
+    category.unit ? `単位: ${category.unit}` : null,
+    category.evaluation_direction ? DIRECTION_LABELS[category.evaluation_direction] : null,
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   return (
     <div
@@ -227,8 +330,42 @@ function SortableCategoryRow({
     >
       {editingId === category.id ? (
         <div>
+          <FieldLabel>項目名</FieldLabel>
           <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={inputClass()} />
-          <div className="flex gap-2 mt-2">
+          <div className="mt-2.5">
+            <FieldLabel>評価方向(任意)</FieldLabel>
+            <select
+              className={inputClass()}
+              value={editDirection}
+              onChange={(e) => setEditDirection(e.target.value as EvaluationDirection)}
+            >
+              {(Object.keys(DIRECTION_LABELS) as EvaluationDirection[]).map((v) => (
+                <option key={v} value={v}>
+                  {DIRECTION_LABELS[v]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-2.5">
+            <FieldLabel>単位(任意)</FieldLabel>
+            <input
+              value={editUnit}
+              onChange={(e) => setEditUnit(e.target.value)}
+              className={inputClass()}
+              placeholder="例: %、回、本、点、m、秒"
+            />
+          </div>
+          <div className="mt-2.5">
+            <FieldLabel>説明(任意)</FieldLabel>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              rows={2}
+              className={inputClass()}
+              placeholder="例: 相手陣内でボールを奪った回数"
+            />
+          </div>
+          <div className="flex gap-2 mt-2.5">
             <SubmitButton onClick={() => handleEditSave(category.id)} disabled={savingEdit} className="flex-1 mt-0">
               {savingEdit ? "保存中…" : "保存する"}
             </SubmitButton>
@@ -248,7 +385,10 @@ function SortableCategoryRow({
         >
           <div className="flex items-center gap-2">
             <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
-            <div className="flex-1 text-[13.5px] font-bold">{category.name}</div>
+            <div className="flex-1">
+              <div className="text-[13.5px] font-bold">{category.name}</div>
+              {metaLabel && <div className="text-[10.5px] text-ink-soft mt-0.5">{metaLabel}</div>}
+            </div>
             <button
               type="button"
               {...attributes}
@@ -265,10 +405,7 @@ function SortableCategoryRow({
             <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => {
-                  setEditingId(category.id);
-                  setEditValue(category.name);
-                }}
+                onClick={() => startEdit(category)}
                 className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
               >
                 編集
