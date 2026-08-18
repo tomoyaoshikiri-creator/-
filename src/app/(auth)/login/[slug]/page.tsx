@@ -26,7 +26,7 @@ export default async function TeamLoginPage({
         </div>
       )}
       {notice === "inactivity" && (
-        <div className="mb-3 text-[12.5px] text-ink-soft text-center bg-white border border-line rounded-2xl p-3">
+        <div className="mb-3 text-[12.5px] text-ink-soft text-center bg-white border border-line rounded-2xl p-3 text-pretty">
           しばらく操作がなかったため、自動的にログアウトしました。
           <br />
           もう一度ログインしてください。
