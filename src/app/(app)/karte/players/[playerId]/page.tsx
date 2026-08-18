@@ -10,7 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
-import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, TextTab, inputClass } from "@/components/ui/SegButton";
 import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
@@ -550,13 +550,13 @@ export default function KartePlayerPage() {
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
       {usesDetailedBasketballStats(sport) && gameRows.length > 0 && (
         <div className="flex items-center justify-between mb-2 gap-2">
-          <div className="flex gap-1.5">
-            <SegButton variant="small" active={statView === "table"} onClick={() => setStatView("table")}>
+          <div className="flex gap-4">
+            <TextTab active={statView === "table"} onClick={() => setStatView("table")}>
               表
-            </SegButton>
-            <SegButton variant="small" active={statView === "chart"} onClick={() => setStatView("chart")}>
+            </TextTab>
+            <TextTab active={statView === "chart"} onClick={() => setStatView("chart")}>
               グラフ
-            </SegButton>
+            </TextTab>
           </div>
           {statView === "chart" && (
             <select
@@ -711,13 +711,13 @@ export default function KartePlayerPage() {
       <SectionLabel>スポーツテスト(四半期ごと)</SectionLabel>
       {sportsTestRecords.length > 0 && (
         <div className="flex items-center justify-between mb-2 gap-2">
-          <div className="flex gap-1.5">
-            <SegButton variant="small" active={sportsTestView === "table"} onClick={() => setSportsTestView("table")}>
+          <div className="flex gap-4">
+            <TextTab active={sportsTestView === "table"} onClick={() => setSportsTestView("table")}>
               表
-            </SegButton>
-            <SegButton variant="small" active={sportsTestView === "chart"} onClick={() => setSportsTestView("chart")}>
+            </TextTab>
+            <TextTab active={sportsTestView === "chart"} onClick={() => setSportsTestView("chart")}>
               グラフ
-            </SegButton>
+            </TextTab>
           </div>
           {sportsTestView === "chart" && (
             <select

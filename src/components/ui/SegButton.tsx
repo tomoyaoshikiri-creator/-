@@ -20,6 +20,23 @@ export function SegButton({ active = false, variant = "default", className = "",
   );
 }
 
+// 表/グラフなど、軽い表示切替のための下線タブ。SegButtonよりも主張を抑えたい箇所で使う。
+export function TextTab({
+  active = false,
+  className = "",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
+  return (
+    <button
+      type="button"
+      className={`text-[12.5px] font-bold pb-1 border-b-2 transition-colors ${
+        active ? "text-orange border-orange" : "text-ink-soft border-transparent"
+      } ${className}`}
+      {...props}
+    />
+  );
+}
+
 export function SubmitButton({ className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
