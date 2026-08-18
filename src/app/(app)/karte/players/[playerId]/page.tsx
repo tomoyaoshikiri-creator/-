@@ -32,7 +32,6 @@ import {
   GAME_COLUMNS,
   THREE_POINT_GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
-  type SeasonStatAverages,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
 import {
@@ -99,12 +98,11 @@ export default function KartePlayerPage() {
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiUsage, setAiUsage] = useState<{ used: number; limit: number } | null>(null);
-  const [statView, setStatView] = useState<"table" | "chart">("table");
-  const [chartStatKey, setChartStatKey] = useState<keyof SeasonStatAverages>("pts");
   const [sportsTestView, setSportsTestView] = useState<"table" | "chart">("table");
   const [sportsTestChartMetric, setSportsTestChartMetric] = useState<SportsTestMetric>(
     SPORTS_TEST_RANKING_METRICS[0].value,
   );
+  const [sportsTestChartRange, setSportsTestChartRange] = useState<"year" | "all">("year");
 
   const [analysisNotes, setAnalysisNotes] = useState<PlayerAnalysisNote[]>([]);
   const [noteReactions, setNoteReactions] = useState<PlayerAnalysisNoteReaction[]>([]);
@@ -153,7 +151,8 @@ export default function KartePlayerPage() {
           .from("sports_test_records")
           .select("*")
           .eq("player_id", params.playerId)
-          .eq("fiscal_year", fiscalYear),
+          .order("fiscal_year", { ascending: true })
+          .order("quarter", { ascending: true }),
         supabase
           .from("player_growth_records")
           .select("*")
@@ -223,7 +222,7 @@ export default function KartePlayerPage() {
     setAttendedPracticeMenus(menus);
 
     setLoading(false);
-  }, [params.playerId, fiscalYear]);
+  }, [params.playerId]);
 
   useEffect(() => {
     load();
@@ -264,6 +263,8 @@ export default function KartePlayerPage() {
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  const sportsTestRecordsForYear = sportsTestRecords.filter((r) => r.fiscal_year === fiscalYear);
 
   const attendedPracticesInYear = attendedPractices.filter((s) => fiscalYearOf(s.date) === fiscalYear);
   const attendedScheduleIdsInYear = new Set(attendedPracticesInYear.map((s) => s.id));
@@ -322,7 +323,7 @@ export default function KartePlayerPage() {
       fiscalYear,
       seasonAverages,
       gameRows,
-      sportsTestRecords,
+      sportsTestRecords: sportsTestRecordsForYear,
       growthRecords,
       workoutTallies,
       attendedPracticeCount: attendedPracticesInYear.length,
@@ -354,7 +355,7 @@ export default function KartePlayerPage() {
       fiscalYear,
       seasonAverages,
       gameRows,
-      sportsTestRecords,
+      sportsTestRecords: sportsTestRecordsForYear,
       growthRecords,
       workoutTallies,
       attendedPracticeCount: attendedPracticesInYear.length,
@@ -549,41 +550,7 @@ export default function KartePlayerPage() {
       )}
 
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
-      {usesDetailedBasketballStats(sport) && gameRows.length > 0 && (
-        <div className="flex items-center justify-between mb-2 gap-2">
-          <div className="flex gap-4">
-            <TextTab active={statView === "table"} onClick={() => setStatView("table")}>
-              表
-            </TextTab>
-            <TextTab active={statView === "chart"} onClick={() => setStatView("chart")}>
-              グラフ
-            </TextTab>
-          </div>
-          {statView === "chart" && (
-            <select
-              className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
-              value={chartStatKey}
-              onChange={(e) => setChartStatKey(e.target.value as (typeof columns)[number]["key"])}
-            >
-              {columns.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.abbr}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      )}
-      {usesDetailedBasketballStats(sport) && statView === "chart" && gameRows.length > 0 ? (
-        <Card>
-          <LineTrendChart
-            points={gameRows.map((row) => ({ label: row.label, value: row.averages[chartStatKey] as number | null }))}
-          />
-          <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line">
-            シーズン平均: <span className="font-bold text-ink">{String(seasonAverages[chartStatKey] ?? "-")}</span>
-          </div>
-        </Card>
-      ) : usesDetailedBasketballStats(sport) ? (
+      {usesDetailedBasketballStats(sport) ? (
         gameRows.length === 0 ? (
           <Card>
             <EmptyState>この年度の出場記録がありません</EmptyState>
@@ -721,31 +688,53 @@ export default function KartePlayerPage() {
             </TextTab>
           </div>
           {sportsTestView === "chart" && (
-            <select
-              className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
-              value={sportsTestChartMetric}
-              onChange={(e) => setSportsTestChartMetric(e.target.value as SportsTestMetric)}
-            >
-              {SPORTS_TEST_RANKING_METRICS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-1.5">
+              <select
+                className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+                value={sportsTestChartMetric}
+                onChange={(e) => setSportsTestChartMetric(e.target.value as SportsTestMetric)}
+              >
+                {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+                value={sportsTestChartRange}
+                onChange={(e) => setSportsTestChartRange(e.target.value as "year" | "all")}
+              >
+                <option value="year">今年度</option>
+                <option value="all">全年度</option>
+              </select>
+            </div>
           )}
         </div>
       )}
       {sportsTestView === "chart" && sportsTestRecords.length > 0 ? (
         <Card>
           <LineTrendChart
-            points={QUARTERS.map((q) => {
-              const record = sportsTestRecords.find((r) => r.quarter === q);
-              const metric = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === sportsTestChartMetric)!;
-              return {
-                label: `Q${q}`,
-                value: record && !record.not_conducted ? metric.extract(record) : null,
-              };
-            })}
+            points={
+              sportsTestChartRange === "year"
+                ? QUARTERS.map((q) => {
+                    const record = sportsTestRecordsForYear.find((r) => r.quarter === q);
+                    const metric = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === sportsTestChartMetric)!;
+                    return {
+                      label: `Q${q}`,
+                      value: record && !record.not_conducted ? metric.extract(record) : null,
+                    };
+                  })
+                : sportsTestRecords
+                    .filter((r) => !r.not_conducted)
+                    .map((r) => {
+                      const metric = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === sportsTestChartMetric)!;
+                      return {
+                        label: `${r.fiscal_year}/Q${r.quarter}`,
+                        value: metric.extract(r),
+                      };
+                    })
+            }
           />
         </Card>
       ) : (
@@ -769,7 +758,7 @@ export default function KartePlayerPage() {
             </thead>
             <tbody>
               {QUARTERS.map((q) => {
-                const record = sportsTestRecords.find((r) => r.quarter === q);
+                const record = sportsTestRecordsForYear.find((r) => r.quarter === q);
                 return (
                   <tr key={q}>
                     <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
