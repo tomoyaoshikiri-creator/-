@@ -1,6 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// getUser()がトークンをリフレッシュした場合、更新後のCookieはsupabaseResponseにしか
+// 乗っていない。素の NextResponse.redirect() をそのまま返すとこの更新分が失われ、
+// ブラウザは期限切れのトークンを送り続けることになる。運が悪いタイミングでこれが
+// 起きると、ログイン画面とアプリ画面の間を無限リダイレクトする不具合につながるため、
+// リダイレクト時も必ずsupabaseResponse側のCookieを引き継ぐ。
+function redirectWithCookies(url: URL, supabaseResponse: NextResponse): NextResponse {
+  const redirectResponse = NextResponse.redirect(url);
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+  return redirectResponse;
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -40,13 +53,13 @@ export async function middleware(request: NextRequest) {
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   if (user && (path.startsWith("/login") || path.startsWith("/signup"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/schedule";
-    return NextResponse.redirect(url);
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   return supabaseResponse;
