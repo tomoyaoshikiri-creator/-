@@ -20,6 +20,7 @@ import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { StatCell } from "@/components/karte/StatCell";
+import { SkillTestPanel } from "@/components/karte/SkillTestPanel";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
@@ -798,6 +799,13 @@ export default function KartePlayerPage() {
       >
         スポーツテストを入力・編集する
       </Link>
+
+      {plan === "Max" && (
+        <>
+          <SectionLabel>検定</SectionLabel>
+          <SkillTestPanel playerId={player.id} />
+        </>
+      )}
 
       <SectionLabel>身長・体重(週次)</SectionLabel>
       <Card>

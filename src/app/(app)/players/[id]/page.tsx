@@ -18,7 +18,7 @@ import { hasKarteTabAccess } from "@/lib/plan";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
-import type { Grade, Player, PlayerStatus, Position } from "@/lib/database.types";
+import type { Grade, Player, PlayerSkillTestProgress, PlayerStatus, Position, SkillTest } from "@/lib/database.types";
 
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
@@ -30,6 +30,8 @@ export default function PlayerDetailPage() {
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
+  const [skillTests, setSkillTests] = useState<SkillTest[]>([]);
+  const [skillProgress, setSkillProgress] = useState<PlayerSkillTestProgress[]>([]);
   const [prevId, setPrevId] = useState<string | null>(null);
   const [nextId, setNextId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,15 +67,23 @@ export default function PlayerDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: p }, { count }] = await Promise.all([
+    const [{ data: p }, { count }, { data: tests }, { data: progress }] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.id).single(),
       supabase
         .from("player_notes")
         .select("id", { count: "exact", head: true })
         .eq("player_id", params.id),
+      supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
+      supabase
+        .from("player_skill_test_progress")
+        .select("*")
+        .eq("player_id", params.id)
+        .order("created_at", { ascending: false }),
     ]);
     setPlayer(p ?? null);
     setNoteCount(count ?? 0);
+    setSkillTests(tests ?? []);
+    setSkillProgress(progress ?? []);
 
     if (p) {
       const { data: siblings } = await supabase
@@ -420,6 +430,28 @@ export default function PlayerDetailPage() {
                   </div>
                 </Card>
               </Link>
+
+              <SectionLabel>検定</SectionLabel>
+              <Card>
+                {skillTests.length === 0 ? (
+                  <div className="text-xs text-ink-soft">まだ検定がありません</div>
+                ) : (
+                  <div className="text-[13px]">
+                    {skillTests.map((test) => {
+                      const current = skillProgress.find((row) => row.skill_test_id === test.id);
+                      return (
+                        <div
+                          key={test.id}
+                          className="flex items-center justify-between py-1.5 border-b border-line last:border-b-0"
+                        >
+                          <span className="font-bold">{test.name}</span>
+                          <span className="text-ink-soft">{current ? current.level_label : "未設定"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
             </>
           )}
 

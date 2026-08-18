@@ -942,6 +942,54 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      skill_tests: {
+        Row: {
+          id: string;
+          team_id: string;
+          name: string;
+          kyu_count: number;
+          dan_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          name: string;
+          kyu_count?: number;
+          dan_count?: number;
+        };
+        Update: Partial<{
+          name: string;
+          kyu_count: number;
+          dan_count: number;
+        }>;
+        Relationships: [];
+      };
+      player_skill_test_progress: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          skill_test_id: string;
+          level_index: number;
+          level_label: string;
+          achieved_on: string;
+          recorded_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          skill_test_id: string;
+          level_index: number;
+          level_label?: string;
+          achieved_on?: string;
+          recorded_by?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       sports_test_records: {
         Row: {
           id: string;
@@ -1424,6 +1472,8 @@ export type TeamAnalysisNoteReaction = Database["public"]["Tables"]["team_analys
 export type PlayerAnalysisNoteReaction = Database["public"]["Tables"]["player_analysis_note_reactions"]["Row"];
 export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["Row"];
 export type TabLastSeen = Database["public"]["Tables"]["tab_last_seen"]["Row"];
+export type SkillTest = Database["public"]["Tables"]["skill_tests"]["Row"];
+export type PlayerSkillTestProgress = Database["public"]["Tables"]["player_skill_test_progress"]["Row"];
 export type ItemLastSeen = Database["public"]["Tables"]["item_last_seen"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
