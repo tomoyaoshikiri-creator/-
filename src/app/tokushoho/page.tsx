@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/BackLink";
 
 export const metadata = { title: "特定商取引法に基づく表記 | CLUB LINK" };
 
@@ -6,9 +6,7 @@ export default function TokushohoPage() {
   return (
     <div className="min-h-full bg-paper text-ink">
       <div className="max-w-[720px] mx-auto px-6 py-12">
-        <Link href="/login" className="text-[12.5px] font-bold text-orange">
-          ← ログイン画面に戻る
-        </Link>
+        <BackLink />
 
         <h1 className="font-medium text-2xl mt-6 mb-2">特定商取引法に基づく表記</h1>
         <p className="text-[12px] text-ink-soft mb-8">制定日: 2026年8月17日</p>
