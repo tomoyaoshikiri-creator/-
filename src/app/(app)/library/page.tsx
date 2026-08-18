@@ -122,8 +122,11 @@ export default function LibraryPage() {
       {limitBytes > 0 && (
         <div className="bg-white border border-line rounded-2xl px-3.5 py-2.5 mb-3.5">
           <div className="flex items-end justify-between">
-            <div className="font-bold text-[15px]">{formatBytes(usedBytes)}</div>
-            <div className="text-[11px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)} 使用中</div>
+            <div className="font-bold text-[15px]">
+              {formatBytes(usedBytes)}
+              <span className="text-[11px] font-normal text-ink-soft ml-1">使用中</span>
+            </div>
+            <div className="text-[11px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
           </div>
           <div className="mt-2 h-1.5 rounded-full bg-paper overflow-hidden">
             <div
