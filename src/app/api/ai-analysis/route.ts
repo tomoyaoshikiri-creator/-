@@ -2,30 +2,36 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { hasAiAnalysisAccess } from "@/lib/plan";
+import { AI_ANALYSIS_MODEL, AI_ANALYSIS_MAX_TOKENS } from "@/lib/ai/model";
+import { planKindFor } from "@/lib/ai/types";
+import { hasSportContext } from "@/lib/ai/sports";
+import { collectPlayerAnalysisData, collectTeamAnalysisData } from "@/lib/ai/collect";
+import { buildPlayerAnalysisPrompt, buildTeamAnalysisPrompt } from "@/lib/ai/buildPrompt";
+import { fiscalYearOf, todayDateStr } from "@/lib/format";
 
 // 1チームあたりの月間生成回数上限(暴発防止のレート制限)。当月1日0時を起点に
 // created_atで数えるだけで実現し、物理的な月次リセット処理は不要にしている
 // (todayDateStr()と同じくJST厳密ではなくサーバーのローカル日時を基準にする簡略実装)。
 const MONTHLY_LIMIT = 50;
 
-const SYSTEM_PROMPT =
-  "あなたはユーススポーツチームのデータ分析アシスタントです。指導者がそのまま選手や保護者に共有できるよう、日本語で簡潔に分析結果をまとめてください。";
-
-// 選手カルテ・チームカルテの「分析用抽出」で使っている既存のテキスト整形関数
-// (buildKarteAnalysisText/buildTeamKarteAnalysisText)の出力をそのまま受け取り、
-// Anthropic APIに渡して分析コメントを生成する。生成結果は選手分析フィードバック/
-// チーム分析フィードバックにsource:'ai'として追記し、レート制限もこの2テーブルの
-// 当日のAI生成件数を数えるだけで実現する(別途カウンタテーブルは設けない)。
+// AI分析用のデータ収集(collectPlayerAnalysisData/collectTeamAnalysisData)・プロンプト構築
+// (buildPlayerAnalysisPrompt/buildTeamAnalysisPrompt、COMMON+PLAN+SPORT+ANALYSIS_TYPE+
+// DATA_QUALITY+ACTUAL_DATAの動的構築)はすべてsrc/lib/ai/以下に分離している。
+// このルートはサーバー側で権限・プラン・レート制限を確認したうえでその2つを呼び出し、
+// Anthropic APIへ渡して結果を選手分析フィードバック/チーム分析フィードバックに
+// source:'ai'として保存するだけの薄い層にする。
+//
+// (旧実装との違い) 以前はクライアント側で「分析用抽出」と同じテキスト整形関数を使って
+// dataTextを作りAPIへ送っていたが、これだと競技・プランに応じた分析の出し分けができず、
+// クライアントが任意のテキストを送れてしまう構造でもあった。今回からデータ収集自体を
+// サーバー側(このAPI)で行い、クライアントはscope/playerId/fiscalYearだけを送る。
 export async function POST(request: Request) {
-  const { scope, playerId, dataText } = await request.json();
+  const { scope, playerId, fiscalYear: requestedFiscalYear } = await request.json();
   if (scope !== "player" && scope !== "team") {
     return NextResponse.json({ error: "scope は player または team を指定してください" }, { status: 400 });
   }
   if (scope === "player" && !playerId) {
     return NextResponse.json({ error: "playerId が必要です" }, { status: 400 });
-  }
-  if (!dataText) {
-    return NextResponse.json({ error: "dataText が必要です" }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -41,9 +47,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  const { data: team } = await supabase.from("teams").select("plan").eq("id", profile.team_id).single();
+  const { data: team } = await supabase.from("teams").select("plan, sport").eq("id", profile.team_id).single();
   if (!team || !hasAiAnalysisAccess(team.plan)) {
     return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
+  }
+  const planKind = planKindFor(team.plan);
+  if (!planKind) {
+    return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
+  }
+  if (!hasSportContext(team.sport)) {
+    return NextResponse.json({ error: "この競技のAI分析機能は現在準備中です" }, { status: 501 });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -76,14 +89,34 @@ export async function POST(request: Request) {
     );
   }
 
+  const fiscalYear =
+    typeof requestedFiscalYear === "number" && Number.isInteger(requestedFiscalYear)
+      ? requestedFiscalYear
+      : fiscalYearOf(todayDateStr());
+
+  let system: string;
+  let userContent: string;
+  try {
+    if (scope === "player") {
+      const data = await collectPlayerAnalysisData(supabase, { playerId, fiscalYear, sport: team.sport, planKind });
+      ({ system, user: userContent } = buildPlayerAnalysisPrompt(data));
+    } else {
+      const data = await collectTeamAnalysisData(supabase, { fiscalYear, sport: team.sport, planKind });
+      ({ system, user: userContent } = buildTeamAnalysisPrompt(data));
+    }
+  } catch (err) {
+    console.error("[api/ai-analysis] failed to collect analysis data", err);
+    return NextResponse.json({ error: "分析用データの取得に失敗しました" }, { status: 500 });
+  }
+
   const anthropic = new Anthropic({ apiKey });
   let body: string;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: dataText }],
+      model: AI_ANALYSIS_MODEL,
+      max_tokens: AI_ANALYSIS_MAX_TOKENS,
+      system,
+      messages: [{ role: "user", content: userContent }],
     });
     body = response.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")

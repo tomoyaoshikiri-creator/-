@@ -349,23 +349,12 @@ export default function KartePlayerPage() {
 
   async function handleGenerateAiAnalysis() {
     if (!player) return;
-    const text = buildKarteAnalysisText({
-      promptText: DEFAULT_KARTE_ANALYSIS_PROMPT,
-      player,
-      fiscalYear,
-      seasonAverages,
-      gameRows,
-      sportsTestRecords: sportsTestRecordsForYear,
-      growthRecords,
-      workoutTallies,
-      attendedPracticeCount: attendedPracticesInYear.length,
-    });
     setAiGenerating(true);
     try {
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "player", playerId: player.id, dataText: text }),
+        body: JSON.stringify({ scope: "player", playerId: player.id, fiscalYear }),
       });
       const data = await res.json();
       if (!res.ok) {

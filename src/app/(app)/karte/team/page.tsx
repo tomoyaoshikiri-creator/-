@@ -264,21 +264,10 @@ export default function KarteTeamPage() {
   async function handleGenerateAiAnalysis() {
     setAiGenerating(true);
     try {
-      const data = await loadAnalysisData(CURRENT_FISCAL_YEAR);
-      const text = buildTeamKarteAnalysisText({
-        promptText: DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT,
-        fiscalYear: CURRENT_FISCAL_YEAR,
-        playerCount: data.playerCount,
-        teamAverages: data.teamAverages,
-        sportsTestQuarterAverages: data.sportsTestQuarterAverages,
-        workoutTallies: data.workoutTallies,
-        practicesHeld: data.practicesHeld,
-        averageAttendanceRate: data.averageAttendanceRate,
-      });
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "team", dataText: text }),
+        body: JSON.stringify({ scope: "team", fiscalYear: CURRENT_FISCAL_YEAR }),
       });
       const resData = await res.json();
       if (!res.ok) {

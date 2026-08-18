@@ -905,6 +905,9 @@ export interface Database {
           team_id: string;
           name: string;
           position: number;
+          evaluation_direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
+          unit: string | null;
+          description: string | null;
           created_at: string;
         };
         Insert: {
@@ -912,10 +915,16 @@ export interface Database {
           team_id: string;
           name: string;
           position?: number;
+          evaluation_direction?: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
+          unit?: string | null;
+          description?: string | null;
         };
         Update: Partial<{
           name: string;
           position: number;
+          evaluation_direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
+          unit: string | null;
+          description: string | null;
         }>;
         Relationships: [];
       };
