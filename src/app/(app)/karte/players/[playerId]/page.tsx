@@ -845,6 +845,18 @@ export default function KartePlayerPage() {
         </>
       )}
 
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
+        <>
+          <SubmitButton
+            onClick={handleGenerateAiAnalysis}
+            disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+          >
+            {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+          </SubmitButton>
+          {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
+        </>
+      )}
+
       <SectionLabel>選手AI分析フィードバック</SectionLabel>
       {analysisNotes.length === 0 ? (
         <Card>
@@ -939,18 +951,6 @@ export default function KartePlayerPage() {
             }}
             insert={handleAddNote}
           />
-        </>
-      )}
-
-      {role === "管理者" && hasAiAnalysisAccess(plan) && (
-        <>
-          <SubmitButton
-            onClick={handleGenerateAiAnalysis}
-            disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
-          >
-            {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-          </SubmitButton>
-          {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
         </>
       )}
     </PageShell>
