@@ -446,58 +446,6 @@ export default function KarteTeamPage() {
         </Link>
       )}
 
-      {role === "管理者" && (
-        <button
-          type="button"
-          onClick={() => setAnalysisOpen(true)}
-          className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mb-2.5 flex items-center justify-between"
-        >
-          <div className="font-bold text-[12.5px] text-orange">分析用データ抽出〈全体分〉</div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
-        </button>
-      )}
-
-      {role === "管理者" && (
-        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用データ抽出〈全体分〉">
-          <FieldLabel>年度</FieldLabel>
-          <div className="relative inline-block mb-3">
-            <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-              value={analysisFiscalYear}
-              onChange={(e) => setAnalysisFiscalYear(Number(e.target.value))}
-            >
-              {FISCAL_YEAR_OPTIONS.map((y) => (
-                <option key={y} value={y}>
-                  {y}年度
-                </option>
-              ))}
-            </select>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-          </div>
-
-          <FieldLabel>AIへの指示文</FieldLabel>
-          <textarea
-            rows={3}
-            className={inputClass()}
-            value={analysisPrompt}
-            onChange={(e) => setAnalysisPrompt(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => setAnalysisPrompt(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT)}
-            className="text-[11px] font-bold text-orange mt-1.5"
-          >
-            デフォルトの文言に戻す
-          </button>
-          <div className="text-xs text-ink-soft mt-2.5">
-            この指示文に続けて、チーム平均スタッツ・スポーツテスト・実施メニュー・練習参加状況のデータがコピーされます
-          </div>
-          <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
-            {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
-          </SubmitButton>
-        </Modal>
-      )}
-
       {isStaff && (
         <>
           <SectionLabel>チームAI分析フィードバック</SectionLabel>
@@ -613,6 +561,58 @@ export default function KarteTeamPage() {
             </>
           )}
         </>
+      )}
+
+      {role === "管理者" && (
+        <button
+          type="button"
+          onClick={() => setAnalysisOpen(true)}
+          className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mb-2.5 flex items-center justify-between"
+        >
+          <div className="font-bold text-[12.5px] text-orange">分析用データ抽出〈全体分〉</div>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
+        </button>
+      )}
+
+      {role === "管理者" && (
+        <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用データ抽出〈全体分〉">
+          <FieldLabel>年度</FieldLabel>
+          <div className="relative inline-block mb-3">
+            <select
+              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              value={analysisFiscalYear}
+              onChange={(e) => setAnalysisFiscalYear(Number(e.target.value))}
+            >
+              {FISCAL_YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}年度
+                </option>
+              ))}
+            </select>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+          </div>
+
+          <FieldLabel>AIへの指示文</FieldLabel>
+          <textarea
+            rows={3}
+            className={inputClass()}
+            value={analysisPrompt}
+            onChange={(e) => setAnalysisPrompt(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setAnalysisPrompt(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT)}
+            className="text-[11px] font-bold text-orange mt-1.5"
+          >
+            デフォルトの文言に戻す
+          </button>
+          <div className="text-xs text-ink-soft mt-2.5">
+            この指示文に続けて、チーム平均スタッツ・スポーツテスト・実施メニュー・練習参加状況のデータがコピーされます
+          </div>
+          <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
+            {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
+          </SubmitButton>
+        </Modal>
       )}
     </PageShell>
   );
