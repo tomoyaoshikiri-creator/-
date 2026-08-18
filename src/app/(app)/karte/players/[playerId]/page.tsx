@@ -943,17 +943,15 @@ export default function KartePlayerPage() {
       )}
 
       {role === "管理者" && hasAiAnalysisAccess(plan) && (
-        <div className="bg-orange/5 border border-orange/30 rounded-2xl px-4 py-3.5 mb-2.5">
-          <button
-            type="button"
+        <>
+          <SubmitButton
             onClick={handleGenerateAiAnalysis}
             disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
-            className="w-full py-2.5 rounded-[10px] bg-orange text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50"
           >
             {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-          </button>
+          </SubmitButton>
           {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
-        </div>
+        </>
       )}
     </PageShell>
   );
