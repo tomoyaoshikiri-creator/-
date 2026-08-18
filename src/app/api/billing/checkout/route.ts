@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { getStripeClient, priceIdForPlan } from "@/lib/stripe";
+import { getStripeClient, priceIdForPlan, type BillingInterval } from "@/lib/stripe";
 import type { Database } from "@/lib/database.types";
 
 // 管理者が中間/フルプランへの契約を開始するためのStripe Checkoutセッションを作る。
 // teams.stripe_customer_idの書き込みはservice_roleクライアント経由でのみ行う
 // (0083のprotect_team_billing_columnsトリガーが通常ユーザーからの直接更新を弾くため)。
 export async function POST(request: Request) {
-  const { plan } = await request.json();
+  const { plan, interval } = await request.json();
   if (plan !== "中間" && plan !== "フル" && plan !== "フルプラス") {
     return NextResponse.json({ error: "plan は 中間・フル・フルプラス のいずれかを指定してください" }, { status: 400 });
   }
+  const billingInterval: BillingInterval = interval === "yearly" ? "yearly" : "monthly";
 
   const supabase = await createClient();
   const {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   }
 
   const stripe = getStripeClient();
-  const priceId = priceIdForPlan(plan);
+  const priceId = priceIdForPlan(plan, billingInterval);
   if (!stripe || !priceId) {
     return NextResponse.json({ error: "Stripeの設定が未完了です" }, { status: 500 });
   }
@@ -65,8 +66,8 @@ export async function POST(request: Request) {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${origin}/settings/plan?checkout=success`,
     cancel_url: `${origin}/settings/plan?checkout=cancel`,
-    metadata: { team_id: team.id, plan },
-    subscription_data: { metadata: { team_id: team.id, plan } },
+    metadata: { team_id: team.id, plan, interval: billingInterval },
+    subscription_data: { metadata: { team_id: team.id, plan, interval: billingInterval } },
   });
 
   if (!session.url) {

@@ -8,9 +8,10 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { SubmitButton } from "@/components/ui/SegButton";
+import { SegButton, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
+import type { BillingInterval } from "@/lib/stripe";
 import type { TeamPlan } from "@/lib/database.types";
 
 export default function SettingsPlanPage() {
@@ -22,6 +23,7 @@ export default function SettingsPlanPage() {
   const [hasCustomer, setHasCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
 
   useEffect(() => {
     if (!canManageSettings(role)) {
@@ -55,7 +57,7 @@ export default function SettingsPlanPage() {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: targetPlan }),
+        body: JSON.stringify({ plan: targetPlan, interval: billingInterval }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
@@ -114,6 +116,14 @@ export default function SettingsPlanPage() {
           ) : (
             <>
               <div className="text-xs text-ink-soft mb-2.5">有料プランに申し込むと、利用できる機能が広がります。</div>
+              <div className="flex gap-1.5 mb-3">
+                <SegButton variant="small" active={billingInterval === "monthly"} onClick={() => setBillingInterval("monthly")}>
+                  月払い
+                </SegButton>
+                <SegButton variant="small" active={billingInterval === "yearly"} onClick={() => setBillingInterval("yearly")}>
+                  年払い(10%オフ)
+                </SegButton>
+              </div>
               {PLAN_OPTIONS.map((opt) => (
                 <div
                   key={opt.plan}
@@ -128,8 +138,10 @@ export default function SettingsPlanPage() {
                     )}
                   </div>
                   <div className="text-[12.5px] font-bold text-ink mb-1">
-                    {opt.price}
-                    <span className="text-[10.5px] font-normal text-ink-soft">/月(税込)</span>
+                    {billingInterval === "monthly" ? opt.price : opt.yearlyPrice}
+                    <span className="text-[10.5px] font-normal text-ink-soft">
+                      {billingInterval === "monthly" ? "/月(税込)" : "/年(税込)"}
+                    </span>
                   </div>
                   <div className="text-[11px] text-ink-soft mb-2">{opt.desc}</div>
                   <SubmitButton onClick={() => startCheckout(opt.plan)} disabled={billingLoading !== null} className="!mt-0">
@@ -148,8 +160,14 @@ export default function SettingsPlanPage() {
   );
 }
 
-const PLAN_OPTIONS: { plan: "中間" | "フル" | "フルプラス"; price: string; desc: string; highlight?: boolean }[] = [
-  { plan: "中間", price: "¥1,280", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
-  { plan: "フル", price: "¥2,480", desc: "選手・チームの成長をデータで管理したいチーム向け" },
-  { plan: "フルプラス", price: "¥3,280", desc: "データ分析までAIに任せたいチーム向け" },
+const PLAN_OPTIONS: {
+  plan: "中間" | "フル" | "フルプラス";
+  price: string;
+  yearlyPrice: string;
+  desc: string;
+  highlight?: boolean;
+}[] = [
+  { plan: "中間", price: "¥1,280", yearlyPrice: "¥13,824", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
+  { plan: "フル", price: "¥2,480", yearlyPrice: "¥26,784", desc: "選手・チームの成長をデータで管理したいチーム向け" },
+  { plan: "フルプラス", price: "¥3,280", yearlyPrice: "¥35,424", desc: "データ分析までAIに任せたいチーム向け" },
 ];
