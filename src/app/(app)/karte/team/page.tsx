@@ -449,6 +449,19 @@ export default function KarteTeamPage() {
       {isStaff && (
         <>
           <SectionLabel>チームAI分析フィードバック</SectionLabel>
+
+          {role === "管理者" && hasAiAnalysisAccess(plan) && (
+            <>
+              <SubmitButton
+                onClick={handleGenerateAiAnalysis}
+                disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+              >
+                {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+              </SubmitButton>
+              {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
+            </>
+          )}
+
           {notesLoading ? (
             <EmptyState>読み込み中…</EmptyState>
           ) : analysisNotes.length === 0 ? (
@@ -535,7 +548,7 @@ export default function KarteTeamPage() {
 
           {canManagePlayers(role) && (
             <>
-              <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを登録</SubmitButton>
+              <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを手動登録</SubmitButton>
               <AddFeedbackModal
                 open={addFeedbackOpen}
                 onClose={() => setAddFeedbackOpen(false)}
@@ -546,18 +559,6 @@ export default function KarteTeamPage() {
                 }}
                 insert={handleAddNote}
               />
-            </>
-          )}
-
-          {role === "管理者" && hasAiAnalysisAccess(plan) && (
-            <>
-              <SubmitButton
-                onClick={handleGenerateAiAnalysis}
-                disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
-              >
-                {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-              </SubmitButton>
-              {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
             </>
           )}
         </>
