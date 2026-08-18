@@ -446,21 +446,21 @@ export default function KarteTeamPage() {
         </Link>
       )}
 
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
+        <>
+          <SubmitButton
+            onClick={handleGenerateAiAnalysis}
+            disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+          >
+            {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+          </SubmitButton>
+          {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
+        </>
+      )}
+
       {isStaff && (
         <>
           <SectionLabel>チームAI分析フィードバック</SectionLabel>
-
-          {role === "管理者" && hasAiAnalysisAccess(plan) && (
-            <>
-              <SubmitButton
-                onClick={handleGenerateAiAnalysis}
-                disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
-              >
-                {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-              </SubmitButton>
-              {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
-            </>
-          )}
 
           {notesLoading ? (
             <EmptyState>読み込み中…</EmptyState>
