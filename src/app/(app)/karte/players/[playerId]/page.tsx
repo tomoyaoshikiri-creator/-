@@ -25,15 +25,16 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
 import {
-  buildKarteAnalysisText,
   computeCustomSeasonAverages,
   computeSeasonAverages,
-  DEFAULT_KARTE_ANALYSIS_PROMPT,
   GAME_COLUMNS,
   THREE_POINT_GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
+import { buildPlayerCopyText } from "@/lib/ai/buildCopyText";
+import { collectPlayerAnalysisData } from "@/lib/ai/collect";
+import { planKindFor } from "@/lib/ai/types";
 import {
   effectiveFiscalYear,
   fiscalYearOf,
@@ -50,7 +51,6 @@ import type {
   PlayerAnalysisNote,
   PlayerAnalysisNoteReaction,
   PlayerGrowthRecord,
-  PracticeMenu,
   ReactionType,
   SportsTestRecord,
   TeamStatCategory,
@@ -91,11 +91,10 @@ export default function KartePlayerPage() {
   const [statEntries, setStatEntries] = useState<StatEntryWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
-  const [attendedPractices, setAttendedPractices] = useState<{ id: string; date: string }[]>([]);
-  const [attendedPracticeMenus, setAttendedPracticeMenus] = useState<PracticeMenu[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
+  const [analysisPrompt, setAnalysisPrompt] = useState("");
+  const [copyingAnalysis, setCopyingAnalysis] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiUsage, setAiUsage] = useState<{ used: number; limit: number } | null>(null);
   const [sportsTestView, setSportsTestView] = useState<"table" | "chart">("table");
@@ -131,7 +130,6 @@ export default function KartePlayerPage() {
       { data: entries },
       { data: tests },
       { data: growth },
-      { data: attendanceRows },
       { data: notes },
       profMap,
     ] = await Promise.all([
@@ -159,11 +157,6 @@ export default function KartePlayerPage() {
           .eq("player_id", params.playerId)
           .order("measured_on", { ascending: false })
           .limit(6),
-        supabase
-          .from("attendances")
-          .select("schedule_id")
-          .eq("player_id", params.playerId)
-          .in("status", ["出席", "遅刻早退"]),
         supabase
           .from("player_analysis_notes")
           .select("*")
@@ -199,27 +192,6 @@ export default function KartePlayerPage() {
     } else {
       setNoteReactions([]);
     }
-
-    // 出席・遅刻早退した予定(見学・欠席は除く)のうち練習だけに絞り、その練習に紐づく実施メニューを集計する。
-    // 「このワークアウトをこれだけこなした」を、出欠に基づいて把握できるようにするため。
-    const attendedScheduleIds = Array.from(new Set((attendanceRows ?? []).map((a) => a.schedule_id)));
-    let practices: { id: string; date: string }[] = [];
-    let menus: PracticeMenu[] = [];
-    if (attendedScheduleIds.length > 0) {
-      const { data: schedules } = await supabase
-        .from("schedules")
-        .select("id, date")
-        .in("id", attendedScheduleIds)
-        .eq("type", "practice");
-      practices = schedules ?? [];
-      const practiceIds = practices.map((s) => s.id);
-      if (practiceIds.length > 0) {
-        const { data: m } = await supabase.from("practice_menus").select("*").in("schedule_id", practiceIds);
-        menus = m ?? [];
-      }
-    }
-    setAttendedPractices(practices);
-    setAttendedPracticeMenus(menus);
 
     setLoading(false);
   }, [params.playerId]);
@@ -266,20 +238,6 @@ export default function KartePlayerPage() {
 
   const sportsTestRecordsForYear = sportsTestRecords.filter((r) => r.fiscal_year === fiscalYear);
 
-  const attendedPracticesInYear = attendedPractices.filter((s) => fiscalYearOf(s.date) === fiscalYear);
-  const attendedScheduleIdsInYear = new Set(attendedPracticesInYear.map((s) => s.id));
-  const workoutTallyMap = new Map<string, number>();
-  attendedPracticeMenus
-    .filter((m) => attendedScheduleIdsInYear.has(m.schedule_id))
-    .forEach((m) => {
-      const theme = (m.theme ?? "").trim();
-      if (!theme) return;
-      workoutTallyMap.set(theme, (workoutTallyMap.get(theme) ?? 0) + 1);
-    });
-  const workoutTallies = Array.from(workoutTallyMap.entries())
-    .map(([theme, count]) => ({ theme, count }))
-    .sort((a, b) => b.count - a.count);
-
   async function loadNoteReactions() {
     const noteIds = analysisNotes.map((n) => n.id);
     if (noteIds.length === 0) return;
@@ -317,23 +275,19 @@ export default function KartePlayerPage() {
 
   async function handleCopyAnalysis() {
     if (!player) return;
-    const text = buildKarteAnalysisText({
-      promptText: analysisPrompt,
-      player,
-      fiscalYear,
-      seasonAverages,
-      gameRows,
-      sportsTestRecords: sportsTestRecordsForYear,
-      growthRecords,
-      workoutTallies,
-      attendedPracticeCount: attendedPracticesInYear.length,
-    });
+    const planKind = planKindFor(plan) ?? "proAiPlus";
+    setCopyingAnalysis(true);
     try {
+      const supabase = createClient();
+      const data = await collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear, sport, planKind });
+      const text = buildPlayerCopyText(data, analysisPrompt);
       await navigator.clipboard.writeText(text);
       toast("分析用テキストをコピーしました");
       setAnalysisOpen(false);
     } catch {
       toast("コピーに失敗しました");
+    } finally {
+      setCopyingAnalysis(false);
     }
   }
 
@@ -517,24 +471,20 @@ export default function KartePlayerPage() {
 
       {role === "管理者" && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出">
-          <FieldLabel>AIへの指示文</FieldLabel>
+          <FieldLabel>追加で重視してほしい点(任意)</FieldLabel>
           <textarea
             rows={3}
             className={inputClass()}
             value={analysisPrompt}
             onChange={(e) => setAnalysisPrompt(e.target.value)}
+            placeholder="例: 怪我明けなのでコンディション面を中心に見てほしい"
           />
-          <button
-            type="button"
-            onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
-            className="text-[11px] font-bold text-orange mt-1.5"
-          >
-            デフォルトの文言に戻す
-          </button>
           <div className="text-xs text-ink-soft mt-2.5">
-            この指示文に続けて、選手のスタッツ・スポーツテスト・身長体重のデータがコピーされます
+            選手のスタッツ・スポーツテスト・練習参加状況・身長体重のデータと分析の観点を整理したテキストがコピーされます。外部のAIチャットに貼り付けて利用できます
           </div>
-          <SubmitButton onClick={handleCopyAnalysis}>この内容でコピーする</SubmitButton>
+          <SubmitButton onClick={handleCopyAnalysis} disabled={copyingAnalysis}>
+            {copyingAnalysis ? "準備中…" : "この内容でコピーする"}
+          </SubmitButton>
         </Modal>
       )}
 

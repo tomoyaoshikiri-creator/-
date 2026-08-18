@@ -16,33 +16,26 @@ import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
 import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
-import {
-  buildBulkKarteAnalysisText,
-  computeSeasonAverages,
-  DEFAULT_KARTE_ANALYSIS_PROMPT,
-  type PlayerKarteBodyParams,
-} from "@/lib/karteAggregate";
-import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, sortPlayers, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatLine, Player, PlayerGrowthRecord, PracticeMenu, SportsTestRecord } from "@/lib/database.types";
+import { fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
+import type { Player } from "@/lib/database.types";
+import { buildBulkPlayerCopyText } from "@/lib/ai/buildCopyText";
+import { collectPlayerAnalysisData } from "@/lib/ai/collect";
+import { planKindFor, type PlayerAnalysisData } from "@/lib/ai/types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
-interface StatLineWithDate extends GamePlayerStatLine {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
-}
-
 export default function KartePlayersPage() {
   const router = useRouter();
-  const { role, userId, plan } = useSession();
+  const { role, userId, plan, sport } = useSession();
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
+  const [analysisPrompt, setAnalysisPrompt] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisPlayersData, setAnalysisPlayersData] = useState<PlayerKarteBodyParams[] | null>(null);
+  const [analysisPlayersData, setAnalysisPlayersData] = useState<PlayerAnalysisData[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -68,98 +61,23 @@ export default function KartePlayersPage() {
     setAnalysisOpen(true);
     if (analysisPlayersData !== null) return;
     setAnalysisLoading(true);
-    const supabase = createClient();
-    const activePlayerIds = activeList.map((p) => p.id);
-
-    const [{ data: statLines }, { data: sportsTests }, { data: growth }, { data: practiceSchedules }] = await Promise.all([
-      supabase
-        .from("game_player_stat_lines")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
-        .in("player_id", activePlayerIds)
-        .returns<StatLineWithDate[]>(),
-      supabase.from("sports_test_records").select("*").in("player_id", activePlayerIds).eq("fiscal_year", CURRENT_FISCAL_YEAR),
-      supabase
-        .from("player_growth_records")
-        .select("*")
-        .in("player_id", activePlayerIds)
-        .order("measured_on", { ascending: false }),
-      supabase.from("schedules").select("id, date").eq("type", "practice").lte("date", todayDateStr()),
-    ]);
-
-    const yearPractices = (practiceSchedules ?? []).filter((s) => fiscalYearOf(s.date) === CURRENT_FISCAL_YEAR);
-    const practiceIds = yearPractices.map((s) => s.id);
-
-    let menus: PracticeMenu[] = [];
-    let attendanceRows: { schedule_id: string; player_id: string | null }[] = [];
-    if (practiceIds.length > 0) {
-      const [{ data: m }, { data: a }] = await Promise.all([
-        supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
-        supabase
-          .from("attendances")
-          .select("schedule_id, player_id")
-          .in("schedule_id", practiceIds)
-          .in("player_id", activePlayerIds)
-          .in("status", ["出席", "遅刻早退"]),
-      ]);
-      menus = m ?? [];
-      attendanceRows = a ?? [];
-    }
-
-    const playersData = activeList.map((player) => {
-      const seasonLines = (statLines ?? [])
-        .filter((l) => l.player_id === player.id)
-        .filter((l) => {
-          const date = l.game_matches?.schedules?.date;
-          if (!date) return false;
-          return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === CURRENT_FISCAL_YEAR;
-        })
-        .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
-      const seasonAverages = computeSeasonAverages(seasonLines);
-      const gameRows = seasonLines.map((l) => ({
-        label: `${formatDateLabel(l.game_matches?.schedules?.date ?? "")} vs ${l.game_matches?.opponent ?? "-"}`,
-        averages: computeSeasonAverages([l]),
-      }));
-
-      const sportsTestRecords: SportsTestRecord[] = (sportsTests ?? []).filter((r) => r.player_id === player.id);
-      const growthRecords: PlayerGrowthRecord[] = (growth ?? []).filter((g) => g.player_id === player.id).slice(0, 6);
-
-      const attendedScheduleIds = new Set(
-        attendanceRows.filter((a) => a.player_id === player.id).map((a) => a.schedule_id),
+    try {
+      const supabase = createClient();
+      const planKind = planKindFor(plan) ?? "proAiPlus";
+      const playersData = await Promise.all(
+        activeList.map((player) =>
+          collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear: CURRENT_FISCAL_YEAR, sport, planKind }),
+        ),
       );
-      const workoutTallyMap = new Map<string, number>();
-      menus
-        .filter((m) => attendedScheduleIds.has(m.schedule_id))
-        .forEach((m) => {
-          const theme = (m.theme ?? "").trim();
-          if (!theme) return;
-          workoutTallyMap.set(theme, (workoutTallyMap.get(theme) ?? 0) + 1);
-        });
-      const workoutTallies = Array.from(workoutTallyMap.entries())
-        .map(([theme, count]) => ({ theme, count }))
-        .sort((a, b) => b.count - a.count);
-
-      return {
-        player,
-        fiscalYear: CURRENT_FISCAL_YEAR,
-        seasonAverages,
-        gameRows,
-        sportsTestRecords,
-        growthRecords,
-        workoutTallies,
-        attendedPracticeCount: attendedScheduleIds.size,
-      };
-    });
-
-    setAnalysisPlayersData(playersData);
-    setAnalysisLoading(false);
+      setAnalysisPlayersData(playersData);
+    } finally {
+      setAnalysisLoading(false);
+    }
   }
 
   async function handleCopyAnalysis() {
     if (analysisPlayersData === null) return;
-    const text = buildBulkKarteAnalysisText({
-      promptText: analysisPrompt,
-      players: analysisPlayersData,
-    });
+    const text = buildBulkPlayerCopyText(analysisPlayersData, analysisPrompt);
     try {
       await navigator.clipboard.writeText(text);
       toast("分析用テキストをコピーしました");
@@ -210,25 +128,19 @@ export default function KartePlayersPage() {
 
       {role === "管理者" && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出〈一括〉">
-          <FieldLabel>AIへの指示文</FieldLabel>
+          <FieldLabel>追加で重視してほしい点(任意)</FieldLabel>
           <textarea
             rows={3}
             className={inputClass()}
             value={analysisPrompt}
             onChange={(e) => setAnalysisPrompt(e.target.value)}
+            placeholder="例: 特に新入部員の定着状況を意識して見てほしい"
           />
-          <button
-            type="button"
-            onClick={() => setAnalysisPrompt(DEFAULT_KARTE_ANALYSIS_PROMPT)}
-            className="text-[11px] font-bold text-orange mt-1.5"
-          >
-            デフォルトの文言に戻す
-          </button>
           <div className="text-xs text-ink-soft mt-2.5">
-            この指示文に続けて、在籍選手全員分のスタッツ・スポーツテスト・身長体重のデータが選手ごとに区切ってコピーされます
+            在籍選手全員分のスタッツ・スポーツテスト・練習参加状況・身長体重のデータと分析の観点を整理したテキストが選手ごとに区切ってコピーされます。外部のAIチャットに貼り付けて利用できます
           </div>
           <SubmitButton onClick={handleCopyAnalysis} disabled={analysisLoading}>
-            {analysisLoading ? "読み込み中…" : "この内容でコピーする"}
+            {analysisLoading ? "準備中…" : "この内容でコピーする"}
           </SubmitButton>
         </Modal>
       )}
