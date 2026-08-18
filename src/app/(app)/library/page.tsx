@@ -10,7 +10,8 @@ import { SegButton } from "@/components/ui/SegButton";
 import { Fab } from "@/components/ui/Modal";
 import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile } from "@/lib/storagePath";
-import { formatDateLabel } from "@/lib/format";
+import { formatBytes, formatDateLabel } from "@/lib/format";
+import { useSession } from "@/lib/session-context";
 import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
 
@@ -19,6 +20,7 @@ type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
 
 export default function LibraryPage() {
   const toast = useToast();
+  const { teamId } = useSession();
   const [items, setItems] = useState<ItemWithFiles[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
@@ -26,6 +28,18 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [usedBytes, setUsedBytes] = useState(0);
+  const [limitBytes, setLimitBytes] = useState(0);
+
+  const loadUsage = useCallback(async () => {
+    const supabase = createClient();
+    const [{ data: team }, { data: usage }] = await Promise.all([
+      supabase.from("teams").select("storage_limit_bytes").eq("id", teamId).single(),
+      supabase.rpc("team_storage_usage_bytes"),
+    ]);
+    setLimitBytes(team?.storage_limit_bytes ?? 0);
+    setUsedBytes(usage ?? 0);
+  }, [teamId]);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -60,7 +74,8 @@ export default function LibraryPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    loadUsage();
+  }, [load, loadUsage]);
 
   async function handleDelete(item: ItemWithFiles) {
     if (deleteConfirmId !== item.id) {
@@ -80,6 +95,7 @@ export default function LibraryPage() {
     }
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     toast("削除しました");
+    loadUsage();
   }
 
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
@@ -96,12 +112,36 @@ export default function LibraryPage() {
             onCreated={() => {
               setModalOpen(false);
               load();
+              loadUsage();
               toast("ファイルを追加しました");
             }}
           />
         </>
       }
     >
+      {limitBytes > 0 && (
+        <div className="bg-white border border-line rounded-2xl px-3.5 py-2.5 mb-3.5">
+          <div className="flex items-end justify-between">
+            <div className="font-bold text-[15px]">{formatBytes(usedBytes)}</div>
+            <div className="text-[11px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)} 使用中</div>
+          </div>
+          <div className="mt-2 h-1.5 rounded-full bg-paper overflow-hidden">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.min(100, (usedBytes / limitBytes) * 100)}%`,
+                background: usedBytes >= limitBytes ? "var(--danger)" : "var(--orange)",
+              }}
+            />
+          </div>
+          {usedBytes >= limitBytes && (
+            <div className="text-[11px] mt-1.5" style={{ color: "var(--danger)" }}>
+              容量の上限に達しています。新規アップロードするには、ファイルを削除するか上位プランへのアップグレードが必要です。
+            </div>
+          )}
+        </div>
+      )}
+
       {categories.length > 0 && (
         <div className="flex gap-2 mb-3.5 flex-wrap">
           <SegButton variant="small" active={selectedCategoryId === "all"} onClick={() => setSelectedCategoryId("all")}>

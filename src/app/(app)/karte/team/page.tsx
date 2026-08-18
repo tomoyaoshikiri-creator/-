@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { AiUsageIndicator } from "@/components/AiUsageIndicator";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
@@ -63,6 +64,7 @@ export default function KarteTeamPage() {
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_TEAM_KARTE_ANALYSIS_PROMPT);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiUsage, setAiUsage] = useState<{ used: number; limit: number } | null>(null);
   const [playerCount, setPlayerCount] = useState(0);
   const [teamAverages, setTeamAverages] = useState<SeasonStatAverages | null>(null);
   const [sportsTestQuarterAverages, setSportsTestQuarterAverages] = useState<
@@ -249,6 +251,16 @@ export default function KarteTeamPage() {
       .finally(() => setAnalysisLoading(false));
   }, [analysisOpen, analysisFiscalYear, loadAnalysisData]);
 
+  useEffect(() => {
+    if (!(role === "管理者" && hasAiAnalysisAccess(plan))) return;
+    (async () => {
+      const res = await fetch("/api/ai-analysis");
+      if (!res.ok) return;
+      const data = await res.json();
+      setAiUsage({ used: data.usedThisMonth, limit: data.monthlyLimit });
+    })();
+  }, [role, plan]);
+
   async function handleGenerateAiAnalysis() {
     setAiGenerating(true);
     try {
@@ -273,6 +285,7 @@ export default function KarteTeamPage() {
         toast(resData.error ?? "AI分析の生成に失敗しました");
         return;
       }
+      setAiUsage({ used: resData.usedThisMonth, limit: resData.monthlyLimit });
       toast("AI分析を生成し、フィードバック欄に追加しました");
       loadNotes();
     } catch {
@@ -575,9 +588,15 @@ export default function KarteTeamPage() {
           )}
 
           {role === "管理者" && hasAiAnalysisAccess(plan) && (
-            <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating}>
-              {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-            </SubmitButton>
+            <>
+              <SubmitButton
+                onClick={handleGenerateAiAnalysis}
+                disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+              >
+                {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+              </SubmitButton>
+              {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
+            </>
           )}
         </>
       )}

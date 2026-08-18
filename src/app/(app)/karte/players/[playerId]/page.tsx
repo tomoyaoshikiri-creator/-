@@ -10,10 +10,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { AiUsageIndicator } from "@/components/AiUsageIndicator";
+import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
@@ -29,6 +31,8 @@ import {
   GAME_COLUMNS,
   THREE_POINT_GAME_COLUMNS,
   SPORTS_TEST_RANKING_METRICS,
+  type SeasonStatAverages,
+  type SportsTestMetric,
 } from "@/lib/karteAggregate";
 import {
   effectiveFiscalYear,
@@ -93,6 +97,13 @@ export default function KartePlayerPage() {
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState(DEFAULT_KARTE_ANALYSIS_PROMPT);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiUsage, setAiUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [statView, setStatView] = useState<"table" | "chart">("table");
+  const [chartStatKey, setChartStatKey] = useState<keyof SeasonStatAverages>("pts");
+  const [sportsTestView, setSportsTestView] = useState<"table" | "chart">("table");
+  const [sportsTestChartMetric, setSportsTestChartMetric] = useState<SportsTestMetric>(
+    SPORTS_TEST_RANKING_METRICS[0].value,
+  );
 
   const [analysisNotes, setAnalysisNotes] = useState<PlayerAnalysisNote[]>([]);
   const [noteReactions, setNoteReactions] = useState<PlayerAnalysisNoteReaction[]>([]);
@@ -324,6 +335,16 @@ export default function KartePlayerPage() {
     }
   }
 
+  useEffect(() => {
+    if (!(role === "管理者" && hasAiAnalysisAccess(plan))) return;
+    (async () => {
+      const res = await fetch("/api/ai-analysis");
+      if (!res.ok) return;
+      const data = await res.json();
+      setAiUsage({ used: data.usedThisMonth, limit: data.monthlyLimit });
+    })();
+  }, [role, plan]);
+
   async function handleGenerateAiAnalysis() {
     if (!player) return;
     const text = buildKarteAnalysisText({
@@ -349,6 +370,7 @@ export default function KartePlayerPage() {
         toast(data.error ?? "AI分析の生成に失敗しました");
         return;
       }
+      setAiUsage({ used: data.usedThisMonth, limit: data.monthlyLimit });
       toast("AI分析を生成し、フィードバック欄に追加しました");
       load();
     } catch {
@@ -526,7 +548,41 @@ export default function KartePlayerPage() {
       )}
 
       <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
-      {usesDetailedBasketballStats(sport) ? (
+      {usesDetailedBasketballStats(sport) && gameRows.length > 0 && (
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <div className="flex gap-1.5">
+            <SegButton variant="small" active={statView === "table"} onClick={() => setStatView("table")}>
+              表
+            </SegButton>
+            <SegButton variant="small" active={statView === "chart"} onClick={() => setStatView("chart")}>
+              グラフ
+            </SegButton>
+          </div>
+          {statView === "chart" && (
+            <select
+              className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+              value={chartStatKey}
+              onChange={(e) => setChartStatKey(e.target.value as (typeof columns)[number]["key"])}
+            >
+              {columns.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.abbr}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+      {usesDetailedBasketballStats(sport) && statView === "chart" && gameRows.length > 0 ? (
+        <Card>
+          <LineTrendChart
+            points={gameRows.map((row) => ({ label: row.label, value: row.averages[chartStatKey] as number | null }))}
+          />
+          <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line">
+            シーズン平均: <span className="font-bold text-ink">{String(seasonAverages[chartStatKey] ?? "-")}</span>
+          </div>
+        </Card>
+      ) : usesDetailedBasketballStats(sport) ? (
         gameRows.length === 0 ? (
           <Card>
             <EmptyState>この年度の出場記録がありません</EmptyState>
@@ -653,49 +709,89 @@ export default function KartePlayerPage() {
       )}
 
       <SectionLabel>スポーツテスト(四半期ごと)</SectionLabel>
-      <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
-        <table className="border-collapse text-[11.5px] w-full">
-          <thead>
-            <tr>
-              <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
-                四半期
-              </th>
+      {sportsTestRecords.length > 0 && (
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <div className="flex gap-1.5">
+            <SegButton variant="small" active={sportsTestView === "table"} onClick={() => setSportsTestView("table")}>
+              表
+            </SegButton>
+            <SegButton variant="small" active={sportsTestView === "chart"} onClick={() => setSportsTestView("chart")}>
+              グラフ
+            </SegButton>
+          </div>
+          {sportsTestView === "chart" && (
+            <select
+              className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+              value={sportsTestChartMetric}
+              onChange={(e) => setSportsTestChartMetric(e.target.value as SportsTestMetric)}
+            >
               {SPORTS_TEST_RANKING_METRICS.map((m) => (
-                <th
-                  key={m.value}
-                  className="sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight text-ink-soft"
-                >
-                  <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
-                  <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
-                </th>
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {QUARTERS.map((q) => {
+            </select>
+          )}
+        </div>
+      )}
+      {sportsTestView === "chart" && sportsTestRecords.length > 0 ? (
+        <Card>
+          <LineTrendChart
+            points={QUARTERS.map((q) => {
               const record = sportsTestRecords.find((r) => r.quarter === q);
-              return (
-                <tr key={q}>
-                  <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
-                    Q{q}
-                  </td>
-                  {SPORTS_TEST_RANKING_METRICS.map((m) => {
-                    const v = record && !record.not_conducted ? m.extract(record) : null;
-                    return (
-                      <td
-                        key={m.value}
-                        className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
-                      >
-                        {v === null ? "-" : v}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
+              const metric = SPORTS_TEST_RANKING_METRICS.find((m) => m.value === sportsTestChartMetric)!;
+              return {
+                label: `Q${q}`,
+                value: record && !record.not_conducted ? metric.extract(record) : null,
+              };
             })}
-          </tbody>
-        </table>
-      </div>
+          />
+        </Card>
+      ) : (
+        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+          <table className="border-collapse text-[11.5px] w-full">
+            <thead>
+              <tr>
+                <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                  四半期
+                </th>
+                {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                  <th
+                    key={m.value}
+                    className="sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight text-ink-soft"
+                  >
+                    <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
+                    <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {QUARTERS.map((q) => {
+                const record = sportsTestRecords.find((r) => r.quarter === q);
+                return (
+                  <tr key={q}>
+                    <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
+                      Q{q}
+                    </td>
+                    {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                      const v = record && !record.not_conducted ? m.extract(record) : null;
+                      return (
+                        <td
+                          key={m.value}
+                          className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                        >
+                          {v === null ? "-" : v}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
       <Link
         href={`/players/${player.id}/sports-test`}
         className="block mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
@@ -839,9 +935,15 @@ export default function KartePlayerPage() {
       )}
 
       {role === "管理者" && hasAiAnalysisAccess(plan) && (
-        <SubmitButton onClick={handleGenerateAiAnalysis} disabled={aiGenerating}>
-          {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
-        </SubmitButton>
+        <>
+          <SubmitButton
+            onClick={handleGenerateAiAnalysis}
+            disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+          >
+            {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
+          </SubmitButton>
+          {aiUsage && <AiUsageIndicator used={aiUsage.used} limit={aiUsage.limit} />}
+        </>
       )}
     </PageShell>
   );

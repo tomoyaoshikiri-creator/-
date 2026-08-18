@@ -92,6 +92,13 @@ export function todayDateStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// 「直近N日」のような閲覧範囲制限(お試しプランの日報30日制限など)の起点日を計算する。
+export function dateDaysAgoStr(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // 4月始まりの年度(例: 2026-01-12は2025年度)を日付文字列から算出する。
 export function fiscalYearOf(dateStr: string): number {
   const d = new Date(dateStr + "T00:00:00");

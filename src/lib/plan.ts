@@ -11,6 +11,19 @@ export function playerLimitForPlan(plan: TeamPlan): number | null {
   return plan === "お試し" ? FREE_PLAYER_LIMIT : null;
 }
 
+// お試しプランはチーム日報を直近30日分、試合結果を直近5件のみ閲覧可能(データ自体は
+// 削除しない。中間プラン以上に上げれば同じデータがそのまま全件見えるようになる)。
+export const FREE_REPORT_WINDOW_DAYS = 30;
+export const FREE_GAME_RESULT_LIMIT = 5;
+
+export function hasFullReportHistoryAccess(plan: TeamPlan): boolean {
+  return PLAN_TIER[plan] >= PLAN_TIER["中間"];
+}
+
+export function hasFullGameHistoryAccess(plan: TeamPlan): boolean {
+  return PLAN_TIER[plan] >= PLAN_TIER["中間"];
+}
+
 // コーチ日報タブ・練習メニュー(予定詳細に埋め込み)は中間プラン以上で利用可能。
 export function hasCoachNoteAccess(plan: TeamPlan): boolean {
   return PLAN_TIER[plan] >= PLAN_TIER["中間"];

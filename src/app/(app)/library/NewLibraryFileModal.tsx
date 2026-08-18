@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
+import { useUpgradePrompt } from "@/components/PlanLock";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { safeExt } from "@/lib/storagePath";
+import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type { LibraryCategory } from "@/lib/database.types";
 
@@ -24,8 +26,11 @@ export function NewLibraryFileModal({
   const supabase = createClient();
   const { userId, teamId } = useSession();
   const toast = useToast();
+  const promptUpgrade = useUpgradePrompt();
 
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
+  const [usedBytes, setUsedBytes] = useState(0);
+  const [limitBytes, setLimitBytes] = useState(0);
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -39,6 +44,13 @@ export function NewLibraryFileModal({
       .select("*")
       .order("name", { ascending: true })
       .then(({ data }) => setCategories(data ?? []));
+    Promise.all([
+      supabase.from("teams").select("storage_limit_bytes").eq("id", teamId).single(),
+      supabase.rpc("team_storage_usage_bytes"),
+    ]).then(([{ data: team }, { data: usage }]) => {
+      setLimitBytes(team?.storage_limit_bytes ?? 0);
+      setUsedBytes(usage ?? 0);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -90,6 +102,13 @@ export function NewLibraryFileModal({
     }
     if (files.length === 0) {
       toast("ファイルを選んでください");
+      return;
+    }
+    const totalNewBytes = files.reduce((sum, f) => sum + f.size, 0);
+    if (limitBytes > 0 && usedBytes + totalNewBytes > limitBytes) {
+      promptUpgrade(
+        `ストレージ容量(${formatBytes(limitBytes)})の上限を超えるためアップロードできません。既存のファイルを削除するか、プランをアップグレードしてください`,
+      );
       return;
     }
     setSaving(true);

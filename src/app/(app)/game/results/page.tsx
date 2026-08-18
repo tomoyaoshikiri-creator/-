@@ -11,6 +11,7 @@ import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { ChevronRightIcon, VideoIcon } from "@/components/icons";
 import { canAccessTab, canRecordGames } from "@/lib/permissions";
+import { FREE_GAME_RESULT_LIMIT, hasFullGameHistoryAccess } from "@/lib/plan";
 import { formatDateLabel, effectiveFiscalYear, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
 
@@ -26,7 +27,8 @@ const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
 
 export default function GameResultsPage() {
   const router = useRouter();
-  const { role } = useSession();
+  const { role, plan } = useSession();
+  const hasFullHistory = hasFullGameHistoryAccess(plan);
   const [allMatches, setAllMatches] = useState<MatchWithDate[]>([]);
   const [category, setCategory] = useState<GameCategory | "all">("all");
   const [fiscalYear, setFiscalYear] = useState<number | "all">("all");
@@ -47,7 +49,8 @@ export default function GameResultsPage() {
         if (dateDiff !== 0) return dateDiff;
         return b.game_number - a.game_number;
       });
-      setAllMatches(sorted);
+      // お試しプランは直近5試合分のみ閲覧可能(データ自体は削除しない)。
+      setAllMatches(hasFullHistory ? sorted : sorted.slice(0, FREE_GAME_RESULT_LIMIT));
       setLoading(false);
       if (!yearInitialized && sorted.length > 0 && sorted[0].schedules?.date) {
         setFiscalYear(effectiveFiscalYear(sorted[0].schedules.date, sorted[0].schedules.fiscal_year_override));
@@ -101,6 +104,12 @@ export default function GameResultsPage() {
           </SegButton>
         ))}
       </div>
+
+      {!hasFullHistory && (
+        <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-[10px] px-3 py-2 mb-3">
+          お試しプランでは直近{FREE_GAME_RESULT_LIMIT}試合分のみ閲覧できます。中間プラン以上で全試合が見られるようになります。
+        </div>
+      )}
 
       {availableYears.length > 0 && (
         <div className="relative inline-block mb-3.5">

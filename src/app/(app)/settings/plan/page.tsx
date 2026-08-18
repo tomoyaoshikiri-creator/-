@@ -90,7 +90,14 @@ export default function SettingsPlanPage() {
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
         <Card>
-          {plan && <div className="text-[11px] font-bold text-orange mb-2.5">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>}
+          {plan && (
+            <div className="mb-2.5">
+              <div className="text-[11px] font-bold text-orange">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
+              {plan === "お試し" && (
+                <div className="text-[11px] text-ink-soft mt-0.5">まずはCLUB LINKを試してみたいチーム向け・¥0</div>
+              )}
+            </div>
+          )}
           {plan === "Max" ? (
             <div className="text-xs text-ink-soft">
               特別プランが適用されています。プラン内容についてのお問い合わせは運営までご連絡ください。
@@ -107,15 +114,29 @@ export default function SettingsPlanPage() {
           ) : (
             <>
               <div className="text-xs text-ink-soft mb-2.5">有料プランに申し込むと、利用できる機能が広がります。</div>
-              <SubmitButton onClick={() => startCheckout("中間")} disabled={billingLoading !== null} className="!mt-0">
-                {billingLoading === "中間" ? "処理中…" : `${PLAN_DISPLAY_LABELS["中間"]}プランに申し込む`}
-              </SubmitButton>
-              <SubmitButton onClick={() => startCheckout("フル")} disabled={billingLoading !== null}>
-                {billingLoading === "フル" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フル"]}プランに申し込む`}
-              </SubmitButton>
-              <SubmitButton onClick={() => startCheckout("フルプラス")} disabled={billingLoading !== null}>
-                {billingLoading === "フルプラス" ? "処理中…" : `${PLAN_DISPLAY_LABELS["フルプラス"]}プランに申し込む`}
-              </SubmitButton>
+              {PLAN_OPTIONS.map((opt) => (
+                <div
+                  key={opt.plan}
+                  className={`rounded-[10px] p-3 mb-2.5 border ${opt.highlight ? "border-orange bg-orange/5" : "border-line bg-paper"}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <div className="font-bold text-[13px]">{PLAN_DISPLAY_LABELS[opt.plan]}</div>
+                    {opt.highlight && (
+                      <span className="text-[9.5px] font-bold text-white bg-orange rounded-full px-1.5 py-0.5">
+                        主力プラン
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[12.5px] font-bold text-ink mb-1">
+                    {opt.price}
+                    <span className="text-[10.5px] font-normal text-ink-soft">/月(税込)</span>
+                  </div>
+                  <div className="text-[11px] text-ink-soft mb-2">{opt.desc}</div>
+                  <SubmitButton onClick={() => startCheckout(opt.plan)} disabled={billingLoading !== null} className="!mt-0">
+                    {billingLoading === opt.plan ? "処理中…" : `${PLAN_DISPLAY_LABELS[opt.plan]}プランに申し込む`}
+                  </SubmitButton>
+                </div>
+              ))}
               <a href="/tokushoho" target="_blank" className="block text-center text-[11px] text-ink-soft underline mt-3">
                 特定商取引法に基づく表記
               </a>
@@ -126,3 +147,9 @@ export default function SettingsPlanPage() {
     </PageShell>
   );
 }
+
+const PLAN_OPTIONS: { plan: "中間" | "フル" | "フルプラス"; price: string; desc: string; highlight?: boolean }[] = [
+  { plan: "中間", price: "¥1,280", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
+  { plan: "フル", price: "¥2,480", desc: "選手・チームの成長をデータで管理したいチーム向け" },
+  { plan: "フルプラス", price: "¥3,280", desc: "データ分析までAIに任せたいチーム向け" },
+];

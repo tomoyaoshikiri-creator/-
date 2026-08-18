@@ -3,8 +3,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { hasAiAnalysisAccess } from "@/lib/plan";
 
-// 1チームあたりの1日の生成回数上限(暴発防止のレート制限)。
-const DAILY_LIMIT = 20;
+// 1チームあたりの月間生成回数上限(暴発防止のレート制限)。当月1日0時を起点に
+// created_atで数えるだけで実現し、物理的な月次リセット処理は不要にしている
+// (todayDateStr()と同じくJST厳密ではなくサーバーのローカル日時を基準にする簡略実装)。
+const MONTHLY_LIMIT = 50;
 
 const SYSTEM_PROMPT =
   "あなたはユーススポーツチームのデータ分析アシスタントです。指導者がそのまま選手や保護者に共有できるよう、日本語で簡潔に分析結果をまとめてください。";
@@ -49,25 +51,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI分析機能が未設定です" }, { status: 500 });
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
   const [{ count: playerCount }, { count: teamCount }] = await Promise.all([
     supabase
       .from("player_analysis_notes")
       .select("id", { count: "exact", head: true })
       .eq("team_id", profile.team_id)
       .eq("source", "ai")
-      .gte("created_at", todayStart.toISOString()),
+      .gte("created_at", monthStart.toISOString()),
     supabase
       .from("team_analysis_notes")
       .select("id", { count: "exact", head: true })
       .eq("team_id", profile.team_id)
       .eq("source", "ai")
-      .gte("created_at", todayStart.toISOString()),
+      .gte("created_at", monthStart.toISOString()),
   ]);
-  if ((playerCount ?? 0) + (teamCount ?? 0) >= DAILY_LIMIT) {
+  const usedThisMonth = (playerCount ?? 0) + (teamCount ?? 0);
+  if (usedThisMonth >= MONTHLY_LIMIT) {
     return NextResponse.json(
-      { error: `本日のAI分析の上限(${DAILY_LIMIT}回)に達しました。明日また試してください。` },
+      { error: `今月のAI分析利用上限(${MONTHLY_LIMIT}回)に達しました。翌月1日から再び利用できます。` },
       { status: 429 },
     );
   }
@@ -107,5 +111,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI分析の保存に失敗しました" }, { status: 500 });
   }
 
-  return NextResponse.json({ body });
+  return NextResponse.json({ body, usedThisMonth: usedThisMonth + 1, monthlyLimit: MONTHLY_LIMIT });
+}
+
+// 選手カルテ・チームカルテのAI分析ボタン表示時に、今月の利用状況(◯/50回)を
+// 生成せずに確認するためのエンドポイント。
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
+  if (!profile || profile.role !== "管理者") {
+    return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+  }
+
+  const { data: team } = await supabase.from("teams").select("plan").eq("id", profile.team_id).single();
+  if (!team || !hasAiAnalysisAccess(team.plan)) {
+    return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
+  }
+
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const [{ count: playerCount }, { count: teamCount }] = await Promise.all([
+    supabase
+      .from("player_analysis_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", profile.team_id)
+      .eq("source", "ai")
+      .gte("created_at", monthStart.toISOString()),
+    supabase
+      .from("team_analysis_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("team_id", profile.team_id)
+      .eq("source", "ai")
+      .gte("created_at", monthStart.toISOString()),
+  ]);
+
+  return NextResponse.json({ usedThisMonth: (playerCount ?? 0) + (teamCount ?? 0), monthlyLimit: MONTHLY_LIMIT });
 }

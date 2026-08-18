@@ -20,7 +20,8 @@ import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenDailyReportIds, markItemSeen } from "@/lib/itemBadges";
 import { isImageFile } from "@/lib/storagePath";
-import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
+import { currentYearMonth, dateDaysAgoStr, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
+import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
 import type {
   DailyReport,
   DailyReportAttachment,
@@ -36,7 +37,10 @@ import { NewDailyReportModal } from "./NewDailyReportModal";
 
 export default function ReportPage() {
   const router = useRouter();
-  const { userId, teamId, role } = useSession();
+  const { userId, teamId, role, plan } = useSession();
+  const hasFullHistory = hasFullReportHistoryAccess(plan);
+  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_REPORT_WINDOW_DAYS - 1);
+  const earliestAllowedYearMonth = earliestAllowedDate ? earliestAllowedDate.slice(0, 7) : undefined;
   const toast = useToast();
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [postingCommentId, setPostingCommentId] = useState<string | null>(null);
@@ -80,11 +84,12 @@ export default function ReportPage() {
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("reports"))) setLoading(true);
     const { start, end } = monthRangeBounds(monthValue);
+    const effectiveStart = earliestAllowedDate && earliestAllowedDate > start ? earliestAllowedDate : start;
     const [{ data: r }, profMap] = await Promise.all([
       supabase
         .from("daily_reports")
         .select("*")
-        .gte("date", start)
+        .gte("date", effectiveStart)
         .lt("date", end)
         .order("created_at", { ascending: false }),
       loadProfilesMap(supabase),
@@ -130,6 +135,7 @@ export default function ReportPage() {
     setLoading(false);
   }, [
     monthValue,
+    earliestAllowedDate,
     cacheKey,
     setReports,
     setProfiles,
@@ -372,7 +378,12 @@ export default function ReportPage() {
       }
     >
       <SectionLabel>チーム日報一覧</SectionLabel>
-      <MonthPicker value={monthValue} onChange={setMonthValue} />
+      <MonthPicker value={monthValue} onChange={setMonthValue} min={earliestAllowedYearMonth} />
+      {!hasFullHistory && (
+        <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-[10px] px-3 py-2 mb-3">
+          お試しプランでは直近{FREE_REPORT_WINDOW_DAYS}日分のみ閲覧できます。中間プラン以上で過去の日報もすべて見られるようになります。
+        </div>
+      )}
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : reports.length === 0 ? (
