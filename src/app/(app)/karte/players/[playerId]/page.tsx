@@ -940,7 +940,7 @@ export default function KartePlayerPage() {
 
       {canManagePlayers(role) && (
         <>
-          <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを登録</SubmitButton>
+          <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを手動登録</SubmitButton>
           <AddFeedbackModal
             open={addFeedbackOpen}
             onClose={() => setAddFeedbackOpen(false)}
