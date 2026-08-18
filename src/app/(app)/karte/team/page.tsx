@@ -418,6 +418,20 @@ export default function KarteTeamPage() {
         </Link>
       )}
 
+      {plan === "Max" && isStaff && (
+        <Link href="/karte/team/skill-tests">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold text-[15px]">検定</div>
+                <div className="text-[11.5px] text-ink-soft mt-1">選手ごとの検定ランクを一括で管理</div>
+              </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            </div>
+          </Card>
+        </Link>
+      )}
+
       {isStaff && (
         <Link href="/karte/team/workout">
           <Card className="cursor-pointer">
