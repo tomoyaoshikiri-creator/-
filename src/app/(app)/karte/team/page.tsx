@@ -451,6 +451,7 @@ export default function KarteTeamPage() {
           <SubmitButton
             onClick={handleGenerateAiAnalysis}
             disabled={aiGenerating || (aiUsage !== null && aiUsage.used >= aiUsage.limit)}
+            className="!mt-2.5"
           >
             {aiGenerating ? "AI分析を生成中…" : "AI分析を生成する"}
           </SubmitButton>
@@ -548,7 +549,9 @@ export default function KarteTeamPage() {
 
           {canManagePlayers(role) && (
             <>
-              <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを手動登録</SubmitButton>
+              <SubmitButton onClick={() => setAddFeedbackOpen(true)} className="!mt-2.5">
+                フィードバックを手動登録
+              </SubmitButton>
               <AddFeedbackModal
                 open={addFeedbackOpen}
                 onClose={() => setAddFeedbackOpen(false)}
@@ -568,7 +571,7 @@ export default function KarteTeamPage() {
         <button
           type="button"
           onClick={() => setAnalysisOpen(true)}
-          className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mb-2.5 flex items-center justify-between"
+          className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
         >
           <div className="font-bold text-[12.5px] text-orange">分析用データ抽出〈全体分〉</div>
           <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
