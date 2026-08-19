@@ -17,7 +17,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { StatCell } from "@/components/karte/StatCell";
 import { SkillTestPanel } from "@/components/karte/SkillTestPanel";
@@ -615,6 +615,8 @@ export default function KartePlayerPage() {
         </div>
       )}
 
+      {hasSportsTestAccess(plan) && (
+        <>
       <SectionLabel>スポーツテスト(四半期ごと)</SectionLabel>
       {sportsTestRecords.length > 0 && (
         <div className="flex items-center justify-between mb-2 gap-2">
@@ -727,6 +729,8 @@ export default function KartePlayerPage() {
       >
         スポーツテストを入力・編集する
       </Link>
+        </>
+      )}
 
       {plan === "Max" && (
         <>
