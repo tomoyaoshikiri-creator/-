@@ -130,12 +130,13 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   }
 
   lines.push("■ 練習参加状況");
-  lines.push(`開催練習数: ${data.practice.practicesHeld}回`);
+  lines.push(`開催練習数: ${data.practice.practicesHeld}回 / 出欠記録あり: ${data.practice.attendanceRecordedCount}回 / 出欠データカバー率: ${fmt(data.practice.attendanceCoverageRate, "%")}`);
   lines.push(`出席: ${data.practice.attended}回 / 遅刻早退: ${data.practice.late}回 / 見学: ${data.practice.observed}回 / 欠席: ${data.practice.absent}回`);
-  lines.push(`参加率(出席+遅刻早退/開催数): ${fmt(data.practice.participationRate, "%")}`);
+  lines.push(`年度内開催数ベースの参加率(参考値): ${fmt(data.practice.fullYearParticipationRate, "%")}`);
+  lines.push(`出欠記録がある回のみを分母とした参加率: ${fmt(data.practice.recordedParticipationRate, "%")}`);
   lines.push("(見学は通常の出席と同等のトレーニング刺激としては扱わないでください)");
   lines.push(
-    "(開催練習数は年度内にチームが開催した全練習数で、入団時期は考慮されていません。「出席+遅刻早退+見学+欠席」の合計が開催練習数と一致しない場合、入団前や記録未登録などで出欠記録自体が存在しない回が含まれています。これは欠席として記録されたものではないため、参加率の低さだけから意欲・経験の不足を断定しないでください)",
+    "(CLUB LINKは年度途中から利用開始されるチームがあり、運用開始以前の練習は出欠記録自体が存在しないことがあります。「年度内開催数ベースの参加率」は入団・運用開始時期を考慮しない参考値であり、これを実際の年間参加率と断定しないでください。出欠データカバー率が低い場合、低いのはCLUB LINK上の記録量であって、実際の参加状況ではない可能性があります。年間を通した参加傾向を評価してよいかはデータ品質の情報に従ってください)",
   );
   lines.push("");
 
@@ -147,7 +148,7 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
       lines.push(`${m.name}: 実施${m.implementedCount}回 / 開催${m.practicesHeld}回 / 実施率${fmt(m.implementationRate, "%")}`),
     );
     lines.push(
-      "(「開催」はそのメニュー名がチーム全体の練習記録に登場した回数、「実施」はそのうち出席・遅刻早退していた回数です。1回あたりの実施時間・セット数・反復回数を示す値ではないため、実施率の高低だけで練習量の多寡を断定しないでください)",
+      "(「開催」はそのメニュー名がチーム全体の練習記録に登場した回数、「実施」はそのうち出席・遅刻早退していた回数です。1回あたりの実施時間・セット数・反復回数を示す値ではないため、実施率の高低だけで練習量の多寡を断定しないでください。出欠データカバー率が低い期間を含む場合、記録に表れていない練習・メニューが多く存在する可能性があるため、実施率の低さを「反復機会が不足している」等の現実の練習量の問題として断定しないでください)",
     );
   }
   lines.push("");
@@ -198,12 +199,13 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
   }
 
   lines.push("■ 練習参加状況(チーム)");
-  lines.push(`開催練習数: ${data.practice.practicesHeld}回`);
-  lines.push(`平均参加率: ${fmt(data.practice.averageRate, "%")} / 中央値: ${fmt(data.practice.medianRate, "%")}`);
-  lines.push(`参加率80%以上: ${data.practice.highParticipantCount}名 / 参加率50%未満: ${data.practice.lowParticipantCount}名`);
+  lines.push(`開催練習数: ${data.practice.practicesHeld}回 / 出欠記録がある練習: ${data.practice.attendanceRecordedSessionCount}回 / 出欠データカバー率: ${fmt(data.practice.attendanceCoverageRate, "%")}`);
+  lines.push(`年度内開催数ベースの平均参加率(参考値): ${fmt(data.practice.fullYearAverageRate, "%")} / 中央値: ${fmt(data.practice.fullYearMedianRate, "%")}`);
+  lines.push(`出欠記録がある選手のみの平均参加率: ${fmt(data.practice.recordedAverageRate, "%")} / 中央値: ${fmt(data.practice.recordedMedianRate, "%")}`);
+  lines.push(`参加率80%以上: ${data.practice.highParticipantCount}名 / 参加率50%未満: ${data.practice.lowParticipantCount}名(出欠記録が1件もない選手は集計から除外)`);
   lines.push("(在籍選手数に対する人数です)");
   lines.push(
-    "(この参加率は年度内の全開催練習数を分母としており、選手ごとの入団時期は考慮されていません。参加率が低い選手が多い場合でも、意欲の低さだけでなく年度途中加入等の可能性を踏まえて解釈してください)",
+    "(CLUB LINKは年度途中から利用開始されるチームがあり、運用開始以前の練習は出欠記録自体が存在しないことがあります。「年度内開催数ベースの参加率」は運用開始時期を考慮しない参考値であり、実際の年間参加率と断定しないでください。出欠データカバー率が低い場合、チームとして「練習参加率が低い」と評価するのではなく、「CLUB LINK上の出欠データの蓄積がまだ少ないため、年間を通した参加傾向は現時点では評価できない」として扱ってください。データカバー率が低いことを理由に、練習参加率をチームの優先課題として採用しないでください)",
   );
   lines.push("");
 
@@ -215,7 +217,7 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
       lines.push(`${m.name}: 実施${m.implementedCount}回 / 開催${m.practicesHeld}回 / 実施率${fmt(m.implementationRate, "%")}`),
     );
     lines.push(
-      "(実施率は「年度内の開催練習のうち、そのメニュー名が記録された回の割合」です。1回あたりの実施時間・セット数・反復回数等の練習密度を示す値ではないため、実施率の高低だけで「反復機会が十分/不足している」等の練習量の断定はしないでください)",
+      "(実施率は「年度内の開催練習のうち、そのメニュー名が記録された回の割合」です。1回あたりの実施時間・セット数・反復回数等の練習密度を示す値ではないため、実施率の高低だけで「反復機会が十分/不足している」等の練習量の断定はしないでください。出欠データカバー率が低い期間を含む場合、記録に表れていない練習・メニューが多く存在する可能性があります)",
     );
   }
 

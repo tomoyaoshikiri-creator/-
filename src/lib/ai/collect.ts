@@ -67,16 +67,31 @@ async function fetchPracticeSchedulesInYear(supabase: DB, fiscalYear: number) {
   return (data ?? []).filter((s) => effectiveFiscalYear(s.date, null) === fiscalYear);
 }
 
-function practiceParticipation(
-  practicesHeld: number,
-  statuses: string[],
-): PracticeParticipationSummary {
+function rateOf(numerator: number, denominator: number): number | null {
+  return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
+}
+
+// statuses(この選手について出欠記録が存在する行のstatus一覧)の長さが、そのまま
+// 「出欠記録が存在する回数(attendanceRecordedCount)」になる。記録が存在しない回は
+// statusesに現れないため、fullYear〜(開催数全体を分母)とrecorded〜(記録がある回のみを
+// 分母)の2種類の参加率を分けて返す。
+function practiceParticipation(practicesHeld: number, statuses: string[]): PracticeParticipationSummary {
   const attended = statuses.filter((s) => s === "出席").length;
   const late = statuses.filter((s) => s === "遅刻早退").length;
   const observed = statuses.filter((s) => s === "見学").length;
   const absent = statuses.filter((s) => s === "欠席").length;
-  const participationRate = practicesHeld > 0 ? Math.round(((attended + late) / practicesHeld) * 1000) / 10 : null;
-  return { practicesHeld, attended, late, observed, absent, participationRate };
+  const attendanceRecordedCount = statuses.length;
+  return {
+    practicesHeld,
+    attendanceRecordedCount,
+    attendanceCoverageRate: rateOf(attendanceRecordedCount, practicesHeld),
+    attended,
+    late,
+    observed,
+    absent,
+    fullYearParticipationRate: rateOf(attended + late, practicesHeld),
+    recordedParticipationRate: rateOf(attended + late, attendanceRecordedCount),
+  };
 }
 
 // ============ 選手分析 ============
@@ -246,6 +261,7 @@ export async function collectPlayerAnalysisData(
     gameCount,
     sportsTestQuarterCount,
     practicesHeld: practiceSchedules.length,
+    attendanceRecordedCount: practice.attendanceRecordedCount,
     growthPointCount: growth.length,
   });
 
@@ -459,7 +475,8 @@ export async function collectTeamAnalysisData(
 
   const practiceSchedules = await fetchPracticeSchedulesInYear(supabase, fiscalYear);
   const practiceIds = practiceSchedules.map((s) => s.id);
-  let perPlayerRates: number[] = [];
+  let perPlayerSummaries: PracticeParticipationSummary[] = [];
+  let attendanceRecordedSessionCount = 0;
   let menus: PracticeMenuSummary[] = [];
   if (practiceIds.length > 0) {
     const [{ data: attendanceRows }, { data: menuRows }] = await Promise.all([
@@ -467,10 +484,12 @@ export async function collectTeamAnalysisData(
       supabase.from("practice_menus").select("*").in("schedule_id", practiceIds),
     ]);
     const rows = attendanceRows ?? [];
-    perPlayerRates = players.map((p) => {
+    // 誰か1人でも出欠記録がある練習の回数。運用開始以前の練習は誰の記録も存在しないため、
+    // これが「出欠データが蓄積されている期間」のカバー範囲になる。
+    attendanceRecordedSessionCount = new Set(rows.map((r) => r.schedule_id)).size;
+    perPlayerSummaries = players.map((p) => {
       const statuses = rows.filter((a) => a.player_id === p.id).map((a) => a.status);
-      const summary = practiceParticipation(practiceSchedules.length, statuses);
-      return summary.participationRate ?? 0;
+      return practiceParticipation(practiceSchedules.length, statuses);
     });
     const themeCount = new Map<string, number>();
     (menuRows ?? []).forEach((m) => {
@@ -487,15 +506,25 @@ export async function collectTeamAnalysisData(
       }))
       .sort((a, b) => b.implementedCount - a.implementedCount);
   }
+  const fullYearRates = perPlayerSummaries.map((s) => s.fullYearParticipationRate ?? 0);
+  // recorded系(高参加率/低参加率の人数、平均・中央値)は、出欠記録が1件もない選手を
+  // 母数から除外する。記録が0件の選手を「参加率0%」として低参加率に含めると、
+  // 実際には未記録なだけの選手を課題として誤検出してしまうため。
+  const recordedRates = perPlayerSummaries
+    .map((s) => s.recordedParticipationRate)
+    .filter((r): r is number => r !== null);
   const practice: TeamPracticeParticipationSummary = {
     practicesHeld: practiceSchedules.length,
-    averageRate:
-      perPlayerRates.length > 0
-        ? Math.round((perPlayerRates.reduce((a, b) => a + b, 0) / perPlayerRates.length) * 10) / 10
-        : null,
-    medianRate: medianOf(perPlayerRates),
-    highParticipantCount: perPlayerRates.filter((r) => r >= 80).length,
-    lowParticipantCount: perPlayerRates.filter((r) => r < 50).length,
+    attendanceRecordedSessionCount,
+    attendanceCoverageRate: rateOf(attendanceRecordedSessionCount, practiceSchedules.length),
+    fullYearAverageRate:
+      fullYearRates.length > 0 ? Math.round((fullYearRates.reduce((a, b) => a + b, 0) / fullYearRates.length) * 10) / 10 : null,
+    fullYearMedianRate: medianOf(fullYearRates),
+    recordedAverageRate:
+      recordedRates.length > 0 ? Math.round((recordedRates.reduce((a, b) => a + b, 0) / recordedRates.length) * 10) / 10 : null,
+    recordedMedianRate: medianOf(recordedRates),
+    highParticipantCount: recordedRates.filter((r) => r >= 80).length,
+    lowParticipantCount: recordedRates.filter((r) => r < 50).length,
     rosterCount,
   };
 
@@ -504,6 +533,7 @@ export async function collectTeamAnalysisData(
     gameCount,
     sportsTestMeasuredRatio,
     practicesHeld: practiceSchedules.length,
+    attendanceRecordedSessionCount,
   });
 
   return { sport, planKind, fiscalYear, playerCount: rosterCount, stats, sportsTest, practice, menus, dataQuality };

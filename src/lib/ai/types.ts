@@ -98,21 +98,33 @@ export interface TeamSportsTestData {
 // 今回のPLAN_CONTEXT(Pro AI Plus / Max)の分析材料には明記されていないため、
 // Phase 1では収集のみ行わずプロンプトにも含めない(範囲外)。
 
+// CLUB LINKは年度途中から利用開始されるチームがあり、運用開始以前の練習は出欠記録
+// そのものが存在しないことがある。「記録がない」ことを「参加していない」と誤解しない
+// よう、練習参加状況は「年度内全開催数を分母にした値(fullYear〜、参考値)」と
+// 「出欠記録がある回だけを分母にした値(recorded〜、実際に記録された範囲での参加状況)」
+// の両方を持たせ、加えて出欠データカバー率(attendanceCoverageRate)自体も渡す。
 export interface PracticeParticipationSummary {
-  practicesHeld: number;
+  practicesHeld: number; // 年度内開催練習数
+  attendanceRecordedCount: number; // このうち、出欠記録が1件以上存在する回数
+  attendanceCoverageRate: number | null; // attendanceRecordedCount/practicesHeld
   attended: number; // 出席
   late: number; // 遅刻早退
   observed: number; // 見学(通常のトレーニング刺激とは扱わない)
   absent: number; // 欠席
-  participationRate: number | null; // (出席+遅刻早退)/開催数。開催0件ならnull
+  fullYearParticipationRate: number | null; // (出席+遅刻早退)/開催数。開催0件ならnull
+  recordedParticipationRate: number | null; // (出席+遅刻早退)/出欠記録がある回数。記録0件ならnull
 }
 
 export interface TeamPracticeParticipationSummary {
-  practicesHeld: number;
-  averageRate: number | null;
-  medianRate: number | null;
-  highParticipantCount: number; // 参加率80%以上
-  lowParticipantCount: number; // 参加率50%未満
+  practicesHeld: number; // 年度内開催練習数
+  attendanceRecordedSessionCount: number; // このうち、誰か1人でも出欠記録がある回数
+  attendanceCoverageRate: number | null; // attendanceRecordedSessionCount/practicesHeld
+  fullYearAverageRate: number | null; // 年度内全開催数を分母にした選手ごとの参加率の平均(参考値)
+  fullYearMedianRate: number | null;
+  recordedAverageRate: number | null; // 出欠記録がある回だけを分母にした選手ごとの参加率の平均(記録がある選手のみ)
+  recordedMedianRate: number | null;
+  highParticipantCount: number; // recordedベースの参加率80%以上(出欠記録がある選手のみが対象)
+  lowParticipantCount: number; // recordedベースの参加率50%未満(出欠記録がある選手のみが対象)
   rosterCount: number;
 }
 
