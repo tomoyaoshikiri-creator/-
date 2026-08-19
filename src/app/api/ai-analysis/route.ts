@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient as createSupabaseJsClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { hasAiAnalysisAccess } from "@/lib/plan";
 import { AI_ANALYSIS_MODEL, AI_ANALYSIS_MAX_TOKENS } from "@/lib/ai/model";
@@ -8,7 +9,6 @@ import { hasSportContext } from "@/lib/ai/sports";
 import { collectPlayerAnalysisData, collectTeamAnalysisData } from "@/lib/ai/collect";
 import { buildPlayerAnalysisPrompt, buildTeamAnalysisPrompt } from "@/lib/ai/buildPrompt";
 import { fiscalYearOf, todayDateStr } from "@/lib/format";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
 // 1チームあたりの月間生成回数上限(選手個人分析・チーム分析を合算、暴発防止のレート制限)。
@@ -16,14 +16,30 @@ import type { Database } from "@/lib/database.types";
 // RPC(reserve_ai_analysis_usage/resolve_ai_analysis_usage/get_ai_analysis_usage)で、
 // team_id+当月(JST基準)を単位にアトミックに管理する。player_analysis_notes/
 // team_analysis_notes(分析結果の保存先)はカウントに使わない。
+//
+// reserve/resolveはservice_roleからしか実行できないようDB側でREVOKE/GRANTしてある
+// (ブラウザのanon/authenticatedキーから直接叩いて回数を書き換えることはできない)。
+// そのためこのAPI Route側でも、通常のCookieベースのRLSクライアントで
+// role/プラン/競技対応を検証した後、SUPABASE_SERVICE_ROLE_KEYで作った別クライアントで
+// これら2つのRPCだけを呼び出す。
 const MONTHLY_LIMIT = 50;
 
+function createServiceRoleClient(): SupabaseClient<Database> | null {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return null;
+  return createSupabaseJsClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 async function resolveUsage(
-  supabase: SupabaseClient<Database>,
+  adminClient: SupabaseClient<Database>,
+  teamId: string,
   reservationId: string,
   succeeded: boolean,
 ) {
-  const { error } = await supabase.rpc("resolve_ai_analysis_usage", {
+  const { error } = await adminClient.rpc("resolve_ai_analysis_usage", {
+    p_team_id: teamId,
     p_reservation_id: reservationId,
     p_succeeded: succeeded,
   });
@@ -83,10 +99,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI分析機能が未設定です" }, { status: 500 });
   }
 
+  const adminClient = createServiceRoleClient();
+  if (!adminClient) {
+    return NextResponse.json({ error: "サーバー側の設定が不足しています(SUPABASE_SERVICE_ROLE_KEY)" }, { status: 500 });
+  }
+
   // チーム単位(選手分析+チーム分析を合算)で当月の1枠をアトミックに予約する。
   // 上限に達している場合はAI_USAGE_LIMIT_REACHEDで拒否され、Anthropic API自体を
   // 呼び出さない。同一requestIdでの再送は新たな予約を作らず、既存の予約/確定結果を返す。
-  const { data: reservation, error: reserveError } = await supabase.rpc("reserve_ai_analysis_usage", {
+  const { data: reservation, error: reserveError } = await adminClient.rpc("reserve_ai_analysis_usage", {
+    p_team_id: profile.team_id,
+    p_actor_id: user.id,
     p_request_id: usageRequestId,
     p_monthly_limit: MONTHLY_LIMIT,
   });
@@ -133,7 +156,7 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error("[api/ai-analysis] failed to collect analysis data", err);
-    await resolveUsage(supabase, reservationId, false);
+    await resolveUsage(adminClient, profile.team_id, reservationId, false);
     return NextResponse.json({ error: "分析用データの取得に失敗しました" }, { status: 500 });
   }
 
@@ -162,11 +185,11 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[api/ai-analysis] Anthropic call failed", err);
-    await resolveUsage(supabase, reservationId, false);
+    await resolveUsage(adminClient, profile.team_id, reservationId, false);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });
   }
   if (!body) {
-    await resolveUsage(supabase, reservationId, false);
+    await resolveUsage(adminClient, profile.team_id, reservationId, false);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });
   }
 
@@ -180,11 +203,11 @@ export async function POST(request: Request) {
           .insert({ team_id: profile.team_id, author_id: user.id, body, source: "ai" });
   if (insertError) {
     console.error("[api/ai-analysis] failed to save result", insertError);
-    await resolveUsage(supabase, reservationId, false);
+    await resolveUsage(adminClient, profile.team_id, reservationId, false);
     return NextResponse.json({ error: "AI分析の保存に失敗しました" }, { status: 500 });
   }
 
-  await resolveUsage(supabase, reservationId, true);
+  await resolveUsage(adminClient, profile.team_id, reservationId, true);
 
   return NextResponse.json({ body, usedThisMonth: usage.used_count, monthlyLimit: MONTHLY_LIMIT });
 }
@@ -192,6 +215,9 @@ export async function POST(request: Request) {
 // 選手カルテ・チームカルテのAI分析ボタン表示時に、今月の利用状況(◯/50回、チーム全体で
 // 選手分析・チーム分析を合算)を生成せずに確認するためのエンドポイント。どの画面
 // (選手カルテ/チームカルテ)から呼んでも同じteam_idなら同じ値を返す。
+// get_ai_analysis_usage()は引数を取らずauth.uid()から自チームのteam_idを導出するだけ
+// なので、通常のRLSクライアント(authenticated)から直接呼び出しても他チームの値は
+// 取得できない。
 export async function GET() {
   const supabase = await createClient();
   const {

@@ -1470,11 +1470,11 @@ export interface Database {
         Returns: number;
       };
       reserve_ai_analysis_usage: {
-        Args: { p_request_id: string; p_monthly_limit: number };
+        Args: { p_team_id: string; p_actor_id: string; p_request_id: string; p_monthly_limit: number };
         Returns: { reservation_id: string; usage_status: string; used_count: number }[];
       };
       resolve_ai_analysis_usage: {
-        Args: { p_reservation_id: string; p_succeeded: boolean };
+        Args: { p_team_id: string; p_reservation_id: string; p_succeeded: boolean };
         Returns: void;
       };
     };
