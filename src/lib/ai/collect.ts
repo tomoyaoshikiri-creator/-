@@ -12,14 +12,15 @@ import {
   THREE_POINT_GAME_COLUMNS,
   computeSeasonAverages,
   computeTeamAverages,
-  computeCustomSeasonAverages,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
 } from "@/lib/karteAggregate";
 import { assessPlayerDataQuality, assessTeamDataQuality } from "./dataQuality";
+import { aggregateCategorySeasonForAi, aggregateCategoryMatchForAi } from "./customStatAggregation";
 import type {
   AiPlanKind,
   CustomStatCategoryInfo,
+  CustomStatGameEntry,
   PlayerAnalysisData,
   PracticeMenuSummary,
   PracticeParticipationSummary,
@@ -149,35 +150,42 @@ export async function collectPlayerAnalysisData(
       return effectiveFiscalYear(date, e.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     });
     const cats = categories ?? [];
-    const seasonTotals = computeCustomSeasonAverages(seasonEntries, cats);
-    gameCount = seasonTotals.gp;
-    const categoryInfos: CustomStatCategoryInfo[] = cats.map((c) => ({
-      name: c.name,
-      unit: c.unit,
-      description: c.description,
-      evaluationDirection: c.evaluation_direction,
-      aggregationType: c.aggregation_type,
-      seasonTotal: seasonTotals.totals[c.id] ?? 0,
-      seasonAverage: seasonTotals.averages[c.id] ?? 0,
-    }));
+    gameCount = new Set(seasonEntries.map((e) => e.match_id)).size;
+    const categoryInfos: CustomStatCategoryInfo[] = cats.map((c) => {
+      const catEntries = seasonEntries.filter((e) => e.category_id === c.id);
+      const agg = aggregateCategorySeasonForAi(catEntries, c.aggregation_type);
+      return {
+        name: c.name,
+        unit: c.unit,
+        description: c.description,
+        evaluationDirection: c.evaluation_direction,
+        aggregationType: c.aggregation_type,
+        ...agg,
+      };
+    });
     const matchIds = Array.from(new Set(seasonEntries.map((e) => e.match_id)));
-    const games = matchIds
+    const games: CustomStatGameEntry[] = matchIds
       .map((matchId) => {
         const matchEntries = seasonEntries.filter((e) => e.match_id === matchId);
         const first = matchEntries[0];
-        const values: Record<string, number> = {};
+        const values: Record<string, { value: number; recordedCount: number }> = {};
+        const rawValues: Record<string, number[]> = {};
         cats.forEach((c) => {
-          const entry = matchEntries.find((e) => e.category_id === c.id);
-          if (entry) values[c.name] = entry.value;
+          const catEntries = matchEntries.filter((e) => e.category_id === c.id);
+          const agg = aggregateCategoryMatchForAi(catEntries, c.aggregation_type);
+          if (!agg) return;
+          if (agg.kind === "aggregated") values[c.name] = { value: agg.value, recordedCount: agg.recordedCount };
+          else rawValues[c.name] = agg.rawValues;
         });
         return {
           date: first.game_matches?.schedules?.date ?? "",
           label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
           values,
+          rawValues,
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map(({ label, values }) => ({ label, values }));
+      .map(({ label, values, rawValues }) => ({ label, values, rawValues }));
     stats = { kind: "custom", gameCount, categories: categoryInfos, games };
   }
 
@@ -354,43 +362,42 @@ export async function collectTeamAnalysisData(
       if (!date) return false;
       return effectiveFiscalYear(date, e.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     });
-    const playerAverages = players.map((p) => computeCustomSeasonAverages(seasonEntries.filter((e) => e.player_id === p.id), cats));
-    const played = playerAverages.filter((a) => a.gp > 0);
-    gameCount = played.length > 0 ? Math.max(...played.map((a) => a.gp)) : 0;
+    gameCount = new Set(seasonEntries.map((e) => e.match_id)).size;
     const categoryInfos: CustomStatCategoryInfo[] = cats.map((c) => {
-      const avg =
-        played.length > 0 ? played.reduce((sum, a) => sum + (a.averages[c.id] ?? 0), 0) / played.length : 0;
-      const total = played.reduce((sum, a) => sum + (a.totals[c.id] ?? 0), 0);
+      const catEntries = seasonEntries.filter((e) => e.category_id === c.id);
+      const agg = aggregateCategorySeasonForAi(catEntries, c.aggregation_type);
       return {
         name: c.name,
         unit: c.unit,
         description: c.description,
         evaluationDirection: c.evaluation_direction,
-      aggregationType: c.aggregation_type,
-        seasonTotal: Math.round(total * 10) / 10,
-        seasonAverage: Math.round(avg * 10) / 10,
+        aggregationType: c.aggregation_type,
+        ...agg,
       };
     });
     const matchIds = Array.from(new Set(seasonEntries.map((e) => e.match_id)));
-    const games = matchIds
+    const games: CustomStatGameEntry[] = matchIds
       .map((matchId) => {
         const matchEntries = seasonEntries.filter((e) => e.match_id === matchId);
         const first = matchEntries[0];
-        const values: Record<string, number> = {};
+        const values: Record<string, { value: number; recordedCount: number }> = {};
+        const rawValues: Record<string, number[]> = {};
         cats.forEach((c) => {
           const catEntries = matchEntries.filter((e) => e.category_id === c.id);
-          if (catEntries.length === 0) return;
-          const avg = catEntries.reduce((sum, e) => sum + e.value, 0) / catEntries.length;
-          values[c.name] = Math.round(avg * 10) / 10;
+          const agg = aggregateCategoryMatchForAi(catEntries, c.aggregation_type);
+          if (!agg) return;
+          if (agg.kind === "aggregated") values[c.name] = { value: agg.value, recordedCount: agg.recordedCount };
+          else rawValues[c.name] = agg.rawValues;
         });
         return {
           date: first.game_matches?.schedules?.date ?? "",
           label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
           values,
+          rawValues,
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map(({ label, values }) => ({ label, values }));
+      .map(({ label, values, rawValues }) => ({ label, values, rawValues }));
     stats = { kind: "custom", gameCount, categories: categoryInfos, games };
   }
 

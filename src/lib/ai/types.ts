@@ -22,23 +22,46 @@ export interface BasketballStatsData {
 // バスケットボール・ミニバスケットボール以外(チームが自由に定義するカスタム項目)向け。
 // evaluationDirectionが未設定(null)の項目は、AI側で評価方向を勝手に断定しないよう
 // プロンプト側で明示する。
+//
+// aggregationTypeとevaluationDirectionは別の責務であり、SUM+HIGHER_IS_BETTER、
+// AVERAGE+NEUTRAL等どの組み合わせもあり得る(片方からもう片方を推測しない)。
+//
+// seasonTotal/seasonAverageの意味はaggregationTypeにより異なる(欠損は常に0として
+// 扱わず、記録が存在するものだけを対象に算出する):
+// - SUM: seasonTotal=記録済み全エントリの合計。seasonAverage=記録済み試合(1件以上の
+//   記録がある試合)の合計値の平均。
+// - AVERAGE / RATE: seasonTotal=null(合計に意味がないため算出しない)。
+//   seasonAverage=記録済みエントリ全体の単純平均(RATEは選手ごとの成功数・試行数の
+//   内訳がDBにないため、正確なチーム全体の率ではなく参考値)。
+// - NEUTRAL / 未設定(null): seasonTotal・seasonAverageともにnull。集計方法が
+//   定義されていないため、システム側で合計・平均のどちらかを勝手に決めて算出しない。
 export interface CustomStatCategoryInfo {
   name: string;
   unit: string | null;
   description: string | null;
   evaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL" | null;
-  // チーム集計時にこの数値をどう解釈すべきか(合計/平均/割合・率/指定なし)。未設定(null)の
-  // 場合、AI側でこの項目の合計・平均どちらが意味を持つ集計かを勝手に断定しない。
   aggregationType: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null;
-  seasonTotal: number;
-  seasonAverage: number;
+  seasonTotal: number | null;
+  seasonAverage: number | null;
+  recordedEntryCount: number; // このカテゴリで記録された個々のエントリ件数(選手×試合)
+  recordedGameCount: number; // このカテゴリの記録が1件以上ある試合数
+  recordedPlayerCount: number; // このカテゴリの記録がある選手の人数(team scopeでのみ意味を持つ)
+}
+
+// 試合ごとのチーム値。aggregationTypeがSUM/AVERAGE/RATEの項目はvaluesに単一の集計値
+// (+記録選手数)を入れる。NEUTRAL・未設定の項目はvaluesに入れず、rawValuesに記録された
+// 生の値をそのまま列挙する(自動でチーム合計・平均を作らない)。
+export interface CustomStatGameEntry {
+  label: string;
+  values: Record<string, { value: number; recordedCount: number }>;
+  rawValues: Record<string, number[]>;
 }
 
 export interface CustomStatsData {
   kind: "custom";
   gameCount: number;
   categories: CustomStatCategoryInfo[];
-  games: { label: string; values: Record<string, number> }[];
+  games: CustomStatGameEntry[];
 }
 
 export type StatsData = BasketballStatsData | CustomStatsData;

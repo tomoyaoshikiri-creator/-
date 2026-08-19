@@ -1,5 +1,5 @@
 import { fiscalYearLabel } from "@/lib/format";
-import type { PlayerAnalysisData, StatsData, TeamAnalysisData } from "./types";
+import type { CustomStatCategoryInfo, PlayerAnalysisData, StatsData, TeamAnalysisData } from "./types";
 
 function fmt(v: number | null | undefined, unit = ""): string {
   return v === null || v === undefined ? "データなし" : `${v}${unit}`;
@@ -20,18 +20,52 @@ function sportsTestLegend(values: Record<string, { label: string; unit: string; 
     .join(" / ");
 }
 
-function aggregationTypeLabel(aggregationType: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null, scope: "player" | "team"): string {
-  if (aggregationType === "SUM") return "集計方法: 合計値として見るべき項目";
-  if (aggregationType === "AVERAGE") return "集計方法: 平均値として見るべき項目";
-  if (aggregationType === "RATE") {
-    return scope === "team"
-      ? "集計方法: 割合・率(選手ごとの値の単純平均であり、チーム全体の分子/分母から算出した正確な合算率ではない可能性があります。参考値として扱ってください)"
-      : "集計方法: 割合・率";
+// aggregationTypeごとに、シーズン集計値(seasonTotal/seasonAverage)が何を意味するか、
+// 何件のデータから算出したかをAIに明示する行を作る。欠損(記録がない選手・試合)を0として
+// 扱わず、記録が存在するものだけを対象に算出していることも明記する。
+function categorySummaryLines(c: CustomStatCategoryInfo, scope: "player" | "team", totalGameCount: number): string[] {
+  const lines: string[] = [];
+  if (c.aggregationType === "SUM") {
+    lines.push("集計方法: 合計値として見るべき項目");
+    if (c.seasonTotal === null) {
+      lines.push("  この項目の記録はまだありません");
+    } else {
+      lines.push(`  シーズン合計 ${c.seasonTotal}(記録が存在するエントリの合計。0点等の未記録試合を0として合算したものではありません)`);
+      lines.push(
+        `  記録試合 ${c.recordedGameCount}/${totalGameCount}試合 の1試合平均 ${c.seasonAverage}(記録のある${c.recordedGameCount}試合の合計値の平均。記録のない試合は0として平均に含めていません)`,
+      );
+    }
+  } else if (c.aggregationType === "AVERAGE") {
+    lines.push("集計方法: 平均値として見るべき項目");
+    if (c.seasonAverage === null) {
+      lines.push("  この項目の記録はまだありません");
+    } else {
+      lines.push(
+        `  記録${c.recordedEntryCount}件の単純平均 ${c.seasonAverage}(記録のない選手・試合は0として含めていません。合計値には意味がないため算出していません)`,
+      );
+    }
+  } else if (c.aggregationType === "RATE") {
+    lines.push("集計方法: 割合・率(選手ごとの成功数・試行数のデータがないため、チーム全体の正確な合算率は算出できません)");
+    if (c.seasonAverage === null) {
+      lines.push("  この項目の記録はまだありません");
+    } else {
+      const playerNote = scope === "team" ? `、記録選手${c.recordedPlayerCount}名` : "";
+      lines.push(
+        `  記録済みデータ${c.recordedEntryCount}件の単純平均率(参考値。チーム全体の正確な率ではありません${playerNote}) ${c.seasonAverage}%`,
+      );
+      if (scope === "team" && c.recordedPlayerCount === 1) {
+        lines.push("  (この項目は1名分の記録のみに基づく参考値であり、チーム全体の傾向を表すものではありません)");
+      }
+    }
+  } else {
+    lines.push(
+      "集計方法: 指定なし(この項目は集計方法が定義されていないため、チーム合計・チーム平均による評価は行わないでください。個々の記録値・試合ごとの記録値のみを参考にしてください)",
+    );
   }
-  return "集計方法: 指定なし(この項目のチーム集計方法は定義されていません。合計・平均どちらの意味を持つ数値かを断定しないでください)";
+  return lines;
 }
 
-function statsToLines(stats: StatsData, scope: "player" | "team"): string[] {
+function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: number): string[] {
   const lines: string[] = [];
   if (stats.kind === "basketball") {
     lines.push(`■ 試合スタッツ(シーズン平均、試合数: ${stats.gameCount})`);
@@ -80,17 +114,25 @@ function statsToLines(stats: StatsData, scope: "player" | "team"): string[] {
           .filter(Boolean)
           .join(", ");
         lines.push(`${c.name}(${directionLabel}${meta ? `, ${meta}` : ""})`);
-        lines.push(`  ${aggregationTypeLabel(c.aggregationType, scope)}`);
-        lines.push(`  合計 ${c.seasonTotal} / 平均 ${c.seasonAverage}`);
+        lines.push(...categorySummaryLines(c, scope, stats.gameCount).map((l) => `  ${l}`));
       });
       if (stats.games.length > 0) {
         lines.push("");
         lines.push("■ 試合ごとの記録");
+        if (scope === "team") {
+          lines.push(
+            "(「値(M/N名記録)」のMはその試合で記録した選手数、Nは在籍選手数です。記録のない選手は0として扱わず、集計から除外しています。「記録値[...]」の項目は集計方法が定義されていないため自動集計せず、記録された値をそのまま列挙しています)",
+          );
+        }
         stats.games.forEach((g) => {
-          const summary = Object.entries(g.values)
-            .map(([k, v]) => `${k} ${v}`)
-            .join(" / ");
-          lines.push(`${g.label}: ${summary}`);
+          const parts: string[] = [];
+          Object.entries(g.values).forEach(([name, v]) => {
+            parts.push(scope === "team" && rosterCount ? `${name} ${v.value}(${v.recordedCount}/${rosterCount}名記録)` : `${name} ${v.value}`);
+          });
+          Object.entries(g.rawValues).forEach(([name, vals]) => {
+            parts.push(`${name} 記録値[${vals.join(", ")}]`);
+          });
+          lines.push(`${g.label}: ${parts.length > 0 ? parts.join(" / ") : "この試合の記録なし"}`);
         });
       }
     }
@@ -170,7 +212,7 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
   lines.push(`在籍選手数: ${data.playerCount}名`);
   lines.push("");
 
-  lines.push(...statsToLines(data.stats, "team"));
+  lines.push(...statsToLines(data.stats, "team", data.playerCount));
   lines.push("");
 
   if (data.sportsTest) {
