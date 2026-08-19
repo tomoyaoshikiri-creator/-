@@ -407,7 +407,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
     unit: "m",
     direction: "desc",
     aiEvaluationDirection: "HIGHER_IS_BETTER",
-    aiMeasuredQuality: "上肢の投能力(パワー)",
+    aiMeasuredQuality: "投動作に関わる出力(パワー)",
     extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
   },
   {
