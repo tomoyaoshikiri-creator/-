@@ -30,29 +30,29 @@ function categorySummaryLines(c: CustomStatCategoryInfo, scope: "player" | "team
     if (c.seasonTotal === null) {
       lines.push("  この項目の記録はまだありません");
     } else {
-      lines.push(`  シーズン合計 ${c.seasonTotal}(記録が存在するエントリの合計。0点等の未記録試合を0として合算したものではありません)`);
-      lines.push(
-        `  記録試合 ${c.recordedGameCount}/${totalGameCount}試合 の1試合平均 ${c.seasonAverage}(記録のある${c.recordedGameCount}試合の合計値の平均。記録のない試合は0として平均に含めていません)`,
-      );
+      // 数値ごとに1行・1ラベルとし、「合計値」と「試合数」のような意味の異なる数値が
+      // 隣接して誤読されないようにする(試合数の行を先に置き、対象範囲を明確にしてから
+      // 合計値・平均値を示す)。
+      lines.push(`  対象試合数: ${c.recordedGameCount}/${totalGameCount}試合(この項目の記録がある試合数/シーズン全体の試合数)`);
+      lines.push(`  シーズン合計値: ${c.seasonTotal}(記録が存在するエントリの合計。記録のない試合は0として合算していません)`);
+      lines.push(`  試合平均値: ${c.seasonAverage}(上記の対象試合数における1試合あたりの平均。記録のない試合は0として平均に含めていません)`);
     }
   } else if (c.aggregationType === "AVERAGE") {
     lines.push("集計方法: 平均値として見るべき項目");
     if (c.seasonAverage === null) {
       lines.push("  この項目の記録はまだありません");
     } else {
-      lines.push(
-        `  記録${c.recordedEntryCount}件の単純平均 ${c.seasonAverage}(記録のない選手・試合は0として含めていません。合計値には意味がないため算出していません)`,
-      );
+      lines.push(`  記録件数: ${c.recordedEntryCount}件(選手×試合の記録数。記録のない選手・試合は含まれていません)`);
+      lines.push(`  単純平均値: ${c.seasonAverage}(上記の記録件数のみを対象とした平均。合計値には意味がないため算出していません)`);
     }
   } else if (c.aggregationType === "RATE") {
     lines.push("集計方法: 割合・率(選手ごとの成功数・試行数のデータがないため、チーム全体の正確な合算率は算出できません)");
     if (c.seasonAverage === null) {
       lines.push("  この項目の記録はまだありません");
     } else {
-      const playerNote = scope === "team" ? `、記録選手${c.recordedPlayerCount}名` : "";
-      lines.push(
-        `  記録済みデータ${c.recordedEntryCount}件の単純平均率(参考値。チーム全体の正確な率ではありません${playerNote}) ${c.seasonAverage}%`,
-      );
+      const playerNote = scope === "team" ? `、記録選手数: ${c.recordedPlayerCount}名` : "";
+      lines.push(`  記録件数: ${c.recordedEntryCount}件${playerNote}`);
+      lines.push(`  単純平均率(参考値。チーム全体の正確な率ではありません): ${c.seasonAverage}%`);
       if (scope === "team" && c.recordedPlayerCount === 1) {
         lines.push("  (この項目は1名分の記録のみに基づく参考値であり、チーム全体の傾向を表すものではありません)");
       }
