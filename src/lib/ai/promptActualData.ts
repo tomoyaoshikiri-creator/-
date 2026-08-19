@@ -46,16 +46,24 @@ function categorySummaryLines(c: CustomStatCategoryInfo, scope: "player" | "team
       lines.push(`  単純平均値: ${c.seasonAverage}(上記の記録件数のみを対象とした平均。合計値には意味がないため算出していません)`);
     }
   } else if (c.aggregationType === "RATE") {
-    lines.push("集計方法: 割合・率(選手ごとの成功数・試行数のデータがないため、チーム全体の正確な合算率は算出できません)");
+    // チーム集計上の制約(複数選手の値を単純平均せざるを得ない)は、選手個人分析では
+    // 発生しない(本人自身の記録値をそのまま扱えるため)。scopeに応じて文言を分ける。
+    if (scope === "team") {
+      lines.push("集計方法: 割合・率(選手ごとの成功数・試行数のデータがないため、チーム全体の正確な合算率は算出できません)");
+    } else {
+      lines.push("集計方法: 割合・率として見るべき項目(本人の記録値)");
+    }
     if (c.seasonAverage === null) {
       lines.push("  この項目の記録はまだありません");
-    } else {
-      const playerNote = scope === "team" ? `、記録選手数: ${c.recordedPlayerCount}名` : "";
-      lines.push(`  記録件数: ${c.recordedEntryCount}件${playerNote}`);
+    } else if (scope === "team") {
+      lines.push(`  記録件数: ${c.recordedEntryCount}件、記録選手数: ${c.recordedPlayerCount}名`);
       lines.push(`  単純平均率(参考値。チーム全体の正確な率ではありません): ${c.seasonAverage}%`);
-      if (scope === "team" && c.recordedPlayerCount === 1) {
+      if (c.recordedPlayerCount === 1) {
         lines.push("  (この項目は1名分の記録のみに基づく参考値であり、チーム全体の傾向を表すものではありません)");
       }
+    } else {
+      lines.push(`  記録件数: ${c.recordedEntryCount}件`);
+      lines.push(`  シーズン平均率: ${c.seasonAverage}%`);
     }
   } else {
     lines.push(
