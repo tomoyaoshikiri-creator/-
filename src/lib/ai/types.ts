@@ -44,10 +44,23 @@ export interface CustomStatsData {
 export type StatsData = BasketballStatsData | CustomStatsData;
 
 // スポーツテスト(Maxプランのみ)。四半期ごとの計測値。
+// evaluationDirection/measuredQualityはkarteAggregate.tsのSPORTS_TEST_RANKING_METRICS
+// (既存のdirection定義を転用、推測ではない)から引き継ぐ。AIが基準値なしに「得意/苦手」等の
+// 絶対評価をしないよう、プロンプト側でこの情報とあわせて明示する。
 export interface SportsTestQuarterPoint {
   fiscalYear: number;
   quarter: number;
-  values: Record<string, { label: string; value: number | null; unit: string; direction: "asc" | "desc" }>;
+  values: Record<
+    string,
+    {
+      label: string;
+      value: number | null;
+      unit: string;
+      direction: "asc" | "desc";
+      evaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL";
+      measuredQuality: string;
+    }
+  >;
 }
 
 export interface PlayerSportsTestData {
@@ -58,6 +71,8 @@ export interface TeamSportsTestMetricSummary {
   label: string;
   unit: string;
   direction: "asc" | "desc";
+  evaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL";
+  measuredQuality: string;
   measuredCount: number;
   average: number | null;
   median: number | null;

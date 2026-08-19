@@ -185,7 +185,14 @@ export async function collectPlayerAnalysisData(
         values: Object.fromEntries(
           SPORTS_TEST_RANKING_METRICS.map((m) => [
             m.value,
-            { label: m.label, value: m.extract(r), unit: m.unit, direction: m.direction },
+            {
+              label: m.label,
+              value: m.extract(r),
+              unit: m.unit,
+              direction: m.direction,
+              evaluationDirection: m.aiEvaluationDirection,
+              measuredQuality: m.aiMeasuredQuality,
+            },
           ]),
         ),
       })),
@@ -427,6 +434,8 @@ export async function collectTeamAnalysisData(
           label: m.label,
           unit: m.unit,
           direction: m.direction,
+          evaluationDirection: m.aiEvaluationDirection,
+          measuredQuality: m.aiMeasuredQuality,
           measuredCount: nums.length,
           average: nums.length > 0 ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : null,
           median: medianOf(nums),

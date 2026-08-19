@@ -5,6 +5,21 @@ function fmt(v: number | null | undefined, unit = ""): string {
   return v === null || v === undefined ? "データなし" : `${v}${unit}`;
 }
 
+function evaluationDirectionLabel(direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL"): string {
+  if (direction === "HIGHER_IS_BETTER") return "高い方が良い";
+  if (direction === "LOWER_IS_BETTER") return "低い方が良い";
+  return "評価方向なし(数値の高低だけで優劣を判断しない)";
+}
+
+// スポーツテストの各項目について「何を測っているか」と「どちらが良い方向か」を凡例として
+// 一度だけ示す(絶対的な基準値・平均・パーセンタイルではないことに注意)。四半期ごとの値の
+// 行では数値のみを列挙し、同じ凡例を毎回繰り返してトークンを浪費しない。
+function sportsTestLegend(values: Record<string, { label: string; unit: string; evaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL"; measuredQuality: string }>): string {
+  return Object.values(values)
+    .map((v) => `${v.label}: ${v.measuredQuality}(${evaluationDirectionLabel(v.evaluationDirection)})`)
+    .join(" / ");
+}
+
 function aggregationTypeLabel(aggregationType: "SUM" | "AVERAGE" | "RATE" | "NEUTRAL" | null, scope: "player" | "team"): string {
   if (aggregationType === "SUM") return "集計方法: 合計値として見るべき項目";
   if (aggregationType === "AVERAGE") return "集計方法: 平均値として見るべき項目";
@@ -100,6 +115,10 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
     if (data.sportsTest.quarters.length === 0) {
       lines.push("記録なし");
     } else {
+      lines.push(
+        "(基準値・チーム内平均・パーセンタイル等の絶対評価基準は提供されていません。各項目は本人の過去記録との時系列比較でのみ解釈し、絶対的な「得意/苦手/高い/低い/平均以上/平均以下」等の判定はしないでください。評価方向なしの項目は「改善/低下」等の能力評価語も使わず、数値の変化のみを記述してください)",
+      );
+      lines.push(`[各項目の凡例] ${sportsTestLegend(data.sportsTest.quarters[0].values)}`);
       data.sportsTest.quarters.forEach((q) => {
         const values = Object.values(q.values)
           .map((v) => `${v.label} ${fmt(v.value, v.unit)}`)
@@ -115,6 +134,9 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   lines.push(`出席: ${data.practice.attended}回 / 遅刻早退: ${data.practice.late}回 / 見学: ${data.practice.observed}回 / 欠席: ${data.practice.absent}回`);
   lines.push(`参加率(出席+遅刻早退/開催数): ${fmt(data.practice.participationRate, "%")}`);
   lines.push("(見学は通常の出席と同等のトレーニング刺激としては扱わないでください)");
+  lines.push(
+    "(開催練習数は年度内にチームが開催した全練習数で、入団時期は考慮されていません。「出席+遅刻早退+見学+欠席」の合計が開催練習数と一致しない場合、入団前や記録未登録などで出欠記録自体が存在しない回が含まれています。これは欠席として記録されたものではないため、参加率の低さだけから意欲・経験の不足を断定しないでください)",
+  );
   lines.push("");
 
   lines.push("■ 実施した練習メニュー(出席・遅刻早退した回のみ)");
@@ -123,6 +145,9 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   } else {
     data.menus.forEach((m) =>
       lines.push(`${m.name}: 実施${m.implementedCount}回 / 開催${m.practicesHeld}回 / 実施率${fmt(m.implementationRate, "%")}`),
+    );
+    lines.push(
+      "(「開催」はそのメニュー名がチーム全体の練習記録に登場した回数、「実施」はそのうち出席・遅刻早退していた回数です。1回あたりの実施時間・セット数・反復回数を示す値ではないため、実施率の高低だけで練習量の多寡を断定しないでください)",
     );
   }
   lines.push("");
@@ -152,6 +177,10 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
     if (data.sportsTest.quarters.length === 0) {
       lines.push("記録なし");
     } else {
+      lines.push(
+        "(基準値・外部平均等の絶対評価基準は提供されていません。平均値・中央値の高低だけから「得意/苦手/平均以上/平均以下」等の絶対評価はせず、改善/維持/低下の人数(同一選手の時系列比較)を優先して解釈してください。評価方向なしの項目は「改善/低下」等の能力評価語を使わず、数値の変化のみを記述してください)",
+      );
+      lines.push(`[各項目の凡例] ${sportsTestLegend(data.sportsTest.quarters[0].metrics)}`);
       data.sportsTest.quarters.forEach((q) => {
         lines.push(`${q.fiscalYear}年度 Q${q.quarter}(測定 ${q.measuredPlayerCount}/${q.rosterCount}名):`);
         Object.values(q.metrics).forEach((m) => {
@@ -173,6 +202,9 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
   lines.push(`平均参加率: ${fmt(data.practice.averageRate, "%")} / 中央値: ${fmt(data.practice.medianRate, "%")}`);
   lines.push(`参加率80%以上: ${data.practice.highParticipantCount}名 / 参加率50%未満: ${data.practice.lowParticipantCount}名`);
   lines.push("(在籍選手数に対する人数です)");
+  lines.push(
+    "(この参加率は年度内の全開催練習数を分母としており、選手ごとの入団時期は考慮されていません。参加率が低い選手が多い場合でも、意欲の低さだけでなく年度途中加入等の可能性を踏まえて解釈してください)",
+  );
   lines.push("");
 
   lines.push("■ 実施した練習メニュー(チーム全体)");
@@ -181,6 +213,9 @@ export function buildTeamActualData(data: TeamAnalysisData): string {
   } else {
     data.menus.forEach((m) =>
       lines.push(`${m.name}: 実施${m.implementedCount}回 / 開催${m.practicesHeld}回 / 実施率${fmt(m.implementationRate, "%")}`),
+    );
+    lines.push(
+      "(実施率は「年度内の開催練習のうち、そのメニュー名が記録された回の割合」です。1回あたりの実施時間・セット数・反復回数等の練習密度を示す値ではないため、実施率の高低だけで「反復機会が十分/不足している」等の練習量の断定はしないでください)",
     );
   }
 

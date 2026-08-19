@@ -27,6 +27,7 @@ ${bulletList(context.physicalDemands)}
 
 スポーツテストと競技パフォーマンスの関係(スポーツテストのデータが提供されている場合のみ参照し、存在しない項目については言及しない):
 ${bulletList(context.physicalTestRelations)}
+(上記はあくまで一般的な関連性の可能性を示すものである。実際にその関連が見られるかは試合データ等の裏付けがある場合のみ言及し、身体テスト1項目の変化だけから特定の競技動作・プレースキルが向上したと断定しない)
 
 この競技・年代で優先すべき育成テーマ:
 ${bulletList(context.developmentPriorities)}

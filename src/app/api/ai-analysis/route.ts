@@ -123,6 +123,15 @@ export async function POST(request: Request) {
       .map((b) => b.text)
       .join("\n")
       .trim();
+    // 品質確認・コスト管理用。個人情報(選手名・チーム名・本文)は含めない。
+    // stop_reasonが"max_tokens"の場合、出力が途中で打ち切られている可能性がある。
+    console.log("[api/ai-analysis] usage", {
+      scope,
+      model: response.model,
+      stopReason: response.stop_reason,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+    });
   } catch (err) {
     console.error("[api/ai-analysis] Anthropic call failed", err);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });

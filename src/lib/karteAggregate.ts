@@ -324,12 +324,20 @@ function bestOf(v1: number | null, v2: number | null, direction: "asc" | "desc")
   return direction === "asc" ? Math.min(...vals) : Math.max(...vals);
 }
 
+// aiEvaluationDirection/aiMeasuredQualityはAI分析(src/lib/ai/)がスポーツテストの
+// 数値を解釈する際に使う。direction(asc/desc)はランキング機能向けに既存定義されている
+// 「良い記録の向き」をそのまま転用したもの(推測ではない)。ただしウイングスパンは
+// 能力の指標ではなく身体測定値のため、AI向けにはNEUTRAL(良し悪しを評価しない)とする。
+// aiMeasuredQualityは、テスト名から自明な範囲の「何を測っているか」の一般的な説明に留め、
+// 特定の競技動作・プレースキルへの言い換えはしない(それはAI側のプロンプトルールで禁止する)。
 export const SPORTS_TEST_RANKING_METRICS: {
   value: SportsTestMetric;
   label: string;
   abbrLines: [string, string];
   unit: string;
   direction: "asc" | "desc";
+  aiEvaluationDirection: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL";
+  aiMeasuredQuality: string;
   extract: (r: SportsTestRecord) => number | null;
 }[] = [
   {
@@ -338,6 +346,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["ウイング", "スパン"],
     unit: "cm",
     direction: "desc",
+    aiEvaluationDirection: "NEUTRAL",
+    aiMeasuredQuality: "身体測定値(発育の指標であり、能力の高低として評価しない)",
     extract: (r) => r.wingspan_cm,
   },
   {
@@ -346,6 +356,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["20mス", "プリント"],
     unit: "秒",
     direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "直線的な走力(スプリント速度)",
     extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
   },
   {
@@ -354,6 +366,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["レーンア", "ジリティ"],
     unit: "秒",
     direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "方向転換を伴う敏捷性",
     extract: (r) => bestOf(r.lane_agility_1, r.lane_agility_2, "asc"),
   },
   {
@@ -362,6 +376,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["反復横", "跳び"],
     unit: "点",
     direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "左右方向への敏捷性",
     extract: (r) => bestOf(r.side_step_1, r.side_step_2, "desc"),
   },
   {
@@ -370,6 +386,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["20m", "三往復"],
     unit: "秒",
     direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "反復的なスプリント能力",
     extract: (r) => r.shuttle_20m_x3,
   },
   {
@@ -378,6 +396,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["立ち幅", "跳び"],
     unit: "cm",
     direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "下肢の瞬発的なパワー",
     extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
   },
   {
@@ -386,6 +406,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["ボール", "投げ"],
     unit: "m",
     direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "上肢の投能力(パワー)",
     extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
   },
   {
@@ -394,6 +416,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["背中", "右上"],
     unit: "cm",
     direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "肩関節まわりの柔軟性(0cmに近いほど両手が触れ合っている)",
     extract: (r) => r.back_fist_right,
   },
   {
@@ -402,6 +426,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["背中", "左上"],
     unit: "cm",
     direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "肩関節まわりの柔軟性(0cmに近いほど両手が触れ合っている)",
     extract: (r) => r.back_fist_left,
   },
   {
@@ -410,6 +436,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["FT", "ゴルフ"],
     unit: "/10",
     direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "フリースロー動作の成功率(試行数10本と少ないため断定は弱めること)",
     extract: (r) => r.ft_golf,
   },
   {
@@ -418,6 +446,8 @@ export const SPORTS_TEST_RANKING_METRICS: {
     abbrLines: ["20シャ", "トルラン"],
     unit: "回",
     direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "心肺持久力",
     extract: (r) => r.beep_test_reps,
   },
 ];
