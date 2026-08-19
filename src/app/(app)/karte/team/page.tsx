@@ -143,7 +143,7 @@ export default function KarteTeamPage() {
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "team", fiscalYear: CURRENT_FISCAL_YEAR }),
+        body: JSON.stringify({ scope: "team", fiscalYear: CURRENT_FISCAL_YEAR, requestId: crypto.randomUUID() }),
       });
       const resData = await res.json();
       if (!res.ok) {

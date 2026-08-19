@@ -308,7 +308,7 @@ export default function KartePlayerPage() {
       const res = await fetch("/api/ai-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: "player", playerId: player.id, fiscalYear }),
+        body: JSON.stringify({ scope: "player", playerId: player.id, fiscalYear, requestId: crypto.randomUUID() }),
       });
       const data = await res.json();
       if (!res.ok) {

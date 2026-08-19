@@ -1131,6 +1131,21 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      ai_analysis_usage: {
+        Row: {
+          id: string;
+          team_id: string;
+          year_month: string;
+          request_id: string;
+          status: "reserved" | "succeeded" | "failed";
+          reserved_at: string;
+          resolved_at: string | null;
+          created_by: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       team_analysis_note_reactions: {
         Row: {
           id: string;
@@ -1448,6 +1463,18 @@ export interface Database {
       };
       reset_match_stats: {
         Args: { p_match_id: string };
+        Returns: void;
+      };
+      get_ai_analysis_usage: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      reserve_ai_analysis_usage: {
+        Args: { p_request_id: string; p_monthly_limit: number };
+        Returns: { reservation_id: string; usage_status: string; used_count: number }[];
+      };
+      resolve_ai_analysis_usage: {
+        Args: { p_reservation_id: string; p_succeeded: boolean };
         Returns: void;
       };
     };
