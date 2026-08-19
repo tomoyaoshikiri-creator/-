@@ -72,6 +72,13 @@ function rateOf(numerator: number, denominator: number): number | null {
   return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : null;
 }
 
+// バスケットボール(通常/ミニ共通)のチーム分析における試合数。
+// computeTeamAverages()が返すgpは「出場記録のある選手数」であり試合数ではないため、
+// AI分析へ渡すgameCountは必ずこの関数(シーズン内のユニークなmatch_id数)から算出すること。
+export function countBasketballTeamGames(lines: { match_id: string }[]): number {
+  return new Set(lines.map((l) => l.match_id)).size;
+}
+
 // statuses(この選手について出欠記録が存在する行のstatus一覧)の長さが、そのまま
 // 「出欠記録が存在する回数(attendanceRecordedCount)」になる。記録が存在しない回は
 // statusesに現れないため、fullYear〜(開催数全体を分母)とrecorded〜(記録がある回のみを
@@ -325,11 +332,11 @@ export async function collectTeamAnalysisData(
     });
     const playerAverages = players.map((p) => computeSeasonAverages(seasonLines.filter((l) => l.player_id === p.id)));
     const teamAverages = computeTeamAverages(playerAverages, seasonLines);
-    gameCount = teamAverages.gp;
     // 試合ごとのチーム推移: その試合に出場した全選手の1試合分の記録をまとめて
     // computeSeasonAverages()に渡すと、「その試合でのチーム全体の平均スタッツ」になる
     // (個人のシーズン平均と同じ関数だが、渡すlinesを1試合分・全選手分にしているだけ)。
     const matchIds = Array.from(new Set(seasonLines.map((l) => l.match_id)));
+    gameCount = countBasketballTeamGames(seasonLines);
     const games = matchIds
       .map((matchId) => {
         const matchLines = seasonLines.filter((l) => l.match_id === matchId);
