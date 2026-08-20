@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { GRADES, POSITIONS_BY_SPORT } from "@/lib/playerOptions";
+import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT } from "@/lib/playerOptions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "./BirthdaySelect";
 import type { Grade, Position } from "@/lib/database.types";
@@ -21,9 +21,10 @@ export function NewPlayerModal({
   onCreated: () => void;
 }) {
   const supabase = createClient();
-  const { teamId, sport } = useSession();
+  const { teamId, sport, category } = useSession();
   const toast = useToast();
   const positionOptions = POSITIONS_BY_SPORT[sport];
+  const gradeOptions = GRADES_BY_CATEGORY[category];
 
   const [sei, setSei] = useState("");
   const [mei, setMei] = useState("");
@@ -122,17 +123,23 @@ export function NewPlayerModal({
         </div>
       </div>
 
-      <div className="mt-3">
-        <FieldLabel>学年</FieldLabel>
-        <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
-          <option value="">選択してください</option>
-          {GRADES.map((g) => (
-            <option key={g.value} value={g.value}>
-              {g.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {gradeOptions.length > 0 ? (
+        <div className="mt-3">
+          <FieldLabel>学年</FieldLabel>
+          <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
+            <option value="">選択してください</option>
+            {gradeOptions.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className="mt-3 text-xs text-ink-soft bg-paper border border-dashed border-line rounded-[10px] px-3 py-2.5">
+          このカテゴリーでは学年を登録しません。
+        </div>
+      )}
 
       <div className="mt-3">
         <FieldLabel>誕生日</FieldLabel>

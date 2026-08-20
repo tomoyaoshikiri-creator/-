@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  const { data: team } = await supabase.from("teams").select("plan, sport").eq("id", profile.team_id).single();
+  const { data: team } = await supabase.from("teams").select("plan, sport, category").eq("id", profile.team_id).single();
   if (!team || !hasAiAnalysisAccess(team.plan)) {
     return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
   }
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
   let userContent: string;
   try {
     if (scope === "player") {
-      const data = await collectPlayerAnalysisData(supabase, { playerId, fiscalYear, sport: team.sport, planKind });
+      const data = await collectPlayerAnalysisData(supabase, { playerId, fiscalYear, sport: team.sport, category: team.category, planKind });
       ({ system, user: userContent } = buildPlayerAnalysisPrompt(data));
     } else {
       const data = await collectTeamAnalysisData(supabase, { fiscalYear, sport: team.sport, planKind });

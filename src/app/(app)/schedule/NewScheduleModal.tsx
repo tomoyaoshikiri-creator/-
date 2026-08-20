@@ -8,7 +8,8 @@ import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
+import { fiscalYearLabel, fiscalYearOf, formatDateLabel, gradeLabel, todayDateStr } from "@/lib/format";
+import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import type { GameCategory, Schedule, ScheduleType, VenueType } from "@/lib/database.types";
 import { MiniCalendarPicker } from "./MiniCalendarPicker";
 
@@ -36,7 +37,8 @@ export function NewScheduleModal({
   initialDates?: string[];
 }) {
   const supabase = createClient();
-  const { userId, teamId } = useSession();
+  const { userId, teamId, category } = useSession();
+  const gradeOptions = GRADES_BY_CATEGORY[category].filter((g) => g.value !== "0");
   const toast = useToast();
   const isEdit = Boolean(editSchedule);
 
@@ -442,20 +444,22 @@ export function NewScheduleModal({
         </div>
       </div>
 
-      <div className="mt-3">
-        <FieldLabel>対象</FieldLabel>
-        <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>
-          <option value="">全員</option>
-          {["1", "2", "3", "4", "5", "6"].map((g) => (
-            <option key={g} value={g}>
-              {g}年生以上
-            </option>
-          ))}
-        </select>
-        <div className="text-xs text-ink-soft mt-1">
-          「○年生以上」を選ぶと、対象外の学年の選手は出欠登録の対象から外れます。
+      {category !== "その他" && (
+        <div className="mt-3">
+          <FieldLabel>対象</FieldLabel>
+          <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>
+            <option value="">全員</option>
+            {gradeOptions.map((g) => (
+              <option key={g.value} value={g.value}>
+                {gradeLabel(g.value, category)}以上
+              </option>
+            ))}
+          </select>
+          <div className="text-xs text-ink-soft mt-1">
+            「○年生以上」を選ぶと、対象外の学年の選手は出欠登録の対象から外れます。
+          </div>
         </div>
-      </div>
+      )}
 
       {type === "practice" && (
         <div className="mt-3">

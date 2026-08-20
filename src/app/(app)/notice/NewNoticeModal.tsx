@@ -10,6 +10,8 @@ import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
+import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
+import { gradeLabel } from "@/lib/format";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
@@ -30,10 +32,14 @@ export function NewNoticeModal({
   onCreated: () => void;
 }) {
   const supabase = createClient();
-  const { userId, teamId, role } = useSession();
+  const { userId, teamId, role, category } = useSession();
   const toast = useToast();
 
-  const audiences = canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ");
+  // その他カテゴリーは学年概念を持たないため、学年指定オーディエンス自体を選べなくする。
+  const audiences = (canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ")).filter(
+    (a) => a !== "学年指定" || category !== "その他",
+  );
+  const gradeOptions = GRADES_BY_CATEGORY[category].filter((g) => g.value !== "0");
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -172,9 +178,9 @@ export function NewNoticeModal({
             onChange={(e) => setTargetGradeMin(e.target.value)}
           >
             <option value="">対象学年を選択してください</option>
-            {["1", "2", "3", "4", "5", "6"].map((g) => (
-              <option key={g} value={g}>
-                {g}年生以上
+            {gradeOptions.map((g) => (
+              <option key={g.value} value={g.value}>
+                {gradeLabel(g.value, category)}以上
               </option>
             ))}
           </select>

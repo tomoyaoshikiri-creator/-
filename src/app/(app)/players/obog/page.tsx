@@ -17,7 +17,7 @@ import type { Player } from "@/lib/database.types";
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function ObogPage() {
-  const { role, userId } = useSession();
+  const { role, userId, category } = useSession();
   const isStaff = canManagePlayers(role);
   const [players, setPlayers] = useState<Player[]>([]);
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
@@ -56,7 +56,7 @@ export default function ObogPage() {
   }, [isStaff, userId]);
 
   const withYear = players
-    .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, CURRENT_FISCAL_YEAR) }))
+    .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, category, CURRENT_FISCAL_YEAR) }))
     .filter((v): v is { player: Player; year: number } => v.year !== null);
   const years = Array.from(new Set(withYear.map((v) => v.year))).sort((a, b) => b - a);
   const year = selectedYear ?? years[0] ?? CURRENT_FISCAL_YEAR - 1;

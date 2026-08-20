@@ -78,7 +78,7 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const { role, userId, plan, sport } = useSession();
+  const { role, userId, plan, sport, category } = useSession();
   const toast = useToast();
   const columns = usesThreePointScoring(sport) ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
 
@@ -279,7 +279,7 @@ export default function KartePlayerPage() {
     setCopyingAnalysis(true);
     try {
       const supabase = createClient();
-      const data = await collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear, sport, planKind });
+      const data = await collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear, sport, category, planKind });
       const text = buildPlayerCopyText(data, analysisPrompt);
       await navigator.clipboard.writeText(text);
       toast("分析用テキストをコピーしました");
@@ -434,7 +434,7 @@ export default function KartePlayerPage() {
           <div>
             <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
             <div className="text-[11px] text-ink-soft mt-0.5">
-              {gradeLabel(player.grade)}・{player.positions.join("/")}
+              {gradeLabel(player.grade, category)}・{player.positions.join("/")}
             </div>
           </div>
         </div>

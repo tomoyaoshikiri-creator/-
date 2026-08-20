@@ -13,7 +13,8 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { formatDateLabel } from "@/lib/format";
+import { formatDateLabel, gradeLabel } from "@/lib/format";
+import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type {
@@ -38,9 +39,12 @@ const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "運営以上"
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { teamId, role, userId } = useSession();
+  const { teamId, role, userId, category } = useSession();
   const toast = useToast();
-  const audiences = canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ");
+  const audiences = (canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ")).filter(
+    (a) => a !== "学年指定" || category !== "その他",
+  );
+  const gradeOptions = GRADES_BY_CATEGORY[category].filter((g) => g.value !== "0");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
   const [reactions, setReactions] = useState<NoticeReaction[]>([]);
@@ -285,9 +289,9 @@ export default function NoticeDetailPage() {
                   onChange={(e) => setTargetGradeMin(e.target.value)}
                 >
                   <option value="">対象学年を選択してください</option>
-                  {["1", "2", "3", "4", "5", "6"].map((g) => (
-                    <option key={g} value={g}>
-                      {g}年生以上
+                  {gradeOptions.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {gradeLabel(g.value, category)}以上
                     </option>
                   ))}
                 </select>
@@ -390,7 +394,7 @@ export default function NoticeDetailPage() {
                 <div className="text-xs text-ink-soft">
                   {notice.audience}
                   {notice.audience === "学年指定" && notice.target_grade_min
-                    ? `(${notice.target_grade_min}年生以上)`
+                    ? `(${gradeLabel(notice.target_grade_min, category)}以上)`
                     : ""}
                 </div>
               </Card>

@@ -10,6 +10,7 @@ import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { canManageSettings } from "@/lib/permissions";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
 import { SPORT_DISPLAY_LABELS } from "@/lib/sport";
+import { CATEGORY_DISPLAY_LABELS } from "@/lib/category";
 
 function SettingsRow({ href, label, value }: { href: string; label: string; value?: string }) {
   return (
@@ -23,19 +24,8 @@ function SettingsRow({ href, label, value }: { href: string; label: string; valu
   );
 }
 
-// 競技は作成時に選ぶだけで後から変更するUIを持たないため、リンクにはせず
-// ラベルとして表示するだけの行にする(プッシュ通知トグルの行と同じ非遷移パターン)。
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0">
-      <div className="font-bold text-[13.5px]">{label}</div>
-      <div className="text-[12.5px] text-ink-soft">{value}</div>
-    </div>
-  );
-}
-
 export default function SettingsPage() {
-  const { role, plan, sport } = useSession();
+  const { role, plan, sport, category } = useSession();
   const canManageTeam = canManageSettings(role);
 
   return (
@@ -55,7 +45,11 @@ export default function SettingsPage() {
             <SettingsRow href="/settings/color" label="配色" />
             <SettingsRow href="/settings/storage" label="使用量" />
             <SettingsRow href="/settings/plan" label="プラン" value={`現在のプラン: ${PLAN_DISPLAY_LABELS[plan]}`} />
-            <InfoRow label="使用競技" value={SPORT_DISPLAY_LABELS[sport]} />
+            <SettingsRow
+              href="/settings/category"
+              label="カテゴリー"
+              value={`${CATEGORY_DISPLAY_LABELS[category]} / ${SPORT_DISPLAY_LABELS[sport]}`}
+            />
           </Card>
         </>
       )}

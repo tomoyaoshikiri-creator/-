@@ -20,7 +20,7 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KarteObogPage() {
   const router = useRouter();
-  const { role, userId, plan } = useSession();
+  const { role, userId, plan, category } = useSession();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -45,7 +45,7 @@ export default function KarteObogPage() {
   }, [userId]);
 
   const withYear = players
-    .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, CURRENT_FISCAL_YEAR) }))
+    .map((p) => ({ player: p, year: obogGraduationFiscalYear(p.grade, category, CURRENT_FISCAL_YEAR) }))
     .filter((v): v is { player: Player; year: number } => v.year !== null);
   const years = Array.from(new Set(withYear.map((v) => v.year))).sort((a, b) => b - a);
   const year = selectedYear ?? years[0] ?? CURRENT_FISCAL_YEAR - 1;

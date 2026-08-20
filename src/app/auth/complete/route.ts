@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { TeamSport } from "@/lib/database.types";
+import type { TeamCategory, TeamSport } from "@/lib/database.types";
 
 // /auth/confirm でのセッション確立後、メール確認待ちの間保留していた
 // 「チーム作成」または「招待受諾」のRPCをここで実行する。
@@ -21,10 +21,12 @@ export async function GET(request: Request) {
     const teamName = searchParams.get("teamName") ?? "";
     const adminName = searchParams.get("adminName") ?? "";
     const sport = (searchParams.get("sport") ?? "ミニバスケットボール") as TeamSport;
+    const category = (searchParams.get("category") ?? "小学生") as TeamCategory;
     const { error } = await supabase.rpc("create_team_and_admin", {
       team_name: teamName,
       admin_name: adminName,
       team_sport: sport,
+      team_category: category,
     });
     if (error && !error.message.includes("既にチームに所属")) {
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);

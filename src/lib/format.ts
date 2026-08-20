@@ -1,4 +1,5 @@
-import type { TeamPlan } from "@/lib/database.types";
+import type { TeamCategory, TeamPlan } from "@/lib/database.types";
+import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -134,13 +135,31 @@ export function playerFullName(p: { sei: string; mei: string }): string {
   return `${p.sei} ${p.mei}`.trim();
 }
 
-export function gradeLabel(grade: string | null): string {
-  if (grade === "0") return "未就学";
-  if (grade === null || grade === "") return "学年未設定";
-  return `${grade}年生`;
+// カテゴリー内の相対学年に付ける接頭辞(小学生は既存の表示を変えないため接頭辞なし)。
+const GRADE_CATEGORY_PREFIX: Partial<Record<TeamCategory, string>> = {
+  中学生: "中学",
+  高校生: "高校",
+  大学生: "大学",
+};
+
+export function gradeLabel(grade: string | null, category: TeamCategory): string {
+  if (category === "小学生") {
+    // 既存チーム(都賀ビクトリーズ)の表示を変えないため、この分岐は変更しない。
+    if (grade === "0") return "未就学";
+    if (grade === null || grade === "") return "学年未設定";
+    return `${grade}年生`;
+  }
+  const min = MIN_GRADE_BY_CATEGORY[category];
+  const g = grade !== null ? parseInt(grade, 10) : NaN;
+  if (min === null || isNaN(g)) return "学年未設定";
+  const relative = g - min + 1;
+  if (relative < 1) return "学年未設定";
+  return `${GRADE_CATEGORY_PREFIX[category] ?? ""}${relative}年生`;
 }
 
 // 予定の対象学年(target_grade_min、nullなら全員)に選手が含まれるかどうかを判定する。
+// grade/target_grade_minは同じ絶対値スケール上の数値のため、カテゴリーを問わず
+// 単純な数値比較で判定できる。
 export function isTargetEligible(playerGrade: string | null, targetGradeMin: string | null): boolean {
   if (targetGradeMin === null) return true;
   const g = playerGrade !== null ? parseInt(playerGrade, 10) : NaN;
@@ -148,20 +167,22 @@ export function isTargetEligible(playerGrade: string | null, targetGradeMin: str
   return !isNaN(g) && g >= min;
 }
 
-export function obogCohortLabel(grade: string | null): string {
+export function obogCohortLabel(grade: string | null, category: TeamCategory): string {
+  const graduationGrade = GRADUATION_GRADE_BY_CATEGORY[category];
   const g = grade !== null ? parseInt(grade, 10) : NaN;
-  if (isNaN(g) || g < 6) return "卒団年次不明";
-  const years = g - 6;
+  if (graduationGrade === null || isNaN(g) || g < graduationGrade) return "卒団年次不明";
+  const years = g - graduationGrade;
   return years === 0 ? "卒団したて" : `卒団${years}年目`;
 }
 
-// gradeはOB・OG化した年に6のまま固定され、以後advance_academic_yearが実行されるたびに+1される
-// (卒団からの経過年数)。よって現在の年度から逆算すると、実際に卒団した年度(6年生として
-// 過ごした最後の年度)が求まる。
-export function obogGraduationFiscalYear(grade: string | null, currentFiscalYear: number): number | null {
+// gradeはOB・OG化した年に卒業学年のまま固定され、以後advance_academic_yearが実行される
+// たびに+1される(卒団からの経過年数)。よって現在の年度から逆算すると、実際に卒団した
+// 年度(卒業学年として過ごした最後の年度)が求まる。
+export function obogGraduationFiscalYear(grade: string | null, category: TeamCategory, currentFiscalYear: number): number | null {
+  const graduationGrade = GRADUATION_GRADE_BY_CATEGORY[category];
   const g = grade !== null ? parseInt(grade, 10) : NaN;
-  if (isNaN(g) || g < 6) return null;
-  return currentFiscalYear - 1 - (g - 6);
+  if (graduationGrade === null || isNaN(g) || g < graduationGrade) return null;
+  return currentFiscalYear - 1 - (g - graduationGrade);
 }
 
 export function sortPlayers<T extends { grade: string | null; number: string | null }>(

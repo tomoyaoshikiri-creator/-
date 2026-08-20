@@ -42,7 +42,7 @@ export default async function InvitePage({
       <div className="text-center text-[13px] text-ink-soft mb-4">
         <span className="font-bold text-navy">{data.team_name}</span> への招待({roleLabel}用)
       </div>
-      <InviteForm token={token} roleLabel={roleLabel} players={players} />
+      <InviteForm token={token} roleLabel={roleLabel} players={players} category={data.category} />
     </div>
   );
 }

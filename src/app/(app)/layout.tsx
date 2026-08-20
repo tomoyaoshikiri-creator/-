@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, team_id, name, role, status, teams!team_id(name, theme_primary, theme_accent, logo_path, plan, sport, deletion_requested_at)",
+      "id, team_id, name, role, status, teams!team_id(name, theme_primary, theme_accent, logo_path, plan, sport, category, deletion_requested_at)",
     )
     .eq("id", session.user.id)
     .single<{
@@ -37,6 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         logo_path: string | null;
         plan: SessionInfo["plan"];
         sport: SessionInfo["sport"];
+        category: SessionInfo["category"];
         deletion_requested_at: string | null;
       } | null;
     }>();
@@ -74,6 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           role: profile.role,
           plan: team?.plan ?? "お試し",
           sport: team?.sport ?? "ミニバスケットボール",
+          category: team?.category ?? "小学生",
         }}
       >
         <ToastProvider>

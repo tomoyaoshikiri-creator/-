@@ -24,6 +24,9 @@ export type TeamSport =
   | "ハンドボール"
   | "ラグビー"
   | "バレーボール";
+// チーム作成時に選ぶ年代カテゴリー。「ミニバスケットボール」は小学生カテゴリー専用
+// (src/lib/category.ts参照)。「その他」は学年概念を持たない(Grade自体を使わない)。
+export type TeamCategory = "小学生" | "中学生" | "高校生" | "大学生" | "その他";
 // 出欠登録リマインドの種類。baseline_2daysは全種別共通(予定日2日前)、
 // deadline_day/week_beforeは試合・イベントでattendance_deadlineを設定した場合のみ発火する。
 export type ReminderType = "baseline_2days" | "deadline_day" | "week_before";
@@ -32,9 +35,13 @@ export type AttendanceStatus = "出席" | "欠席" | "遅刻早退" | "見学";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
 export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
-// 選手登録時に選べる学年(在籍中の選手のみ)。OB・OGは年度更新のたびに
-// 卒団からの経過年数として6より先の値(文字列)まで内部的に伸びていく。
-export type Grade = "0" | "1" | "2" | "3" | "4" | "5" | "6";
+// 選手登録時に選べる学年(在籍中の選手のみ)。絶対値の17段階スケール
+// (0=未就学,1-6=小学1-6年,7-9=中学1-3年,10-12=高校1-3年,13-16=大学1-4年、
+// src/lib/category.ts参照)。OB・OGは年度更新のたびに卒団からの経過年数として
+// 卒業学年より先の値(文字列)まで内部的に伸びていく。
+export type Grade =
+  | "0" | "1" | "2" | "3" | "4" | "5" | "6"
+  | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15" | "16";
 export type Position =
   | "PG" | "SG" | "SF" | "PF" | "C"                          // バスケットボール・ミニバスケットボール共通
   | "GK" | "DF" | "MF" | "FW"                                  // サッカー・フットサル共通
@@ -72,6 +79,7 @@ export interface Database {
           logo_path: string | null;
           plan: TeamPlan;
           sport: TeamSport;
+          category: TeamCategory;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -93,6 +101,7 @@ export interface Database {
           logo_path?: string | null;
           plan?: TeamPlan;
           sport?: TeamSport;
+          category?: TeamCategory;
           storage_limit_bytes?: number;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
@@ -108,6 +117,7 @@ export interface Database {
           logo_path: string | null;
           plan: TeamPlan;
           sport: TeamSport;
+          category: TeamCategory;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -1280,12 +1290,12 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       create_team_and_admin: {
-        Args: { team_name: string; admin_name: string; team_sport?: TeamSport };
+        Args: { team_name: string; admin_name: string; team_sport?: TeamSport; team_category?: TeamCategory };
         Returns: string;
       };
       get_invite_info: {
         Args: { invite_token: string };
-        Returns: { team_name: string; role: string; valid: boolean }[];
+        Returns: { team_name: string; role: string; valid: boolean; category: TeamCategory }[];
       };
       get_invite_players: {
         Args: { invite_token: string };

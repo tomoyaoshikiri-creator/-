@@ -26,7 +26,7 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KartePlayersPage() {
   const router = useRouter();
-  const { role, userId, plan, sport } = useSession();
+  const { role, userId, plan, sport, category } = useSession();
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function KartePlayersPage() {
       const planKind = planKindFor(plan) ?? "proAiPlus";
       const playersData = await Promise.all(
         activeList.map((player) =>
-          collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear: CURRENT_FISCAL_YEAR, sport, planKind }),
+          collectPlayerAnalysisData(supabase, { playerId: player.id, fiscalYear: CURRENT_FISCAL_YEAR, sport, category, planKind }),
         ),
       );
       setAnalysisPlayersData(playersData);

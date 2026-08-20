@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { acceptInvite, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
-import type { Player } from "@/lib/database.types";
+import type { Player, TeamCategory } from "@/lib/database.types";
 
 const initialState: FormState = {};
 
@@ -14,10 +14,12 @@ export function InviteForm({
   token,
   roleLabel,
   players,
+  category,
 }: {
   token: string;
   roleLabel: string;
   players: InvitePlayer[];
+  category: TeamCategory;
 }) {
   const [state, formAction, pending] = useActionState(acceptInvite, initialState);
   const [selectedIds, setSelectedIds] = useState<string[]>([""]);
@@ -83,7 +85,7 @@ export function InviteForm({
                   <option value="">選択してください</option>
                   {options.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {playerFullName(p)}({gradeLabel(p.grade)})
+                      {playerFullName(p)}({gradeLabel(p.grade, category)})
                     </option>
                   ))}
                 </select>

@@ -11,7 +11,8 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { GRADES, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
+import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
+import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -23,10 +24,11 @@ import type { Grade, Player, PlayerSkillTestProgress, PlayerStatus, Position, Sk
 export default function PlayerDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId, plan, sport } = useSession();
+  const { role, userId, plan, sport, category } = useSession();
   const isStaff = canManagePlayers(role);
   const hasKarte = hasKarteTabAccess(plan);
   const positionOptions = POSITIONS_BY_SPORT[sport];
+  const gradeOptions = GRADES_BY_CATEGORY[category];
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [noteCount, setNoteCount] = useState(0);
@@ -271,10 +273,14 @@ export default function PlayerDetailPage() {
 
             <div className="mt-3">
               <FieldLabel>学年</FieldLabel>
-              {status === "OB・OG" ? (
+              {category === "その他" ? (
+                <div className="text-xs text-ink-soft bg-paper border border-dashed border-line rounded-[10px] px-3 py-2.5">
+                  このカテゴリーでは学年を登録しません。
+                </div>
+              ) : status === "OB・OG" ? (
                 <input
                   type="number"
-                  min={6}
+                  min={GRADUATION_GRADE_BY_CATEGORY[category] ?? undefined}
                   className={inputClass()}
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
@@ -282,7 +288,7 @@ export default function PlayerDetailPage() {
               ) : (
                 <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
                   <option value="">選択してください</option>
-                  {GRADES.map((g) => (
+                  {gradeOptions.map((g) => (
                     <option key={g.value} value={g.value}>
                       {g.label}
                     </option>
@@ -368,7 +374,7 @@ export default function PlayerDetailPage() {
             </div>
             <div className="text-[13.5px] text-ink mt-1">
               背番号 {player.number ?? "-"} /{" "}
-              {player.status === "OB・OG" ? obogCohortLabel(player.grade) : gradeLabel(player.grade)}
+              {player.status === "OB・OG" ? obogCohortLabel(player.grade, category) : gradeLabel(player.grade, category)}
             </div>
             <div className="text-[13.5px] text-ink mt-1">
               {player.positions.length > 0 ? player.positions.join("・") : "ポジション未設定"}

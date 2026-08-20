@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { gradeLabel, playerFullName } from "@/lib/format";
+import { useSession } from "@/lib/session-context";
 import type { Player } from "@/lib/database.types";
 
 export function PlayerRow({
@@ -21,6 +22,7 @@ export function PlayerRow({
   hasUnseenNotes: boolean;
 }) {
   const router = useRouter();
+  const { category } = useSession();
   const isObog = player.status === "OB・OG";
   const hasNotes = noteCount > 0;
   return (
@@ -35,7 +37,7 @@ export function PlayerRow({
         <div className="min-w-0">
           <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
           <div className="text-[11px] text-ink-soft mt-0.5">
-            {gradeLabel(player.grade)}・{player.positions.join("/")} · {player.status}
+            {gradeLabel(player.grade, category)}・{player.positions.join("/")} · {player.status}
           </div>
         </div>
         {showNotes && (

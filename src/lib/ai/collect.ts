@@ -106,9 +106,15 @@ function practiceParticipation(practicesHeld: number, statuses: string[]): Pract
 
 export async function collectPlayerAnalysisData(
   supabase: DB,
-  params: { playerId: string; fiscalYear: number; sport: Database["public"]["Tables"]["teams"]["Row"]["sport"]; planKind: AiPlanKind },
+  params: {
+    playerId: string;
+    fiscalYear: number;
+    sport: Database["public"]["Tables"]["teams"]["Row"]["sport"];
+    category: Database["public"]["Tables"]["teams"]["Row"]["category"];
+    planKind: AiPlanKind;
+  },
 ): Promise<PlayerAnalysisData> {
-  const { playerId, fiscalYear, sport, planKind } = params;
+  const { playerId, fiscalYear, sport, category, planKind } = params;
 
   const { data: player } = await supabase.from("players").select("*").eq("id", playerId).single();
   if (!player) throw new Error("選手情報が見つかりません");
@@ -286,7 +292,7 @@ export async function collectPlayerAnalysisData(
     fiscalYear,
     player: {
       name: playerFullName(player),
-      grade: gradeLabel(player.grade),
+      grade: gradeLabel(player.grade, category),
       positions: player.positions,
       status: player.status,
     },
