@@ -11,6 +11,8 @@ export const PLAN_DISPLAY_LABELS: Record<TeamPlan, string> = {
   フル: "Pro",
   フルプラス: "Pro AI Plus",
   Max: "Max",
+  max_partner: "Max Partner",
+  signature_edition: "Signature Edition",
 };
 
 export function formatBytes(bytes: number): string {

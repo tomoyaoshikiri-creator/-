@@ -1,13 +1,16 @@
 import type { TeamPlan, TeamSport } from "@/lib/database.types";
 
-// AI分析を利用できる2プランのみを表す型。hasAiAnalysisAccessでtrueになるプラン
-// (フルプラス・Max)をこの2値に正規化する。それ以外のプランではAI分析API自体を
-// 呼び出せない(呼び出し元でhasAiAnalysisAccessを確認済み)。
+// AI分析を利用できるプランを2種類の分析内容に正規化する型。hasAiAnalysisAccessで
+// trueになるプラン(フルプラス・Max・Max Partner・Signature Edition)をこの2値に
+// 正規化する。それ以外のプランではAI分析API自体を呼び出せない(呼び出し元で
+// hasAiAnalysisAccessを確認済み)。Max Partner/Signature EditionはMaxと同じ
+// 分析内容(スポーツテスト等を含むフル版)を提供するため、新しい値は追加せず
+// 既存の"max"に正規化する。
 export type AiPlanKind = "proAiPlus" | "max";
 
 export function planKindFor(plan: TeamPlan): AiPlanKind | null {
   if (plan === "フルプラス") return "proAiPlus";
-  if (plan === "Max") return "max";
+  if (plan === "Max" || plan === "max_partner" || plan === "signature_edition") return "max";
   return null;
 }
 

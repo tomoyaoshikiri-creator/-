@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSportsTests } from "@/lib/permissions";
+import { hasSportsTestAccess } from "@/lib/plan";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { SPORTS_TEST_RANKING_METRICS } from "@/lib/karteAggregate";
 import { fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
@@ -147,7 +148,7 @@ export default function SportsTestPage() {
   useUnsavedChangesGuard(!loading && isDirty);
 
   useEffect(() => {
-    if (plan !== "Max") {
+    if (!hasSportsTestAccess(plan)) {
       setAuthorized(false);
       router.replace("/players");
       return;

@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { SegButton, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
+import { isInquiryPlan, isPublicPlan } from "@/lib/plan";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
 import type { BillingInterval } from "@/lib/stripe";
 import type { TeamPlan } from "@/lib/database.types";
@@ -100,9 +101,13 @@ export default function SettingsPlanPage() {
               )}
             </div>
           )}
-          {plan === "Max" ? (
+          {plan && isInquiryPlan(plan) ? (
             <div className="text-xs text-ink-soft">
               特別プランが適用されています。プラン内容についてのお問い合わせは運営までご連絡ください。
+            </div>
+          ) : plan && !isPublicPlan(plan) ? (
+            <div className="text-xs text-ink-soft">
+              特別プランが適用されています。プラン内容の変更については運営までお問い合わせください。
             </div>
           ) : hasCustomer ? (
             <>

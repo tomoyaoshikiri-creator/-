@@ -11,6 +11,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { hasSportsTestAccess } from "@/lib/plan";
 import { SPORTS_TEST_RANKING_METRICS, type SportsTestMetric } from "@/lib/karteAggregate";
 import { fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Database, Player, SportsTestRecord } from "@/lib/database.types";
@@ -41,7 +42,7 @@ export default function KarteTeamSportsTestPage() {
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (plan !== "Max") router.replace("/karte");
+    if (!hasSportsTestAccess(plan)) router.replace("/karte");
   }, [plan, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);

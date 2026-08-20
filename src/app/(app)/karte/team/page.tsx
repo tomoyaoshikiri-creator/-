@@ -15,7 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
@@ -263,7 +263,7 @@ export default function KarteTeamPage() {
         </Card>
       </Link>
 
-      {plan === "Max" && (
+      {hasSportsTestAccess(plan) && (
         <Link href="/karte/team/sports-test">
           <Card className="cursor-pointer">
             <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function KarteTeamPage() {
         </Link>
       )}
 
-      {plan === "Max" && isStaff && (
+      {hasSkillTestAccess(plan) && isStaff && (
         <Link href="/karte/team/skill-tests">
           <Card className="cursor-pointer">
             <div className="flex items-center justify-between">

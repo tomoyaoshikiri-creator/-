@@ -12,6 +12,7 @@ import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
+import { hasSkillTestAccess } from "@/lib/plan";
 import { skillTestLevelLabels } from "@/lib/skillTest";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, PlayerSkillTestProgress, SkillTest } from "@/lib/database.types";
@@ -23,7 +24,7 @@ export default function KarteTeamSkillTestsPage() {
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (plan !== "Max" || !isStaff) router.replace("/karte/team");
+    if (!hasSkillTestAccess(plan) || !isStaff) router.replace("/karte/team");
   }, [plan, isStaff, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);

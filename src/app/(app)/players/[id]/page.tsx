@@ -15,7 +15,7 @@ import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/pl
 import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
-import { hasKarteTabAccess } from "@/lib/plan";
+import { hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
@@ -425,7 +425,10 @@ export default function PlayerDetailPage() {
             </Card>
           </Link>
 
-          {plan === "Max" && (
+          {/* スポーツテスト・検定はMax/Max Partner/Signature Editionで常に同時に利用可能なため、
+              1つのガードでまとめて表示する(hasSportsTestAccess/hasSkillTestAccessは
+              現状常に同じ結果を返すが、意味の近いhasSportsTestAccessを代表として使う)。 */}
+          {hasSportsTestAccess(plan) && (
             <>
               <SectionLabel>スポーツテスト</SectionLabel>
               <Link href={`/players/${player.id}/sports-test`}>

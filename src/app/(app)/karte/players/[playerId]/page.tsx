@@ -17,7 +17,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { StatCell } from "@/components/karte/StatCell";
 import { SkillTestPanel } from "@/components/karte/SkillTestPanel";
@@ -732,7 +732,7 @@ export default function KartePlayerPage() {
         </>
       )}
 
-      {plan === "Max" && (
+      {hasSkillTestAccess(plan) && (
         <>
           <SectionLabel>検定</SectionLabel>
           <SkillTestPanel playerId={player.id} />
