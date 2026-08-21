@@ -320,7 +320,7 @@ export default function KarteTeamPage() {
         </>
       )}
 
-      {isStaff && (
+      {isStaff && hasAiAnalysisAccess(plan) && (
         <>
           <SectionLabel>チームAI分析フィードバック</SectionLabel>
 
@@ -428,7 +428,7 @@ export default function KarteTeamPage() {
         </>
       )}
 
-      {role === "管理者" && (
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <button
           type="button"
           onClick={() => setAnalysisOpen(true)}
@@ -439,7 +439,7 @@ export default function KarteTeamPage() {
         </button>
       )}
 
-      {role === "管理者" && (
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用データ抽出〈全体分〉">
           <FieldLabel>年度</FieldLabel>
           <div className="relative inline-block mb-3">

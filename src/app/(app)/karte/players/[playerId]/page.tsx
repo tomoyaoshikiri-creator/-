@@ -789,8 +789,9 @@ export default function KartePlayerPage() {
         </>
       )}
 
-      <SectionLabel>選手AI分析フィードバック</SectionLabel>
-      {analysisNotes.length === 0 ? (
+      {hasAiAnalysisAccess(plan) && <SectionLabel>選手AI分析フィードバック</SectionLabel>}
+      {hasAiAnalysisAccess(plan) && (
+        analysisNotes.length === 0 ? (
         <Card>
           <div className="text-xs text-ink-soft">まだコメントがありません</div>
         </Card>
@@ -868,9 +869,9 @@ export default function KartePlayerPage() {
             </Card>
           ),
         )
-      )}
+      ))}
 
-      {canManagePlayers(role) && (
+      {canManagePlayers(role) && hasAiAnalysisAccess(plan) && (
         <>
           <SubmitButton onClick={() => setAddFeedbackOpen(true)}>フィードバックを手動登録</SubmitButton>
           <AddFeedbackModal
