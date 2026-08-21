@@ -11,6 +11,10 @@ import { buildPlayerAnalysisPrompt, buildTeamAnalysisPrompt } from "@/lib/ai/bui
 import { fiscalYearOf, todayDateStr } from "@/lib/format";
 import type { Database } from "@/lib/database.types";
 
+// VercelプロジェクトのFunction Max Duration(300秒/Hobby+Fluid Compute)を
+// このAPI Route側でも明示し、暗黙のプロジェクト設定への依存をなくす。
+export const maxDuration = 300;
+
 // 1チームあたりの月間生成回数上限(選手個人分析・チーム分析を合算、暴発防止のレート制限)。
 // カウント自体はsupabase/migrations/0102_ai_analysis_usage.sqlのai_analysis_usageテーブル+
 // RPC(reserve_ai_analysis_usage/resolve_ai_analysis_usage/get_ai_analysis_usage)で、
