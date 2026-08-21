@@ -175,12 +175,13 @@ export default function SportsTestPage() {
   }, [role, userId, params.id, plan, router]);
 
   useEffect(() => {
+    if (!authorized) return;
     (async () => {
       const supabase = createClient();
       const { data } = await supabase.from("players").select("*").eq("id", params.id).single();
       setPlayer(data ?? null);
     })();
-  }, [params.id]);
+  }, [params.id, authorized]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -215,8 +216,9 @@ export default function SportsTestPage() {
   }, [params.id, fiscalYear, quarter]);
 
   useEffect(() => {
+    if (!authorized) return;
     load();
-  }, [load]);
+  }, [load, authorized]);
 
   // 「表で見る」表示用に、選択中の年度の四半期ごとの記録をまとめて取得しておく
   // (入力フォーム側は四半期を1つずつ切り替えて編集する作りのため別読み込みにしている)。
@@ -231,8 +233,9 @@ export default function SportsTestPage() {
   }, [params.id, fiscalYear]);
 
   useEffect(() => {
+    if (!authorized) return;
     loadYearRecords();
-  }, [loadYearRecords]);
+  }, [loadYearRecords, authorized]);
 
   function setField(key: keyof FormState, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));

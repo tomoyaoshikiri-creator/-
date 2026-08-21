@@ -55,11 +55,12 @@ export default function KarteTeamSkillTestsPage() {
   }, []);
 
   useEffect(() => {
+    if (!hasSkillTestAccess(plan) || !isStaff) return;
     load();
-  }, [load]);
+  }, [load, plan, isStaff]);
 
   useEffect(() => {
-    if (!selectedTestId) {
+    if (!hasSkillTestAccess(plan) || !isStaff || !selectedTestId) {
       setProgress([]);
       return;
     }
@@ -72,7 +73,7 @@ export default function KarteTeamSkillTestsPage() {
         .order("created_at", { ascending: false });
       setProgress(data ?? []);
     })();
-  }, [selectedTestId]);
+  }, [selectedTestId, plan, isStaff]);
 
   const selectedTest = tests.find((t) => t.id === selectedTestId) ?? null;
   const levels = selectedTest ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count) : [];

@@ -55,16 +55,16 @@ export default function KarteTeamSportsTestPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!isStaff || !hasSportsTestAccess(plan)) return;
     (async () => {
       const supabase = createClient();
       const { data: p } = await supabase.from("players").select("*");
       setPlayers(sortPlayers(p ?? []));
     })();
-  }, [isStaff]);
+  }, [isStaff, plan]);
 
   useEffect(() => {
-    if (!isStaff) return;
+    if (!isStaff || !hasSportsTestAccess(plan)) return;
     (async () => {
       setLoading(true);
       const supabase = createClient();
@@ -77,10 +77,10 @@ export default function KarteTeamSportsTestPage() {
       setSportsTestRecords(data ?? []);
       setLoading(false);
     })();
-  }, [isStaff, fiscalYear, quarter]);
+  }, [isStaff, fiscalYear, quarter, plan]);
 
   useEffect(() => {
-    if (isStaff) return;
+    if (isStaff || !hasSportsTestAccess(plan)) return;
     setLoading(true);
     (async () => {
       const supabase = createClient();
@@ -91,7 +91,7 @@ export default function KarteTeamSportsTestPage() {
       setTeamAverageRow(data?.[0] ?? null);
       setLoading(false);
     })();
-  }, [isStaff, fiscalYear, quarter]);
+  }, [isStaff, fiscalYear, quarter, plan]);
 
   // 在籍中の選手は常に表示。OB・OGは選んだ年度・四半期に記録がある場合だけ一覧に含める。
   const sportsTestPlayers = players.filter(
