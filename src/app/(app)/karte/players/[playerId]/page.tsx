@@ -458,7 +458,7 @@ export default function KartePlayerPage() {
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
           </div>
         </div>
-        {role === "管理者" && (
+        {role === "管理者" && hasAiAnalysisAccess(plan) && (
           <button
             type="button"
             onClick={() => setAnalysisOpen(true)}
@@ -469,7 +469,7 @@ export default function KartePlayerPage() {
         )}
       </div>
 
-      {role === "管理者" && (
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出">
           <FieldLabel>追加で重視してほしい点(任意)</FieldLabel>
           <textarea

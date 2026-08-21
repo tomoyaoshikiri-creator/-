@@ -14,7 +14,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { ChevronRightIcon } from "@/components/icons";
 import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
-import { hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
 import { fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
@@ -91,7 +91,7 @@ export default function KartePlayersPage() {
     <PageShell
       header={<AppHeader title="選手カルテ" variant="detail" backHref="/karte" accessBadge="coach" />}
     >
-      {role === "管理者" && (
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <div className="flex items-center justify-end mb-2">
           <button
             type="button"
@@ -126,7 +126,7 @@ export default function KartePlayersPage() {
         </Link>
       )}
 
-      {role === "管理者" && (
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用抽出〈一括〉">
           <FieldLabel>追加で重視してほしい点(任意)</FieldLabel>
           <textarea
