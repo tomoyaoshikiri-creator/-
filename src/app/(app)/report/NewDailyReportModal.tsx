@@ -41,7 +41,14 @@ export function NewDailyReportModal({
 
   function addFiles(newFiles: FileList | null) {
     if (!newFiles) return;
-    setFiles((prev) => [...prev, ...Array.from(newFiles)]);
+    // 一部端末でArray.from(FileList)がFileListの反復に失敗し空配列になる事象への対策として、
+    // インデックスで1件ずつ取り出す(FileList.item()経由)方式にしている。
+    const picked: File[] = [];
+    for (let i = 0; i < newFiles.length; i++) {
+      const f = newFiles.item(i);
+      if (f) picked.push(f);
+    }
+    setFiles((prev) => [...prev, ...picked]);
   }
 
   function removeFile(index: number) {
