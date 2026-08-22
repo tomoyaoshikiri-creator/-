@@ -63,8 +63,6 @@ export function NewLibraryFileModal({
   }
 
   function addFiles(newFiles: FileList | null) {
-    // TODO(SEC-02診断用・原因特定後に削除): ライブラリでファイル選択が反映されない不具合の調査のため一時的に追加。
-    toast(`[診断] 検出したファイル数: ${newFiles ? newFiles.length : "null"}`);
     if (!newFiles) return;
     setFiles((prev) => [...prev, ...Array.from(newFiles)]);
   }
@@ -196,11 +194,7 @@ export function NewLibraryFileModal({
             multiple
             className="hidden"
             onChange={(e) => {
-              try {
-                addFiles(e.target.files);
-              } catch (err) {
-                toast(`[診断] 選択処理でエラー: ${err instanceof Error ? err.message : String(err)}`);
-              }
+              addFiles(e.target.files);
               e.target.value = "";
             }}
           />
