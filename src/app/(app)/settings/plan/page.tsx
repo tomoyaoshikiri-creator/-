@@ -11,6 +11,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { SegButton, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { isInquiryPlan, isPublicPlan } from "@/lib/plan";
+import { shouldUseBillingPortal } from "@/lib/billing";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
 import type { BillingInterval } from "@/lib/stripe";
 import type { TeamPlan } from "@/lib/database.types";
@@ -21,7 +22,7 @@ export default function SettingsPlanPage() {
   const toast = useToast();
   const { role, teamId } = useSession();
   const [plan, setPlan] = useState<TeamPlan | null>(null);
-  const [hasCustomer, setHasCustomer] = useState(false);
+  const [useBillingPortal, setUseBillingPortal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
@@ -43,11 +44,11 @@ export default function SettingsPlanPage() {
       const supabase = createClient();
       const { data: team } = await supabase
         .from("teams")
-        .select("plan, stripe_customer_id")
+        .select("plan, subscription_status")
         .eq("id", teamId)
         .single();
       setPlan(team?.plan ?? null);
-      setHasCustomer(Boolean(team?.stripe_customer_id));
+      setUseBillingPortal(shouldUseBillingPortal(team?.subscription_status));
       setLoading(false);
     })();
   }, [teamId]);
@@ -109,7 +110,7 @@ export default function SettingsPlanPage() {
             <div className="text-xs text-ink-soft">
               特別プランが適用されています。プラン内容の変更については運営までお問い合わせください。
             </div>
-          ) : hasCustomer ? (
+          ) : useBillingPortal ? (
             <>
               <div className="text-xs text-ink-soft mb-2.5">
                 お支払い方法の変更・請求履歴の確認・解約は、Stripeのお支払い管理ページから行えます。
