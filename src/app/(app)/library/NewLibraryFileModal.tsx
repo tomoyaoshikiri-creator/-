@@ -219,6 +219,9 @@ export function NewLibraryFileModal({
           </div>
         )}
         <div className="text-xs text-ink-soft mt-1.5">※タップすると端末の「カメラロール」「ファイル」などから選べます</div>
+        <div className="text-xs mt-1.5" style={{ color: "var(--danger)" }}>
+          [診断v2] files.length = {files.length}
+        </div>
       </div>
 
       <SubmitButton onClick={handleSubmit} disabled={saving}>
