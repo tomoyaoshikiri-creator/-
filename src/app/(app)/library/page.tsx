@@ -86,7 +86,13 @@ export default function LibraryPage() {
     setDeleteConfirmId(null);
     const supabase = createClient();
     if (item.files.length > 0) {
-      await supabase.storage.from("library-files").remove(item.files.map((f) => f.storage_path));
+      const { error: storageError } = await supabase.storage
+        .from("library-files")
+        .remove(item.files.map((f) => f.storage_path));
+      if (storageError) {
+        toast(`削除に失敗しました: ${storageError.message}`);
+        return;
+      }
     }
     const { error } = await supabase.from("library_items").delete().eq("id", item.id);
     if (error) {

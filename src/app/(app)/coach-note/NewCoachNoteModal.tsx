@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { safeExt } from "@/lib/storagePath";
+import { removeUploadedObject } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 
@@ -84,6 +85,7 @@ export function NewCoachNoteModal({
       });
       if (attachError) {
         toast(`${file.name}の登録に失敗しました: ${attachError.message}`);
+        await removeUploadedObject(supabase, "report-attachments", path);
       }
     }
     setSaving(false);

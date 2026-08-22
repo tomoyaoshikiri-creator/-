@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { removeUploadedObject } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
@@ -124,6 +125,7 @@ export function NewNoticeModal({
       });
       if (attachError) {
         toast(`${kind}の登録に失敗しました: ${attachError.message}`);
+        await removeUploadedObject(supabase, "notice-attachments", path);
       }
     }
 

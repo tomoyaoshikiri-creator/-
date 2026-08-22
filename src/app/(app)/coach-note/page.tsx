@@ -337,6 +337,16 @@ export default function CoachNotePage() {
       return;
     }
     const supabase = createClient();
+    const attachmentsToRemove = attachmentsByReport[id] ?? [];
+    if (attachmentsToRemove.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("report-attachments")
+        .remove(attachmentsToRemove.map((a) => a.storage_path));
+      if (storageError) {
+        toast(`削除に失敗しました: ${storageError.message}`);
+        return;
+      }
+    }
     const { error } = await supabase.from("reports").delete().eq("id", id);
     if (error) {
       toast(`削除に失敗しました: ${error.message}`);

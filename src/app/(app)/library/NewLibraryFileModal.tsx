@@ -8,6 +8,7 @@ import { useUpgradePrompt } from "@/components/PlanLock";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { safeExt } from "@/lib/storagePath";
+import { removeUploadedObject } from "@/lib/storageCleanup";
 import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type { LibraryCategory } from "@/lib/database.types";
@@ -144,6 +145,7 @@ export function NewLibraryFileModal({
       });
       if (insertError) {
         toast(`${file.name}の登録に失敗しました: ${insertError.message}`);
+        await removeUploadedObject(supabase, "library-files", path);
       }
     }
     setSaving(false);

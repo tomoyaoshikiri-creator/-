@@ -16,6 +16,7 @@ import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel, gradeLabel } from "@/lib/format";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
+import { removeUploadedObject } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type {
   AttachmentKind,
@@ -157,7 +158,14 @@ export default function NoticeDetailPage() {
   async function handleRemoveAttachment(attachment: AttachmentWithUrl) {
     setRemovingId(attachment.id);
     const supabase = createClient();
-    await supabase.storage.from("notice-attachments").remove([attachment.storage_path]);
+    const { error: storageError } = await supabase.storage
+      .from("notice-attachments")
+      .remove([attachment.storage_path]);
+    if (storageError) {
+      setRemovingId(null);
+      toast(`削除に失敗しました: ${storageError.message}`);
+      return;
+    }
     const { error } = await supabase.from("notice_attachments").delete().eq("id", attachment.id);
     setRemovingId(null);
     if (error) {
@@ -213,6 +221,7 @@ export default function NoticeDetailPage() {
       });
       if (attachError) {
         toast(`${kind}の登録に失敗しました: ${attachError.message}`);
+        await removeUploadedObject(supabase, "notice-attachments", path);
       }
     }
 
@@ -233,7 +242,14 @@ export default function NoticeDetailPage() {
     setDeleting(true);
     const supabase = createClient();
     if (attachments.length > 0) {
-      await supabase.storage.from("notice-attachments").remove(attachments.map((a) => a.storage_path));
+      const { error: storageError } = await supabase.storage
+        .from("notice-attachments")
+        .remove(attachments.map((a) => a.storage_path));
+      if (storageError) {
+        setDeleting(false);
+        toast(`削除に失敗しました: ${storageError.message}`);
+        return;
+      }
     }
     const { error } = await supabase.from("notices").delete().eq("id", notice.id);
     setDeleting(false);
