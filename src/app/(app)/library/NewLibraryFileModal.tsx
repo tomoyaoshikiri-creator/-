@@ -40,6 +40,8 @@ export function NewLibraryFileModal({
 
   useEffect(() => {
     if (!open) return;
+    // TODO(SEC-02診断用v2・原因特定後に削除)
+    toast("[診断v2] モーダルを開きました");
     supabase
       .from("library_categories")
       .select("*")
@@ -63,6 +65,8 @@ export function NewLibraryFileModal({
   }
 
   function addFiles(newFiles: FileList | null) {
+    // TODO(SEC-02診断用v2・原因特定後に削除)
+    toast(`[診断v2] 検出したファイル数: ${newFiles ? newFiles.length : "null"}`);
     if (!newFiles) return;
     setFiles((prev) => [...prev, ...Array.from(newFiles)]);
   }
@@ -186,7 +190,10 @@ export function NewLibraryFileModal({
 
       <div className="mt-3">
         <FieldLabel>画像・資料</FieldLabel>
-        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
+        <label
+          className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer"
+          onClick={() => toast("[診断v2] ラベルをタップしました")}
+        >
           📎 ファイルを選ぶ
           <input
             type="file"
