@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { safeExt } from "@/lib/storagePath";
-import { removeUploadedObject } from "@/lib/storageCleanup";
+import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 
@@ -61,9 +61,34 @@ export function NewDailyReportModal({
       return;
     }
     setSaving(true);
+    const reportId = crypto.randomUUID();
+
+    // 1) 全ファイルをStorageへアップロードしきってから本体行を作る(1件でも失敗したら
+    // 本体行自体を作らず、それまでにアップロード済みの分だけ後始末する)。
+    const uploaded: { path: string; file: File; uploadFile: File }[] = [];
+    for (const file of files) {
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${reportId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("daily-report-attachments").upload(path, uploadFile);
+      if (uploadError) {
+        const cleanupOk = await cleanupUploadedObjects(
+          supabase,
+          uploaded.map((u) => ({ bucket: "daily-report-attachments", path: u.path })),
+        );
+        setSaving(false);
+        toast(
+          `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
+            (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
+      }
+      uploaded.push({ path, file, uploadFile });
+    }
+
     const { data: report, error } = await supabase
       .from("daily_reports")
       .insert({
+        id: reportId,
         team_id: teamId,
         author_id: userId,
         date: dateValue,
@@ -72,29 +97,42 @@ export function NewDailyReportModal({
       .select()
       .single();
     if (error || !report) {
+      const cleanupOk = await cleanupUploadedObjects(
+        supabase,
+        uploaded.map((u) => ({ bucket: "daily-report-attachments", path: u.path })),
+      );
       setSaving(false);
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast(
+        `登録に失敗しました: ${error?.message ?? ""}` +
+          (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+      );
       return;
     }
-    for (const file of files) {
-      const uploadFile = await resizeImageFile(file);
-      const path = `${teamId}/${report.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
-      const { error: uploadError } = await supabase.storage.from("daily-report-attachments").upload(path, uploadFile);
-      if (uploadError) {
-        toast(`${file.name}のアップロードに失敗しました: ${uploadError.message}`);
-        continue;
-      }
+
+    // 2) 添付行をINSERT。1件でも失敗したら本体行を削除(cascadeで添付行も消える)し、
+    // アップロード済みの全Storageオブジェクトを後始末して、部分成功を許さない。
+    for (const u of uploaded) {
       const { error: attachError } = await supabase.from("daily_report_attachments").insert({
         daily_report_id: report.id,
-        storage_path: path,
-        file_name: file.name,
-        size_bytes: uploadFile.size,
+        storage_path: u.path,
+        file_name: u.file.name,
+        size_bytes: u.uploadFile.size,
       });
       if (attachError) {
-        toast(`${file.name}の登録に失敗しました: ${attachError.message}`);
-        await removeUploadedObject(supabase, "daily-report-attachments", path);
+        const rollbackOk = await rollbackParentAndObjects(supabase, {
+          parentTable: "daily_reports",
+          parentId: report.id,
+          uploadedObjects: uploaded.map((x) => ({ bucket: "daily-report-attachments", path: x.path })),
+        });
+        setSaving(false);
+        toast(
+          `${u.file.name}の登録に失敗しました: ${attachError.message}` +
+            (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
       }
     }
+
     setSaving(false);
     reset();
     onCreated();

@@ -8,7 +8,7 @@ import { useUpgradePrompt } from "@/components/PlanLock";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { safeExt } from "@/lib/storagePath";
-import { removeUploadedObject } from "@/lib/storageCleanup";
+import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
 import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type { LibraryCategory } from "@/lib/database.types";
@@ -121,9 +121,34 @@ export function NewLibraryFileModal({
     }
     setSaving(true);
     const resolvedCategoryId = await resolveCategoryId();
+    const itemId = crypto.randomUUID();
+
+    // 1) 全ファイルをStorageへアップロードしきってから本体行を作る(1件でも失敗したら
+    // 本体行自体を作らず、それまでにアップロード済みの分だけ後始末する)。
+    const uploaded: { path: string; file: File; uploadFile: File }[] = [];
+    for (const file of files) {
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("library-files").upload(path, uploadFile);
+      if (uploadError) {
+        const cleanupOk = await cleanupUploadedObjects(
+          supabase,
+          uploaded.map((u) => ({ bucket: "library-files", path: u.path })),
+        );
+        setSaving(false);
+        toast(
+          `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
+            (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
+      }
+      uploaded.push({ path, file, uploadFile });
+    }
+
     const { data: item, error } = await supabase
       .from("library_items")
       .insert({
+        id: itemId,
         team_id: teamId,
         uploader_id: userId,
         category_id: resolvedCategoryId,
@@ -132,29 +157,42 @@ export function NewLibraryFileModal({
       .select()
       .single();
     if (error || !item) {
+      const cleanupOk = await cleanupUploadedObjects(
+        supabase,
+        uploaded.map((u) => ({ bucket: "library-files", path: u.path })),
+      );
       setSaving(false);
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast(
+        `登録に失敗しました: ${error?.message ?? ""}` +
+          (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+      );
       return;
     }
-    for (const file of files) {
-      const uploadFile = await resizeImageFile(file);
-      const path = `${teamId}/${item.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
-      const { error: uploadError } = await supabase.storage.from("library-files").upload(path, uploadFile);
-      if (uploadError) {
-        toast(`${file.name}のアップロードに失敗しました: ${uploadError.message}`);
-        continue;
-      }
+
+    // 2) 添付行をINSERT。1件でも失敗したら本体行を削除(cascadeで添付行も消える)し、
+    // アップロード済みの全Storageオブジェクトを後始末して、部分成功を許さない。
+    for (const u of uploaded) {
       const { error: insertError } = await supabase.from("library_files").insert({
         library_item_id: item.id,
-        storage_path: path,
-        file_name: file.name,
-        size_bytes: uploadFile.size,
+        storage_path: u.path,
+        file_name: u.file.name,
+        size_bytes: u.uploadFile.size,
       });
       if (insertError) {
-        toast(`${file.name}の登録に失敗しました: ${insertError.message}`);
-        await removeUploadedObject(supabase, "library-files", path);
+        const rollbackOk = await rollbackParentAndObjects(supabase, {
+          parentTable: "library_items",
+          parentId: item.id,
+          uploadedObjects: uploaded.map((x) => ({ bucket: "library-files", path: x.path })),
+        });
+        setSaving(false);
+        toast(
+          `${u.file.name}の登録に失敗しました: ${insertError.message}` +
+            (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
       }
     }
+
     setSaving(false);
     reset();
     onCreated();

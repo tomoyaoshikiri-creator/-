@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
-import { removeUploadedObject } from "@/lib/storageCleanup";
+import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
@@ -86,9 +86,35 @@ export function NewNoticeModal({
     }
     setSaving(true);
 
+    const noticeId = crypto.randomUUID();
+
+    // 1) 全添付をStorageへアップロードしきってから本体行を作る(1件でも失敗したら
+    // 本体行自体を作らず、それまでにアップロード済みの分だけ後始末する)。
+    const entries = Object.entries(files) as [AttachmentKind, File][];
+    const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
+    for (const [kind, file] of entries) {
+      const uploadFile = await resizeImageFile(file);
+      const path = `${teamId}/${noticeId}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
+      const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
+      if (uploadError) {
+        const cleanupOk = await cleanupUploadedObjects(
+          supabase,
+          uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
+        );
+        setSaving(false);
+        toast(
+          `${kind}のアップロードに失敗しました: ${uploadError.message}` +
+            (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
+      }
+      uploaded.push({ kind, path, file, uploadFile });
+    }
+
     const { data: notice, error } = await supabase
       .from("notices")
       .insert({
+        id: noticeId,
         team_id: teamId,
         title: title.trim(),
         body: body.trim() || null,
@@ -100,32 +126,40 @@ export function NewNoticeModal({
       .single();
 
     if (error || !notice) {
+      const cleanupOk = await cleanupUploadedObjects(
+        supabase,
+        uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
+      );
       setSaving(false);
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast(
+        `登録に失敗しました: ${error?.message ?? ""}` +
+          (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+      );
       return;
     }
 
-    const entries = Object.entries(files) as [AttachmentKind, File][];
-    for (const [kind, file] of entries) {
-      const uploadFile = await resizeImageFile(file);
-      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
-      const { error: uploadError } = await supabase.storage
-        .from("notice-attachments")
-        .upload(path, uploadFile);
-      if (uploadError) {
-        toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
-        continue;
-      }
+    // 2) 添付行をINSERT。1件でも失敗したら本体行を削除(cascadeで添付行も消える)し、
+    // アップロード済みの全Storageオブジェクトを後始末して、部分成功を許さない。
+    for (const u of uploaded) {
       const { error: attachError } = await supabase.from("notice_attachments").insert({
         notice_id: notice.id,
-        kind,
-        storage_path: path,
-        file_name: file.name,
-        size_bytes: uploadFile.size,
+        kind: u.kind,
+        storage_path: u.path,
+        file_name: u.file.name,
+        size_bytes: u.uploadFile.size,
       });
       if (attachError) {
-        toast(`${kind}の登録に失敗しました: ${attachError.message}`);
-        await removeUploadedObject(supabase, "notice-attachments", path);
+        const rollbackOk = await rollbackParentAndObjects(supabase, {
+          parentTable: "notices",
+          parentId: notice.id,
+          uploadedObjects: uploaded.map((x) => ({ bucket: "notice-attachments", path: x.path })),
+        });
+        setSaving(false);
+        toast(
+          `${u.kind}の登録に失敗しました: ${attachError.message}` +
+            (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+        return;
       }
     }
 

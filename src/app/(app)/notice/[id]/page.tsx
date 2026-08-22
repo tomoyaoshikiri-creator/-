@@ -16,7 +16,7 @@ import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel, gradeLabel } from "@/lib/format";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
-import { removeUploadedObject } from "@/lib/storageCleanup";
+import { cleanupUploadedObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type {
   AttachmentKind,
@@ -203,26 +203,62 @@ export default function NoticeDetailPage() {
       return;
     }
 
+    // お知らせ本体の更新は上記で既に確定している(ロールバックしない)。
+    // 今回追加しようとした添付だけを対象に、1件でも失敗したら今回追加分全体を取り消す
+    // (既存のお知らせ本体・既存添付には一切影響を与えない)。
     const entries = Object.entries(newFiles) as [AttachmentKind, File][];
+    const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
+    const insertedAttachmentIds: string[] = [];
+    let failureMessage: string | null = null;
+
     for (const [kind, file] of entries) {
       const uploadFile = await resizeImageFile(file);
       const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
       if (uploadError) {
-        toast(`${kind}のアップロードに失敗しました: ${uploadError.message}`);
-        continue;
+        failureMessage = `${kind}のアップロードに失敗しました: ${uploadError.message}`;
+        break;
       }
-      const { error: attachError } = await supabase.from("notice_attachments").insert({
-        notice_id: notice.id,
-        kind,
-        storage_path: path,
-        file_name: file.name,
-        size_bytes: uploadFile.size,
-      });
-      if (attachError) {
-        toast(`${kind}の登録に失敗しました: ${attachError.message}`);
-        await removeUploadedObject(supabase, "notice-attachments", path);
+      uploaded.push({ kind, path, file, uploadFile });
+      const { data: attachRow, error: attachError } = await supabase
+        .from("notice_attachments")
+        .insert({
+          notice_id: notice.id,
+          kind,
+          storage_path: path,
+          file_name: file.name,
+          size_bytes: uploadFile.size,
+        })
+        .select()
+        .single();
+      if (attachError || !attachRow) {
+        failureMessage = `${kind}の登録に失敗しました: ${attachError?.message ?? ""}`;
+        break;
       }
+      insertedAttachmentIds.push(attachRow.id);
+    }
+
+    if (failureMessage) {
+      let cleanupOk = true;
+      if (insertedAttachmentIds.length > 0) {
+        const { error: delError } = await supabase.from("notice_attachments").delete().in("id", insertedAttachmentIds);
+        if (delError) {
+          cleanupOk = false;
+          console.error("[notice/edit] failed to rollback newly inserted attachments", delError);
+        }
+      }
+      const objectsOk = await cleanupUploadedObjects(
+        supabase,
+        uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
+      );
+      cleanupOk = cleanupOk && objectsOk;
+      setSaving(false);
+      toast(
+        `お知らせ本体は更新しましたが、添付の追加に失敗しました: ${failureMessage}` +
+          (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+      );
+      load();
+      return;
     }
 
     setSaving(false);
