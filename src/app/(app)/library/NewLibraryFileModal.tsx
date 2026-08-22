@@ -40,8 +40,6 @@ export function NewLibraryFileModal({
 
   useEffect(() => {
     if (!open) return;
-    // TODO(SEC-02診断用v2・原因特定後に削除)
-    toast("[診断v2] モーダルを開きました");
     supabase
       .from("library_categories")
       .select("*")
@@ -65,10 +63,15 @@ export function NewLibraryFileModal({
   }
 
   function addFiles(newFiles: FileList | null) {
-    // TODO(SEC-02診断用v2・原因特定後に削除)
-    toast(`[診断v2] 検出したファイル数: ${newFiles ? newFiles.length : "null"}`);
     if (!newFiles) return;
-    setFiles((prev) => [...prev, ...Array.from(newFiles)]);
+    // 一部端末でArray.from(FileList)がFileListの反復に失敗し空配列になる事象への対策として、
+    // インデックスで1件ずつ取り出す(FileList.item()経由)方式にしている。
+    const picked: File[] = [];
+    for (let i = 0; i < newFiles.length; i++) {
+      const f = newFiles.item(i);
+      if (f) picked.push(f);
+    }
+    setFiles((prev) => [...prev, ...picked]);
   }
 
   function removeFile(index: number) {
@@ -190,10 +193,7 @@ export function NewLibraryFileModal({
 
       <div className="mt-3">
         <FieldLabel>画像・資料</FieldLabel>
-        <label
-          className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer"
-          onClick={() => toast("[診断v2] ラベルをタップしました")}
-        >
+        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
           📎 ファイルを選ぶ
           <input
             type="file"
@@ -219,9 +219,6 @@ export function NewLibraryFileModal({
           </div>
         )}
         <div className="text-xs text-ink-soft mt-1.5">※タップすると端末の「カメラロール」「ファイル」などから選べます</div>
-        <div className="text-xs mt-1.5" style={{ color: "var(--danger)" }}>
-          [診断v2] files.length = {files.length}
-        </div>
       </div>
 
       <SubmitButton onClick={handleSubmit} disabled={saving}>
