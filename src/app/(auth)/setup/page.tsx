@@ -11,36 +11,22 @@ export default async function SetupPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+  // 新規/既存ユーザーの判定は、profilesへの直接SELECT(RLSのteam_id = current_team_id()
+  // 経由で可視性が決まり、session未bootstrap時は自分のprofileすら見えなくなる)ではなく、
+  // auth.uid()本人の所属一覧を返す読み取り専用RPC(list_my_team_memberships())だけで行う。
+  // このRPCはcurrent_team_id()/current_role()に依存しないため、session状態に関わらず
+  // 正しく判定できる。profilesとteam_membershipsは常に1:1で作成・削除される
+  // (0107の同期trigger、team_memberships.user_idのON DELETE CASCADE)ため、
+  // membership 0件は新規ユーザーと同義として扱ってよい。
+  const { data: memberships, error: membershipsError } = await supabase.rpc("list_my_team_memberships");
 
-  if (profile) {
-    // profileはあるがteam_membershipsが無い異常状態では/scheduleへ戻さない
-    // ((app)/layout.tsxのno_membership → /setupとの無限redirectループを防ぐ)。
-    // team_membershipsはRLS policy 0件のため直接SELECTでは見えず、
-    // 段階3a-2で追加済みのlist_my_team_memberships()(auth.uid()本人の
-    // 所属一覧を返す読み取り専用RPC)を使う。RPC失敗とmembership 0件は
-    // 区別し、同一扱いにしない。
-    const { data: memberships, error: membershipsError } = await supabase.rpc("list_my_team_memberships");
+  if (membershipsError) {
+    console.error("list_my_team_memberships failed", membershipsError);
+    return <ActiveTeamErrorScreen />;
+  }
 
-    if (membershipsError) {
-      console.error("list_my_team_memberships failed", membershipsError);
-      return <ActiveTeamErrorScreen />;
-    }
-
-    if (memberships && memberships.length > 0) {
-      redirect("/schedule");
-    }
-
-    return (
-      <ActiveTeamErrorScreen
-        title="所属チームが見つかりません"
-        message="現在、所属チームを確認できません。お手数ですが運営までご連絡いただくか、ログインし直してお試しください。"
-      />
-    );
+  if (memberships && memberships.length > 0) {
+    redirect("/schedule");
   }
 
   return (
