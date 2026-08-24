@@ -1312,6 +1312,18 @@ export interface Database {
         Args: Record<string, never>;
         Returns: void;
       };
+      switch_active_team: {
+        Args: { target_team_id: string };
+        Returns: void;
+      };
+      initialize_active_team: {
+        Args: Record<string, never>;
+        Returns: { status: string; team_id: string | null }[];
+      };
+      list_my_team_memberships: {
+        Args: Record<string, never>;
+        Returns: { team_id: string; team_name: string; role: string; status: string }[];
+      };
       team_storage_usage_bytes: {
         Args: Record<string, never>;
         Returns: number;

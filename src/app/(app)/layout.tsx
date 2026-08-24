@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { AppNav } from "@/components/AppNav";
 import { InactivityLogout } from "@/components/InactivityLogout";
 import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
+import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) redirect("/login");
+
+  // current_team_id()/current_role()に一切依存せず、auth.uid()/session_idだけを
+  // 起点にactive teamを解決する(将来current_team_id()をactive_team_sessions依存へ
+  // 切り替えた際も、新規sessionが自己初期化できるようにするための前段ステップ)。
+  // このRPC自体はまだcurrent_team_id()の判定には使われない。
+  const { data: bootstrap, error: bootstrapError } = await supabase.rpc("initialize_active_team").single();
+
+  if (bootstrapError) {
+    console.error("initialize_active_team failed", bootstrapError);
+    return <ActiveTeamErrorScreen />;
+  }
+
+  if (bootstrap.status === "no_membership") redirect("/setup");
+  if (bootstrap.status === "needs_selection") {
+    // 段階3d前の通常運用では到達しない想定(複数チーム所属は現行のRPCガードにより
+    // 発生しない)。万一到達した場合は異常として記録し、安全側の画面を表示する。
+    console.error("initialize_active_team returned needs_selection unexpectedly (pre-3d)");
+    return <ActiveTeamErrorScreen />;
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
