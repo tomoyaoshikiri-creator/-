@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   // ここでの認証チェックはmiddleware(supabase.auth.getUser()でサーバーに問い合わせ済み)の
   // 二重チェック目的なので、Cookieのセッションをそのまま読むgetSession()で十分
-  // (ネットワーク往復が発生せず高速)。profile/teamはFK経由の1クエリにまとめて往復回数を減らす。
+  // (ネットワーク往復が発生せず高速)。membership/team/profileは並列取得で往復回数を減らす。
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -38,19 +38,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     return <ActiveTeamErrorScreen />;
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(
-      "id, team_id, name, role, status, teams!team_id(name, theme_primary, theme_accent, logo_path, plan, sport, category, deletion_requested_at)",
-    )
-    .eq("id", session.user.id)
-    .single<{
-      id: string;
-      team_id: string;
-      name: string;
-      role: SessionInfo["role"];
-      status: string;
-      teams: {
+  // 現在チームの所属・role/statusはteam_membershipsが正本。team_membershipsはRLS有効・
+  // policy 0件のため直接SELECTできず、読み取り専用RPC(list_my_team_memberships())経由で
+  // 取得する。bootstrap.team_idと一致する行だけを採用する(該当なしは通常発生しない、
+  // initialize_active_team()が直前に'resolved'を返しているため)。
+  const [{ data: memberships, error: membershipsError }, { data: team }, { data: profile }] = await Promise.all([
+    supabase.rpc("list_my_team_memberships"),
+    supabase
+      .from("teams")
+      .select("name, theme_primary, theme_accent, logo_path, plan, sport, category, deletion_requested_at")
+      .eq("id", bootstrap.team_id!)
+      .single<{
         name: string;
         theme_primary: string | null;
         theme_accent: string | null;
@@ -59,19 +57,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         sport: SessionInfo["sport"];
         category: SessionInfo["category"];
         deletion_requested_at: string | null;
-      } | null;
-    }>();
+      }>(),
+    supabase.from("profiles").select("id, name").eq("id", session.user.id).single<{ id: string; name: string }>(),
+  ]);
 
-  if (!profile) redirect("/setup");
+  if (membershipsError || !profile) {
+    console.error("failed to load membership/profile", membershipsError);
+    return <ActiveTeamErrorScreen />;
+  }
 
-  const team = profile.teams;
+  const membership = (memberships ?? []).find((m) => m.team_id === bootstrap.team_id);
+  if (!membership) {
+    console.error("no team_memberships row matches bootstrap.team_id");
+    return <ActiveTeamErrorScreen />;
+  }
+  const role = membership.role as SessionInfo["role"];
 
   if (team?.deletion_requested_at) {
     const scheduledDeletionAt = new Date(team.deletion_requested_at);
     scheduledDeletionAt.setDate(scheduledDeletionAt.getDate() + 7);
     return (
       <TeamDeletionScreen
-        isAdmin={profile.role === "管理者"}
+        isAdmin={role === "管理者"}
         scheduledDeletionAt={scheduledDeletionAt.toISOString()}
       />
     );
@@ -88,11 +95,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <SessionProvider
         value={{
           userId: profile.id,
-          teamId: profile.team_id,
+          teamId: bootstrap.team_id!,
           teamName: team?.name ?? "",
           teamLogoUrl: teamLogoUrl(supabase, team?.logo_path),
           name: profile.name,
-          role: profile.role,
+          role,
           plan: team?.plan ?? "お試し",
           sport: team?.sport ?? "ミニバスケットボール",
           category: team?.category ?? "小学生",
@@ -101,7 +108,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <ToastProvider>
           <NavigationGuardProvider>
             <InactivityLogout />
-            <AppNav role={profile.role}>{children}</AppNav>
+            <AppNav role={role}>{children}</AppNav>
           </NavigationGuardProvider>
         </ToastProvider>
       </SessionProvider>

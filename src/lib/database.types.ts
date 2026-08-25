@@ -156,6 +156,26 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      team_memberships: {
+        Row: {
+          id: string;
+          user_id: string;
+          team_id: string;
+          role: Role;
+          status: UserStatus;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          team_id: string;
+          role?: Role;
+          status?: UserStatus;
+          joined_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       invites: {
         Row: {
           id: string;
@@ -1323,6 +1343,26 @@ export interface Database {
       list_my_team_memberships: {
         Args: Record<string, never>;
         Returns: { team_id: string; team_name: string; role: string; status: string }[];
+      };
+      is_current_team_member: {
+        Args: { p_profile_id: string };
+        Returns: boolean;
+      };
+      update_team_member: {
+        Args: { target_user_id: string; new_role?: Role | null; new_status?: UserStatus | null };
+        Returns: void;
+      };
+      remove_team_member: {
+        Args: { target_user_id: string };
+        Returns: void;
+      };
+      current_team_id: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
+      current_role: {
+        Args: Record<string, never>;
+        Returns: string | null;
       };
       team_storage_usage_bytes: {
         Args: Record<string, never>;

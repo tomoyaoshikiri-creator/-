@@ -11,6 +11,9 @@ import type { Database } from "@/lib/database.types";
 // 猶予期間中に二重で請求されないようにする(Webhook経由でplanは自動的に
 // お試しへ戻る)。deletion_requested_atはprotect_team_billing_columnsトリガーの
 // 保護対象のため、通常のRLSクライアントからは書き込めずservice_role必須。
+// 対象チームはprofiles.team_id(legacy)ではなくcurrent_team_id()(現在選択中チーム)を
+// 基準にする。将来の複数チーム所属時に、選択中でない別チームを誤って解約・削除できて
+// しまう経路を作らないため。
 export async function POST() {
   const supabase = await createClient();
   const {
@@ -20,8 +23,11 @@ export async function POST() {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
-  if (!profile || profile.role !== "管理者") {
+  const [{ data: teamId }, { data: role }] = await Promise.all([
+    supabase.rpc("current_team_id"),
+    supabase.rpc("current_role"),
+  ]);
+  if (!teamId || role !== "管理者") {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
@@ -36,7 +42,7 @@ export async function POST() {
   const { data: team } = await adminClient
     .from("teams")
     .select("id, stripe_subscription_id, deletion_requested_at")
-    .eq("id", profile.team_id)
+    .eq("id", teamId)
     .single();
   if (!team) {
     return NextResponse.json({ error: "チームが見つかりません" }, { status: 404 });

@@ -15,15 +15,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("team_id").eq("id", user.id).single();
-  if (!profile) {
-    return NextResponse.json({ error: "プロフィールが見つかりません" }, { status: 404 });
+  const { data: teamId } = await supabase.rpc("current_team_id");
+  if (!teamId) {
+    return NextResponse.json({ error: "セッション情報を取得できませんでした" }, { status: 404 });
   }
 
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
       user_id: user.id,
-      team_id: profile.team_id,
+      team_id: teamId,
       endpoint,
       p256dh: keys.p256dh,
       auth_key: keys.auth,

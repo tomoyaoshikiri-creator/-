@@ -21,9 +21,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("team_id").eq("id", user.id).single();
-  if (!profile) {
-    return NextResponse.json({ error: "プロフィールが見つかりません" }, { status: 404 });
+  const { data: teamId } = await supabase.rpc("current_team_id");
+  if (!teamId) {
+    return NextResponse.json({ error: "セッション情報を取得できませんでした" }, { status: 404 });
   }
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   const { data: subs, error: subsError } = await adminClient
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth_key")
-    .eq("team_id", profile.team_id)
+    .eq("team_id", teamId)
     .neq("user_id", user.id);
 
   if (subsError) {

@@ -48,17 +48,26 @@ function buildMessage(schedule: Schedule, reminderType: ReminderType): { title: 
 
 // 出欠フォーム(schedule/[id]/page.tsx)と同じ対象範囲判定で、未登録の人を洗い出す。
 // key: profile_id, value: 対象のラベル(選手名、または「本人」「自分」)の一覧。
+// 対象ユーザーの抽出はprofiles.team_id(legacy)ではなくteam_memberships.team_idを正本とする。
+// このRoute全体がservice_roleクライアント(rolbypassrls=trueをローカルDBで実測確認済み)で
+// 動作するため、RLSポリシーが0件のteam_membershipsも直接SELECTできる。
 async function computeUnregisteredRecipients(
   supabase: SupabaseClient<Database>,
   schedule: Schedule,
 ): Promise<Map<string, string[]>> {
   const recipients = new Map<string, string[]>();
 
-  const [{ data: players }, { data: profiles }, { data: attendances }] = await Promise.all([
+  const [{ data: players }, { data: memberships }, { data: attendances }] = await Promise.all([
     supabase.from("players").select("*").eq("team_id", schedule.team_id).eq("status", "在籍"),
-    supabase.from("profiles").select("*").eq("team_id", schedule.team_id),
+    supabase.from("team_memberships").select("user_id, role").eq("team_id", schedule.team_id),
     supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
   ]);
+  const membershipUserIds = (memberships ?? []).map((m) => m.user_id);
+  const { data: profiles } =
+    membershipUserIds.length > 0
+      ? await supabase.from("profiles").select("id, name").in("id", membershipUserIds)
+      : { data: [] };
+  const roleByUserId = new Map((memberships ?? []).map((m) => [m.user_id, m.role]));
 
   const eligiblePlayers = (players ?? []).filter((p) => isTargetEligible(p.grade, schedule.target_grade_min));
   const eligiblePlayerIds = eligiblePlayers.map((p) => p.id);
@@ -93,7 +102,8 @@ async function computeUnregisteredRecipients(
   }
 
   for (const profile of profiles ?? []) {
-    if (profile.role === "指導者" || profile.role === "管理者") {
+    const memberRole = roleByUserId.get(profile.id);
+    if (memberRole === "指導者" || memberRole === "管理者") {
       if (!attByUser.has(profile.id)) {
         const arr = recipients.get(profile.id) ?? [];
         arr.push("本人");

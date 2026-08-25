@@ -26,7 +26,7 @@
    - `0014_player_guardians.sql`: 選手⇔保護者アカウントの紐付け(player_guardians)を追加し、出欠(attendances)を選手単位でも記録できるようにする
    - `0015_players_select_own_child.sql`: 保護者アカウント(一般・役員)が、紐付けられた自分の子ども(選手)の情報だけは閲覧できるようにする(playersテーブルは元々指導者・管理者のみ閲覧可だったための追加ポリシー)
    - `0016_profile_email.sql`: profiles.emailを追加し、チーム作成・招待受諾時にauth.usersのメールアドレスをコピーする。list_team_members() RPCを追加し、ユーザー管理画面では管理者だけがメールアドレスを見られるようにする(profiles_selectポリシー自体には乗せていないため、他のロールはAPIレベルでも取得できない)
-   - ユーザー管理画面からのユーザー削除は`src/app/api/admin/delete-user/route.ts`(service_roleキー使用)経由でauth.usersごと削除するため、マイグレーション追加なし。profiles.idはauth.users(id)にon delete cascadeで参照しているため、auth.users側を削除すればprofiles行(および紐づく出欠等)も自動的に削除される。これにより削除したユーザーのメールアドレスは新規登録に再利用できるようになる
+   - ユーザー管理画面からのユーザー削除は`remove_team_member()` RPC(0114で新設)経由で、そのチームのteam_memberships/active_team_sessionsの行だけを削除する(auth.users/profilesは削除しない。「チームから外す」と「アカウント自体の削除」を分離する方針のため。段階3d-1bで`src/app/api/admin/delete-user/route.ts`は削除した)
    - `0017_schedule_target_and_admin_attendance.sql`: schedules.target_grade_minを追加し、予定ごとに出欠対象を「全員」または「○年生以上」に限定できるようにする。あわせてattendances_insert/updateポリシーを見直し、これまで検証していなかった選手との紐付け(player_guardians)チェックを追加しつつ、管理者は紐付けに関わらず全選手の出欠を代理登録・編集できるようにする
    - `0018_advance_academic_year_admin_only.sql`: 年度更新(advance_academic_year)は誤操作の影響が大きいため、指導者では実行できないようにし管理者のみに限定する(UIの「年度更新」ボタンも管理者にのみ表示)
    - `0019_invite_link_reusable.sql`: 招待リンクを、有効期限内であれば同じロール(保護者用/指導者用)の複数人が繰り返し使えるようにする(これまでは1人使うと無効になっていた)。あわせて有効期限のデフォルトを30日から3日に短縮する(今後発行する分のみ、既存の招待には影響しない)
@@ -68,7 +68,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` はProject Settings > API > service_role secretから取得する。ユーザー管理画面でのユーザー削除時にauth.usersのアカウント(メールアドレス含む)を完全に削除するために使用するサーバー専用の鍵で、`NEXT_PUBLIC_`を付けずブラウザに露出させない(`src/app/api/admin/delete-user/route.ts`でのみ使用)。Vercelにデプロイする場合もEnvironment Variablesに同名で追加すること。
+`SUPABASE_SERVICE_ROLE_KEY` はProject Settings > API > service_role secretから取得する。チーム退会処理・請求(Stripe)・プッシュ通知・日次バッチ等、RLSを経由せずservice_role権限で実行するサーバー専用処理で使用する鍵で、`NEXT_PUBLIC_`を付けずブラウザに露出させない。Vercelにデプロイする場合もEnvironment Variablesに同名で追加すること。
 
 ### 3. 依存関係のインストールと起動
 
@@ -134,7 +134,6 @@ src/
           users                                  ユーザー管理(表示名・権限・ステータス編集、管理者のみ)・招待リンク発行(保護者用は役員も、指導者用と取り消しは管理者のみ)
           settings                               設定: 自分のアカウント編集(全ロール)+ チーム設定(配色・ログイン画面〈ロゴ・チーム名・専用URL〉、管理者のみ)
     auth/confirm, auth/complete                  メール確認リンクのコールバック
-    api/admin/delete-user                        ユーザー削除API(service_roleキーでauth.usersごと削除、サーバー専用)
     icon.tsx, apple-icon.tsx, manifest.ts, icons/ PWAアイコン・マニフェスト(ClubLink共通)
   components/        AppHeader・TabBar・Card・Modal等の共通UI
   lib/

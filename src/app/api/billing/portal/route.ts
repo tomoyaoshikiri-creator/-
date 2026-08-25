@@ -13,15 +13,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
-  if (!profile || profile.role !== "管理者") {
+  const [{ data: teamId }, { data: role }] = await Promise.all([
+    supabase.rpc("current_team_id"),
+    supabase.rpc("current_role"),
+  ]);
+  if (!teamId || role !== "管理者") {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
   const { data: team } = await supabase
     .from("teams")
     .select("stripe_customer_id")
-    .eq("id", profile.team_id)
+    .eq("id", teamId)
     .single();
   if (!team?.stripe_customer_id) {
     return NextResponse.json({ error: "契約情報が見つかりません" }, { status: 404 });

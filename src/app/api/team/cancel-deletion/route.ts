@@ -16,8 +16,11 @@ export async function POST() {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
-  if (!profile || profile.role !== "管理者") {
+  const [{ data: teamId }, { data: role }] = await Promise.all([
+    supabase.rpc("current_team_id"),
+    supabase.rpc("current_role"),
+  ]);
+  if (!teamId || role !== "管理者") {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
@@ -32,7 +35,7 @@ export async function POST() {
   const { data: team } = await adminClient
     .from("teams")
     .select("deletion_requested_at")
-    .eq("id", profile.team_id)
+    .eq("id", teamId)
     .single();
   if (!team?.deletion_requested_at) {
     return NextResponse.json({ error: "退会手続き中ではありません" }, { status: 400 });
@@ -41,7 +44,7 @@ export async function POST() {
   const { error } = await adminClient
     .from("teams")
     .update({ deletion_requested_at: null, deletion_requested_by: null })
-    .eq("id", profile.team_id);
+    .eq("id", teamId);
   if (error) {
     return NextResponse.json({ error: `取り消しに失敗しました: ${error.message}` }, { status: 500 });
   }

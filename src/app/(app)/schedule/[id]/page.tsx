@@ -112,10 +112,15 @@ export default function ScheduleDetailPage() {
         ),
       );
 
-      const [{ data: guardianProfiles }, { data: allLinks }] = await Promise.all([
-        supabase.from("profiles").select("id, name, role").in("role", ["一般", "運営"]).order("name"),
+      // roleは現在チームのteam_membershipsを正本とするlist_team_members()から取得する
+      // (profiles.roleはlegacy情報のため使用しない)。
+      const [{ data: members }, { data: allLinks }] = await Promise.all([
+        supabase.rpc("list_team_members"),
         supabase.from("player_guardians").select("profile_id"),
       ]);
+      const guardianProfiles = (members ?? [])
+        .filter((m) => m.role === "一般" || m.role === "運営")
+        .sort((a, b) => a.name.localeCompare(b.name));
       const linkedIds = new Set((allLinks ?? []).map((l) => l.profile_id));
       setUnlinkedGuardians((guardianProfiles ?? []).filter((p) => !linkedIds.has(p.id)));
     } else {

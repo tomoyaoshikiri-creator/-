@@ -33,7 +33,6 @@ export default function UsersPage() {
   );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites")));
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [nameDrafts, setNameDrafts] = useState<Record<string, string>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<"一般" | "指導者" | null>(null);
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
@@ -77,22 +76,6 @@ export default function UsersPage() {
     if (!canAccessTab(role, "users")) router.replace("/schedule");
   }, [role, router]);
 
-  async function handleNameChange(id: string, name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      toast("表示名を入力してください");
-      return;
-    }
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ name: trimmed }).eq("id", id);
-    if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-    toast("表示名を更新しました");
-    load();
-  }
-
   async function toggleGuardian(profileId: string, playerId: string) {
     const supabase = createClient();
     const linked = (guardianLinks[profileId] ?? []).includes(playerId);
@@ -117,7 +100,7 @@ export default function UsersPage() {
 
   async function handleRoleChange(id: string, role: Role) {
     const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ role }).eq("id", id);
+    const { error } = await supabase.rpc("update_team_member", { target_user_id: id, new_role: role });
     if (error) {
       toast(error.message);
       return;
@@ -128,7 +111,7 @@ export default function UsersPage() {
 
   async function handleStatusChange(id: string, status: UserStatus) {
     const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
+    const { error } = await supabase.rpc("update_team_member", { target_user_id: id, new_status: status });
     if (error) {
       toast(`更新に失敗しました: ${error.message}`);
       return;
@@ -144,14 +127,10 @@ export default function UsersPage() {
       return;
     }
     setDeleteConfirmId(null);
-    const res = await fetch("/api/admin/delete-user", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetId: id }),
-    });
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: "削除に失敗しました" }));
-      toast(error ?? "削除に失敗しました");
+    const supabase = createClient();
+    const { error } = await supabase.rpc("remove_team_member", { target_user_id: id });
+    if (error) {
+      toast(error.message ?? "削除に失敗しました");
       return;
     }
     toast("ユーザーを削除しました");
@@ -291,24 +270,8 @@ export default function UsersPage() {
 
                 {expandedId === u.id && (
                   <div className="pb-3.5">
-                    <FieldLabel>表示名</FieldLabel>
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <input
-                        className={inputClass("flex-1")}
-                        value={nameDrafts[u.id] ?? u.name}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => setNameDrafts((m) => ({ ...m, [u.id]: e.target.value }))}
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNameChange(u.id, nameDrafts[u.id] ?? u.name);
-                        }}
-                        className="flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
-                      >
-                        保存
-                      </button>
+                    <div className="text-xs text-ink-soft mb-2.5">
+                      表示名は本人が「設定」から変更できます。管理者による変更はできません。
                     </div>
 
                     {u.email && (
@@ -359,7 +322,9 @@ export default function UsersPage() {
                       ))}
                     </select>
 
-                    {u.role === "管理者" ? (
+                    {u.id === userId ? (
+                      <div className="text-xs text-ink-soft">自分自身は削除できません。</div>
+                    ) : u.role === "管理者" ? (
                       <div className="text-xs text-ink-soft">
                         管理者ユーザーは削除できません。削除するには先に権限を変更してください。
                       </div>

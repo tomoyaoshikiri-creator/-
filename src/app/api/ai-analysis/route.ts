@@ -81,12 +81,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
-  if (!profile || profile.role !== "管理者") {
+  const [{ data: teamId }, { data: role }] = await Promise.all([
+    supabase.rpc("current_team_id"),
+    supabase.rpc("current_role"),
+  ]);
+  if (!teamId || role !== "管理者") {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  const { data: team } = await supabase.from("teams").select("plan, sport, category").eq("id", profile.team_id).single();
+  const { data: team } = await supabase.from("teams").select("plan, sport, category").eq("id", teamId).single();
   if (!team || !hasAiAnalysisAccess(team.plan)) {
     return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
   }
@@ -112,7 +115,7 @@ export async function POST(request: Request) {
   // 上限に達している場合はAI_USAGE_LIMIT_REACHEDで拒否され、Anthropic API自体を
   // 呼び出さない。同一requestIdでの再送は新たな予約を作らず、既存の予約/確定結果を返す。
   const { data: reservation, error: reserveError } = await adminClient.rpc("reserve_ai_analysis_usage", {
-    p_team_id: profile.team_id,
+    p_team_id: teamId,
     p_actor_id: user.id,
     p_request_id: usageRequestId,
     p_monthly_limit: MONTHLY_LIMIT,
@@ -160,7 +163,7 @@ export async function POST(request: Request) {
     }
   } catch (err) {
     console.error("[api/ai-analysis] failed to collect analysis data", err);
-    await resolveUsage(adminClient, profile.team_id, reservationId, false);
+    await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "分析用データの取得に失敗しました" }, { status: 500 });
   }
 
@@ -189,11 +192,11 @@ export async function POST(request: Request) {
     });
   } catch (err) {
     console.error("[api/ai-analysis] Anthropic call failed", err);
-    await resolveUsage(adminClient, profile.team_id, reservationId, false);
+    await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });
   }
   if (!body) {
-    await resolveUsage(adminClient, profile.team_id, reservationId, false);
+    await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });
   }
 
@@ -201,17 +204,17 @@ export async function POST(request: Request) {
     scope === "player"
       ? await supabase
           .from("player_analysis_notes")
-          .insert({ team_id: profile.team_id, player_id: playerId, author_id: user.id, body, source: "ai" })
+          .insert({ team_id: teamId, player_id: playerId, author_id: user.id, body, source: "ai" })
       : await supabase
           .from("team_analysis_notes")
-          .insert({ team_id: profile.team_id, author_id: user.id, body, source: "ai" });
+          .insert({ team_id: teamId, author_id: user.id, body, source: "ai" });
   if (insertError) {
     console.error("[api/ai-analysis] failed to save result", insertError);
-    await resolveUsage(adminClient, profile.team_id, reservationId, false);
+    await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "AI分析の保存に失敗しました" }, { status: 500 });
   }
 
-  await resolveUsage(adminClient, profile.team_id, reservationId, true);
+  await resolveUsage(adminClient, teamId, reservationId, true);
 
   return NextResponse.json({ body, usedThisMonth: usage.used_count, monthlyLimit: MONTHLY_LIMIT });
 }
@@ -231,12 +234,15 @@ export async function GET() {
     return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("profiles").select("role, team_id").eq("id", user.id).single();
-  if (!profile || profile.role !== "管理者") {
+  const [{ data: teamId }, { data: role }] = await Promise.all([
+    supabase.rpc("current_team_id"),
+    supabase.rpc("current_role"),
+  ]);
+  if (!teamId || role !== "管理者") {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
   }
 
-  const { data: team } = await supabase.from("teams").select("plan").eq("id", profile.team_id).single();
+  const { data: team } = await supabase.from("teams").select("plan").eq("id", teamId).single();
   if (!team || !hasAiAnalysisAccess(team.plan)) {
     return NextResponse.json({ error: "このプランではAI分析を利用できません" }, { status: 403 });
   }

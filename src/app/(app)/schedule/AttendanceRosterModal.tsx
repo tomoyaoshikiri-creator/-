@@ -177,12 +177,17 @@ export function AttendanceRosterModal({
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: players }, { data: profiles }, { data: attendances }, { data: links }] = await Promise.all([
+    // roleは現在チームのteam_membershipsを正本とするlist_team_members()から取得する
+    // (profiles.roleはlegacy情報のため使用しない)。名前順表示のため、joined_at順で
+    // 返るRPC結果をここでname順に並び替える(以前のprofiles直接SELECTの.order("name")と
+    // 同じ挙動にするため)。
+    const [{ data: players }, { data: members }, { data: attendances }, { data: links }] = await Promise.all([
       supabase.rpc("list_roster_players"),
-      supabase.from("profiles").select("id, name, role").order("name"),
+      supabase.rpc("list_team_members"),
       supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
       supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
     ]);
+    const profiles = (members ?? []).slice().sort((a, b) => a.name.localeCompare(b.name));
 
     const attByPlayer = new Map(
       (attendances ?? []).filter((a) => a.player_id).map((a) => [a.player_id as string, a]),
