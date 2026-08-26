@@ -97,6 +97,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           teamLogoUrl: teamLogoUrl(supabase, team?.logo_path),
           name: profile.name,
           role,
+          hasMultipleTeams: (memberships ?? []).length > 1,
           plan: team?.plan ?? "お試し",
           sport: team?.sport ?? "ミニバスケットボール",
           category: team?.category ?? "小学生",

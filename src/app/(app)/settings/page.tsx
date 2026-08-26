@@ -25,7 +25,7 @@ function SettingsRow({ href, label, value }: { href: string; label: string; valu
 }
 
 export default function SettingsPage() {
-  const { role, plan, sport, category } = useSession();
+  const { role, plan, sport, category, hasMultipleTeams } = useSession();
   const canManageTeam = canManageSettings(role);
 
   return (
@@ -35,6 +35,7 @@ export default function SettingsPage() {
         <SettingsRow href="/settings/name" label="表示名の変更" />
         <SettingsRow href="/settings/password" label="パスワードを変更" />
         <SettingsRow href="/settings/teams/new" label="新しいチームを作成" />
+        {hasMultipleTeams && <SettingsRow href="/select-team" label="所属チームを切り替える" />}
         <PushNotificationToggle />
       </Card>
 

@@ -13,6 +13,7 @@ export interface SessionInfo {
   plan: TeamPlan;
   sport: TeamSport;
   category: TeamCategory;
+  hasMultipleTeams: boolean;
 }
 
 const SessionContext = createContext<SessionInfo | null>(null);
