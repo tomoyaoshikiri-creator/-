@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SelectTeamState {
@@ -16,5 +17,9 @@ export async function selectTeam(targetTeamId: string): Promise<SelectTeamState 
   if (error) {
     return { error: error.message };
   }
+  // (app)/layout.tsxはredirect先(/schedule)と共有されるセグメントのため、明示的に
+  // 無効化しないとクライアント側のRouter Cacheに残っている切り替え前のteam情報が
+  // redirect後も表示されてしまう。
+  revalidatePath("/", "layout");
   redirect("/schedule");
 }
