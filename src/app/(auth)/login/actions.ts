@@ -10,6 +10,7 @@ export interface FormState {
 export async function login(_prev: FormState, formData: FormData): Promise<FormState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "");
 
   if (!email || !password) {
     return { error: "メールアドレスとパスワードを入力してください" };
@@ -21,5 +22,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     return { error: "メールアドレスまたはパスワードが正しくありません" };
   }
 
-  redirect("/schedule");
+  // オープンリダイレクト対策: "/"で始まり"//"で始まらない相対パスのみ遷移先として許可する
+  const isSafeNext = next.startsWith("/") && !next.startsWith("//");
+  redirect(isSafeNext ? next : "/schedule");
 }

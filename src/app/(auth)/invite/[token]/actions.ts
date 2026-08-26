@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
 
@@ -53,5 +54,45 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   });
   if (rpcError) return { error: rpcError.message };
 
+  redirect("/schedule");
+}
+
+export interface AcceptInviteAsExistingUserState {
+  error?: string;
+  switchFailed?: boolean;
+}
+
+// ログイン済み既存ユーザー専用。signUp()は行わず、既存セッションに対して
+// accept_invite RPCのみを実行する。accept_invite()のhas_profile=true分岐
+// (0118)はmember_nameを使用しない(profiles.nameは変更しない設計のため)ので、
+// 氏名は空文字で渡す。
+//
+// accept_invite()自体は呼び出し元(このアクション)から見て冪等ではない
+// (呼ぶたびにteam_membershipsへ新しい行が作られる)ため、switch_active_team()が
+// 失敗してもaccept_invite()を再実行しない。参加済みチームへの切り替えは
+// /select-teamから手動で行えるよう案内するに留める。
+export async function acceptInviteAsExistingUser(
+  _prev: AcceptInviteAsExistingUserState,
+  formData: FormData,
+): Promise<AcceptInviteAsExistingUserState> {
+  const token = String(formData.get("token") ?? "");
+  const playerIds = formData.getAll("playerId").map(String).filter((id) => id !== "");
+
+  const supabase = await createClient();
+
+  const { data: teamId, error: acceptError } = await supabase.rpc("accept_invite", {
+    invite_token: token,
+    member_name: "",
+    player_ids: playerIds,
+  });
+  if (acceptError) return { error: acceptError.message };
+  if (!teamId) return { error: "招待の受諾に失敗しました" };
+
+  const { error: switchError } = await supabase.rpc("switch_active_team", { target_team_id: teamId });
+  if (switchError) {
+    return { switchFailed: true };
+  }
+
+  revalidatePath("/", "layout");
   redirect("/schedule");
 }

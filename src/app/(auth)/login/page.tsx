@@ -4,9 +4,9 @@ import { LoginForm } from "./LoginForm";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; notice?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; next?: string }>;
 }) {
-  const { error, notice } = await searchParams;
+  const { error, notice, next } = await searchParams;
   return (
     <div>
       <AuthHeading />
@@ -22,7 +22,7 @@ export default async function LoginPage({
           もう一度ログインしてください。
         </div>
       )}
-      <LoginForm />
+      <LoginForm next={next} />
     </div>
   );
 }

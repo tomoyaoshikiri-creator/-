@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AuthHeading } from "../../AuthHeading";
 import { InviteForm } from "./InviteForm";
+import { AcceptInviteAsExistingUserForm } from "./AcceptInviteAsExistingUserForm";
 
 const ROLE_LABEL: Record<string, string> = {
   一般: "保護者",
@@ -14,9 +15,15 @@ export default async function InvitePage({
 }) {
   const { token } = await params;
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .rpc("get_invite_info", { invite_token: token })
-    .maybeSingle();
+  const [
+    { data, error },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.rpc("get_invite_info", { invite_token: token }).maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
 
   if (error || !data || !data.valid) {
     return (
@@ -42,7 +49,11 @@ export default async function InvitePage({
       <div className="text-center text-[13px] text-ink-soft mb-4">
         <span className="font-bold text-navy">{data.team_name}</span> への招待({roleLabel}用)
       </div>
-      <InviteForm token={token} roleLabel={roleLabel} players={players} category={data.category} />
+      {user ? (
+        <AcceptInviteAsExistingUserForm token={token} roleLabel={roleLabel} players={players} category={data.category} />
+      ) : (
+        <InviteForm token={token} roleLabel={roleLabel} players={players} category={data.category} />
+      )}
     </div>
   );
 }
