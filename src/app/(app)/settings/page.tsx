@@ -34,6 +34,7 @@ export default function SettingsPage() {
       <Card>
         <SettingsRow href="/settings/name" label="表示名の変更" />
         <SettingsRow href="/settings/password" label="パスワードを変更" />
+        <SettingsRow href="/settings/teams/new" label="新しいチームを作成" />
         <PushNotificationToggle />
       </Card>
 
