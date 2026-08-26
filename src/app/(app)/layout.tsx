@@ -31,12 +31,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   if (bootstrap.status === "no_membership") redirect("/setup");
-  if (bootstrap.status === "needs_selection") {
-    // 段階3d前の通常運用では到達しない想定(複数チーム所属は現行のRPCガードにより
-    // 発生しない)。万一到達した場合は異常として記録し、安全側の画面を表示する。
-    console.error("initialize_active_team returned needs_selection unexpectedly (pre-3d)");
-    return <ActiveTeamErrorScreen />;
-  }
+  // 段階3d-2: 複数チーム所属が実際に解禁されると、このsessionでまだactive team
+  // が選択されていない場合にneeds_selectionが返る(正常なケース)。選択画面へ誘導する。
+  if (bootstrap.status === "needs_selection") redirect("/select-team");
 
   // 現在チームの所属・role/statusはteam_membershipsが正本。team_membershipsはRLS有効・
   // policy 0件のため直接SELECTできず、読み取り専用RPC(list_my_team_memberships())経由で
