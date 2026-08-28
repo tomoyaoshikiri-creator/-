@@ -8,6 +8,7 @@ import { InactivityLogout } from "@/components/InactivityLogout";
 import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
 import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
+import { teamThemeStyle } from "@/lib/theme";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -81,11 +82,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // 「基調色」はヘッダー・タブなど画面全体で使われる --orange、
-  // 「アクセントカラー」は詳細画面ヘッダーやボタンで使われる --navy に対応させる。
-  const themeStyle: Record<string, string> = {};
-  if (team?.theme_primary) themeStyle["--orange"] = team.theme_primary;
-  if (team?.theme_accent) themeStyle["--navy"] = team.theme_accent;
+  // 「基調色」はヘッダー・タブなど画面全体で使われる --orange/--team-primary、
+  // 「アクセントカラー」は詳細画面ヘッダーやボタンで使われる --navy/--team-secondary に対応させる。
+  // 生成ロジック自体はsrc/lib/theme.tsに集約している(旧token/新tokenの共存はPhase UI-1の方針)。
+  const themeStyle = teamThemeStyle({ themePrimary: team?.theme_primary, themeAccent: team?.theme_accent });
 
   return (
     <div className="app-shell" style={themeStyle as React.CSSProperties}>

@@ -16,6 +16,33 @@
   --danger: #c0392b;
   --sky: #3b82c4;
   --holiday: #c0392b;
+
+  /*
+    CIRCLE LINES Phase UI-1: 新ブランドカラー・semantic design token。
+    上のnavy/orange(FAITH CREATION由来)は既存画面互換のため残し、削除・リネームはしない。
+    値の生成ロジック(チームカラー→teamPrimary等)はsrc/lib/theme.tsに集約し、
+    (app)/layout.tsxがteams.theme_primary/theme_accentに応じてinline styleで上書きする。
+    未設定時はここでのfallback値(Brand Blue/Brand Cyan)がそのまま使われる。
+  */
+  --brand-navy: #123bdb;
+  --brand-blue: #087cf0;
+  --brand-cyan: #08c6e8;
+
+  --team-primary: var(--brand-blue);
+  --team-secondary: var(--brand-cyan);
+  /* Brand Blue/Brand CyanいずれもWCAG相対輝度基準で濃色文字(--ink)の方が
+     白文字よりコントラスト比が高いため、fallback時のデフォルトは--inkに合わせる。 */
+  --on-team-primary: var(--ink);
+  --on-team-secondary: var(--ink);
+
+  --background: var(--paper);
+  --surface: #ffffff;
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted: rgba(107, 102, 96, 0.65);
+
+  --border: var(--line);
 }
 
 @theme inline {
@@ -29,6 +56,20 @@
   --color-danger: var(--danger);
   --color-sky: var(--sky);
   --color-holiday: var(--holiday);
+
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-team-primary: var(--team-primary);
+  --color-team-secondary: var(--team-secondary);
+  --color-on-team-primary: var(--on-team-primary);
+  --color-on-team-secondary: var(--on-team-secondary);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
 
   /*
     MeiryoはWindows標準搭載フォントでWeb配信はできないため、
