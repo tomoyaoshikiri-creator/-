@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { teamLogoUrl } from "@/lib/teamLogo";
 import { AuthHeading } from "../../AuthHeading";
 import { LoginForm } from "../LoginForm";
 
@@ -13,13 +12,17 @@ export default async function TeamLoginPage({
   const { slug } = await params;
   const { error, notice } = await searchParams;
 
+  // Phase UI-2A: ログイン画面はCIRCLE LINESサービスブランドの表示領域とし、チームロゴ/チーム名の
+  // 表示は廃止する(下のAuthHeadingにはbrand="circleLines"のみ渡す)。slugによるチーム特定・
+  // 認証フロー自体は変更しないため、get_team_login_branding(slug)の呼び出しはそのまま維持する
+  // (表示に使わなくなっただけで、削除・変更はしていない)。
   const supabase = await createClient();
   const { data } = await supabase.rpc("get_team_login_branding", { p_slug: slug });
-  const branding = data?.[0];
+  void data;
 
   return (
     <div>
-      <AuthHeading teamName={branding?.name} logoUrl={teamLogoUrl(supabase, branding?.logo_path ?? null)} />
+      <AuthHeading brand="circleLines" />
       {error && (
         <div className="mb-3 text-[12.5px] text-danger text-center bg-white border border-line rounded-2xl p-3">
           {error === "confirm_failed" ? "確認リンクが無効か期限切れです。もう一度お試しください。" : error}

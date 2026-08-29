@@ -3,9 +3,9 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "CLUB LINK", body: event.data ? event.data.text() : "" };
+    data = { title: "CIRCLE LINES", body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "CLUB LINK";
+  const title = data.title || "CIRCLE LINES";
   const options = {
     body: data.body || "",
     icon: "/icons/192",

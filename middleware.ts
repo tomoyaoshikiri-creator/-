@@ -65,6 +65,13 @@ export async function middleware(request: NextRequest) {
   return supabaseResponse;
 }
 
+// icon$/apple-icon$/icons\/192$/icons\/512$/manifest\.webmanifest$は、CIRCLE LINESの
+// favicon/PWAアイコン/manifest(サービスブランドの公開リソース、src/lib/brandIcon.ts・
+// src/app/manifest.ts)を未ログイン状態でも配信するための除外。既存の除外(_next/static等・
+// 画像拡張子)と同様に、パス末尾に$アンカーを付けて完全一致のみを除外し、
+// 拡張子のないパスや他ファイルまで広く除外しないようにしている。
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon$|apple-icon$|icons/192$|icons/512$|manifest\\.webmanifest$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

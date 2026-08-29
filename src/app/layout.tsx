@@ -21,11 +21,12 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CLUB LINK",
-  description: "CLUB LINK — チーム運営アプリ",
+  title: "CIRCLE LINES",
+  description: "CIRCLE LINES — チーム運営プラットフォーム",
+  applicationName: "CIRCLE LINES",
   appleWebApp: {
     capable: true,
-    title: "CLUB LINK",
+    title: "CIRCLE LINES",
     statusBarStyle: "black-translucent",
   },
 };

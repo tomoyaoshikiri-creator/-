@@ -1,8 +1,8 @@
-import { renderAppIcon } from "@/lib/brandIcon";
+import { renderCircleLinesIcon } from "@/lib/brandIcon";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
-  return renderAppIcon(192);
+  return renderCircleLinesIcon(192);
 }
