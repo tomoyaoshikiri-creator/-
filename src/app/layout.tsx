@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant, Noto_Sans_JP, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -29,6 +29,15 @@ export const metadata: Metadata = {
     title: "CIRCLE LINES",
     statusBarStyle: "black-translucent",
   },
+};
+
+// Phase UI-2B: viewport-fit=coverで画面端(ノッチ/ステータスバー領域)までレイアウトを
+// 拡張できるようにする。実際の余白確保はenv(safe-area-inset-*)を使う各コンポーネント側
+// (AppHeader・TabBar)の責務とし、ここではブラウザにsafe-area情報を要求するだけに留める。
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

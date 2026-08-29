@@ -24,7 +24,10 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
 
   return (
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
+      // Phase UI-2B: 従来のpb-7.5(30px固定)は実機のホームインジケータ高さと連動しない
+      // 決め打ちだったため、env(safe-area-inset-bottom)を使う方式に置き換える。
+      // ホームインジケータのない端末(env()が0)でも最低10pxの余白は確保する。
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >

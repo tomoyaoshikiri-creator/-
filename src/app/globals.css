@@ -43,6 +43,20 @@
   --text-muted: rgba(107, 102, 96, 0.65);
 
   --border: var(--line);
+
+  /*
+    Phase UI-2B: AppHeaderのグラデーション・要素別コントラストtoken。
+    値の生成ロジックはsrc/lib/theme.ts(headerThemeStyle)に集約し、(app)/layout.tsxが
+    teams.theme_primary/theme_accentに応じてinline styleで上書きする。ここでの値は
+    未設定時(ブランドグラデーション01)のfallbackで、headerThemeStyle()の実際の出力と一致する。
+  */
+  --header-gradient: linear-gradient(135deg, #123bdb 0%, #087cf0 40%, #08c6e8 100%);
+  --header-chip-on: #ffffff;
+  --header-chip-surface: #0f3cb5;
+  --header-title-on: #ffffff;
+  --header-title-surface: transparent;
+  --header-search-on: #1a1a1a;
+  --header-search-surface: #39aff1;
 }
 
 @theme inline {
@@ -100,6 +114,19 @@ input,
 select,
 textarea {
   font-size: 16px !important;
+}
+
+/*
+  AppHeaderの検索欄は背景(--header-search-surface)に応じて文字色(--header-search-on)が
+  変わるため、placeholderも固定色ではなくcurrentColor(親から継承した--header-search-on)を
+  使う。React inline styleは::placeholderを指定できないためここで定義する。
+*/
+.app-header-search-input {
+  color: inherit;
+}
+.app-header-search-input::placeholder {
+  color: inherit;
+  opacity: 0.62;
 }
 
 .app-shell {

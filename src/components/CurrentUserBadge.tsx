@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 
 export function CurrentUserBadge() {
-  const { name } = useSession();
+  const { name, role } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -20,13 +20,15 @@ export function CurrentUserBadge() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="text-xs font-bold text-white bg-white/22 px-2.5 py-1.5 rounded-lg"
+        className="flex flex-col items-end gap-0.5 max-w-[140px] px-2.5 py-1.5 rounded-lg"
+        style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
       >
-        {name}
+        <span className="text-xs font-bold truncate max-w-full">{name}</span>
+        <span className="text-[9px] font-medium opacity-80 truncate max-w-full">{role}</span>
       </button>
       {open && (
         <>
