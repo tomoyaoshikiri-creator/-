@@ -50,13 +50,14 @@
     teams.theme_primary/theme_accentに応じてinline styleで上書きする。ここでの値は
     未設定時(ブランドグラデーション01)のfallbackで、headerThemeStyle()の実際の出力と一致する。
   */
-  --header-gradient: linear-gradient(135deg, #123bdb 0%, #087cf0 40%, #08c6e8 100%);
+  --header-gradient: linear-gradient(105deg, #123BDB 0%, #087CF0 40%, #08C6E8 100%);
+  --header-blend-mode: normal;
   --header-chip-on: #ffffff;
-  --header-chip-surface: #0f3cb5;
+  --header-chip-surface: rgba(10, 10, 14, 0.22);
   --header-title-on: #ffffff;
   --header-title-surface: transparent;
   --header-search-on: #1a1a1a;
-  --header-search-surface: #39aff1;
+  --header-search-surface: rgba(255, 255, 255, 0.22);
 }
 
 @theme inline {

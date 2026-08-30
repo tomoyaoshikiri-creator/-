@@ -7,6 +7,7 @@ import {
   contrastRatio,
   GRADIENT_PARAMS,
   gradientCss,
+  headerBackground,
   headerChipColors,
   headerGradientStops,
   HEADER_CONTRAST_TARGET,
@@ -15,10 +16,10 @@ import {
   headerTitleColors,
   isValidHexColor,
   onColorFor,
+  primaryGradientStops,
   relativeLuminance,
-  RELATIVE_LUMINANCE_TIE_EPSILON,
   resolveTeamTheme,
-  teamGradientStops,
+  SECONDARY_WASH_PARAMS,
   teamThemeStyle,
 } from "../theme";
 
@@ -157,7 +158,7 @@ describe("brandGradientStops/headerGradientStops(未設定)", () => {
     expect(headerGradientStops({ themePrimary: null, themeAccent: null })).toEqual(brandGradientStops());
   });
 
-  it("primary/secondaryの片方だけ設定されている場合もブランドグラデーション01にfallbackする", () => {
+  it("primary/secondaryの片方だけ設定されている場合もブランドグラデーション01にfallbackする(既存挙動を維持)", () => {
     expect(headerGradientStops({ themePrimary: "#1D4ED8", themeAccent: null })).toEqual(brandGradientStops());
     expect(headerGradientStops({ themePrimary: null, themeAccent: "#38BDF8" })).toEqual(brandGradientStops());
   });
@@ -167,9 +168,13 @@ describe("brandGradientStops/headerGradientStops(未設定)", () => {
   });
 });
 
-// hexの色相(0〜360度)を独立に計算するテスト専用ヘルパー。本番実装の内部関数
-// (hexToHsl等)には依存せず、標準的なHSL変換式で直接算出することで、
-// 「deep/accentが実際にどちらの色由来の色相を継承しているか」を独立に検証できるようにする。
+/* ============================================================
+ * 以下はすべて、本番実装の内部関数(hexToHsl/hueBlendHex/compositeOverlay等)を
+ * 一切importせず、テストファイル内で独立に再実装した検証ヘルパーを使う。
+ * 「実装側の関数を期待値生成にもそのまま使ってしまい、実装が間違っていてもPASSする」
+ * ことを避けるため。
+ * ========================================================== */
+
 function hueOf(hex: string): number {
   const n = parseInt(hex.slice(1), 16);
   const r = ((n >> 16) & 255) / 255;
@@ -199,133 +204,245 @@ function hueDiffDeg(a: number, b: number): number {
   return d > 180 ? 360 - d : d;
 }
 
-// teamGradientStops: 「チーム版01」の生成ルール(D案: 相対輝度で役割を対称割当)。
-// 9パターン(Phase UI-2Bのモック検証と同一のテストカラー+都賀ビクトリーズ実データ)で、
-// 構造・有効性・deep/accentの色源選択を確認する。
-describe("teamGradientStops(チーム版01)", () => {
-  const CASES: Record<string, { p: string; s: string }> = {
-    tsuga: { p: "#FFAB01", s: "#011D57" },
-    blue: { p: "#1D4ED8", s: "#38BDF8" },
-    red: { p: "#DC2626", s: "#F97316" },
-    green: { p: "#16A34A", s: "#FACC15" },
-    purple: { p: "#7C3AED", s: "#EC4899" },
-    lightPrimary: { p: "#FDE68A", s: "#FCA5A5" },
-    darkPrimary: { p: "#1E1B4B", s: "#312E81" },
-    hueGapLarge: { p: "#DC2626", s: "#2563EB" },
-    invertedLightness: { p: "#FDE68A", s: "#4C1D95" },
-  };
+function hexToRgbTuple(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
 
-  it.each(Object.entries(CASES))("%s: 深色→primary→明るいアクセントの3ストップになり、値はすべて有効なhex", (_key, { p, s }) => {
-    const stops = teamGradientStops(p, s);
+function rgbTupleToHex([r, g, b]: [number, number, number]): string {
+  const c = (v: number) => Math.min(255, Math.max(0, Math.round(v)));
+  return "#" + [r, g, b].map((v) => c(v).toString(16).padStart(2, "0")).join("");
+}
+
+function testMixHex(a: string, b: string, t: number): string {
+  const [ar, ag, ab] = hexToRgbTuple(a);
+  const [br, bg, bb] = hexToRgbTuple(b);
+  return rgbTupleToHex([ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t]);
+}
+
+// background-blend-mode: hue のCSS Compositing Level 1定義を、本番実装とは
+// 独立にテストファイル内で再実装したもの(バグの見逃しを防ぐため)。
+function testHueBlend(backdropHex: string, sourceHex: string): string {
+  const toUnit = (hex: string): [number, number, number] => {
+    const [r, g, b] = hexToRgbTuple(hex);
+    return [r / 255, g / 255, b / 255];
+  };
+  const lum = ([r, g, b]: [number, number, number]) => 0.3 * r + 0.59 * g + 0.11 * b;
+  const clip = (c: [number, number, number]): [number, number, number] => {
+    let [r, g, b] = c;
+    const l = lum(c);
+    const n = Math.min(r, g, b);
+    if (n < 0) {
+      r = l + ((r - l) * l) / (l - n);
+      g = l + ((g - l) * l) / (l - n);
+      b = l + ((b - l) * l) / (l - n);
+    }
+    const l2 = lum([r, g, b]);
+    const x2 = Math.max(r, g, b);
+    if (x2 > 1) {
+      r = l2 + ((r - l2) * (1 - l2)) / (x2 - l2);
+      g = l2 + ((g - l2) * (1 - l2)) / (x2 - l2);
+      b = l2 + ((b - l2) * (1 - l2)) / (x2 - l2);
+    }
+    return [r, g, b];
+  };
+  const setLum = (c: [number, number, number], l: number) => {
+    const d = l - lum(c);
+    return clip([c[0] + d, c[1] + d, c[2] + d]);
+  };
+  const sat = ([r, g, b]: [number, number, number]) => Math.max(r, g, b) - Math.min(r, g, b);
+  const setSat = (c: [number, number, number], s: number): [number, number, number] => {
+    const order = [0, 1, 2].sort((a, b) => c[a] - c[b]);
+    const [mn, md, mx] = order;
+    const out: [number, number, number] = [0, 0, 0];
+    if (c[mx] > c[mn]) {
+      out[md] = ((c[md] - c[mn]) * s) / (c[mx] - c[mn]);
+      out[mx] = s;
+    }
+    out[mn] = 0;
+    return out;
+  };
+  const backdrop = toUnit(backdropHex);
+  const source = toUnit(sourceHex);
+  const blended = setLum(setSat(source, sat(backdrop)), lum(backdrop));
+  return rgbTupleToHex([blended[0] * 255, blended[1] * 255, blended[2] * 255]);
+}
+
+function testCompositeAlpha(bgHex: string, overlayHex: string, alpha: number): string {
+  const [br, bgc, bb] = hexToRgbTuple(bgHex);
+  const [or, og, ob] = hexToRgbTuple(overlayHex);
+  return rgbTupleToHex([br * (1 - alpha) + or * alpha, bgc * (1 - alpha) + og * alpha, bb * (1 - alpha) + ob * alpha]);
+}
+
+// 本番が返す"rgba(r, g, b, a)"文字列を独立にパースする。
+function parseRgba(value: string): { hex: string; alpha: number } {
+  const m = value.match(/rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
+  if (!m) throw new Error(`not an rgba() string: ${value}`);
+  const [, r, g, b, a] = m;
+  return { hex: rgbTupleToHex([Number(r), Number(g), Number(b)]), alpha: Number(a) };
+}
+
+// テストファイル内で独立に再現した「stops配列上の任意位置(t: 0〜1)の下地色」。
+// 本番のsampleGradientColor()は使わず、公開されているstopsの値だけを使って自前で
+// 補間する(chip/title/searchそれぞれ異なる位置を正しく扱えるよう、stops配列とtを
+// 明示的に受け取る)。
+function sampleStopsAt(stops: { color: string; position: number }[], t: number): string {
+  const pct = t * 100;
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+    if (pct >= a.position && pct <= b.position) {
+      const local = b.position === a.position ? 0 : (pct - a.position) / (b.position - a.position);
+      return testMixHex(a.color, b.color, local);
+    }
+  }
+  return stops[stops.length - 1].color;
+}
+
+// 都賀ビクトリーズ実データを最優先に、ブランド未設定時の回帰確認は別途行うため
+// ここではチームカラー設定済みの代表ケースのみを列挙する。
+const TEAM_COLOR_CASES: Array<[string, string, string]> = [
+  ["tsuga", "#FFAB01", "#011D57"],
+  ["blue", "#1D4ED8", "#38BDF8"],
+  ["red", "#DC2626", "#F97316"],
+  ["green", "#16A34A", "#FACC15"],
+  ["purple", "#7C3AED", "#EC4899"],
+  ["closeHue", "#0EA5E9", "#2563EB"],
+  ["complementary", "#16A34A", "#DC2626"],
+  ["bothLight", "#FDE68A", "#A7F3D0"],
+  ["bothDark", "#1E1B4B", "#312E81"],
+];
+
+// primaryGradientStops: teamPrimaryの単一色相グラデーション。teamPrimaryは常にhero(40%)。
+describe("primaryGradientStops(Primary主体グラデーション)", () => {
+  it.each(TEAM_COLOR_CASES)("%s: 深色→primary→明るいアクセントの3ストップになり、primaryが無加工でhero位置に保持される", (_key, p) => {
+    const stops = primaryGradientStops(p);
     expect(stops).toHaveLength(3);
     expect(stops.map((st) => st.position)).toEqual([0, GRADIENT_PARAMS.heroStopPercent, 100]);
-    stops.forEach((st) => {
-      expect(isValidHexColor(st.color)).toBe(true);
-      expect(st.color).not.toMatch(/nan/i);
-    });
-  });
-
-  it.each(Object.entries(CASES))("%s: primaryそのものが主役色(40%)として無加工で保持される", (_key, { p, s }) => {
-    const stops = teamGradientStops(p, s);
     expect(stops[1].color).toBe(p);
+    stops.forEach((st) => expect(isValidHexColor(st.color)).toBe(true));
   });
 
-  it.each(Object.entries(CASES))("%s: 深色(0%)はprimaryと異なり、primaryより暗い(相対輝度が低い)", (_key, { p, s }) => {
-    const stops = teamGradientStops(p, s);
-    expect(stops[0].color).not.toBe(p);
-    // 深色はBrand Navy相当の相対輝度に正規化されるため、常にBrand Navyの相対輝度に近い
-    // (どちらのケースでも同じ「深さの水準」を再現しているはずで、5%以内の差に収まる)。
+  it.each(TEAM_COLOR_CASES)("%s: 深色(0%)はprimaryの色相を保ったままBrand Navy相当の相対輝度になる", (_key, p) => {
+    const stops = primaryGradientStops(p);
+    expect(hueDiffDeg(hueOf(stops[0].color), hueOf(p))).toBeLessThan(5);
     expect(Math.abs(relativeLuminance(stops[0].color) - relativeLuminance(BRAND_NAVY))).toBeLessThan(0.05);
   });
 
-  it.each(Object.entries(CASES))("%s: 明るいアクセント(100%)は、Brand Cyan相当の相対輝度に正規化される", (_key, { p, s }) => {
-    const stops = teamGradientStops(p, s);
+  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はprimaryの色相を保ったままBrand Cyan相当の相対輝度になる", (_key, p) => {
+    const stops = primaryGradientStops(p);
+    expect(hueDiffDeg(hueOf(stops[2].color), hueOf(p))).toBeLessThan(5);
     expect(Math.abs(relativeLuminance(stops[2].color) - relativeLuminance(BRAND_CYAN))).toBeLessThan(0.05);
-  });
-
-  it("secondary未指定の場合はprimary由来の明るい色のみでアクセントを作る(異常値にならない)", () => {
-    const withSecondary = teamGradientStops("#1D4ED8", "#38BDF8");
-    const withoutSecondary = teamGradientStops("#1D4ED8", null);
-    expect(isValidHexColor(withoutSecondary[2].color)).toBe(true);
-    expect(withoutSecondary[2].color).not.toBe(withSecondary[2].color);
-  });
-
-  it("都賀ビクトリーズ実データ(secondaryの方が大幅に暗い): deepはsecondary由来、heroは#FFAB01そのまま、accentはprimary由来", () => {
-    const primary = "#FFAB01";
-    const secondary = "#011D57";
-    const stops = teamGradientStops(primary, secondary);
-    expect(stops[1].color).toBe(primary);
-    // deep(0%)は暗い方=secondaryの色相を引き継ぐ(primaryの色相40°ではなくsecondaryの220°寄り)。
-    expect(hueDiffDeg(hueOf(stops[0].color), hueOf(secondary))).toBeLessThan(5);
-    // accent(100%)は明るい方=primaryの色相を引き継ぐ。
-    expect(hueDiffDeg(hueOf(stops[2].color), hueOf(primary))).toBeLessThan(5);
-  });
-
-  it("secondaryの方が明るいケース: deepはprimary由来、accentはsecondary由来", () => {
-    const primary = "#1D4ED8"; // 相対輝度が低い(暗い)
-    const secondary = "#38BDF8"; // 相対輝度が高い(明るい)
-    const stops = teamGradientStops(primary, secondary);
-    expect(hueDiffDeg(hueOf(stops[0].color), hueOf(primary))).toBeLessThan(5);
-    expect(hueDiffDeg(hueOf(stops[2].color), hueOf(secondary))).toBeLessThan(5);
-  });
-
-  it("primary/secondaryの相対輝度がほぼ同じ(EPSILON以内)ケース: 役割がprimary=deep寄り/secondary=light寄りに安定する", () => {
-    const primary = "#8834b2"; // 紫系
-    const secondary = "#1e6950"; // 緑系(色相は大きく異なるが、相対輝度差は0.01未満)
-    expect(Math.abs(relativeLuminance(primary) - relativeLuminance(secondary))).toBeLessThan(
-      RELATIVE_LUMINANCE_TIE_EPSILON,
-    );
-    const stops = teamGradientStops(primary, secondary);
-    expect(hueDiffDeg(hueOf(stops[0].color), hueOf(primary))).toBeLessThan(5);
-    expect(hueDiffDeg(hueOf(stops[2].color), hueOf(secondary))).toBeLessThan(5);
   });
 });
 
-// headerChipColors/headerTitleColors/headerThemeStyle: 通常サイズの重要テキストについて
-// 4.5:1以上のコントラストを確保できているかを、9パターンのテストカラーで検証する。
-describe("headerChipColors/headerTitleColors(コントラスト)", () => {
-  const ALL_CASES: Array<[string, string, string]> = [
-    ["unset-brand01", BRAND_BLUE, BRAND_CYAN],
-    ["tsuga", "#FFAB01", "#011D57"],
-    ["blue", "#1D4ED8", "#38BDF8"],
-    ["red", "#DC2626", "#F97316"],
-    ["green", "#16A34A", "#FACC15"],
-    ["purple", "#7C3AED", "#EC4899"],
-    ["lightPrimary", "#FDE68A", "#FCA5A5"],
-    ["darkPrimary", "#1E1B4B", "#312E81"],
-    ["hueGapLarge", "#DC2626", "#2563EB"],
-    ["invertedLightness", "#FDE68A", "#4C1D95"],
-  ];
-
-  it.each(ALL_CASES)("%s: チーム名/ユーザー名/役職/Badge/検索欄(chip系)は常に4.5:1以上", (_key, p, s) => {
-    const stops = teamGradientStops(p, s);
-    const chip = headerChipColors(stops, HEADER_POSITIONS.chipRow);
-    const search = headerChipColors(stops, HEADER_POSITIONS.searchRow);
-    expect(contrastRatio(chip.surface, chip.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
-    expect(contrastRatio(search.surface, search.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
+// headerBackground: teamSecondaryがbase linear-gradientへ直接混合されず、
+// 独立したradial-gradient washとして重ねられることを、生成されたCSS文字列を
+// 直接パースして検証する(headerBackground()の内部ロジックを信用せず、文字列として確認)。
+describe("headerBackground(配色再設計: C案)", () => {
+  it("未設定時はBrand Navy→Blue→Cyanのみ(washなし)、105deg維持", () => {
+    const bg = headerBackground({ themePrimary: null, themeAccent: null });
+    expect(bg.css).toBe("linear-gradient(105deg, #123BDB 0%, #087CF0 40%, #08C6E8 100%)");
+    expect(bg.css).not.toContain("radial-gradient");
+    expect(bg.blendMode).toBe("normal");
   });
 
-  it.each(ALL_CASES)("%s: 画面タイトル/戻るボタンは、素の背景かsurface適用後のいずれかで4.5:1以上", (_key, p, s) => {
-    const stops = teamGradientStops(p, s);
-    const title = headerTitleColors(stops, HEADER_POSITIONS.titleRow);
-    const effectiveBg = title.surface === "transparent" ? undefined : title.surface;
-    if (effectiveBg) {
-      expect(contrastRatio(effectiveBg, title.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
+  it.each(TEAM_COLOR_CASES)("%s: linear-gradient部分にsecondaryの色は一切含まれない(直接混合しない)", (_key, p, s) => {
+    const bg = headerBackground({ themePrimary: p, themeAccent: s });
+    const linearMatch = bg.css.match(/linear-gradient\([^)]*\)$/);
+    expect(linearMatch).not.toBeNull();
+    const linearPart = linearMatch![0];
+    expect(linearPart.toLowerCase()).not.toContain(s.toLowerCase());
+    // primaryのdeep/hero/accent由来の3色だけで構成されているはず。
+    const stops = primaryGradientStops(p);
+    for (const st of stops) {
+      expect(linearPart.toLowerCase()).toContain(st.color.toLowerCase());
+    }
+  });
+
+  it.each(TEAM_COLOR_CASES)("%s: radial-gradient(wash)としてsecondaryが独立して存在し、background-blend-modeにhueが含まれる", (_key, p, s) => {
+    const bg = headerBackground({ themePrimary: p, themeAccent: s });
+    const radialMatch = bg.css.match(/radial-gradient\([^)]*\)/);
+    expect(radialMatch).not.toBeNull();
+    expect(radialMatch![0].toLowerCase()).toContain(s.toLowerCase());
+    expect(bg.blendMode).toContain("hue");
+  });
+
+  it.each(TEAM_COLOR_CASES)("%s: 105deg固定で、有効なCSS文字列が生成される", (_key, p, s) => {
+    const bg = headerBackground({ themePrimary: p, themeAccent: s });
+    expect(bg.css).toMatch(/linear-gradient\(105deg, .+\)$/);
+    expect(bg.css.startsWith("radial-gradient(")).toBe(true);
+  });
+
+  it("都賀ビクトリーズ実データ: 最終CSS文字列が期待通りになる", () => {
+    const bg = headerBackground({ themePrimary: "#FFAB01", themeAccent: "#011D57" });
+    expect(bg.css).toBe(
+      `radial-gradient(${SECONDARY_WASH_PARAMS.sizePercent}% ${SECONDARY_WASH_PARAMS.sizePercent}% at ${SECONDARY_WASH_PARAMS.positionPercent}% ${SECONDARY_WASH_PARAMS.positionPercent}%, #011D57 0%, transparent ${SECONDARY_WASH_PARAMS.fadeStopPercent}%), linear-gradient(105deg, #6f4a00 0%, #FFAB01 40%, #f2a70d 100%)`,
+    );
+    expect(bg.blendMode).toBe("hue, normal");
+  });
+});
+
+// headerChipColors/headerTitleColors: 真の半透明surface(rgba())について、
+// wash混合あり/なしのどちらの背景でも最終合成後のコントラストが4.5:1以上であることを、
+// テストファイル内で独立に再実装した合成ロジック(testHueBlend/testCompositeAlpha)で検証する。
+describe("headerChipColors/headerTitleColors(半透明surfaceの最終合成コントラスト)", () => {
+  it.each(TEAM_COLOR_CASES)("%s: チーム名/ユーザー名/役職/Badge/検索欄(chip系)は、wash混合の有無どちらでも4.5:1以上", (_key, p, s) => {
+    const stops = primaryGradientStops(p);
+    const elements: Array<[ReturnType<typeof headerChipColors>, number]> = [
+      [headerChipColors(stops, HEADER_POSITIONS.chipRow, s), HEADER_POSITIONS.chipRow],
+      [headerChipColors(stops, HEADER_POSITIONS.searchRow, s), HEADER_POSITIONS.searchRow],
+    ];
+    for (const [el, t] of elements) {
+      const { hex: overlayHex, alpha } = parseRgba(el.surface);
+      const baseBg = sampleStopsAt(stops, t);
+      for (const backdrop of [baseBg, testHueBlend(baseBg, s)]) {
+        const effective = testCompositeAlpha(backdrop, overlayHex, alpha);
+        expect(contrastRatio(effective, el.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
+      }
+    }
+  });
+
+  it.each(TEAM_COLOR_CASES)("%s: 画面タイトル/戻るボタンは、wash混合の有無どちらでも(bareまたはsurface適用後)4.5:1以上", (_key, p, s) => {
+    const stops = primaryGradientStops(p);
+    const title = headerTitleColors(stops, HEADER_POSITIONS.titleRow, s);
+    const baseBg = sampleStopsAt(stops, HEADER_POSITIONS.titleRow);
+    const candidates = [baseBg, testHueBlend(baseBg, s)];
+    if (title.surface === "transparent") {
+      for (const bg of candidates) {
+        expect(contrastRatio(bg, title.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
+      }
     } else {
-      // surfaceを追加していない = 素の背景の時点で既に基準を満たしていたはず。
-      // (headerTitleColors自体がその判定をして初めてtransparentを返す)
-      expect(title.on === "#1a1a1a" || title.on === "#ffffff").toBe(true);
+      const { hex: overlayHex, alpha } = parseRgba(title.surface);
+      for (const bg of candidates) {
+        const effective = testCompositeAlpha(bg, overlayHex, alpha);
+        expect(contrastRatio(effective, title.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
+      }
+    }
+  });
+
+  it("未設定時(ブランド01)もchip/search/titleが4.5:1以上", () => {
+    const stops = brandGradientStops();
+    const elements: Array<[ReturnType<typeof headerChipColors>, number]> = [
+      [headerChipColors(stops, HEADER_POSITIONS.chipRow, null), HEADER_POSITIONS.chipRow],
+      [headerChipColors(stops, HEADER_POSITIONS.searchRow, null), HEADER_POSITIONS.searchRow],
+    ];
+    for (const [el, t] of elements) {
+      const { hex: overlayHex, alpha } = parseRgba(el.surface);
+      const baseBg = sampleStopsAt(stops, t);
+      const effective = testCompositeAlpha(baseBg, overlayHex, alpha);
+      expect(contrastRatio(effective, el.on)).toBeGreaterThanOrEqual(HEADER_CONTRAST_TARGET);
     }
   });
 });
 
 describe("headerThemeStyle", () => {
-  it("有効なCSS linear-gradient文字列と、全token(chip/title/search)を返す", () => {
+  it("有効な複数レイヤーCSS文字列と、全token(chip/title/search/blend-mode)を返す", () => {
     const style = headerThemeStyle({ themePrimary: "#1D4ED8", themeAccent: "#38BDF8" });
-    expect(style["--header-gradient"]).toBe(gradientCss(teamGradientStops("#1D4ED8", "#38BDF8")));
-    // 135degではなく105deg固定であることを、gradientCss()を経由せずリテラルの
-    // 正規表現で独立に確認する(Phase UI-2Bの角度比較調査で135deg→105degへ変更)。
-    expect(style["--header-gradient"]).toMatch(/^linear-gradient\(105deg, .+\)$/);
+    const bg = headerBackground({ themePrimary: "#1D4ED8", themeAccent: "#38BDF8" });
+    expect(style["--header-gradient"]).toBe(bg.css);
+    expect(style["--header-blend-mode"]).toBe(bg.blendMode);
+    expect(style["--header-gradient"]).toMatch(/linear-gradient\(105deg, .+\)$/);
     for (const key of [
       "--header-chip-on",
       "--header-chip-surface",
@@ -338,14 +455,17 @@ describe("headerThemeStyle", () => {
     }
   });
 
-  it("未設定時はブランドグラデーション01のCSSを返す", () => {
+  it("未設定時はブランドグラデーション01のCSSを返し、blend-modeはnormal", () => {
     const style = headerThemeStyle({ themePrimary: null, themeAccent: null });
     expect(style["--header-gradient"]).toBe(gradientCss(brandGradientStops()));
+    expect(style["--header-blend-mode"]).toBe("normal");
   });
 
-  it("都賀ビクトリーズ実データ: 生成されるCSS文字列に'105deg'が独立して含まれる(gradientCss()呼び出しに依存しない直接検証)", () => {
+  it("都賀ビクトリーズ実データ: --header-gradientが期待通りの複数レイヤーCSSになる", () => {
     const style = headerThemeStyle({ themePrimary: "#FFAB01", themeAccent: "#011D57" });
-    expect(style["--header-gradient"]).toBe("linear-gradient(105deg, #0043cc 0%, #FFAB01 40%, #f2a70d 100%)");
-    expect(style["--header-gradient"]).toContain("105deg");
+    expect(style["--header-gradient"]).toContain("radial-gradient(");
+    expect(style["--header-gradient"]).toContain("linear-gradient(105deg, #6f4a00 0%, #FFAB01 40%, #f2a70d 100%)");
+    expect(style["--header-gradient"].toLowerCase()).toContain("#011d57");
+    expect(style["--header-blend-mode"]).toBe("hue, normal");
   });
 });

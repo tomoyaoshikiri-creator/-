@@ -34,6 +34,9 @@ export function AppHeader({
       className="px-4.5 pb-4.5"
       style={{
         background: "var(--header-gradient)",
+        // teamSecondaryの左上washレイヤーにbackground-blend-mode: hueを適用するため
+        // (src/lib/theme.tsのheaderBackground()参照)。
+        backgroundBlendMode: "var(--header-blend-mode)",
         // Safe Area(ステータスバー領域)もヘッダー背景の一部として扱い、
         // 実コンテンツはその分だけ下へ押し下げる(env()未対応環境では0になり影響しない)。
         paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
