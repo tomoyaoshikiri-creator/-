@@ -23,21 +23,16 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // Phase UI-2B: 「3/5」という指示の対象はicon/label自体の縮尺ではなく、Navigation
-    // contentの上下にある空白だったと確定した。icon(19px)・gap(2px)・label(通常の
-    // 行高)・lock badge/notification dotのサイズは5861e67時点(直前の縮小より前)へ
-    // 完全に戻し、縮めるのはpadding-top/padding-bottomという「余白」だけにする。
-    // icon+gap+labelという中身だけで既に約31px(実測)を占めており、これ以上は
-    // icon/labelを縮めない限り縮小できない。padding-topを0にすると、icon上端が
-    // border-topへ直接接してしまい「配置がおかしい」見た目になるため、5861e67/af03d66
-    // 由来のpt-[2px](iconと境界線の間の最小限の間隔)は復元して維持する。
-    // padding-bottomは、Home Indicatorとの干渉を避けられる範囲で詰められる下限
-    // (env(safe-area-inset-bottom)の20%相当、実機で約7px)まで圧縮している。
+    // デザイン改修プロジェクト開始前(3ca9e71)は、padding-top/bottomがpt-2.5/pb-7.5
+    // (10px/30px)の固定値だった。Phase UI-2B以降このセッションで試みたenv(safe-area-
+    // inset-bottom)ベースの動的な余白圧縮は、値としては3ca9e71より小さくなっていたにも
+    // 関わらず実機では「改修前より長い」という評価が変わらなかったため、理屈による
+    // 再計算をやめ、実際に改修前で使われていた固定値へ文字通り戻す。icon(19px)・
+    // gap・labelのサイズは変更していない。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-[2px] border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
-      style={{ paddingBottom: "clamp(0.375rem, calc(env(safe-area-inset-bottom) * 0.2), 0.5rem)" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
