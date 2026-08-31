@@ -131,11 +131,10 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   return (
     <>
     <SafeAreaDebugOverlay navRef={navRef} />
-    {/* pb-1(4px)まで削っても改修前の見た目とはまだ差があったため、padding-bottomの
-        理論上の下限であるpb-0まで削った。ここでも余白が変わらなかったため、TabBar自体の
-        paddingではなく外側(display:standaloneのsafe-area処理等)が原因と切り分けるための
-        計測用オーバーレイ(SafeAreaDebugOverlay)を追加している。icon(19px)・gap・
-        labelのサイズ、タップ領域拡張の仕組みは変更していない。 */}
+    {/* padding-bottomを理論上の下限(0)まで詰め、40px定規による実機検証で「空白」の
+        正体がicon+labelの実寸そのものだったと判明した。ここで初めて、icon/labelの
+        縮小がユーザーから明示的に許可されたため、icon(19px→15px)・label(6.5px)・
+        バッジ類を控えめに縮小する。タップ領域は-inset-y-[10px]に広げて44px相当を維持する。 */}
     <nav
       ref={navRef}
       className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
@@ -147,7 +146,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const isLocked = locked[tab];
-        const className = `relative flex-1 min-w-0 text-center text-[7.5px] font-medium flex flex-col items-center gap-0.5 ${
+        const className = `relative flex-1 min-w-0 text-center text-[6.5px] font-medium flex flex-col items-center gap-0.5 ${
           isLocked ? "text-ink-soft/50" : isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         const content = (
@@ -156,16 +155,16 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない
                 (親要素<nav>・<button>/<a>本体にoverflow指定がないため、この範囲まで正しく
                 タップを拾える)。visual contentは変えず、44px相当の操作性を確保する。 */}
-            <span aria-hidden className="absolute -inset-y-[7px] inset-x-0" />
+            <span aria-hidden className="absolute -inset-y-[10px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[19px] h-[19px]" />
+              <Icon className="w-[15px] h-[15px]" />
               {isLocked ? (
-                <span className="absolute -top-1 -right-1 w-[11px] h-[11px] rounded-full bg-paper border border-line flex items-center justify-center">
-                  <LockIcon className="w-[7px] h-[7px] text-ink-soft" />
+                <span className="absolute -top-1 -right-1 w-[9px] h-[9px] rounded-full bg-paper border border-line flex items-center justify-center">
+                  <LockIcon className="w-[6px] h-[6px] text-ink-soft" />
                 </span>
               ) : (
                 badges[tab] && (
-                  <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-danger border border-white" />
                 )
               )}
             </span>
