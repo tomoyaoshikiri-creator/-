@@ -23,12 +23,13 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // Phase UI-2B: Bottom Navigationを「約3/5」までコンパクト化する最終指示に基づき、
-    // icon/label自体のサイズも含めて縮小した(それ以前のラウンドで維持していた
-    // 「icon/labelサイズは変更しない」制約は、この回のユーザー指示で明示的に解除)。
+    // Phase UI-2B: 「3/5」という指示の対象はicon/label自体の縮尺ではなく、Navigation
+    // contentの上下にある空白だったと確定した。icon(19px)・gap(2px)・label(通常の
+    // 行高)・lock badge/notification dotのサイズは5861e67時点(直前の縮小より前)へ
+    // 完全に戻し、縮めるのはpadding-top/padding-bottomという「余白」だけにする。
     // padding-bottomは、TabBarの背景が(padding値に関係なく)物理下端まで届いている
     // 前提のもと、Home Indicatorの実際の表示位置(下端から約6〜11px)に必要最小限の
-    // 余裕を残すだけの値(env(safe-area-inset-bottom)の30%相当、実機で約10px)にした。
+    // 余裕を残すだけの値(env(safe-area-inset-bottom)の30%相当、実機で約10px)にする。
     <nav
       className={`min-[700px]:hidden flex items-start pt-[2px] border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
@@ -40,20 +41,25 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const isLocked = locked[tab];
-        const className = `flex-1 min-w-0 text-center text-[7.5px] font-medium leading-none flex flex-col items-center gap-0.5 ${
+        const className = `relative flex-1 min-w-0 text-center text-[7.5px] font-medium flex flex-col items-center gap-0.5 ${
           isLocked ? "text-ink-soft/50" : isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         const content = (
           <>
+            {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
+                通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない
+                (親要素<nav>・<button>/<a>本体にoverflow指定がないため、この範囲まで正しく
+                タップを拾える)。visual contentは変えず、44px相当の操作性を確保する。 */}
+            <span aria-hidden className="absolute -inset-y-[7px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[11px] h-[11px]" />
+              <Icon className="w-[19px] h-[19px]" />
               {isLocked ? (
-                <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-paper border border-line flex items-center justify-center">
-                  <LockIcon className="w-[5px] h-[5px] text-ink-soft" />
+                <span className="absolute -top-1 -right-1 w-[11px] h-[11px] rounded-full bg-paper border border-line flex items-center justify-center">
+                  <LockIcon className="w-[7px] h-[7px] text-ink-soft" />
                 </span>
               ) : (
                 badges[tab] && (
-                  <span className="absolute -top-px -right-px w-[6px] h-[6px] rounded-full bg-danger border border-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
                 )
               )}
             </span>
