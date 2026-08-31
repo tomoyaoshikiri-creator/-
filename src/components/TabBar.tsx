@@ -23,23 +23,18 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // Phase UI-2B: 一時期「ナビゲーションコンテンツ」と「Safe Area」を別要素(専用spacer div)に
-    // 分離し、bottom paddingとenv(safe-area-inset-bottom)を完全に加算する構成を試したが、
-    // 元々の30px(pb-7.5)自体が大半の実機のホームインジケータ領域とほぼ同じ役割を果たせる
-    // 大きさであったため、「30px + Safe Area全部」の単純加算(実機で最大64px)は下部余白が
-    // 過剰になる回帰を招いた。ここでは単一のpadding-bottomに戻し、通常時の自然な余白(30px)と
-    // env(safe-area-inset-bottom)の大きい方だけを採用する(置き換えでも加算でもない)ことで、
-    // Safe Areaがない端末では元の見た目を保ちつつ、Safe Areaがある端末でも下部余白が
-    // 34px程度(元の30pxとほぼ同等)に収まるようにする。
-    // さらに、viewport-fit=cover導入前はSafe Area自体がTabBarの一部ではなかったため、
-    // 実機上の総占有量はSafe Areaの分だけ純増している。これを完全には相殺できないため、
-    // pt-2.5(10px)をpt-1.5(6px)へ詰め、アイコン・ラベル自体やgapは変更せず、
-    // Safe Area込みの総占有量を改修前(3ca9e71)へ可能な限り近づける。
+    // Phase UI-2B: 3ca9e71の30px(pb-7.5)という固定値を基準にはしない。ホームインジケータへの
+    // 物理的な干渉を防ぐために本当に必要なのはenv(safe-area-inset-bottom)分の余白だけであり、
+    // 「Safe Areaだから大きく確保する」という考え方はとらない。padding-topも装飾目的の
+    // 最小限(pt-1)まで詰め、icon(19px)・gap(2px)・label自体のサイズは変更しない。
+    // padding-bottomは、Safe Areaがない環境向けの最小フォールバック(0.75rem)と
+    // env(safe-area-inset-bottom)の大きい方を採用し、実機(env=34px前後)ではenv()の値が
+    // そのままそのまま採用される(0.75remは実質env非対応環境専用)。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-1.5 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-1 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
-      style={{ paddingBottom: "max(1.875rem, env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
