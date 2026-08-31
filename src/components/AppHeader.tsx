@@ -96,17 +96,23 @@ export function AppHeader({
         )}
       </h1>
       {searchPlaceholder && (
+        // 検索欄を約2/3の厚みへ縮小。文字サイズはglobals.cssのiOSズーム防止ルール
+        // (input,select,textarea{font-size:16px !important})によりCSS側から16px未満に
+        // できないため、縮小はpadding-y/gap/アイコンサイズのみで行う。line-height:1にしても
+        // <input>要素自体の内在サイズ(約18px、フォント上下メトリクス由来)はこれ以上
+        // 縮まらないため、これが縦方向の実質的な下限。py-0まで詰めても16px入力+約2pxの
+        // 内在余白で約18pxとなり、圧縮前(約26px)の約69%(≒2/3)。
         <div
-          className="rounded-[10px] px-3 py-1 flex items-center gap-1.5"
+          className="rounded-[9px] px-3 py-0 flex items-center gap-1"
           style={{ background: "var(--header-search-surface)", color: "var(--header-search-on)" }}
         >
-          <SearchIcon className="w-3.5 h-3.5 opacity-80 flex-shrink-0" />
+          <SearchIcon className="w-3 h-3 opacity-80 flex-shrink-0" />
           <input
             type="text"
             value={searchValue ?? ""}
             onChange={(e) => onSearchChange?.(e.target.value)}
             placeholder={searchPlaceholder}
-            className="app-header-search-input flex-1 min-w-0 bg-transparent text-[12.5px] outline-none"
+            className="app-header-search-input flex-1 min-w-0 bg-transparent text-[12.5px] leading-none outline-none"
           />
         </div>
       )}
