@@ -24,12 +24,19 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
 
   return (
     <nav
-      // Phase UI-2B: 従来のpb-7.5(30px固定)は実機のホームインジケータ高さと連動しない
-      // 決め打ちだったため、env(safe-area-inset-bottom)を使う方式に置き換える。
-      // ホームインジケータのない端末(env()が0)でも最低10pxの余白は確保する。
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] border-t border-line bg-white ${
+      // Phase UI-2B: 従来のpb-7.5(30px固定)を持つ元デザインは、実機のホームインジケータ
+      // (概ね34px前後)に対してもともとほぼ足りていた。「30px + env()」の単純加算は、
+      // 30pxを既にSafe Area分として使えていたケースでもさらに上乗せしてしまい、実機で
+      // 巨大な余白になる回帰を招いた。逆に「max(10px, env())」は、ホームインジケータの
+      // ない端末やenv()が30px未満の端末で実質10pxまで縮み、アイコン・ラベルが詰まって
+      // 見える回帰を招いた。元の30pxを「視覚バランス上必要な最低限のpadding」として
+      // 維持しつつ、env()がそれを上回る場合だけそちらを採用する(置き換えでも加算でもなく
+      // 大きい方を採用)ことで、両方の回帰を避ける。元の視覚位置・間隔(pt-2.5・gap-0.5・
+      // アイコン19px等)は一切変更していない。
+      className={`min-[700px]:hidden flex items-start pt-2.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
+      style={{ paddingBottom: "max(1.875rem, env(safe-area-inset-bottom))" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];

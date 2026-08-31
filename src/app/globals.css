@@ -51,7 +51,6 @@
     未設定時(ブランドグラデーション01)のfallbackで、headerThemeStyle()の実際の出力と一致する。
   */
   --header-gradient: linear-gradient(105deg, #123BDB 0%, #087CF0 40%, #08C6E8 100%);
-  --header-blend-mode: normal;
   --header-chip-on: #ffffff;
   --header-chip-surface: rgba(10, 10, 14, 0.22);
   --header-title-on: #ffffff;

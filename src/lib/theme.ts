@@ -117,10 +117,21 @@ export function teamThemeStyle(input: TeamThemeInput): Record<string, string> {
 export interface GradientParams {
   /** teamPrimary(主役色)を置くグラデーション上の位置(%)。0=深色側、100=明るいアクセント側。 */
   heroStopPercent: number;
+  /**
+   * 深色(0%)を作る際に、primary自身のHSL明度へ掛ける倍率(0〜1)。小さいほど暗くなる。
+   * 相対輝度ベース(Brand Navy相当まで暗くする)ではなく明度ベースにしているのは、
+   * 暖色(オレンジ等)はBrand Navyと同じ相対輝度に到達するには明度を極端に落とす必要が
+   * あり、結果が「濃いprimary」ではなく「無関係な暗色(黒・こげ茶)」に見えてしまう
+   * ためで、実機検証で確認した。暖色は相対輝度への寄与(R+Gチャンネル)が大きいため、
+   * 寒色よりずっと明度を落とさないと同じ相対輝度に届かない。明度の倍率で下げる方式なら、
+   * どの色相でも「同じ色の濃い版」として一貫して認識できる。
+   */
+  deepLightnessScale: number;
 }
 
 export const GRADIENT_PARAMS: GradientParams = {
   heroStopPercent: 40,
+  deepLightnessScale: 0.55,
 };
 
 export interface GradientStop {
@@ -208,14 +219,14 @@ function solveLightnessForRelativeLuminance(hue: number, sat: number, targetRelL
   return (lo + hi) / 2;
 }
 
-const DEEP_TARGET_RELATIVE_LUMINANCE = relativeLuminance(BRAND_NAVY);
 const LIGHT_TARGET_RELATIVE_LUMINANCE = relativeLuminance(BRAND_CYAN);
 
-// hexの色相・彩度を保ったまま、Brand Navyと同じ相対輝度(深さ)まで調整した色を返す。
+// hexの色相・彩度を保ったまま、HSL明度をGRADIENT_PARAMS.deepLightnessScale倍して
+// 「同じ色の濃い版」を返す(相対輝度を固定目標に合わせる方式ではない。理由は
+// GradientParams.deepLightnessScaleのコメント参照)。
 function towardDeep(hex: string): string {
-  const { h, s } = hexToHsl(hex);
-  const sat = Math.min(100, s * 1.05);
-  return hslToHex(h, sat, solveLightnessForRelativeLuminance(h, sat, DEEP_TARGET_RELATIVE_LUMINANCE));
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, s, l * GRADIENT_PARAMS.deepLightnessScale);
 }
 
 // hexの色相・彩度を保ったまま、Brand Cyanと同じ相対輝度(明るさ)まで調整した色を返す。
@@ -253,59 +264,6 @@ export function primaryGradientStops(primary: string): GradientStop[] {
 export function headerGradientStops(input: TeamThemeInput): GradientStop[] {
   const hasTeamColor = isValidHexColor(input.themePrimary) && isValidHexColor(input.themeAccent);
   return hasTeamColor ? primaryGradientStops(input.themePrimary!) : brandGradientStops();
-}
-
-/* ------------------------------------------------------------------------
- * teamSecondary wash(左上コーナーアクセント)
- *
- * teamSecondaryはベースのlinear-gradientへ直接混合しない。混合すると、
- * primaryとの色相差が大きい組み合わせ(補色に近い都賀ビクトリーズ等)でRGB直線補間の
- * 「濁った中間色」が発生するため。代わりに、左上を中心とした独立したradial-gradient
- * レイヤーとして重ね、background-blend-mode: hue を使う。通常のアルファ合成(normal)だと
- * 暗いdeep色の上ではsecondaryが単なる黒ずみにしか見えないことを配色再設計調査で確認したため、
- * 「backdropの明るさ(luminosity)・彩度(saturation)はそのまま保ち、色相(hue)だけを
- * secondaryへ差し替える」hueブレンドを採用し、暗い場所でもsecondaryの色相が明確に
- * 認識できるようにしている。
- * ---------------------------------------------------------------------- */
-
-export interface SecondaryWashParams {
-  /** 楕円の半径(ボックスの幅・高さに対する%)。大きいほど滲みが広がる。 */
-  sizePercent: number;
-  /** 楕円の中心位置(ボックスの左上を0%とした%、負値は左上コーナーの外側に置く)。 */
-  positionPercent: number;
-  /** この位置(%)で完全に透明になる(フェードアウトの終端)。 */
-  fadeStopPercent: number;
-}
-
-// 配色再設計の比較検証(Playwrightでの実描画確認)で妥当性を確認した初期値。
-// 永久的なデザイン定数ではなく、将来調整する場合はこの値を変更するだけでよい。
-export const SECONDARY_WASH_PARAMS: SecondaryWashParams = {
-  sizePercent: 150,
-  positionPercent: -8,
-  fadeStopPercent: 42,
-};
-
-function secondaryWashCss(secondary: string): string {
-  const { sizePercent, positionPercent, fadeStopPercent } = SECONDARY_WASH_PARAMS;
-  return `radial-gradient(${sizePercent}% ${sizePercent}% at ${positionPercent}% ${positionPercent}%, ${secondary} 0%, transparent ${fadeStopPercent}%)`;
-}
-
-export interface HeaderBackground {
-  /** AppHeaderのbackgroundへそのまま渡す値(複数レイヤーの場合はカンマ区切り)。 */
-  css: string;
-  /** 対応するbackground-blend-mode値。レイヤー数と1対1で対応させる。 */
-  blendMode: string;
-}
-
-// AppHeaderの最終的な背景(複数レイヤー)を組み立てる。チームカラー未設定時はブランド
-// グラデーション01のみ(washなし)、設定時はteamPrimaryの単一色相グラデーション + 左上の
-// teamSecondary washの2レイヤーになる。
-export function headerBackground(input: TeamThemeInput): HeaderBackground {
-  const hasTeamColor = isValidHexColor(input.themePrimary) && isValidHexColor(input.themeAccent);
-  const baseCss = gradientCss(headerGradientStops(input));
-  if (!hasTeamColor) return { css: baseCss, blendMode: "normal" };
-  const washCss = secondaryWashCss(input.themeAccent!);
-  return { css: `${washCss}, ${baseCss}`, blendMode: "hue, normal" };
 }
 
 // 135deg(左上→右下の対角線45°)だと、AppHeaderのような横長ボックス(幅が高さの
@@ -374,120 +332,33 @@ function rgbaCss(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-/* ------------------------------------------------------------------------
- * background-blend-mode: hue の合成結果をJS側でも再現する(コントラスト検証用)。
- * CSS Compositing Level 1のnon-separable blend mode算出式(Lum/ClipColor/SetLum/
- * Sat/SetSat)をそのまま実装している。secondary washが乗った状態の実際の表示色を
- * 予測し、テキスト色/surfaceのコントラストが本当に安全かを検証するために使う。
- * ---------------------------------------------------------------------- */
-type Rgb01 = [number, number, number];
-
-function hexToRgb01(hex: string): Rgb01 {
-  const { r, g, b } = hexToRgb(hex);
-  return [r / 255, g / 255, b / 255];
-}
-
-function blendLum([r, g, b]: Rgb01): number {
-  return 0.3 * r + 0.59 * g + 0.11 * b;
-}
-
-function blendClipColor(c: Rgb01): Rgb01 {
-  let [r, g, b] = c;
-  const l = blendLum(c);
-  const n = Math.min(r, g, b);
-  if (n < 0) {
-    r = l + ((r - l) * l) / (l - n);
-    g = l + ((g - l) * l) / (l - n);
-    b = l + ((b - l) * l) / (l - n);
-  }
-  const l2 = blendLum([r, g, b]);
-  const x2 = Math.max(r, g, b);
-  if (x2 > 1) {
-    r = l2 + ((r - l2) * (1 - l2)) / (x2 - l2);
-    g = l2 + ((g - l2) * (1 - l2)) / (x2 - l2);
-    b = l2 + ((b - l2) * (1 - l2)) / (x2 - l2);
-  }
-  return [r, g, b];
-}
-
-function blendSetLum(c: Rgb01, l: number): Rgb01 {
-  const d = l - blendLum(c);
-  return blendClipColor([c[0] + d, c[1] + d, c[2] + d]);
-}
-
-function blendSat([r, g, b]: Rgb01): number {
-  return Math.max(r, g, b) - Math.min(r, g, b);
-}
-
-function blendSetSat(c: Rgb01, s: number): Rgb01 {
-  const order = [0, 1, 2].sort((a, b) => c[a] - c[b]);
-  const [mn, md, mx] = order;
-  const out: Rgb01 = [0, 0, 0];
-  if (c[mx] > c[mn]) {
-    out[md] = ((c[md] - c[mn]) * s) / (c[mx] - c[mn]);
-    out[mx] = s;
-  }
-  out[mn] = 0;
-  return out;
-}
-
-// background-blend-mode: hue の結果(backdropの明るさ・彩度を保ち、色相だけsourceへ差し替える)。
-function hueBlendHex(backdropHex: string, sourceHex: string): string {
-  const backdrop = hexToRgb01(backdropHex);
-  const source = hexToRgb01(sourceHex);
-  const blended = blendSetLum(blendSetSat(source, blendSat(backdrop)), blendLum(backdrop));
-  return rgbToHex(blended[0] * 255, blended[1] * 255, blended[2] * 255);
-}
-
 export interface HeaderElementColors {
   on: string;
   surface: string;
 }
 
-// surfaceがCHIP_SURFACE_ALPHA/TITLE_SAFETY_SURFACE_ALPHAで半透明合成された後の、
-// 想定しうる背景候補(wash影響あり/なし)すべてに対する最悪ケースのコントラストを返す。
-function worstContrastWithSurface(candidates: string[], on: string, alpha: number): number {
-  const overlay = surfaceOverlayFor(on);
-  return Math.min(...candidates.map((bg) => contrastRatio(compositeOverlay(bg, overlay, alpha), on)));
-}
-
-// secondary washの影響を受けうる位置では、wash混合なし/ありの両方を背景候補として扱い、
-// どちらのケースでも安全な(最悪ケースのコントラストが高い方の)on色を選ぶ。
-function backgroundCandidates(baseBg: string, washSecondary: string | null | undefined): string[] {
-  return washSecondary ? [baseBg, hueBlendHex(baseBg, washSecondary)] : [baseBg];
+// surfaceがalphaで半透明合成された後のコントラストが高い方のon色(白/濃色)を選ぶ。
+function pickOnBySurface(bg: string, alpha: number): string {
+  const darkContrast = contrastRatio(compositeOverlay(bg, surfaceOverlayFor(ON_COLOR_DARK), alpha), ON_COLOR_DARK);
+  const lightContrast = contrastRatio(compositeOverlay(bg, surfaceOverlayFor(ON_COLOR_LIGHT), alpha), ON_COLOR_LIGHT);
+  return darkContrast >= lightContrast ? ON_COLOR_DARK : ON_COLOR_LIGHT;
 }
 
 // チーム名・ユーザー名・役職・アクセスBadge・検索欄用: 常時、真の半透明surfaceを持つ。
-export function headerChipColors(
-  stops: GradientStop[],
-  t: number,
-  washSecondary?: string | null,
-): HeaderElementColors {
-  const baseBg = sampleGradientColor(stops, t);
-  const candidates = backgroundCandidates(baseBg, washSecondary);
-  const darkScore = worstContrastWithSurface(candidates, ON_COLOR_DARK, CHIP_SURFACE_ALPHA);
-  const lightScore = worstContrastWithSurface(candidates, ON_COLOR_LIGHT, CHIP_SURFACE_ALPHA);
-  const on = darkScore >= lightScore ? ON_COLOR_DARK : ON_COLOR_LIGHT;
+export function headerChipColors(stops: GradientStop[], t: number): HeaderElementColors {
+  const bg = sampleGradientColor(stops, t);
+  const on = pickOnBySurface(bg, CHIP_SURFACE_ALPHA);
   return { on, surface: rgbaCss(surfaceOverlayFor(on), CHIP_SURFACE_ALPHA) };
 }
 
-// 画面タイトル・戻るボタン用: wash混合なし/ありの両方でsurfaceなし(bare)でも4.5:1を
-// 満たせればsurfaceなし、満たさない場合だけ薄い半透明の補助surfaceを追加する適応方式。
-export function headerTitleColors(
-  stops: GradientStop[],
-  t: number,
-  washSecondary?: string | null,
-): HeaderElementColors {
-  const baseBg = sampleGradientColor(stops, t);
-  const candidates = backgroundCandidates(baseBg, washSecondary);
+// 画面タイトル・戻るボタン用: 素の状態で4.5:1を満たせばsurfaceなし(透明)、
+// 満たさない場合だけ薄い半透明の補助surfaceを追加する適応方式。
+export function headerTitleColors(stops: GradientStop[], t: number): HeaderElementColors {
+  const bg = sampleGradientColor(stops, t);
   for (const on of [ON_COLOR_DARK, ON_COLOR_LIGHT]) {
-    if (candidates.every((bg) => contrastRatio(bg, on) >= HEADER_CONTRAST_TARGET)) {
-      return { on, surface: "transparent" };
-    }
+    if (contrastRatio(bg, on) >= HEADER_CONTRAST_TARGET) return { on, surface: "transparent" };
   }
-  const darkScore = worstContrastWithSurface(candidates, ON_COLOR_DARK, TITLE_SAFETY_SURFACE_ALPHA);
-  const lightScore = worstContrastWithSurface(candidates, ON_COLOR_LIGHT, TITLE_SAFETY_SURFACE_ALPHA);
-  const on = darkScore >= lightScore ? ON_COLOR_DARK : ON_COLOR_LIGHT;
+  const on = pickOnBySurface(bg, TITLE_SAFETY_SURFACE_ALPHA);
   return { on, surface: rgbaCss(surfaceOverlayFor(on), TITLE_SAFETY_SURFACE_ALPHA) };
 }
 
@@ -495,16 +366,12 @@ export function headerTitleColors(
 // (app)/layout.tsxの.app-shellへ注入する(グラデーション生成・per-要素のcontrast判定を
 // 1箇所に集約し、AppHeader.tsx側にロジックが増殖しないようにするため)。
 export function headerThemeStyle(input: TeamThemeInput): Record<string, string> {
-  const hasTeamColor = isValidHexColor(input.themePrimary) && isValidHexColor(input.themeAccent);
-  const washSecondary = hasTeamColor ? input.themeAccent! : null;
   const stops = headerGradientStops(input);
-  const chip = headerChipColors(stops, HEADER_POSITIONS.chipRow, washSecondary);
-  const title = headerTitleColors(stops, HEADER_POSITIONS.titleRow, washSecondary);
-  const search = headerChipColors(stops, HEADER_POSITIONS.searchRow, washSecondary);
-  const background = headerBackground(input);
+  const chip = headerChipColors(stops, HEADER_POSITIONS.chipRow);
+  const title = headerTitleColors(stops, HEADER_POSITIONS.titleRow);
+  const search = headerChipColors(stops, HEADER_POSITIONS.searchRow);
   return {
-    "--header-gradient": background.css,
-    "--header-blend-mode": background.blendMode,
+    "--header-gradient": gradientCss(stops),
     "--header-chip-on": chip.on,
     "--header-chip-surface": chip.surface,
     "--header-title-on": title.on,
