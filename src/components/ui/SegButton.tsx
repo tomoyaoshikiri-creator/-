@@ -37,11 +37,14 @@ export function TextTab({
   );
 }
 
+// アプリ全体のPrimary Action(フォーム送信・保存等)用ボタン。MASTER SPEC #22
+// 「Primary: teamPrimary、team未設定: Brand Blue」に合わせ、--orange(teamPrimaryの
+// エイリアス、未設定時はBrand Blueにfallback)を使う。
 export function SubmitButton({ className = "", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
-      className={`mt-3.5 w-full py-2.5 rounded-[10px] bg-navy text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50 ${className}`}
+      className={`mt-3.5 w-full py-2.5 rounded-[10px] bg-orange text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50 ${className}`}
       {...props}
     />
   );

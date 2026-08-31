@@ -7,7 +7,18 @@
 */
 :root {
   --navy: #22201c;
-  --orange: #9c8355;
+  /*
+    MASTER SPECIFICATION #22/#43: --orangeはボタン・active state・選択中タブ等、
+    アプリ全体で「Primary Action」の意味だけに一貫して使われている(bg/text/border-orange、
+    50箇所超で使用確認済み)。teams.theme_primary未設定時のfallbackは旧来#9c8355
+    (FAITH CREATION由来の落ち着いたタン色)だったが、これはMASTER SPEC #22「team未設定:
+    Brand Blue」に反するため、--brand-blueを参照するよう変更した(teams.theme_primary
+    設定時は従来通りteamThemeStyle()がそのまま上書きするため、この変更による影響は
+    「チームカラー未設定時のfallback色」のみ)。--navyは「secondary team accent」と
+    「見出し等の落ち着いた中立色」の二役を兼ねて使われており(23箇所)、一括で
+    Brand Navyへ差し替えると意味の異なる色まで変わってしまうため、今回は変更しない。
+  */
+  --orange: var(--brand-blue);
   --paper: #faf8f3;
   --ink: #1a1a1a;
   --ink-soft: #6b6660;
