@@ -142,6 +142,18 @@ textarea {
 }
 
 /*
+  MASTER SPECIFICATION #32: Login/Registration等の認証画面はTeam Brand Screen
+  ではなく常にCIRCLE LINES Brand Screen。アプリ本体(.app-shellの--paper、
+  暖色系off-white)とは別に、pale blue → whiteの背景にする。.app-shellの他の
+  プロパティ(flex/max-width/デスクトップでの角丸カード化等)はそのまま
+  流用し、backgroundだけをここで上書きする((auth)/layout.tsxで
+  "app-shell auth-shell"の2クラスを併用)。
+*/
+.auth-shell {
+  background: linear-gradient(180deg, #eaf2fd 0%, #ffffff 55%);
+}
+
+/*
   余白付きの「浮いたカード」表示(角丸・影・上下マージン)は、マウス操作のPCブラウザ
   (hover:hover かつ pointer:fine)だけに限定する。iPad等のタッチ端末は同じ横幅でも
   ネイティブアプリのように画面いっぱいに表示したいため、ここでは除外する。
