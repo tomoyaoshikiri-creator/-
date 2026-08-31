@@ -172,42 +172,9 @@ describe("brandGradientStops/headerGradientStops(未設定)", () => {
  * そのまま使ってしまい、実装が間違っていてもPASSする」ことを避けるため。
  * ========================================================== */
 
-function hueOf(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  const r = ((n >> 16) & 255) / 255;
-  const g = ((n >> 8) & 255) / 255;
-  const b = (n & 255) / 255;
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  if (max === min) return 0;
-  const d = max - min;
-  let h: number;
-  switch (max) {
-    case r:
-      h = ((g - b) / d) % 6;
-      break;
-    case g:
-      h = (b - r) / d + 2;
-      break;
-    default:
-      h = (r - g) / d + 4;
-  }
-  h *= 60;
-  return h < 0 ? h + 360 : h;
-}
-
 function hueDiffDeg(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
-}
-
-// HSL明度(0〜100)を独立に計算するテスト専用ヘルパー。
-function lightnessOf(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  const r = ((n >> 16) & 255) / 255;
-  const g = ((n >> 8) & 255) / 255;
-  const b = (n & 255) / 255;
-  return ((Math.max(r, g, b) + Math.min(r, g, b)) / 2) * 100;
 }
 
 function hexToRgbTuple(hex: string): [number, number, number] {
@@ -238,6 +205,32 @@ function parseRgba(value: string): { hex: string; alpha: number } {
   if (!m) throw new Error(`not an rgba() string: ${value}`);
   const [, r, g, b, a] = m;
   return { hex: rgbTupleToHex([Number(r), Number(g), Number(b)]), alpha: Number(a) };
+}
+
+// OKLCH変換(sRGB -> リニアRGB -> OKLab -> OKLCH)を、本番実装(theme.tsのhexToOklch等)を
+// 一切importせずテストファイル内で独立に再実装したもの。DENSE/LIGHT生成の検証専用。
+function hexToOklchTest(hex: string): { L: number; C: number; H: number } {
+  const [r, g, b] = hexToRgbTuple(hex);
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const lr = toLinear(r);
+  const lg = toLinear(g);
+  const lb = toLinear(b);
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+  const L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_;
+  const a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_;
+  const bb = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_;
+  const C = Math.sqrt(a * a + bb * bb);
+  let H = (Math.atan2(bb, a) * 180) / Math.PI;
+  if (H < 0) H += 360;
+  return { L, C, H };
 }
 
 // テストファイル内で独立に再現した「stops配列上の任意位置(t: 0〜1)の下地色」。
@@ -281,48 +274,79 @@ describe("primaryGradientStops(Primary主体グラデーション)", () => {
     stops.forEach((st) => expect(isValidHexColor(st.color)).toBe(true));
   });
 
-  it.each(TEAM_COLOR_CASES)("%s: 深色(0%)はprimaryの色相を保ったまま、明度がGRADIENT_PARAMS.deepLightnessScale倍になる(相対輝度を固定目標に合わせない)", (_key, p) => {
-    const stops = primaryGradientStops(p);
-    expect(hueDiffDeg(hueOf(stops[0].color), hueOf(p))).toBeLessThan(5);
-    const expectedLightness = lightnessOf(p) * GRADIENT_PARAMS.deepLightnessScale;
-    expect(Math.abs(lightnessOf(stops[0].color) - expectedLightness)).toBeLessThan(2);
-    // primaryより明確に暗いこと(相対輝度が下がっていること)を確認する。
-    expect(relativeLuminance(stops[0].color)).toBeLessThan(relativeLuminance(p));
-  });
+  it.each(TEAM_COLOR_CASES)(
+    "%s: DENSE(0%)はprimaryのOKLCH Hueを保ったまま、Chromaが増加しLightnessがdenseLightnessDropだけわずかに下がる(HSL明度の単純減算ではない)",
+    (_key, p) => {
+      const stops = primaryGradientStops(p);
+      const primaryOk = hexToOklchTest(p);
+      const denseOk = hexToOklchTest(stops[0].color);
+      expect(hueDiffDeg(denseOk.H, primaryOk.H)).toBeLessThan(3);
+      // sRGB gamut clippingで理論値(×denseChromaBoost)より縮む場合があるため、
+      // 「増加方向を維持している(元のChromaを大きく下回らない)」ことのみ厳密に確認する。
+      expect(denseOk.C).toBeGreaterThan(primaryOk.C * 0.95);
+      expect(Math.abs(primaryOk.L - denseOk.L - GRADIENT_PARAMS.denseLightnessDrop)).toBeLessThan(0.01);
+      // primaryより明確に暗いこと(WCAG相対輝度が下がっていること)を確認する。
+      expect(relativeLuminance(stops[0].color)).toBeLessThan(relativeLuminance(p));
+    },
+  );
 
-  it.each(TEAM_COLOR_CASES)("%s: 深色(0%)はBrand Navyの相対輝度には固定されない(暖色ではBrand Navy相当まで暗くしない)", (_key, p) => {
-    const stops = primaryGradientStops(p);
-    // GRADIENT_PARAMS.deepLightnessScaleを変更すると生成結果も追従する(ハードコードではない)ことを確認する。
-    const before = stops[0].color;
-    const original = GRADIENT_PARAMS.deepLightnessScale;
-    GRADIENT_PARAMS.deepLightnessScale = 0.8;
+  // 彩度が既に高いprimary(赤・緑等)は、denseChromaBoostをどの値にしても
+  // sRGB gamut clippingで同じ上限Chromaへ収束し、パラメータを変えても出力が
+  // 変わらないケースがある(これはGamut clip仕様として正しい挙動)。ここでは
+  // gamut headroomに余裕があるBrand Blue(#1D4ED8)を使い、素の倍率適用が
+  // ハードコードでなくパラメータに追従することを確認する。
+  it("DENSE(0%)はBrand Navyの相対輝度には固定されない(GRADIENT_PARAMS.denseChromaBoostを変更すると追従する)", () => {
+    const p = "#1D4ED8";
+    const before = primaryGradientStops(p)[0].color;
+    const original = GRADIENT_PARAMS.denseChromaBoost;
+    GRADIENT_PARAMS.denseChromaBoost = 1.4;
     try {
       const after = primaryGradientStops(p)[0].color;
       expect(after).not.toBe(before);
     } finally {
-      GRADIENT_PARAMS.deepLightnessScale = original;
+      GRADIENT_PARAMS.denseChromaBoost = original;
     }
   });
 
-  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はprimaryの色相を保ったまま、白までの残り幅がGRADIENT_PARAMS.lightLightnessBoost倍だけ明度に加算される(Brand Cyan相当の相対輝度に固定しない)", (_key, p) => {
-    const stops = primaryGradientStops(p);
-    expect(hueDiffDeg(hueOf(stops[2].color), hueOf(p))).toBeLessThan(5);
-    const expectedLightness = lightnessOf(p) + (100 - lightnessOf(p)) * GRADIENT_PARAMS.lightLightnessBoost;
-    expect(Math.abs(lightnessOf(stops[2].color) - expectedLightness)).toBeLessThan(2);
-    // primaryより明確に明るいこと(相対輝度が上がっていること)を確認する。
-    expect(relativeLuminance(stops[2].color)).toBeGreaterThan(relativeLuminance(p));
-  });
+  it.each(TEAM_COLOR_CASES)(
+    "%s: LIGHT(100%)はprimaryのOKLCH Hue・Chromaを保ったまま、LightnessがlightLightnessBoost分だけ上がる(lightLightnessMaxで上限、Brand Cyan相当の相対輝度に固定しない)",
+    (_key, p) => {
+      const stops = primaryGradientStops(p);
+      const primaryOk = hexToOklchTest(p);
+      const lightOk = hexToOklchTest(stops[2].color);
+      expect(hueDiffDeg(lightOk.H, primaryOk.H)).toBeLessThan(3);
+      const expectedL = Math.min(primaryOk.L + GRADIENT_PARAMS.lightLightnessBoost, GRADIENT_PARAMS.lightLightnessMax);
+      expect(Math.abs(lightOk.L - expectedL)).toBeLessThan(0.01);
+      // primaryより明確に明るいこと(WCAG相対輝度が上がっていること)を確認する。
+      expect(relativeLuminance(stops[2].color)).toBeGreaterThan(relativeLuminance(p));
+    },
+  );
 
-  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はBrand Cyanの相対輝度には固定されない(GRADIENT_PARAMS.lightLightnessBoostを変更すると追従する)", (_key, p) => {
+  // 既にprimaryが明るい色(bothLight等)は、lightLightnessBoostをどの値にしても
+  // lightLightnessMaxで同じ上限Lightnessへ収束し、パラメータを変えても出力が
+  // 変わらないケースがある(これは白飛び防止の仕様として正しい挙動)。ここでは
+  // 上限に達しない代表色(Brand Blue)を使い、素の加算量がハードコードでなく
+  // パラメータに追従することを確認する。
+  it("LIGHT(100%)はBrand Cyanの相対輝度には固定されない(GRADIENT_PARAMS.lightLightnessBoostを変更すると追従する)", () => {
+    const p = "#1D4ED8";
     const before = primaryGradientStops(p)[2].color;
     const original = GRADIENT_PARAMS.lightLightnessBoost;
-    GRADIENT_PARAMS.lightLightnessBoost = 0.5;
+    GRADIENT_PARAMS.lightLightnessBoost = 0.3;
     try {
       const after = primaryGradientStops(p)[2].color;
       expect(after).not.toBe(before);
     } finally {
       GRADIENT_PARAMS.lightLightnessBoost = original;
     }
+  });
+
+  it("LIGHT(100%)はlightLightnessMaxを超えて白飛びしない(既に明るいprimaryのケース)", () => {
+    const veryLight = "#FDE68A";
+    const stops = primaryGradientStops(veryLight);
+    const lightOk = hexToOklchTest(stops[2].color);
+    expect(lightOk.L).toBeLessThanOrEqual(GRADIENT_PARAMS.lightLightnessMax + 0.005);
+    // 白飛び(無彩色化)せず、Chromaが残っていることを確認する。
+    expect(lightOk.C).toBeGreaterThan(0.01);
   });
 });
 
@@ -353,7 +377,7 @@ describe("headerGradientStops/gradientCss(Primary主体のみ、Secondary不使�
 
   it("都賀ビクトリーズ実データ: 最終CSS文字列が期待通りになる(secondaryを含まない同系色グラデーション)", () => {
     const css = gradientCss(headerGradientStops({ themePrimary: "#FFAB01", themeAccent: "#011D57" }));
-    expect(css).toBe("linear-gradient(105deg, #da9200 0%, #FFAB01 40%, #ffc348 100%)");
+    expect(css).toBe("linear-gradient(105deg, #f7a500 0%, #FFAB01 40%, #ffdcaf 100%)");
     expect(css.toLowerCase()).not.toContain("#011d57");
   });
 });
@@ -439,7 +463,7 @@ describe("headerThemeStyle", () => {
 
   it("都賀ビクトリーズ実データ: --header-gradientがsecondaryを含まない同系色グラデーションになる", () => {
     const style = headerThemeStyle({ themePrimary: "#FFAB01", themeAccent: "#011D57" });
-    expect(style["--header-gradient"]).toBe("linear-gradient(105deg, #da9200 0%, #FFAB01 40%, #ffc348 100%)");
+    expect(style["--header-gradient"]).toBe("linear-gradient(105deg, #f7a500 0%, #FFAB01 40%, #ffdcaf 100%)");
     expect(style["--header-gradient"].toLowerCase()).not.toContain("#011d57");
   });
 });

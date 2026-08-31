@@ -105,41 +105,37 @@ export function teamThemeStyle(input: TeamThemeInput): Record<string, string> {
 }
 
 /* ============================================================
- * AppHeaderグラデーション(Phase UI-2B)
+ * AppHeaderグラデーション(Phase UI-2B → MASTER SPECIFICATION #13)
  *
  * 「CIRCLE LINESブランドグラデーション01」(チームカラー未設定時)と、
  * それを任意のteamPrimary/teamSecondaryへ展開した「チーム版01」を生成する。
- * 生成ロジック・パラメータはPhase UI-2Bの比較検証(モック)で妥当性を確認した
- * 初期アルゴリズム値であり、CIRCLE LINESの永久的なデザイン定数ではない。
- * 将来調整する場合はGRADIENT_PARAMSの値を変更するだけでよい構造にしている。
+ * DENSE/LIGHTの生成はOKLCH(知覚的に均等な色空間)ベースで行う。HSL明度の
+ * 単純な倍率(旧実装)は廃止した。HSLは色相・彩度の知覚的均等性が低く、
+ * 「明度だけ落とす」操作でも彩度が知覚的に大きく落ちて見える(=黒ずんで見える)
+ * ことがある。OKLCHはLightness/Chroma/Hueが知覚的に分離されているため、
+ * 「Hueを保ったまま、Chromaを上げてLightnessをわずかに下げる」ことで
+ * 「暗くする」のではなく「濃く鮮やかにする」DENSE色を作れる。
  * ========================================================== */
 
 export interface GradientParams {
-  /** teamPrimary(主役色)を置くグラデーション上の位置(%)。0=深色側、100=明るいアクセント側。 */
+  /** teamPrimary(主役色)を置くグラデーション上の位置(%)。0=DENSE側、100=LIGHT側。 */
   heroStopPercent: number;
-  /**
-   * 深色(0%)を作る際に、primary自身のHSL明度へ掛ける倍率(0〜1)。小さいほど暗くなる。
-   * 相対輝度ベース(Brand Navy相当まで暗くする)は使わない。暖色(オレンジ等)は相対輝度
-   * への寄与(R+Gチャンネル)が大きく、寒色と同じ相対輝度に到達するには明度を極端に
-   * 落とす必要があり、結果が「濃いprimary」ではなく黄土色・茶色・黒に近い「無関係な
-   * 暗色」に見えてしまうことが実機検証で繰り返し確認された。HSL明度への軽い倍率適用に
-   * 留めることで、primaryの色相・彩度・ブランド感を壊さない「同系色の少し濃い版」に留める。
-   */
-  deepLightnessScale: number;
-  /**
-   * 明るいアクセント(100%)を作る際に、primary自身のHSL明度から白までの残り幅
-   * (100 - l)へ掛けて明度に加える倍率(0〜1)。大きいほど明るくなる。深色側と対称に、
-   * 相対輝度ベースの目標値合わせ(旧実装ではBrand Cyan相当の相対輝度に固定していた)は
-   * 使わない。残り幅に対する倍率にすることで、primaryがすでに明るい色でも白に飛びすぎず、
-   * 暗い色でも十分な明暗差を確保できる。
-   */
+  /** DENSE生成: primaryのOKLCH ChromaへかけるBoost倍率(1.0以上)。Hueは変えない。 */
+  denseChromaBoost: number;
+  /** DENSE生成: primaryのOKLCH LightnessからのDrop幅(0〜1)。最小限(0〜0.03程度)に留める。 */
+  denseLightnessDrop: number;
+  /** LIGHT生成: primaryのOKLCH Lightnessへ加える幅(0〜1)。Chromaは変えない。 */
   lightLightnessBoost: number;
+  /** LIGHT生成時のLightness上限(0〜1)。白飛び(pastel化・無彩色化)を防ぐための上限。 */
+  lightLightnessMax: number;
 }
 
 export const GRADIENT_PARAMS: GradientParams = {
   heroStopPercent: 40,
-  deepLightnessScale: 0.85,
-  lightLightnessBoost: 0.28,
+  denseChromaBoost: 1.12,
+  denseLightnessDrop: 0.02,
+  lightLightnessBoost: 0.11,
+  lightLightnessMax: 0.95,
 };
 
 export interface GradientStop {
@@ -158,74 +154,105 @@ function mixHex(a: string, b: string, t: number): string {
   return rgbToHex(A.r + (B.r - A.r) * t, A.g + (B.g - A.g) * t, A.b + (B.b - A.b) * t);
 }
 
-function hexToHsl(hex: string): { h: number; s: number; l: number } {
+// sRGB(0〜255) <-> リニアRGB(0〜1)。OKLab/OKLCH変換の前段・後段で必要な
+// ガンマ補正(IEC 61966-2-1)。
+function srgbChannelToLinear(c: number): number {
+  const s = c / 255;
+  return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+}
+function linearChannelToSrgb(c: number): number {
+  const v = c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+  return v * 255;
+}
+
+// リニアRGB -> OKLab(Björn Ottosson, 2020)。
+function linearRgbToOklab(r: number, g: number, b: number): { L: number; a: number; b: number } {
+  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+  return {
+    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+  };
+}
+
+// OKLab -> リニアRGB(linearRgbToOklabの逆変換)。
+function oklabToLinearRgb(L: number, a: number, b: number): { r: number; g: number; b: number } {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+  return {
+    r: +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    g: -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    b: -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  };
+}
+
+interface Oklch {
+  L: number;
+  C: number;
+  /** 度数(0〜360)。 */
+  H: number;
+}
+
+function hexToOklch(hex: string): Oklch {
   const { r, g, b } = hexToRgb(hex);
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  let h = 0;
-  let s = 0;
-  const l = (max + min) / 2;
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case rn:
-        h = (gn - bn) / d + (gn < bn ? 6 : 0);
-        break;
-      case gn:
-        h = (bn - rn) / d + 2;
-        break;
-      default:
-        h = (rn - gn) / d + 4;
+  const { L, a, b: ob } = linearRgbToOklab(srgbChannelToLinear(r), srgbChannelToLinear(g), srgbChannelToLinear(b));
+  const C = Math.sqrt(a * a + ob * ob);
+  let H = (Math.atan2(ob, a) * 180) / Math.PI;
+  if (H < 0) H += 360;
+  return { L, C, H };
+}
+
+function oklchInSrgbGamut(L: number, C: number, H: number): boolean {
+  const hr = (H * Math.PI) / 180;
+  const { r, g, b } = oklabToLinearRgb(L, C * Math.cos(hr), C * Math.sin(hr));
+  const margin = 1e-4;
+  return r >= -margin && r <= 1 + margin && g >= -margin && g <= 1 + margin && b >= -margin && b <= 1 + margin;
+}
+
+// OKLCH -> hex。sRGB色域外になる場合は、Lightness/Hueを保ったままChromaだけを
+// 二分探索で縮め(gamut clipping)、色域内に収める(色が破綻したり、意図しない
+// 色相へずれたりしないようにするため)。
+function oklchToHex(L: number, C: number, H: number): string {
+  let chroma = C;
+  if (!oklchInSrgbGamut(L, C, H)) {
+    let lo = 0;
+    let hi = C;
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (oklchInSrgbGamut(L, mid, H)) lo = mid;
+      else hi = mid;
     }
-    h /= 6;
+    chroma = lo;
   }
-  return { h: h * 360, s: s * 100, l: l * 100 };
+  const hr = (H * Math.PI) / 180;
+  const { r, g, b } = oklabToLinearRgb(L, chroma * Math.cos(hr), chroma * Math.sin(hr));
+  return rgbToHex(linearChannelToSrgb(r), linearChannelToSrgb(g), linearChannelToSrgb(b));
 }
 
-function hslToHex(h: number, s: number, l: number): string {
-  const hue = ((h % 360) + 360) % 360;
-  const sat = Math.min(100, Math.max(0, s)) / 100;
-  const light = Math.min(100, Math.max(0, l)) / 100;
-  const c = (1 - Math.abs(2 * light - 1)) * sat;
-  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const m = light - c / 2;
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  if (hue < 60) {
-    r = c; g = x; b = 0;
-  } else if (hue < 120) {
-    r = x; g = c; b = 0;
-  } else if (hue < 180) {
-    r = 0; g = c; b = x;
-  } else if (hue < 240) {
-    r = 0; g = x; b = c;
-  } else if (hue < 300) {
-    r = x; g = 0; b = c;
-  } else {
-    r = c; g = 0; b = x;
-  }
-  return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+// primaryのHueを保ったまま、OKLCH ChromaをdenseChromaBoost倍・Lightnessを
+// denseLightnessDropだけ下げた「DENSE(濃い)」色を返す。「暗くする」のではなく
+// 「濃く鮮やかにする」ことが目的(MASTER SPECIFICATION #13)。
+function towardDense(hex: string): string {
+  const { L, C, H } = hexToOklch(hex);
+  return oklchToHex(Math.max(0, L - GRADIENT_PARAMS.denseLightnessDrop), C * GRADIENT_PARAMS.denseChromaBoost, H);
 }
 
-// hexの色相・彩度を保ったまま、HSL明度をGRADIENT_PARAMS.deepLightnessScale倍して
-// 「同系色の少し濃い版」を返す(相対輝度を固定目標に合わせる方式ではない。理由は
-// GradientParams.deepLightnessScaleのコメント参照)。
-function towardDeep(hex: string): string {
-  const { h, s, l } = hexToHsl(hex);
-  return hslToHex(h, s, l * GRADIENT_PARAMS.deepLightnessScale);
-}
-
-// hexの色相・彩度を保ったまま、HSL明度から白までの残り幅にGRADIENT_PARAMS.lightLightnessBoost
-// を掛けて明度に加え、「同系色の少し明るい版」を返す(相対輝度を固定目標に合わせる
-// 方式ではない。理由はGradientParams.lightLightnessBoostのコメント参照)。
+// primaryのHueとChromaを保ったまま、OKLCH LightnessをlightLightnessBoostだけ
+// 上げた「LIGHT(軽やか)」色を返す。lightLightnessMaxで上限を設け、既に明るい
+// primaryが白飛び(無彩色化)しないようにする。
 function towardLight(hex: string): string {
-  const { h, s, l } = hexToHsl(hex);
-  return hslToHex(h, s, l + (100 - l) * GRADIENT_PARAMS.lightLightnessBoost);
+  const { L, C, H } = hexToOklch(hex);
+  const targetL = Math.min(L + GRADIENT_PARAMS.lightLightnessBoost, GRADIENT_PARAMS.lightLightnessMax);
+  return oklchToHex(targetL, C, H);
 }
 
 // CIRCLE LINESブランドグラデーション01(チームカラー未設定時に使用する確定仕様)。
@@ -238,14 +265,14 @@ export function brandGradientStops(): GradientStop[] {
   ];
 }
 
-// 深色 → teamPrimary(主役、常に無加工でhero位置) → 明るいアクセントの3ストップグラデーション。
-// teamPrimaryの色相・彩度のみから深色/アクセントを導出する「単一色相グラデーション」。
-// Brand01(Navy→Blue→Cyan)が同一色系統内の明度変化だけで洗練された印象になるのと同じ構造を、
+// DENSE → teamPrimary(主役、常に無加工でHERO位置) → LIGHTの3ストップグラデーション。
+// teamPrimaryのHueのみからDENSE/LIGHTを導出する「単一色相グラデーション」。
+// Brand01(Navy→Blue→Cyan)が同一色系統内の変化だけで洗練された印象になるのと同じ構造を、
 // 任意のteamPrimaryへ適用する(配色再設計: teamSecondaryを直接混合すると、色相差が大きい
 // 組み合わせでRGB直線補間特有の「濁った中間色」が発生するため、混合には使わない)。
 export function primaryGradientStops(primary: string): GradientStop[] {
   return [
-    { position: 0, color: towardDeep(primary) },
+    { position: 0, color: towardDense(primary) },
     { position: GRADIENT_PARAMS.heroStopPercent, color: primary },
     { position: 100, color: towardLight(primary) },
   ];
