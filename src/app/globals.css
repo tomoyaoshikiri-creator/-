@@ -140,15 +140,25 @@ textarea {
   opacity: 0.62;
 }
 
+/*
+  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;inset:0で
+  サイズを決める。iOSのホーム画面追加PWA(display:standalone)では、viewport-fit=cover
+  込みでも100dvh/100vhの計算値と実際に描画可能な範囲がズレ、TabBarのCSS上のpaddingを
+  0まで削っても実機でラベル下に説明のつかない空白が残る事例が確認されたため
+  (TabBar側のgetBoundingClientRect()は画面下端と完全に一致している=コード側は
+  正常だが、それでも実機で空白が見える)。position:fixed;inset:0は実際のvisual
+  viewportに直接アンカーするため、この種のズレに対してheight:100dvhより堅牢とされる
+  標準的な対処法。デスクトップの「浮いたカード」表示は従来通りposition:relativeへ
+  下の@mediaで戻す。
+*/
 .app-shell {
+  position: fixed;
+  inset: 0;
   max-width: 480px;
   margin: 0 auto;
-  height: 100vh;
-  height: 100dvh;
   background: var(--paper);
   display: flex;
   flex-direction: column;
-  position: relative;
   overflow: hidden;
 }
 
@@ -171,6 +181,8 @@ textarea {
 */
 @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
   .app-shell {
+    position: relative;
+    inset: auto;
     height: calc(100dvh - 48px);
     margin-block: 24px;
     border-radius: 28px;
