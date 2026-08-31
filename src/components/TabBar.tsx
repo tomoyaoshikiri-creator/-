@@ -23,18 +23,21 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // Phase UI-2B: 3ca9e71の30px(pb-7.5)という固定値を基準にはしない。ホームインジケータへの
-    // 物理的な干渉を防ぐために本当に必要なのはenv(safe-area-inset-bottom)分の余白だけであり、
-    // 「Safe Areaだから大きく確保する」という考え方はとらない。padding-topも装飾目的の
-    // 最小限(pt-1)まで詰め、icon(19px)・gap(2px)・label自体のサイズは変更しない。
-    // padding-bottomは、Safe Areaがない環境向けの最小フォールバック(0.75rem)と
-    // env(safe-area-inset-bottom)の大きい方を採用し、実機(env=34px前後)ではenv()の値が
-    // そのままそのまま採用される(0.75remは実質env非対応環境専用)。
+    // Phase UI-2B: env(safe-area-inset-bottom)(実機で約34px)を「そのままlabelの下の
+    // paddingにする」設計をやめた。TabBar(<nav>)はAppNavの最後のflex子要素として
+    // 常に.app-shellの下端(=viewport-fit=cover下での物理画面下端)まで届いており、
+    // 背景(bg-white)はpadding-bottomの値に関係なく既に物理下端まで塗られている。
+    // したがってpadding-bottomの役割は「ホームインジケーターのジェスチャー領域と
+    // 実際に干渉しない、必要最小限のコンテンツ余白」であり、Safe Area全体を
+    // 予約する必要はない。env(safe-area-inset-bottom)を55%相当(実機で約18px、
+    // 0.75rem〜1.125remの範囲にclamp)だけ使うことで、Safe Area非対応環境でも
+    // 極端に詰まらず、実機でもHome Indicatorの実際の表示位置(下端から約6〜11px)に
+    // 対して十分な余裕を保ったまま、視覚的にコンパクトなTabBarにする。
     <nav
       className={`min-[700px]:hidden flex items-start pt-1 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
-      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      style={{ paddingBottom: "clamp(0.75rem, calc(env(safe-area-inset-bottom) * 0.55), 1.125rem)" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
