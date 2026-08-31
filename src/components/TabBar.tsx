@@ -62,25 +62,56 @@ function SafeAreaDebugOverlay({ navRef }: { navRef: React.RefObject<HTMLElement 
   }, [navRef]);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 4,
-        left: 4,
-        zIndex: 9999,
-        background: "rgba(0,0,0,0.85)",
-        color: "#0f0",
-        fontSize: 9,
-        lineHeight: 1.4,
-        fontFamily: "monospace",
-        padding: "4px 6px",
-        borderRadius: 4,
-        whiteSpace: "pre",
-        pointerEvents: "none",
-      }}
-    >
-      {info}
-    </div>
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 4,
+          left: 4,
+          zIndex: 9999,
+          background: "rgba(0,0,0,0.85)",
+          color: "#0f0",
+          fontSize: 9,
+          lineHeight: 1.4,
+          fontFamily: "monospace",
+          padding: "4px 6px",
+          borderRadius: 4,
+          whiteSpace: "pre",
+          pointerEvents: "none",
+        }}
+      >
+        {info}
+      </div>
+      {/* 実物大の「定規」。画面下端からCSS上ちょうど40pxの高さの半透明バーを重ねて表示し、
+          実機で見えている空白の量を目視で直接比較できるようにする(推測・計算に頼らない)。 */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 40,
+          zIndex: 9998,
+          background: "rgba(255,0,200,0.35)",
+          borderTop: "2px solid magenta",
+          pointerEvents: "none",
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: 2,
+            left: 4,
+            fontSize: 9,
+            fontFamily: "monospace",
+            color: "magenta",
+            fontWeight: "bold",
+          }}
+        >
+          ↑ここが画面下端から40px
+        </span>
+      </div>
+    </>
   );
 }
 
