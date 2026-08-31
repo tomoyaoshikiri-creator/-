@@ -138,7 +138,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
                 )
               )}
             </span>
-            <span className="whitespace-nowrap">{TAB_LABELS[tab]}</span>
+            <span className="whitespace-nowrap leading-none">{TAB_LABELS[tab]}</span>
           </>
         );
         if (isLocked) {
