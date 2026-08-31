@@ -13,7 +13,7 @@ export default async function TeamLoginPage({
   const { error, notice } = await searchParams;
 
   // Phase UI-2A: ログイン画面はCIRCLE LINESサービスブランドの表示領域とし、チームロゴ/チーム名の
-  // 表示は廃止する(下のAuthHeadingにはbrand="circleLines"のみ渡す)。slugによるチーム特定・
+  // 表示は廃止する(下のAuthHeadingは常にCIRCLE LINESブランド表示のみ)。slugによるチーム特定・
   // 認証フロー自体は変更しないため、get_team_login_branding(slug)の呼び出しはそのまま維持する
   // (表示に使わなくなっただけで、削除・変更はしていない)。
   const supabase = await createClient();
@@ -22,7 +22,7 @@ export default async function TeamLoginPage({
 
   return (
     <div>
-      <AuthHeading brand="circleLines" />
+      <AuthHeading />
       {error && (
         <div className="mb-3 text-[12.5px] text-danger text-center bg-white border border-line rounded-2xl p-3">
           {error === "confirm_failed" ? "確認リンクが無効か期限切れです。もう一度お試しください。" : error}
