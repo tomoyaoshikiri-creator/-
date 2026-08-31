@@ -23,14 +23,11 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // デザイン改修プロジェクト開始前(3ca9e71)は、padding-top/bottomがpt-2.5/pb-7.5
-    // (10px/30px)の固定値だった。Phase UI-2B以降このセッションで試みたenv(safe-area-
-    // inset-bottom)ベースの動的な余白圧縮は、値としては3ca9e71より小さくなっていたにも
-    // 関わらず実機では「改修前より長い」という評価が変わらなかったため、理屈による
-    // 再計算をやめ、実際に改修前で使われていた固定値へ文字通り戻す。icon(19px)・
-    // gap・labelのサイズは変更していない。
+    // 改修前(3ca9e71)のpt-2.5/pb-7.5(10px/30px)へ文字通り戻しても実機の余白が
+    // 変わらないというフィードバックを受け、padding-bottomを大胆に(pb-7.5→pb-1、
+    // 30px→4px)削る。icon(19px)・gap・labelのサイズは変更していない。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-1 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >
