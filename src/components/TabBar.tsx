@@ -27,14 +27,15 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // contentの上下にある空白だったと確定した。icon(19px)・gap(2px)・label(通常の
     // 行高)・lock badge/notification dotのサイズは5861e67時点(直前の縮小より前)へ
     // 完全に戻し、縮めるのはpadding-top/padding-bottomという「余白」だけにする。
-    // padding-bottomは、TabBarの背景が(padding値に関係なく)物理下端まで届いている
-    // 前提のもと、Home Indicatorの実際の表示位置(下端から約6〜11px)に必要最小限の
-    // 余裕を残すだけの値(env(safe-area-inset-bottom)の30%相当、実機で約10px)にする。
+    // icon+gap+labelという中身だけで既に約31px(実測)を占めており、これ以上は
+    // icon/labelを縮めない限り縮小できないため、padding-topは実質0まで、
+    // padding-bottomはHome Indicatorとの干渉を避けられる範囲で詰められる下限
+    // (env(safe-area-inset-bottom)の20%相当、実機で約7px)まで圧縮している。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-[2px] border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
-      style={{ paddingBottom: "clamp(0.5rem, calc(env(safe-area-inset-bottom) * 0.3), 0.625rem)" }}
+      style={{ paddingBottom: "clamp(0.375rem, calc(env(safe-area-inset-bottom) * 0.2), 0.5rem)" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
