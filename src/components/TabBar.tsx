@@ -23,41 +23,37 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // Phase UI-2B: env(safe-area-inset-bottom)(実機で約34px)を「そのままlabelの下の
-    // paddingにする」設計をやめた。TabBar(<nav>)はAppNavの最後のflex子要素として
-    // 常に.app-shellの下端(=viewport-fit=cover下での物理画面下端)まで届いており、
-    // 背景(bg-white)はpadding-bottomの値に関係なく既に物理下端まで塗られている。
-    // したがってpadding-bottomの役割は「ホームインジケーターのジェスチャー領域と
-    // 実際に干渉しない、必要最小限のコンテンツ余白」であり、Safe Area全体を
-    // 予約する必要はない。env(safe-area-inset-bottom)を55%相当(実機で約18px、
-    // 0.75rem〜1.125remの範囲にclamp)だけ使うことで、Safe Area非対応環境でも
-    // 極端に詰まらず、実機でもHome Indicatorの実際の表示位置(下端から約6〜11px)に
-    // 対して十分な余裕を保ったまま、視覚的にコンパクトなTabBarにする。
+    // Phase UI-2B: Bottom Navigationを「約3/5」までコンパクト化する最終指示に基づき、
+    // icon/label自体のサイズも含めて縮小した(それ以前のラウンドで維持していた
+    // 「icon/labelサイズは変更しない」制約は、この回のユーザー指示で明示的に解除)。
+    // padding-bottomは、TabBarの背景が(padding値に関係なく)物理下端まで届いている
+    // 前提のもと、Home Indicatorの実際の表示位置(下端から約6〜11px)に必要最小限の
+    // 余裕を残すだけの値(env(safe-area-inset-bottom)の30%相当、実機で約10px)にした。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-1 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-[2px] border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
-      style={{ paddingBottom: "clamp(0.75rem, calc(env(safe-area-inset-bottom) * 0.55), 1.125rem)" }}
+      style={{ paddingBottom: "clamp(0.5rem, calc(env(safe-area-inset-bottom) * 0.3), 0.625rem)" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const isLocked = locked[tab];
-        const className = `flex-1 min-w-0 text-center text-[7.5px] font-medium flex flex-col items-center gap-0.5 ${
+        const className = `flex-1 min-w-0 text-center text-[7.5px] font-medium leading-none flex flex-col items-center gap-0.5 ${
           isLocked ? "text-ink-soft/50" : isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         const content = (
           <>
             <span className="relative inline-flex">
-              <Icon className="w-[19px] h-[19px]" />
+              <Icon className="w-[11px] h-[11px]" />
               {isLocked ? (
-                <span className="absolute -top-1 -right-1 w-[11px] h-[11px] rounded-full bg-paper border border-line flex items-center justify-center">
-                  <LockIcon className="w-[7px] h-[7px] text-ink-soft" />
+                <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-paper border border-line flex items-center justify-center">
+                  <LockIcon className="w-[5px] h-[5px] text-ink-soft" />
                 </span>
               ) : (
                 badges[tab] && (
-                  <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
+                  <span className="absolute -top-px -right-px w-[6px] h-[6px] rounded-full bg-danger border border-white" />
                 )
               )}
             </span>
