@@ -41,7 +41,11 @@ export function AppHeader({
     >
       <div className="flex items-center justify-between gap-2">
         <span
-          className="flex items-center gap-1.5 min-w-0 rounded-lg pl-1 pr-2 py-1"
+          // Phase UI-2B以前はpaddingなしの素のspanだった。半透明surfaceの背景を見せるため
+          // 横方向のpaddingは維持しつつ、縦方向(py)は付けない(付けるとHeader全体の
+          // 縦占有サイズが改修前より増えてしまうため、行の高さは中身のアイコン/文字の
+          // 自然な高さに委ねる)。
+          className="flex items-center gap-1.5 min-w-0 rounded-lg pl-1 pr-2"
           style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
         >
           {teamLogoUrl && (
@@ -60,7 +64,13 @@ export function AppHeader({
           <GuardedLink
             href={backHref}
             aria-label="戻る"
-            className="inline-flex items-center -ml-1 rounded-lg p-0.5"
+            // Phase UI-2B以前はpaddingなし(-ml-1のみ)だった。p-0.5を付けると、通常
+            // (--header-title-surfaceがtransparentの)ケースでも見た目上は変化しないが、
+            // アイコン自体のbox(24px)がtext-[22px] leading-tightの行高(約27.5px)を
+            // 上回りかねず、h1行の高さがHeader全体の縦占有サイズを押し上げてしまう
+            // ため付けない(rounded-lg+背景色自体は、コントラスト救済で
+            // surfaceが表示される稀なケースのために維持する)。
+            className="inline-flex items-center -ml-1 rounded-lg"
             style={{ background: "var(--header-title-surface)" }}
           >
             <BackIcon className="w-6 h-6" />

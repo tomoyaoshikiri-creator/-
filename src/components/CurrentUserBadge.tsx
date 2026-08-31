@@ -24,11 +24,15 @@ export function CurrentUserBadge() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex flex-col items-end gap-0.5 max-w-[140px] px-2.5 py-1.5 rounded-lg"
+        // Phase UI-2B以前は名前1行のみ(text-xs font-bold, py-1.5)だった。role行を
+        // 追加で表示する仕様は維持しつつ、Header全体の縦占有サイズを改修前相当に保つため、
+        // pyを切り詰め(py-1.5→py-0.5)、両行ともleading-noneでline-heightを
+        // font-sizeちょうどに固定する(role行を追加した分だけの最小限の増分に抑える)。
+        className="flex flex-col items-end gap-0.5 max-w-[140px] px-2.5 py-0.5 rounded-lg"
         style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
       >
-        <span className="text-xs font-bold truncate max-w-full">{name}</span>
-        <span className="text-[9px] font-medium opacity-80 truncate max-w-full">{role}</span>
+        <span className="text-xs leading-none font-bold truncate max-w-full">{name}</span>
+        <span className="text-[9px] leading-none font-medium opacity-80 truncate max-w-full">{role}</span>
       </button>
       {open && (
         <>
