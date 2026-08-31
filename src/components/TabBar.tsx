@@ -31,8 +31,12 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // env(safe-area-inset-bottom)の大きい方だけを採用する(置き換えでも加算でもない)ことで、
     // Safe Areaがない端末では元の見た目を保ちつつ、Safe Areaがある端末でも下部余白が
     // 34px程度(元の30pxとほぼ同等)に収まるようにする。
+    // さらに、viewport-fit=cover導入前はSafe Area自体がTabBarの一部ではなかったため、
+    // 実機上の総占有量はSafe Areaの分だけ純増している。これを完全には相殺できないため、
+    // pt-2.5(10px)をpt-1.5(6px)へ詰め、アイコン・ラベル自体やgapは変更せず、
+    // Safe Area込みの総占有量を改修前(3ca9e71)へ可能な限り近づける。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-1.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
       style={{ paddingBottom: "max(1.875rem, env(safe-area-inset-bottom))" }}

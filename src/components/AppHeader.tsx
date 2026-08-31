@@ -31,12 +31,16 @@ export function AppHeader({
   const { teamName, teamLogoUrl } = useSession();
   return (
     <div
-      className="px-4.5 pb-4.5"
+      className="px-4.5 pb-3.5"
       style={{
         background: "var(--header-gradient)",
-        // Safe Area(ステータスバー領域)もヘッダー背景の一部として扱い、
-        // 実コンテンツはその分だけ下へ押し下げる(env()未対応環境では0になり影響しない)。
-        paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
+        // Safe Area(ステータスバー領域)もヘッダー背景の一部として扱い、実コンテンツは
+        // その分だけ下へ押し下げる(env()未対応環境では0になり影響しない)。viewport-fit=cover
+        // 導入前はステータスバー領域がOS管理でHeaderの一部ではなかったため、実機上の視覚占有量が
+        // その分そのまま増える。完全には相殺できないため、以下のcontent側の余白(この
+        // paddingTopの装飾分・行間・下部padding)を必要最小限まで詰め、Safe Area込みの
+        // 総占有量をできるだけ改修前に近づける。
+        paddingTop: "calc(env(safe-area-inset-top) + 0.625rem)",
       }}
     >
       <div className="flex items-center justify-between gap-2">
@@ -57,7 +61,10 @@ export function AppHeader({
         <CurrentUserBadge />
       </div>
       <h1
-        className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-2.5 mb-1.5 leading-tight break-words tracking-wide"
+        // Safe Area込みの総占有量を改修前へ近づけるため、row gap(mt/mb)を必要最小限に
+        // 詰めている(mt-2.5→mt-1.5、mb-1.5→mb-1)。文字サイズ・leading-tight(行間)・
+        // タップ領域は変更していない。
+        className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-1.5 mb-1 leading-tight break-words tracking-wide"
         style={{ color: "var(--header-title-on)" }}
       >
         {backHref && (
