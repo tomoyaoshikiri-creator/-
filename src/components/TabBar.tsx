@@ -24,6 +24,13 @@ function SafeAreaDebugOverlay({ navRef }: { navRef: React.RefObject<HTMLElement 
       const navRect = nav.getBoundingClientRect();
       const shell = nav.closest(".app-shell") as HTMLElement | null;
       const shellRect = shell?.getBoundingClientRect();
+      const firstTab = nav.querySelector("a, button") as HTMLElement | null;
+      const tabRect = firstTab?.getBoundingClientRect();
+      const iconWrap = firstTab?.querySelector("span.relative.inline-flex") as HTMLElement | null;
+      const iconRect = iconWrap?.getBoundingClientRect();
+      const label = firstTab?.querySelector("span.whitespace-nowrap") as HTMLElement | null;
+      const labelRect = label?.getBoundingClientRect();
+      const labelCs = label ? getComputedStyle(label) : null;
       const probe = document.createElement("div");
       probe.style.position = "fixed";
       probe.style.bottom = "0";
@@ -36,12 +43,16 @@ function SafeAreaDebugOverlay({ navRef }: { navRef: React.RefObject<HTMLElement 
 
       const lines = [
         `innerHeight: ${window.innerHeight}`,
-        `docEl.clientHeight: ${document.documentElement.clientHeight}`,
         `env(safe-area-inset-bottom): ${insetBottom}`,
         `app-shell bottom: ${shellRect?.bottom.toFixed(1) ?? "N/A"}`,
-        `nav(TabBar) bottom: ${navRect.bottom.toFixed(1)}`,
-        `gap shell→viewport: ${(window.innerHeight - (shellRect?.bottom ?? 0)).toFixed(1)}`,
+        `nav top/bottom: ${navRect.top.toFixed(1)} / ${navRect.bottom.toFixed(1)} (h=${navRect.height.toFixed(1)})`,
+        `tab(1st) top/bottom: ${tabRect?.top.toFixed(1)} / ${tabRect?.bottom.toFixed(1)} (h=${tabRect?.height.toFixed(1)})`,
+        `icon bottom: ${iconRect?.bottom.toFixed(1) ?? "N/A"}`,
+        `label top/bottom: ${labelRect?.top.toFixed(1)} / ${labelRect?.bottom.toFixed(1)} (h=${labelRect?.height.toFixed(1)})`,
+        `label lineHeight/fontSize: ${labelCs?.lineHeight} / ${labelCs?.fontSize}`,
         `gap nav→viewport: ${(window.innerHeight - navRect.bottom).toFixed(1)}`,
+        `gap tab→nav bottom: ${(navRect.bottom - (tabRect?.bottom ?? 0)).toFixed(1)}`,
+        `gap label→nav bottom: ${(navRect.bottom - (labelRect?.bottom ?? 0)).toFixed(1)}`,
       ];
       setInfo(lines.join("\n"));
     };
