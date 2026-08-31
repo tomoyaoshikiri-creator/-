@@ -23,11 +23,12 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // 改修前(3ca9e71)のpt-2.5/pb-7.5(10px/30px)へ文字通り戻しても実機の余白が
-    // 変わらないというフィードバックを受け、padding-bottomを大胆に(pb-7.5→pb-1、
-    // 30px→4px)削る。icon(19px)・gap・labelのサイズは変更していない。
+    // pb-1(4px)まで削っても改修前の見た目とはまだ差があったため、padding-bottomの
+    // 理論上の下限であるpb-0まで削る。ここでも余白が変わらない場合は、TabBar自体の
+    // paddingではなく外側(display:standaloneのsafe-area処理等)が原因と切り分けられる。
+    // icon(19px)・gap・labelのサイズ、タップ領域拡張の仕組みは変更していない。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-1 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >
