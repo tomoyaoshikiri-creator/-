@@ -141,19 +141,24 @@ textarea {
 }
 
 /*
-  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;inset:0で
-  サイズを決める。iOSのホーム画面追加PWA(display:standalone)では、viewport-fit=cover
-  込みでも100dvh/100vhの計算値と実際に描画可能な範囲がズレ、TabBarのCSS上のpaddingを
-  0まで削っても実機でラベル下に説明のつかない空白が残る事例が確認されたため
-  (TabBar側のgetBoundingClientRect()は画面下端と完全に一致している=コード側は
-  正常だが、それでも実機で空白が見える)。position:fixed;inset:0は実際のvisual
-  viewportに直接アンカーするため、この種のズレに対してheight:100dvhより堅牢とされる
-  標準的な対処法。デスクトップの「浮いたカード」表示は従来通りposition:relativeへ
-  下の@mediaで戻す。
+  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;top/left/
+  right:0で上端・左右をvisual viewportへ直接アンカーする(iOSのstandalone PWAでは
+  height:100dvhの計算値と実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
+  bottomだけはinset:0にせず、bottom: env(safe-area-inset-bottom)で止める。
+  TabBar.tsx側のpadding/icon/labelサイズを改修前(3ca9e71)と1px単位で完全に一致させても
+  実機で「ラベル下の余白」が消えないことをgetBoundingClientRect()レベルで確認できており
+  (TabBar自体は画面下端と一致している)、原因はTabBar.tsxではなくこの.app-shell自体が
+  viewport-fit=cover込みでHome Indicator領域まで自分の背景色で覆うようになったこと
+  (改修前はこの領域をOS側が管理しており、アプリの背景は届いていなかった)と特定できた。
+  ステータスバー側(Header)のcoverの恩恵は保ったまま、下端だけは改修前と同じく
+  Safe Areaの外側で止め、その内側はアプリの背景を伸ばさない。
 */
 .app-shell {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
