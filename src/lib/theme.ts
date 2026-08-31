@@ -119,19 +119,27 @@ export interface GradientParams {
   heroStopPercent: number;
   /**
    * 深色(0%)を作る際に、primary自身のHSL明度へ掛ける倍率(0〜1)。小さいほど暗くなる。
-   * 相対輝度ベース(Brand Navy相当まで暗くする)ではなく明度ベースにしているのは、
-   * 暖色(オレンジ等)はBrand Navyと同じ相対輝度に到達するには明度を極端に落とす必要が
-   * あり、結果が「濃いprimary」ではなく「無関係な暗色(黒・こげ茶)」に見えてしまう
-   * ためで、実機検証で確認した。暖色は相対輝度への寄与(R+Gチャンネル)が大きいため、
-   * 寒色よりずっと明度を落とさないと同じ相対輝度に届かない。明度の倍率で下げる方式なら、
-   * どの色相でも「同じ色の濃い版」として一貫して認識できる。
+   * 相対輝度ベース(Brand Navy相当まで暗くする)は使わない。暖色(オレンジ等)は相対輝度
+   * への寄与(R+Gチャンネル)が大きく、寒色と同じ相対輝度に到達するには明度を極端に
+   * 落とす必要があり、結果が「濃いprimary」ではなく黄土色・茶色・黒に近い「無関係な
+   * 暗色」に見えてしまうことが実機検証で繰り返し確認された。HSL明度への軽い倍率適用に
+   * 留めることで、primaryの色相・彩度・ブランド感を壊さない「同系色の少し濃い版」に留める。
    */
   deepLightnessScale: number;
+  /**
+   * 明るいアクセント(100%)を作る際に、primary自身のHSL明度から白までの残り幅
+   * (100 - l)へ掛けて明度に加える倍率(0〜1)。大きいほど明るくなる。深色側と対称に、
+   * 相対輝度ベースの目標値合わせ(旧実装ではBrand Cyan相当の相対輝度に固定していた)は
+   * 使わない。残り幅に対する倍率にすることで、primaryがすでに明るい色でも白に飛びすぎず、
+   * 暗い色でも十分な明暗差を確保できる。
+   */
+  lightLightnessBoost: number;
 }
 
 export const GRADIENT_PARAMS: GradientParams = {
   heroStopPercent: 40,
-  deepLightnessScale: 0.55,
+  deepLightnessScale: 0.85,
+  lightLightnessBoost: 0.28,
 };
 
 export interface GradientStop {
@@ -204,36 +212,20 @@ function hslToHex(h: number, s: number, l: number): string {
   return rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
 }
 
-// 色相・彩度を固定したまま、二分探索で「相対輝度が目標値に一致する明度」を求める。
-// Brand NavyとBrand CyanはHSL明度がほぼ同じ(46〜49%)だが相対輝度は約5.5倍異なり、
-// 「深い/明るい」という知覚差は明度ではなく相対輝度の方に強く現れるため、
-// 単純な明度の加減算ではなく相対輝度そのものを目標値にしている。
-function solveLightnessForRelativeLuminance(hue: number, sat: number, targetRelLum: number): number {
-  let lo = 0;
-  let hi = 100;
-  for (let i = 0; i < 26; i++) {
-    const mid = (lo + hi) / 2;
-    if (relativeLuminance(hslToHex(hue, sat, mid)) < targetRelLum) lo = mid;
-    else hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-
-const LIGHT_TARGET_RELATIVE_LUMINANCE = relativeLuminance(BRAND_CYAN);
-
 // hexの色相・彩度を保ったまま、HSL明度をGRADIENT_PARAMS.deepLightnessScale倍して
-// 「同じ色の濃い版」を返す(相対輝度を固定目標に合わせる方式ではない。理由は
+// 「同系色の少し濃い版」を返す(相対輝度を固定目標に合わせる方式ではない。理由は
 // GradientParams.deepLightnessScaleのコメント参照)。
 function towardDeep(hex: string): string {
   const { h, s, l } = hexToHsl(hex);
   return hslToHex(h, s, l * GRADIENT_PARAMS.deepLightnessScale);
 }
 
-// hexの色相・彩度を保ったまま、Brand Cyanと同じ相対輝度(明るさ)まで調整した色を返す。
+// hexの色相・彩度を保ったまま、HSL明度から白までの残り幅にGRADIENT_PARAMS.lightLightnessBoost
+// を掛けて明度に加え、「同系色の少し明るい版」を返す(相対輝度を固定目標に合わせる
+// 方式ではない。理由はGradientParams.lightLightnessBoostのコメント参照)。
 function towardLight(hex: string): string {
-  const { h, s } = hexToHsl(hex);
-  const sat = Math.min(100, s * 0.9);
-  return hslToHex(h, sat, solveLightnessForRelativeLuminance(h, sat, LIGHT_TARGET_RELATIVE_LUMINANCE));
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, s, l + (100 - l) * GRADIENT_PARAMS.lightLightnessBoost);
 }
 
 // CIRCLE LINESブランドグラデーション01(チームカラー未設定時に使用する確定仕様)。

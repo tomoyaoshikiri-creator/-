@@ -304,10 +304,25 @@ describe("primaryGradientStops(Primary主体グラデーション)", () => {
     }
   });
 
-  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はprimaryの色相を保ったままBrand Cyan相当の相対輝度になる", (_key, p) => {
+  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はprimaryの色相を保ったまま、白までの残り幅がGRADIENT_PARAMS.lightLightnessBoost倍だけ明度に加算される(Brand Cyan相当の相対輝度に固定しない)", (_key, p) => {
     const stops = primaryGradientStops(p);
     expect(hueDiffDeg(hueOf(stops[2].color), hueOf(p))).toBeLessThan(5);
-    expect(Math.abs(relativeLuminance(stops[2].color) - relativeLuminance(BRAND_CYAN))).toBeLessThan(0.05);
+    const expectedLightness = lightnessOf(p) + (100 - lightnessOf(p)) * GRADIENT_PARAMS.lightLightnessBoost;
+    expect(Math.abs(lightnessOf(stops[2].color) - expectedLightness)).toBeLessThan(2);
+    // primaryより明確に明るいこと(相対輝度が上がっていること)を確認する。
+    expect(relativeLuminance(stops[2].color)).toBeGreaterThan(relativeLuminance(p));
+  });
+
+  it.each(TEAM_COLOR_CASES)("%s: 明るいアクセント(100%)はBrand Cyanの相対輝度には固定されない(GRADIENT_PARAMS.lightLightnessBoostを変更すると追従する)", (_key, p) => {
+    const before = primaryGradientStops(p)[2].color;
+    const original = GRADIENT_PARAMS.lightLightnessBoost;
+    GRADIENT_PARAMS.lightLightnessBoost = 0.5;
+    try {
+      const after = primaryGradientStops(p)[2].color;
+      expect(after).not.toBe(before);
+    } finally {
+      GRADIENT_PARAMS.lightLightnessBoost = original;
+    }
   });
 });
 
@@ -338,7 +353,7 @@ describe("headerGradientStops/gradientCss(Primary主体のみ、Secondary不使�
 
   it("都賀ビクトリーズ実データ: 最終CSS文字列が期待通りになる(secondaryを含まない同系色グラデーション)", () => {
     const css = gradientCss(headerGradientStops({ themePrimary: "#FFAB01", themeAccent: "#011D57" }));
-    expect(css).toBe("linear-gradient(105deg, #8d5e00 0%, #FFAB01 40%, #f2a70d 100%)");
+    expect(css).toBe("linear-gradient(105deg, #da9200 0%, #FFAB01 40%, #ffc348 100%)");
     expect(css.toLowerCase()).not.toContain("#011d57");
   });
 });
@@ -424,7 +439,7 @@ describe("headerThemeStyle", () => {
 
   it("都賀ビクトリーズ実データ: --header-gradientがsecondaryを含まない同系色グラデーションになる", () => {
     const style = headerThemeStyle({ themePrimary: "#FFAB01", themeAccent: "#011D57" });
-    expect(style["--header-gradient"]).toBe("linear-gradient(105deg, #8d5e00 0%, #FFAB01 40%, #f2a70d 100%)");
+    expect(style["--header-gradient"]).toBe("linear-gradient(105deg, #da9200 0%, #FFAB01 40%, #ffc348 100%)");
     expect(style["--header-gradient"].toLowerCase()).not.toContain("#011d57");
   });
 });
