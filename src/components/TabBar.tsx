@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
 import { TAB_LABELS, tabHrefForRole, tabsForRole, type TabKey } from "@/lib/permissions";
@@ -10,11 +11,74 @@ import { useSession } from "@/lib/session-context";
 import { useUpgradePrompt } from "@/components/PlanLock";
 import { hasCoachNoteAccess } from "@/lib/plan";
 
+// 一時的な計測用オーバーレイ。padding-bottom: 0まで詰めても実機の余白が変わらない
+// 原因を切り分けるため、TabBar自体のCSSではなく画面下端との実際のズレを直接測る。
+// 原因特定後にこのコンポーネントごと削除する。
+function SafeAreaDebugOverlay({ navRef }: { navRef: React.RefObject<HTMLElement | null> }) {
+  const [info, setInfo] = useState<string>("計測中...");
+
+  useEffect(() => {
+    const measure = () => {
+      const nav = navRef.current;
+      if (!nav) return;
+      const navRect = nav.getBoundingClientRect();
+      const shell = nav.closest(".app-shell") as HTMLElement | null;
+      const shellRect = shell?.getBoundingClientRect();
+      const probe = document.createElement("div");
+      probe.style.position = "fixed";
+      probe.style.bottom = "0";
+      probe.style.height = "0";
+      probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+      probe.style.visibility = "hidden";
+      document.body.appendChild(probe);
+      const insetBottom = getComputedStyle(probe).paddingBottom;
+      document.body.removeChild(probe);
+
+      const lines = [
+        `innerHeight: ${window.innerHeight}`,
+        `docEl.clientHeight: ${document.documentElement.clientHeight}`,
+        `env(safe-area-inset-bottom): ${insetBottom}`,
+        `app-shell bottom: ${shellRect?.bottom.toFixed(1) ?? "N/A"}`,
+        `nav(TabBar) bottom: ${navRect.bottom.toFixed(1)}`,
+        `gap shell→viewport: ${(window.innerHeight - (shellRect?.bottom ?? 0)).toFixed(1)}`,
+        `gap nav→viewport: ${(window.innerHeight - navRect.bottom).toFixed(1)}`,
+      ];
+      setInfo(lines.join("\n"));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [navRef]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 4,
+        left: 4,
+        zIndex: 9999,
+        background: "rgba(0,0,0,0.85)",
+        color: "#0f0",
+        fontSize: 9,
+        lineHeight: 1.4,
+        fontFamily: "monospace",
+        padding: "4px 6px",
+        borderRadius: 4,
+        whiteSpace: "pre",
+        pointerEvents: "none",
+      }}
+    >
+      {info}
+    </div>
+  );
+}
+
 export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
   const { plan } = useSession();
   const promptUpgrade = useUpgradePrompt();
   const tabs = tabsForRole(role);
+  const navRef = useRef<HTMLElement>(null);
   // 管理者はタブ数が8個と最も多く、フルディスプレイのiPhoneでは端の項目が
   // 画面の丸みや安全域ぎりぎりに寄ってしまうため、左右の余白を少し多めに取って内側に寄せる。
   const dense = tabs.length >= 8;
@@ -23,11 +87,15 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // pb-1(4px)まで削っても改修前の見た目とはまだ差があったため、padding-bottomの
-    // 理論上の下限であるpb-0まで削る。ここでも余白が変わらない場合は、TabBar自体の
-    // paddingではなく外側(display:standaloneのsafe-area処理等)が原因と切り分けられる。
-    // icon(19px)・gap・labelのサイズ、タップ領域拡張の仕組みは変更していない。
+    <>
+    <SafeAreaDebugOverlay navRef={navRef} />
+    {/* pb-1(4px)まで削っても改修前の見た目とはまだ差があったため、padding-bottomの
+        理論上の下限であるpb-0まで削った。ここでも余白が変わらなかったため、TabBar自体の
+        paddingではなく外側(display:standaloneのsafe-area処理等)が原因と切り分けるための
+        計測用オーバーレイ(SafeAreaDebugOverlay)を追加している。icon(19px)・gap・
+        labelのサイズ、タップ領域拡張の仕組みは変更していない。 */}
     <nav
+      ref={navRef}
       className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
@@ -81,5 +149,6 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         );
       })}
     </nav>
+    </>
   );
 }
