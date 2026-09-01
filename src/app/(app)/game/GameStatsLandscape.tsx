@@ -5,6 +5,7 @@ import { useSession } from "@/lib/session-context";
 import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
 import { buildGridCells, type StatEntrant } from "./StatPad";
+import { TeamFoulLamps } from "@/components/TeamFoulLamps";
 import {
   STAT_BUTTONS,
   statEventCount,
@@ -82,6 +83,8 @@ export function GameStatsLandscape({
   schedule,
   ownScore,
   oppScore,
+  ownQuarterFouls,
+  opponentQuarterFouls,
   ownStatEvents,
   opponentStatEvents,
   ownEntrants,
@@ -108,6 +111,8 @@ export function GameStatsLandscape({
   schedule: Schedule | null;
   ownScore: number;
   oppScore: number;
+  ownQuarterFouls: number;
+  opponentQuarterFouls: number;
   ownStatEvents: GameStatEvent[];
   opponentStatEvents: GameOpponentStatEvent[];
   ownEntrants: StatEntrant[];
@@ -235,9 +240,12 @@ export function GameStatsLandscape({
         </div>
 
         <div className="flex items-center gap-4.5">
-          <div className="w-[210px] flex items-center justify-end gap-2.5">
-            <span className="text-[16.5px] font-bold text-ink-soft truncate max-w-[130px]">{ownName}</span>
-            <span className="font-mono text-[39px] font-bold leading-none text-orange">{ownScore}</span>
+          <div className="w-[210px] flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2.5">
+              <span className="text-[16.5px] font-bold text-ink-soft truncate max-w-[130px]">{ownName}</span>
+              <span className="font-mono text-[39px] font-bold leading-none text-orange">{ownScore}</span>
+            </div>
+            <TeamFoulLamps count={ownQuarterFouls} />
           </div>
           <div className="flex flex-col gap-0.5 font-mono text-[11px] font-bold">
             {Array.from({ length: quarter }, (_, i) => i + 1).map((q) => (
@@ -248,9 +256,12 @@ export function GameStatsLandscape({
               </div>
             ))}
           </div>
-          <div className="w-[210px] flex items-center gap-2.5">
-            <span className="font-mono text-[39px] font-bold leading-none">{oppScore}</span>
-            <span className="text-[16.5px] font-bold text-ink-soft truncate max-w-[130px]">{oppName}</span>
+          <div className="w-[210px] flex flex-col items-start gap-1">
+            <div className="flex items-center gap-2.5">
+              <span className="font-mono text-[39px] font-bold leading-none">{oppScore}</span>
+              <span className="text-[16.5px] font-bold text-ink-soft truncate max-w-[130px]">{oppName}</span>
+            </div>
+            <TeamFoulLamps count={opponentQuarterFouls} />
           </div>
         </div>
 

@@ -263,6 +263,13 @@ export function resetMatchStats(supabase: SupabaseClient<Database>, matchId: str
   return supabase.rpc("reset_match_stats", { p_match_id: matchId });
 }
 
+// 指定クォーターのチームファウル数(選手個人のfoulsイベントをチーム単位で合算)。
+// バスケットボール・ミニバスケットボールいずれもチームファウルはクォーターごとにリセットされるルールのため、
+// quarterで絞り込んだ上で合算する。
+export function teamFoulCount(events: { quarter: number; event: StatEvent; delta: number }[], quarter: number): number {
+  return events.filter((e) => e.quarter === quarter && e.event === "fouls").reduce((sum, e) => sum + e.delta, 0);
+}
+
 export function statEventLabel(event: StatEvent): string {
   return STAT_BUTTONS.find((b) => b.event === event)?.label ?? event;
 }

@@ -13,6 +13,7 @@ import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { GameStatsLandscape } from "../../GameStatsLandscape";
 import { OpponentRoster } from "../../OpponentRoster";
+import { TeamFoulLamps } from "@/components/TeamFoulLamps";
 import { StartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
@@ -28,6 +29,7 @@ import {
   deleteGameStatEvent,
   deleteOpponentGameStatEvent,
   resetMatchStats,
+  teamFoulCount,
   type StatEvent,
 } from "@/lib/gameStats";
 import type {
@@ -643,6 +645,8 @@ export default function GameStatsPage() {
   // ならないようにするため)。公式スコアの編集は試合詳細画面で行う。
   const liveTeamScore = Object.values(statLines).reduce((sum, l) => sum + l.pts, 0);
   const liveOpponentScore = Object.values(opponentStatLines).reduce((sum, l) => sum + l.pts, 0);
+  const ownQuarterFouls = teamFoulCount(statEvents, quarter);
+  const opponentQuarterFouls = teamFoulCount(opponentStatEvents, quarter);
 
   return (
     <PageShell
@@ -669,6 +673,8 @@ export default function GameStatsPage() {
             schedule={schedule}
             ownScore={liveTeamScore}
             oppScore={liveOpponentScore}
+            ownQuarterFouls={ownQuarterFouls}
+            opponentQuarterFouls={opponentQuarterFouls}
             ownStatEvents={statEvents}
             opponentStatEvents={opponentStatEvents}
             ownEntrants={ownEntrants}
@@ -782,6 +788,11 @@ export default function GameStatsPage() {
                 </SegButton>
               ))}
             </div>
+          </div>
+
+          <div className="mt-2.5 flex items-center justify-center gap-6">
+            <TeamFoulLamps label="自チーム" count={ownQuarterFouls} />
+            <TeamFoulLamps label="相手" count={opponentQuarterFouls} />
           </div>
 
           <div className="mt-4">
