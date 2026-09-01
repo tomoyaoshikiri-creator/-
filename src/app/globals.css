@@ -141,24 +141,17 @@ textarea {
 }
 
 /*
-  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;top/left/
-  right:0で上端・左右をvisual viewportへ直接アンカーする(iOSのstandalone PWAでは
-  height:100dvhの計算値と実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
-  bottomだけはinset:0にせず、bottom: env(safe-area-inset-bottom)で止める。
-  TabBar.tsx側のpadding/icon/labelサイズを改修前(3ca9e71)と1px単位で完全に一致させても
-  実機で「ラベル下の余白」が消えないことをgetBoundingClientRect()レベルで確認できており
-  (TabBar自体は画面下端と一致している)、原因はTabBar.tsxではなくこの.app-shell自体が
-  viewport-fit=cover込みでHome Indicator領域まで自分の背景色で覆うようになったこと
-  (改修前はこの領域をOS側が管理しており、アプリの背景は届いていなかった)と特定できた。
-  ステータスバー側(Header)のcoverの恩恵は保ったまま、下端だけは改修前と同じく
-  Safe Areaの外側で止め、その内側はアプリの背景を伸ばさない。
+  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;inset:0で
+  visual viewportへ直接アンカーする(iOSのstandalone PWAではheight:100dvhの計算値と
+  実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
+  一度、下端をbottom: env(safe-area-inset-bottom)で止める変更を試したが、bodyの
+  背景色(暖色系グラデーション)が下端に帯状に露出し、アプリの背景色との継ぎ目が
+  かえって目立つ結果になったため撤回し、inset:0(画面の物理的な最下端まで自分の
+  背景色で覆う)へ戻す。
 */
 .app-shell {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom);
+  inset: 0;
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
