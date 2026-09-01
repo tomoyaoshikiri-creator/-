@@ -175,9 +175,7 @@ export default function SettingsLogoPage() {
         <Card>
           <FieldLabel>チーム名</FieldLabel>
           <input value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass()} />
-          <div className="text-xs text-ink-soft mt-2">
-            下記のチーム専用ログインURLからアクセスした際、ロゴと一緒に表示されます。
-          </div>
+          <div className="text-xs text-ink-soft mt-2">アプリ内のヘッダーなど、画面各所に表示されます。</div>
           <SubmitButton onClick={handleSaveName} disabled={savingName}>
             {savingName ? "保存中…" : "保存する"}
           </SubmitButton>
@@ -196,8 +194,8 @@ export default function SettingsLogoPage() {
             </button>
           </div>
           <div className="text-xs text-ink-soft mt-2">
-            このURLからアクセスすると、上記のロゴとチーム名が表示されたログイン画面になります。共通の「CIRCLE
-            LINES」ログイン画面(/login)には影響しません。
+            このチーム専用のログインURLです。現在は表示内容自体は共通のログイン画面(/login)と同じですが、
+            このチームのメンバーに配布する固定リンクとして使えます。
           </div>
         </Card>
       )}
