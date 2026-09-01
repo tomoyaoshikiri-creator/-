@@ -24,9 +24,9 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
 
   return (
     // 【比較検証用】viewport-fit=coverを維持したままpadding-bottomは理論上の下限(0)。
-    // それでも「まだ余白がある」場合の最後の手段として、icon(19px→15px)・
-    // label(7.5px→6.5px)・バッジ類を控えめに縮小する。タップ領域は
-    // -inset-y-[10px]に広げて44px相当を維持する。
+    // icon15px/label6.5pxは「小さすぎる」との評価だったため、19px/7.5px(改修前)と
+    // 15px/6.5pxの中間(icon17px/label7px)に調整する。タップ領域は-inset-y-[9px]で
+    // 44px相当を維持する。
     <nav
       className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
@@ -37,18 +37,18 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const isLocked = locked[tab];
-        const className = `relative flex-1 min-w-0 text-center text-[6.5px] font-medium flex flex-col items-center gap-0.5 ${
+        const className = `relative flex-1 min-w-0 text-center text-[7px] font-medium flex flex-col items-center gap-0.5 ${
           isLocked ? "text-ink-soft/50" : isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         const content = (
           <>
             {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
-            <span aria-hidden className="absolute -inset-y-[10px] inset-x-0" />
+            <span aria-hidden className="absolute -inset-y-[9px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[15px] h-[15px]" />
+              <Icon className="w-[17px] h-[17px]" />
               {isLocked ? (
-                <span className="absolute -top-1 -right-1 w-[9px] h-[9px] rounded-full bg-paper border border-line flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-[10px] h-[10px] rounded-full bg-paper border border-line flex items-center justify-center">
                   <LockIcon className="w-[6px] h-[6px] text-ink-soft" />
                 </span>
               ) : (
