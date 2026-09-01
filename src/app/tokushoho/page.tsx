@@ -1,6 +1,6 @@
 import { BackLink } from "@/components/BackLink";
 
-export const metadata = { title: "特定商取引法に基づく表記 | CLUB LINK" };
+export const metadata = { title: "特定商取引法に基づく表記 | CIRCLE LINES" };
 
 export default function TokushohoPage() {
   return (

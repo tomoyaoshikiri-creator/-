@@ -1,6 +1,6 @@
 import { BackLink } from "@/components/BackLink";
 
-export const metadata = { title: "利用規約 | CLUB LINK" };
+export const metadata = { title: "利用規約 | CIRCLE LINES" };
 
 export default function TermsOfServicePage() {
   return (
@@ -17,8 +17,8 @@ export default function TermsOfServicePage() {
 
         <Section title="第1条(適用)">
           <p>
-            本規約は、FAITH CREATION(以下「当運営者」といいます)が提供するチーム運営支援アプリ「CLUB
-            LINK」(以下「本サービス」といいます)の利用条件を定めるものです。利用者は、本規約に同意のうえ本サービスを利用するものとします。
+            本規約は、FAITH CREATION(以下「当運営者」といいます)が提供するチーム運営支援アプリ「CIRCLE
+            LINES」(以下「本サービス」といいます)の利用条件を定めるものです。利用者は、本規約に同意のうえ本サービスを利用するものとします。
           </p>
         </Section>
 

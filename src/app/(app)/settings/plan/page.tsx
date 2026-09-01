@@ -98,7 +98,7 @@ export default function SettingsPlanPage() {
             <div className="mb-2.5">
               <div className="text-[11px] font-bold text-orange">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
               {plan === "お試し" && (
-                <div className="text-[11px] text-ink-soft mt-0.5">まずはCLUB LINKを試してみたいチーム向け・¥0</div>
+                <div className="text-[11px] text-ink-soft mt-0.5">まずはCIRCLE LINESを試してみたいチーム向け・¥0</div>
               )}
             </div>
           )}

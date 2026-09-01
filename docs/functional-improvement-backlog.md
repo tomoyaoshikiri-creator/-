@@ -68,3 +68,17 @@ APP-WIDE VISUAL REFRESH(MASTER SPECIFICATION)の実施中に発見した、UI Re
   設計改善)
 - UI Refreshでは未対応(23箇所すべての文脈確認が必要な大きめの変更のため、
   MASTER SPEC #43「一括置換によって意味の異なる色まで変更しない」に従い見送った)。
+
+## 5. AI分析プロンプト内に旧ブランド名「CLUB LINK」が残存
+
+- Screen: 画面には表示されない(AI分析APIの内部プロンプト)
+- File: `src/lib/ai/types.ts` / `src/lib/ai/promptCommon.ts` /
+  `src/lib/ai/promptActualData.ts` / `src/lib/ai/dataQuality.ts`
+- Current behavior: 「データが少ないことをCLUB LINK上の記録量の問題として扱う」旨の
+  注意書きの中で、サービス名が旧ブランド名「CLUB LINK」のまま複数箇所に残っている
+  (現在のサービス名は「CIRCLE LINES」)。
+- Problem: AIが生成する分析結果の文章内に、この表記がそのまま出力される可能性がある。
+- Desired behavior: プロンプト文言中の「CLUB LINK」を「CIRCLE LINES」へ置換する。
+- Priority: Medium(ユーザーが直接目にするUI文言ではないが、AI出力に漏れる可能性がある)
+- UI Refreshでは未対応(AIプロンプトの文言変更は「AI仕様」に該当し、今回のUI QAの
+  変更禁止スコープに含まれるため、記録のみに留めた)。

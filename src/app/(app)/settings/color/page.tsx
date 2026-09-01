@@ -11,9 +11,14 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
+import { BRAND_BLUE, BRAND_CYAN } from "@/lib/theme";
 
-const DEFAULT_PRIMARY = "#9c8355";
-const DEFAULT_ACCENT = "#22201c";
+// resolveTeamTheme()(src/lib/theme.ts)が未設定チームに実際に適用しているfallback
+// (Brand Blue/Brand Cyan)と一致させる。以前はFAITH CREATION由来の旧色
+// (#9c8355/#22201c)がここだけ残っており、未カスタマイズのチームがこの画面を開くと
+// 実際にアプリ全体で表示されている色と異なるデフォルト値が表示されていた。
+const DEFAULT_PRIMARY = BRAND_BLUE;
+const DEFAULT_ACCENT = BRAND_CYAN;
 
 export default function SettingsColorPage() {
   const router = useRouter();

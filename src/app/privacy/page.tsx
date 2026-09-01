@@ -1,6 +1,6 @@
 import { BackLink } from "@/components/BackLink";
 
-export const metadata = { title: "プライバシーポリシー | CLUB LINK" };
+export const metadata = { title: "プライバシーポリシー | CIRCLE LINES" };
 
 export default function PrivacyPolicyPage() {
   return (
@@ -17,8 +17,8 @@ export default function PrivacyPolicyPage() {
 
         <Section title="1. はじめに">
           <p>
-            FAITH CREATION(以下「当運営者」といいます)は、チーム運営支援アプリ「CLUB
-            LINK」(以下「本サービス」といいます)における利用者の個人情報の取扱いについて、以下のとおりプライバシーポリシー(以下「本ポリシー」といいます)を定めます。
+            FAITH CREATION(以下「当運営者」といいます)は、チーム運営支援アプリ「CIRCLE
+            LINES」(以下「本サービス」といいます)における利用者の個人情報の取扱いについて、以下のとおりプライバシーポリシー(以下「本ポリシー」といいます)を定めます。
           </p>
         </Section>
 
