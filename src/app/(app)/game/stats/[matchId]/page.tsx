@@ -744,44 +744,30 @@ export default function GameStatsPage() {
       ) : (
         <>
           <Card>
-            <div className="font-bold text-[14.5px] text-center">
+            <div className="font-bold text-[13.5px] text-center">
               第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
             </div>
-            <div className="flex items-center justify-center gap-3 mt-2">
+            <div className="flex items-center justify-center gap-2 mt-1.5">
               <TeamFoulLamps direction="column" count={ownQuarterFouls} />
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                  <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+                  <div className="font-mono text-[28px] font-bold text-orange leading-tight">{liveTeamScore}</div>
                 </div>
-                <div className="text-ink-soft font-bold text-[18px]">-</div>
+                <div className="text-ink-soft font-bold text-[16px]">-</div>
                 <div className="text-center">
                   <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
-                  <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
+                  <div className="font-mono text-[28px] font-bold leading-tight">{liveOpponentScore}</div>
                 </div>
               </div>
               <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
             </div>
-            <div className="text-[10px] text-ink-soft text-center mt-1.5">
-              スタッツの記録から集計した得点です。試合結果の得点は試合詳細画面で編集してください
+            <div className="text-[10px] text-ink-soft text-center mt-1">
+              スタッツの記録から集計した得点です。
+              <br />
+              試合結果の得点は試合詳細画面で編集してください
             </div>
           </Card>
-
-          <button
-            type="button"
-            onClick={handleResetStats}
-            disabled={resetting}
-            className={`w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white ${
-              resetConfirm ? "" : "opacity-50"
-            }`}
-            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-          >
-            {resetting
-              ? "リセット中…"
-              : resetConfirm
-                ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
-                : "この試合のスタッツ・スタメンをオールリセット"}
-          </button>
 
           <div className="mt-3">
             <FieldLabel>クォーター</FieldLabel>
@@ -842,6 +828,22 @@ export default function GameStatsPage() {
             className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
           >
             スターティングの編集
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResetStats}
+            disabled={resetting}
+            className={`w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white ${
+              resetConfirm ? "" : "opacity-50"
+            }`}
+            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          >
+            {resetting
+              ? "リセット中…"
+              : resetConfirm
+                ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
+                : "この試合のスタッツ・スタメンをオールリセット"}
           </button>
 
           <MemberChangeModal
