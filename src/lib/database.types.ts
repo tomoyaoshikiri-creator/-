@@ -164,6 +164,7 @@ export interface Database {
           role: Role;
           status: UserStatus;
           joined_at: string;
+          last_active_at: string | null;
         };
         Insert: {
           id?: string;
@@ -172,6 +173,7 @@ export interface Database {
           role?: Role;
           status?: UserStatus;
           joined_at?: string;
+          last_active_at?: string | null;
         };
         Update: Record<string, never>;
         Relationships: [];
@@ -1356,6 +1358,10 @@ export interface Database {
         Args: { target_user_id: string };
         Returns: void;
       };
+      touch_last_active: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
       current_team_id: {
         Args: Record<string, never>;
         Returns: string | null;
@@ -1434,6 +1440,7 @@ export interface Database {
           status: UserStatus;
           email: string | null;
           created_at: string;
+          last_active_at: string | null;
         }[];
       };
       list_roster_players: {

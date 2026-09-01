@@ -11,7 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
-import { formatDateLabel, playerFullName } from "@/lib/format";
+import { formatDateLabel, formatDateTimeLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
 const ROLE_OPTIONS: Role[] = ["一般", "運営", "指導者", "管理者"];
@@ -252,7 +252,10 @@ export default function UsersPage() {
                       {u.name}
                       {u.id === userId ? "(自分)" : ""}
                     </div>
-                    <div className="text-[11px] text-ink-soft mt-0.5">{u.status}</div>
+                    <div className="text-[11px] text-ink-soft mt-0.5">
+                      {u.status}
+                      {u.last_active_at && ` ・最終操作 ${formatDateTimeLabel(u.last_active_at)}`}
+                    </div>
                   </div>
                   <select
                     className="w-auto px-2 py-1.5 text-xs border border-line rounded-[10px] bg-white"

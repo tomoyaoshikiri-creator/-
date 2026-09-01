@@ -85,6 +85,15 @@ export function formatSlashDateLabel(dateStr: string): string {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
 }
 
+// ISOタイムスタンプ(timestamptz)を、日付+時刻のラベルに整形する。
+// メンバー一覧の「最終操作日時」など、日付だけでなく時刻も必要な箇所専用。
+export function formatDateTimeLabel(isoStr: string): string {
+  const d = new Date(isoStr);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]}) ${hh}:${mm}`;
+}
+
 export function formatTodayLabel(): string {
   const d = new Date();
   return `${d.getMonth() + 1}/${d.getDate()}`;

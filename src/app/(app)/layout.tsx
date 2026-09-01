@@ -57,6 +57,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         deletion_requested_at: string | null;
       }>(),
     supabase.from("profiles").select("id, name").eq("id", session.user.id).single<{ id: string; name: string }>(),
+    // 管理画面のメンバー一覧に表示する「最終操作日時」の更新。5分未満の連続アクセスは
+    // RPC側のwhere句でno-opになるため、書き込み頻度はここでは気にしなくてよい。
+    // 失敗してもページ表示には影響しないため、結果・エラーは見ない。
+    supabase.rpc("touch_last_active"),
   ]);
 
   if (membershipsError || !profile) {
