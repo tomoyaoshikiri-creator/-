@@ -108,7 +108,7 @@ function CompareLine({
 }) {
   if (baseline === null || current === null) return null;
   return (
-    <div className="text-[10.5px] text-navy font-bold mt-1">
+    <div className="text-[10.5px] text-heading font-bold mt-1">
       {baselineQuarter ? `Q${baselineQuarter}: ` : ""}
       {fmtNum(baseline)} → {fmtNum(current)} ({fmtDiff(current - baseline)})
     </div>

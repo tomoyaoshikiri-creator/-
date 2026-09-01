@@ -55,5 +55,11 @@ export function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function inputClass(extra = "") {
-  return `w-full border border-line rounded-[10px] px-2.5 py-2 font-sans text-[13px] bg-white text-ink ${extra}`;
+  // MASTER SPECIFICATION Visual Refresh: focus/disabled/readOnlyのVisual Stylingを
+  // 既存Design Token(--orange/--paper/--ink-soft)で補完する。focusはring(box-shadow)を
+  // 使うためレイアウト寸法(width/height/padding)には影響しない。disabled/readOnlyは
+  // 編集可能欄と視覚的に区別できるよう--paper(中立surface token)を背景に使う。
+  // disabledは操作不可を示すため文字色も--ink-softへ落とし、readOnlyは内容の可読性を
+  // 保つため文字色は--ink(通常色)のまま background だけを変える。
+  return `w-full border border-line rounded-[10px] px-2.5 py-2 font-sans text-[13px] bg-white text-ink transition-colors focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:bg-paper disabled:text-ink-soft read-only:bg-paper ${extra}`;
 }

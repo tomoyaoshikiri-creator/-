@@ -134,17 +134,17 @@ export function CalendarView({
         <button
           type="button"
           onClick={goPrev}
-          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
         >
           ‹
         </button>
-        <div className="font-sans font-extrabold text-[17px] text-navy">
+        <div className="font-sans font-extrabold text-[17px] text-heading">
           {year}年{month + 1}月
         </div>
         <button
           type="button"
           onClick={goNext}
-          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
         >
           ›
         </button>

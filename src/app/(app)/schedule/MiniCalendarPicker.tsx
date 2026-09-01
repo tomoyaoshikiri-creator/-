@@ -53,17 +53,17 @@ export function MiniCalendarPicker({
         <button
           type="button"
           onClick={goPrev}
-          className="w-[26px] h-[26px] rounded-lg bg-white border border-line flex items-center justify-center text-sm text-navy"
+          className="w-[26px] h-[26px] rounded-lg bg-white border border-line flex items-center justify-center text-sm text-heading"
         >
           ‹
         </button>
-        <div className="font-sans font-extrabold text-[13.5px] text-navy">
+        <div className="font-sans font-extrabold text-[13.5px] text-heading">
           {year}年{month + 1}月
         </div>
         <button
           type="button"
           onClick={goNext}
-          className="w-[26px] h-[26px] rounded-lg bg-white border border-line flex items-center justify-center text-sm text-navy"
+          className="w-[26px] h-[26px] rounded-lg bg-white border border-line flex items-center justify-center text-sm text-heading"
         >
           ›
         </button>

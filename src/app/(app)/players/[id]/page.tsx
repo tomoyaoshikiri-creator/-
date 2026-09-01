@@ -221,7 +221,7 @@ export default function PlayerDetailPage() {
               <Link
                 href={`/players/${prevId}`}
                 aria-label="前の選手"
-                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
               >
                 ‹
               </Link>
@@ -234,7 +234,7 @@ export default function PlayerDetailPage() {
               <Link
                 href={`/players/${nextId}`}
                 aria-label="次の選手"
-                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-navy"
+                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
               >
                 ›
               </Link>

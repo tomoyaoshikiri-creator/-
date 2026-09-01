@@ -136,7 +136,7 @@ export default function GameResultsPage() {
       ) : (
         <>
           <div className="bg-white border border-line rounded-2xl px-4 py-2.5 mb-2.5 text-center">
-            <div className="font-extrabold text-[22px] text-navy">
+            <div className="font-extrabold text-[22px] text-heading">
               {matches.length}戦{" "}
               <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
               <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>

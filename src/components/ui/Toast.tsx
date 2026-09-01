@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={showToast}>
       {children}
       <div
-        className={`absolute left-4.5 right-4.5 bottom-[70px] bg-navy text-white text-center py-2.5 rounded-[10px] text-[12.5px] font-bold pointer-events-none transition-all z-50 ${
+        className={`absolute left-4.5 right-4.5 bottom-[70px] bg-heading text-white text-center py-2.5 rounded-[10px] text-[12.5px] font-bold pointer-events-none transition-all z-50 ${
           show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
         }`}
       >

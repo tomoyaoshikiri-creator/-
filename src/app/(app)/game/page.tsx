@@ -87,7 +87,7 @@ export default function GameListPage() {
           const isPast = g.date < todayDateStr();
           return (
             <Link key={g.id} href={`/game/${g.id}`}>
-              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "#e8e6e1" } : undefined}>
+              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "var(--paper)" } : undefined}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-[14.5px]">

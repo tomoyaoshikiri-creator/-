@@ -47,7 +47,7 @@ export default async function InvitePage({
     <div>
       <AuthHeading />
       <div className="text-center text-[13px] text-ink-soft mb-4">
-        <span className="font-bold text-navy">{data.team_name}</span> への招待({roleLabel}用)
+        <span className="font-bold text-heading">{data.team_name}</span> への招待({roleLabel}用)
       </div>
       {user ? (
         <AcceptInviteAsExistingUserForm token={token} roleLabel={roleLabel} players={players} category={data.category} />

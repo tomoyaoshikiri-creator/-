@@ -14,9 +14,7 @@
     (FAITH CREATION由来の落ち着いたタン色)だったが、これはMASTER SPEC #22「team未設定:
     Brand Blue」に反するため、--brand-blueを参照するよう変更した(teams.theme_primary
     設定時は従来通りteamThemeStyle()がそのまま上書きするため、この変更による影響は
-    「チームカラー未設定時のfallback色」のみ)。--navyは「secondary team accent」と
-    「見出し等の落ち着いた中立色」の二役を兼ねて使われており(23箇所)、一括で
-    Brand Navyへ差し替えると意味の異なる色まで変わってしまうため、今回は変更しない。
+    「チームカラー未設定時のfallback色」のみ)。
   */
   --orange: var(--brand-blue);
   --paper: #faf8f3;
@@ -27,6 +25,18 @@
   --danger: #c0392b;
   --sky: #3b82c4;
   --holiday: #c0392b;
+
+  /*
+    APP-WIDE VISUAL REFRESH: --navyは元々「secondary team accent」(ボタン・選択状態・
+    バッジ等、teams.theme_accentに追従してよい用途)と「見出し等の落ち着いた中立色」の
+    二役を兼ねていた(Functional Improvement Backlog #4)。ここでは後者(team accent
+    カスタマイズに連動してはいけない、モーダル見出し・ナビ矢印アイコン・Toast背景・
+    モーダル背景scrim等の中立UI要素)を--headingとして分離する。値は既存--navyの
+    デフォルト値と同一にし、既存画面の見た目は変えない(Visual Semantic整理のみ)。
+    --navy自体は今後もteamThemeStyle()経由でtheme_accentにより上書きされ続ける
+    (secondary team accent用途、ボタン・選択状態・バッジ等)。
+  */
+  --heading: #22201c;
 
   /*
     CIRCLE LINES Phase UI-1: 新ブランドカラー・semantic design token。
@@ -72,6 +82,7 @@
 
 @theme inline {
   --color-navy: var(--navy);
+  --color-heading: var(--heading);
   --color-orange: var(--orange);
   --color-paper: var(--paper);
   --color-ink: var(--ink);

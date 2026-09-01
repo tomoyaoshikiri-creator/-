@@ -29,13 +29,13 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 bg-navy/50 flex items-end justify-center px-3 z-40"
+      className="fixed inset-0 bg-heading/50 flex items-end justify-center px-3 z-40"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className={`bg-white w-full ${maxWidthClass} rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto`}>
-        <div className="font-display font-extrabold text-lg text-navy mb-3">{title}</div>
+        <div className="font-display font-extrabold text-lg text-heading mb-3">{title}</div>
         {children}
       </div>
     </div>
@@ -43,12 +43,22 @@ export function Modal({
 }
 
 export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?: string }) {
+  // MASTER SPECIFICATION Visual Refresh: 背景はアプリ全体のPrimary Action色(--orange、
+  // teamPrimaryのエイリアス。team未設定時はCIRCLE LINES Brand Blueへfallback)に統一する。
+  // 文字色は任意のteamPrimaryでも可読性を確保するため、teamThemeStyle()が算出した
+  // コントラスト安全な--on-team-primaryをそのまま使う(SubmitButton等の固定text-whiteとは
+  // 異なり、ここは明示的にcontrast機構を利用する)。shadowも旧・緑固定値ではなく、
+  // 現在のteamPrimaryと連動する色にする(color-mixで透明度を掛け合わせる)。
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-[#4fa377] text-white flex items-center justify-center text-xl font-bold shadow-[0_10px_20px_-6px_rgba(79,163,119,0.55)] z-10"
+      className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-orange flex items-center justify-center text-xl font-bold z-10"
+      style={{
+        color: "var(--on-team-primary)",
+        boxShadow: "0 10px 20px -6px color-mix(in srgb, var(--orange) 55%, transparent)",
+      }}
     >
       +
     </button>

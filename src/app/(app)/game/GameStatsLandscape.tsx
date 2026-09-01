@@ -499,7 +499,7 @@ function FixEntryOverlay({
 }) {
   return (
     <div
-      className="absolute inset-0 bg-navy/50 flex items-center justify-center z-50"
+      className="absolute inset-0 bg-heading/50 flex items-center justify-center z-50"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
