@@ -37,7 +37,7 @@ export function assessPlayerDataQuality(input: PlayerDataQualityInput): DataQual
     notes.push(`この年度の出場試合数が${input.gameCount}試合と少なく、試合ごとの数値の変化を継続的な傾向として評価しないこと`);
   }
 
-  // CLUB LINKは年度途中から利用開始されるチームがあり、運用開始以前の練習は出欠記録
+  // CIRCLE LINESは年度途中から利用開始されるチームがあり、運用開始以前の練習は出欠記録
   // そのものが存在しない。開催練習数(practicesHeld)ではなく、実際に出欠記録が存在する
   // 割合(出欠データカバー率)でスコアリングすることで、「記録が少ない」ことを
   // 「参加していない」と混同しないようにする。
@@ -48,7 +48,7 @@ export function assessPlayerDataQuality(input: PlayerDataQualityInput): DataQual
     const coverageDetail = `年度内開催${input.practicesHeld}回のうち出欠記録があるのは${input.attendanceRecordedCount}回(カバー率${Math.round(coverageRate * 1000) / 10}%)`;
     if (coverageRate < CONFIDENCE_RATIO_THRESHOLDS.MEDIUM) {
       notes.push(
-        `${coverageDetail}。CLUB LINK上の出欠データの蓄積がまだ少ないため、年間を通した参加傾向は現時点では評価できない。記録が少ないことを練習参加の少なさや意欲の課題と解釈しないこと`,
+        `${coverageDetail}。CIRCLE LINES上の出欠データの蓄積がまだ少ないため、年間を通した参加傾向は現時点では評価できない。記録が少ないことを練習参加の少なさや意欲の課題と解釈しないこと`,
       );
     } else if (coverageRate < CONFIDENCE_RATIO_THRESHOLDS.HIGH) {
       notes.push(`${coverageDetail}。年間を通した参加傾向の断定には注意が必要`);
@@ -105,7 +105,7 @@ export function assessTeamDataQuality(input: TeamDataQualityInput): DataQualityA
     const coverageDetail = `年度内開催${input.practicesHeld}回のうち出欠記録があるのは${input.attendanceRecordedSessionCount}回(カバー率${Math.round(coverageRate * 1000) / 10}%)`;
     if (coverageRate < CONFIDENCE_RATIO_THRESHOLDS.MEDIUM) {
       notes.push(
-        `${coverageDetail}。CLUB LINK上の出欠データの蓄積がまだ少ないため、チームとして年間を通した参加傾向は現時点では評価できない。記録が少ないことをチームの練習参加率の低さや課題と解釈しないこと`,
+        `${coverageDetail}。CIRCLE LINES上の出欠データの蓄積がまだ少ないため、チームとして年間を通した参加傾向は現時点では評価できない。記録が少ないことをチームの練習参加率の低さや課題と解釈しないこと`,
       );
     } else if (coverageRate < CONFIDENCE_RATIO_THRESHOLDS.HIGH) {
       notes.push(`${coverageDetail}。年間を通した参加傾向の断定には注意が必要`);

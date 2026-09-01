@@ -196,8 +196,8 @@ export default function SettingsLogoPage() {
             </button>
           </div>
           <div className="text-xs text-ink-soft mt-2">
-            このURLからアクセスすると、上記のロゴとチーム名が表示されたログイン画面になります。共通の「Club
-            Link」ログイン画面(/login)には影響しません。
+            このURLからアクセスすると、上記のロゴとチーム名が表示されたログイン画面になります。共通の「CIRCLE
+            LINES」ログイン画面(/login)には影響しません。
           </div>
         </Card>
       )}
