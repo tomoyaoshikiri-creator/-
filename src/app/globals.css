@@ -111,14 +111,8 @@ body {
   overscroll-behavior: none;
 }
 
-/*
-  .app-shellの下端をSafe Areaの外側で止める(下記参照)ため、Home Indicator領域には
-  .app-shellではなくこのbodyの背景色が見える。以前は暖色系グラデーションだったため
-  --paper(.app-shellの背景色)との継ぎ目が実機で目立ってしまった。--paperと完全に
-  同じ単色にすることで継ぎ目を見えなくする。
-*/
 body {
-  background: var(--paper);
+  background: linear-gradient(180deg, #f3efe4 0%, #ece5d4 100%);
   color: var(--ink);
   font-family: var(--font-sans);
 }
@@ -147,20 +141,16 @@ textarea {
 }
 
 /*
-  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixedで
-  visual viewportへ直接アンカーする。上端・左右はinset:0(viewport-fit=coverの
-  恩恵でHeaderがステータスバー領域まで届く)。下端だけはbottom: env(safe-area-
-  inset-bottom)でSafe Areaの外側に止め、Home Indicator領域には.app-shellの
-  背景を伸ばさない(改修前と同じ関係)。以前この下端の変更を試した際はbodyの
-  背景色がアプリと異なり継ぎ目が見えたが、bodyの背景を--paperと統一したことで
-  解消したはずなので再度採用する。
+  モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;inset:0で
+  visual viewportへ直接アンカーする(iOSのstandalone PWAではheight:100dvhの計算値と
+  実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
+  下端をbottom: env(safe-area-inset-bottom)で止める方式を2度試した(bodyの背景色を
+  グラデーション/単色それぞれで)が、いずれもHome Indicator領域に実機で目立つ色の
+  継ぎ目が生じたため撤回し、画面の物理的な最下端まで自分の背景色で覆うinset:0に戻す。
 */
 .app-shell {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom);
+  inset: 0;
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
