@@ -20,6 +20,12 @@ const robotoMono = Roboto_Mono({
   weight: ["500", "700"],
 });
 
+// 【比較検証用】viewport-fit=coverを維持したままBottom Navigationの余白を
+// 減らす方法を4パターン試したが、いずれも「余白が多すぎる」との評価だった。
+// 黒帯の原因はviewport-fit=cover自体ではなく、statusBarStyle: "black-translucent"
+// (コンテンツがステータスバーの裏まで伸びていることを前提にした透過設定)を
+// coverなしで使っていたことによる可能性があるため、coverを外したまま
+// statusBarStyleを"default"(不透明な通常のステータスバー)に変更して試す。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -27,18 +33,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "CIRCLE LINES",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
 };
 
-// viewport-fit=coverを外すとBottom Navigationは改修前と一致するが、代わりに
-// ステータスバー領域に黒い帯が再発することを実機比較で確認した。coverは維持し、
-// 代わりに.app-shellの下端(globals.css)とbodyの背景色を工夫することで、
-// 黒帯を出さずにBottom Navigation側も改修前に近づける方針にする。
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

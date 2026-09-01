@@ -23,12 +23,10 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // .app-shell側にpadding-bottom: env(safe-area-inset-bottom)を追加し、Home
-    // Indicator分の余白は.app-shell自身の背景色で確保するようにしたため、TabBar
-    // 自身のpadding-bottomは改修前(pb-7.5)のまま残すと二重に余白を確保してしまう。
-    // ここではpb-0にし、pt-2.5・icon(19px)・labelサイズは改修前のまま維持する。
+    // 【比較検証用】viewport-fit=coverを外したため、Safe Area領域はOS側が管理する
+    // (改修前と同じ状態)。padding-bottomは改修前のpb-7.5に戻す。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >
