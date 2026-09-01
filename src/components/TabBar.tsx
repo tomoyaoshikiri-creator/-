@@ -23,41 +23,43 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // 【比較検証用】viewport-fit=coverを維持したままpadding-bottomは理論上の下限(0)。
-    // icon15px/label6.5pxは「小さすぎる」との評価だったため、19px/7.5px(改修前)と
-    // 15px/6.5pxの中間(icon17px/label7px)に調整する。タップ領域は-inset-y-[9px]で
-    // 44px相当を維持する。
+    // 【比較検証用・新方針】これまで「アイコンを縮める→まだ余白が目立つ→もっと縮める」を
+    // 繰り返してきたが、アイコンが小さいほど同じSafe Area分の余白が相対的に目立つ
+    // (=逆効果)という仮説に基づき、方針を転換する。icon/labelは改修前(19px/7.5px)の
+    // サイズに戻し、padding-bottomはenv(safe-area-inset-bottom)を割合で削らず
+    // そのまま使う(一般的なアプリの標準的な実装方法)。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {tabs.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const isLocked = locked[tab];
-        const className = `relative flex-1 min-w-0 text-center text-[7px] font-medium flex flex-col items-center gap-0.5 ${
+        const className = `relative flex-1 min-w-0 text-center text-[7.5px] font-medium flex flex-col items-center gap-0.5 ${
           isLocked ? "text-ink-soft/50" : isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         const content = (
           <>
             {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
-            <span aria-hidden className="absolute -inset-y-[9px] inset-x-0" />
+            <span aria-hidden className="absolute -inset-y-[6px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[17px] h-[17px]" />
+              <Icon className="w-[19px] h-[19px]" />
               {isLocked ? (
-                <span className="absolute -top-1 -right-1 w-[10px] h-[10px] rounded-full bg-paper border border-line flex items-center justify-center">
-                  <LockIcon className="w-[6px] h-[6px] text-ink-soft" />
+                <span className="absolute -top-1 -right-1 w-[11px] h-[11px] rounded-full bg-paper border border-line flex items-center justify-center">
+                  <LockIcon className="w-[7px] h-[7px] text-ink-soft" />
                 </span>
               ) : (
                 badges[tab] && (
-                  <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-danger border border-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
                 )
               )}
             </span>
-            <span className="whitespace-nowrap leading-none">{TAB_LABELS[tab]}</span>
+            <span className="whitespace-nowrap">{TAB_LABELS[tab]}</span>
           </>
         );
         if (isLocked) {
