@@ -31,13 +31,14 @@ export const metadata: Metadata = {
   },
 };
 
-// Phase UI-2B: viewport-fit=coverで画面端(ノッチ/ステータスバー領域)までレイアウトを
-// 拡張できるようにする。実際の余白確保はenv(safe-area-inset-*)を使う各コンポーネント側
-// (AppHeader・TabBar)の責務とし、ここではブラウザにsafe-area情報を要求するだけに留める。
+// 【一時的な比較検証用】Bottom Navigationの余白問題の原因がviewport-fit=cover自体に
+// あるかどうかを実機で直接見比べるため、viewportFit: "cover"を一時的に外している。
+// これを外すとPhase UI-2B以前のように、ステータスバー領域にOSの黒い帯が表示される
+// 不具合が再発する可能性がある(その代わりBottom Navigation側は改修前と一致するはず)。
+// 比較確認後、どちらを採用するか判断してcoverを戻すか確定するかを決める。
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
