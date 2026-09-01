@@ -40,6 +40,7 @@ export default function GameDetailPage() {
   const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
   const [noteBody, setNoteBody] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteBody, setEditNoteBody] = useState("");
@@ -129,6 +130,7 @@ export default function GameDetailPage() {
 
   useEffect(() => {
     setNoteBody("");
+    setShowAddNote(false);
     setEditingNoteId(null);
     setExpandedNoteId(null);
     loadNotes(selectedMatchId);
@@ -192,6 +194,7 @@ export default function GameDetailPage() {
       return;
     }
     setNoteBody("");
+    setShowAddNote(false);
     toast("コーチメモを登録しました");
     loadNotes(selectedMatchId);
   }
@@ -519,18 +522,40 @@ export default function GameDetailPage() {
                   ),
                 )
               )}
-              <Card>
-                <textarea
-                  rows={3}
-                  className={inputClass()}
-                  value={noteBody}
-                  onChange={(e) => setNoteBody(e.target.value)}
-                  placeholder="例:第2Q以降、球際の寄せが速くなった"
-                />
-                <SubmitButton onClick={handleAddNote} disabled={savingNote}>
-                  {savingNote ? "登録中…" : "コーチメモを登録する"}
-                </SubmitButton>
-              </Card>
+              {showAddNote ? (
+                <Card>
+                  <textarea
+                    rows={3}
+                    className={inputClass()}
+                    value={noteBody}
+                    onChange={(e) => setNoteBody(e.target.value)}
+                    placeholder="例:第2Q以降、球際の寄せが速くなった"
+                  />
+                  <div className="flex gap-2 mt-3">
+                    <SubmitButton onClick={handleAddNote} disabled={savingNote} className="!mt-0 flex-1">
+                      {savingNote ? "登録中…" : "登録する"}
+                    </SubmitButton>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddNote(false);
+                        setNoteBody("");
+                      }}
+                      className="flex-1 text-center py-2.5 rounded-[10px] font-bold text-[13px] border border-line text-ink-soft bg-white"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </Card>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddNote(true)}
+                  className="block w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+                >
+                  コーチメモを登録する
+                </button>
+              )}
             </div>
           )}
         </>
