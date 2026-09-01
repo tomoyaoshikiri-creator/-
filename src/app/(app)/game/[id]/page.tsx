@@ -471,7 +471,9 @@ export default function GameDetailPage() {
                   type="button"
                   onClick={handleDeleteMatch}
                   disabled={deletingMatch}
-                  className="mt-2.5 w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white disabled:opacity-50"
+                  className={`mt-2.5 w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white disabled:opacity-50 ${
+                    deleteMatchConfirmId === selectedMatch.id ? "" : "opacity-50"
+                  }`}
                   style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                 >
                   {deletingMatch
