@@ -690,6 +690,48 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      game_match_notes: {
+        Row: {
+          id: string;
+          team_id: string;
+          game_match_id: string;
+          author_id: string | null;
+          body: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          game_match_id: string;
+          author_id?: string | null;
+          body: string;
+        };
+        Update: Partial<{
+          body: string;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
+      game_match_note_reactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          note_id: string;
+          profile_id: string;
+          reaction_type: ReactionType;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       notice_reactions: {
         Row: {
           id: string;
@@ -1587,6 +1629,8 @@ export type SkillTest = Database["public"]["Tables"]["skill_tests"]["Row"];
 export type PlayerSkillTestProgress = Database["public"]["Tables"]["player_skill_test_progress"]["Row"];
 export type ItemLastSeen = Database["public"]["Tables"]["item_last_seen"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
+export type GameMatchNote = Database["public"]["Tables"]["game_match_notes"]["Row"];
+export type GameMatchNoteReaction = Database["public"]["Tables"]["game_match_note_reactions"]["Row"];
 export type GameRecord = Database["public"]["Tables"]["game_records"]["Row"];
 export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"];
 export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records"]["Row"];

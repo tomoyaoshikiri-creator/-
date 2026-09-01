@@ -13,7 +13,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canManageStatCategories, canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
-import { formatDateLabel, todayDateStr } from "@/lib/format";
+import { effectiveFiscalYear, fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { GameCategory, Schedule } from "@/lib/database.types";
 
 const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
@@ -28,6 +28,7 @@ export default function GameListPage() {
   const showStatCategoriesLink = !usesDetailedBasketballStats(sport) && canManageStatCategories(role);
   const [games, setGames] = useCachedState<Schedule[]>("game:games", []);
   const [category, setCategory] = useState<GameCategory | "all">("all");
+  const [fiscalYear, setFiscalYear] = useState<number | "all">(fiscalYearOf(todayDateStr()));
   const [loading, setLoading] = useState(() => !hasCachedValue("game:games"));
 
   useEffect(() => {
@@ -47,7 +48,17 @@ export default function GameListPage() {
     if (!canRecordGames(role)) router.replace("/game/results");
   }, [role, router]);
 
-  const filteredGames = category === "all" ? games : games.filter((g) => g.game_category === category);
+  // 現年度は試合がまだ無くても選択肢に含める(デフォルト選択がプルダウンの
+  // 実在しない値にならないようにするため)。
+  const availableYears = Array.from(
+    new Set([fiscalYearOf(todayDateStr()), ...games.map((g) => effectiveFiscalYear(g.date, g.fiscal_year_override))]),
+  ).sort((a, b) => b - a);
+
+  const filteredGames = games.filter((g) => {
+    if (category !== "all" && g.game_category !== category) return false;
+    if (fiscalYear !== "all" && effectiveFiscalYear(g.date, g.fiscal_year_override) !== fiscalYear) return false;
+    return true;
+  });
 
   return (
     <PageShell header={<AppHeader title="試合記録" accessBadge="coach" />}>
@@ -76,6 +87,24 @@ export default function GameListPage() {
           </SegButton>
         ))}
       </div>
+
+      {availableYears.length > 0 && (
+        <div className="relative inline-block mb-3.5">
+          <select
+            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            value={fiscalYear === "all" ? "all" : String(fiscalYear)}
+            onChange={(e) => setFiscalYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+          >
+            <option value="all">すべての年度</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>
+                {fiscalYearLabel(y)}
+              </option>
+            ))}
+          </select>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
+        </div>
+      )}
 
       <SectionLabel>試合を選ぶ</SectionLabel>
       {loading ? (
