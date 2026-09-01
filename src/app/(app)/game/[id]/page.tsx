@@ -34,6 +34,8 @@ export default function GameDetailPage() {
   const [opponentScore, setOpponentScore] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [savingMatch, setSavingMatch] = useState(false);
+  const [deletingMatch, setDeletingMatch] = useState(false);
+  const [deleteMatchConfirmId, setDeleteMatchConfirmId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<GameMatchNote[]>([]);
   const [noteReactions, setNoteReactions] = useState<GameMatchNoteReaction[]>([]);
@@ -301,6 +303,27 @@ export default function GameDetailPage() {
     toast("対戦結果を保存しました");
   }
 
+  async function handleDeleteMatch() {
+    if (!selectedMatchId) return;
+    if (deleteMatchConfirmId !== selectedMatchId) {
+      setDeleteMatchConfirmId(selectedMatchId);
+      setTimeout(() => setDeleteMatchConfirmId((cur) => (cur === selectedMatchId ? null : cur)), 3000);
+      return;
+    }
+    setDeleteMatchConfirmId(null);
+    setDeletingMatch(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("game_matches").delete().eq("id", selectedMatchId);
+    setDeletingMatch(false);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("試合を削除しました");
+    // 削除した試合が最後の1件だった場合、loadMatches()が自動的に第1試合を作り直す。
+    loadMatches(gameId);
+  }
+
   const selectedMatch = matches.find((m) => m.id === selectedMatchId);
   const teamScoreNum = teamScore.trim() === "" ? null : Number(teamScore);
   const opponentScoreNum = opponentScore.trim() === "" ? null : Number(opponentScore);
@@ -443,6 +466,20 @@ export default function GameDetailPage() {
                 <SubmitButton onClick={handleSaveMatch} disabled={savingMatch}>
                   {savingMatch ? "保存中…" : "対戦結果を保存する"}
                 </SubmitButton>
+
+                <button
+                  type="button"
+                  onClick={handleDeleteMatch}
+                  disabled={deletingMatch}
+                  className="mt-2.5 w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white disabled:opacity-50"
+                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                >
+                  {deletingMatch
+                    ? "削除中…"
+                    : deleteMatchConfirmId === selectedMatch.id
+                      ? "再タップで削除確定"
+                      : `第${selectedMatch.game_number}試合を削除する`}
+                </button>
               </Card>
             </div>
           )}
@@ -548,13 +585,7 @@ export default function GameDetailPage() {
                   </div>
                 </Card>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowAddNote(true)}
-                  className="block w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
-                >
-                  コーチメモを登録する
-                </button>
+                <SubmitButton onClick={() => setShowAddNote(true)}>コーチメモを登録する</SubmitButton>
               )}
             </div>
           )}
