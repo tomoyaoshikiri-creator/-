@@ -31,14 +31,14 @@ export const metadata: Metadata = {
   },
 };
 
-// 【一時的な比較検証用】Bottom Navigationの余白問題の原因がviewport-fit=cover自体に
-// あるかどうかを実機で直接見比べるため、viewportFit: "cover"を一時的に外している。
-// これを外すとPhase UI-2B以前のように、ステータスバー領域にOSの黒い帯が表示される
-// 不具合が再発する可能性がある(その代わりBottom Navigation側は改修前と一致するはず)。
-// 比較確認後、どちらを採用するか判断してcoverを戻すか確定するかを決める。
+// viewport-fit=coverを外すとBottom Navigationは改修前と一致するが、代わりに
+// ステータスバー領域に黒い帯が再発することを実機比較で確認した。coverは維持し、
+// 代わりに.app-shellの下端(globals.css)とbodyの背景色を工夫することで、
+// 黒帯を出さずにBottom Navigation側も改修前に近づける方針にする。
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
