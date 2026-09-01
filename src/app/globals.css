@@ -141,15 +141,13 @@ textarea {
 }
 
 /*
-  【比較検証用】viewport-fit=coverを外したため、env(safe-area-inset-*)は常に0に
-  なる(coverなしではSafe Area領域自体がブラウザの描画範囲から除外され、OS側が
-  管理する)。padding-bottomの指定は実質無効化されるが、coverを戻す判断になった
-  場合に備えて式はそのまま残す。
+  【比較検証用・最終試行】viewport-fit=coverを復活。.app-shell自体は画面の物理的な
+  最下端まで覆うinset:0とし、Home Indicator分の追加の余白は確保しない(TabBar側の
+  padding-bottomを理論上の下限にすることで対応する)。
 */
 .app-shell {
   position: fixed;
   inset: 0;
-  padding-bottom: calc(env(safe-area-inset-bottom) * 0.25);
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);

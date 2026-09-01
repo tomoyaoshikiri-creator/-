@@ -23,10 +23,10 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // 【比較検証用】viewport-fit=coverを外したため、Safe Area領域はOS側が管理する
-    // (改修前と同じ状態)。padding-bottomは改修前のpb-7.5に戻す。
+    // 【比較検証用・最終試行】viewport-fit=coverを維持したまま、padding-bottomを
+    // 理論上の下限(0)にする。icon(19px)・labelサイズは改修前のまま変更しない。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >

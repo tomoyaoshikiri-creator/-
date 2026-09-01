@@ -20,12 +20,10 @@ const robotoMono = Roboto_Mono({
   weight: ["500", "700"],
 });
 
-// 【比較検証用】viewport-fit=coverを維持したままBottom Navigationの余白を
-// 減らす方法を4パターン試したが、いずれも「余白が多すぎる」との評価だった。
-// 黒帯の原因はviewport-fit=cover自体ではなく、statusBarStyle: "black-translucent"
-// (コンテンツがステータスバーの裏まで伸びていることを前提にした透過設定)を
-// coverなしで使っていたことによる可能性があるため、coverを外したまま
-// statusBarStyleを"default"(不透明な通常のステータスバー)に変更して試す。
+// 【比較検証用・最終試行】viewport-fit=coverを復活させ、Headerがステータスバー
+// 領域までシームレスに伸びる状態へ戻す。Bottom Navigation側はTabBar.tsxの
+// padding-bottomを理論上の下限(0)にすることで、可能な限り余白を詰める
+// (icon/labelサイズは改修前のまま変更しない)。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -33,13 +31,14 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "CIRCLE LINES",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
