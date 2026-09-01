@@ -747,16 +747,20 @@ export default function GameStatsPage() {
             <div className="font-bold text-[14.5px] text-center">
               第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
             </div>
-            <div className="flex items-center justify-center gap-8 mt-2">
-              <div className="text-center">
-                <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+            <div className="flex items-center justify-center gap-3 mt-2">
+              <TeamFoulLamps direction="column" count={ownQuarterFouls} />
+              <div className="flex items-center gap-8">
+                <div className="text-center">
+                  <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
+                  <div className="font-mono text-[32px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+                </div>
+                <div className="text-ink-soft font-bold text-[18px]">-</div>
+                <div className="text-center">
+                  <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
+                  <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
+                </div>
               </div>
-              <div className="text-ink-soft font-bold text-[18px]">-</div>
-              <div className="text-center">
-                <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
-                <div className="font-mono text-[32px] font-bold leading-tight">{liveOpponentScore}</div>
-              </div>
+              <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
             </div>
             <div className="text-[10px] text-ink-soft text-center mt-1.5">
               スタッツの記録から集計した得点です。試合結果の得点は試合詳細画面で編集してください
@@ -788,11 +792,6 @@ export default function GameStatsPage() {
                 </SegButton>
               ))}
             </div>
-          </div>
-
-          <div className="mt-2.5 flex items-center justify-center gap-6">
-            <TeamFoulLamps label="自チーム" count={ownQuarterFouls} />
-            <TeamFoulLamps label="相手" count={opponentQuarterFouls} />
           </div>
 
           <div className="mt-4">

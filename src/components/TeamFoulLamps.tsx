@@ -5,11 +5,27 @@
 // 十分なため、5個以降を個別の数値で数えるような表現(+Nなど)は持たせない。
 const MAX_LAMPS = 4;
 
-export function TeamFoulLamps({ count, label }: { count: number; label?: string }) {
+export function TeamFoulLamps({
+  count,
+  label,
+  direction = "row",
+}: {
+  count: number;
+  label?: string;
+  // 縦画面のスコア表示では、両チームの得点の外側に縦一列で配置したいことがあるため、
+  // ランプの並び方向を切り替えられるようにする(横画面はrowのみを使用)。
+  direction?: "row" | "column";
+}) {
   const lit = Math.min(count, MAX_LAMPS);
+  const isColumn = direction === "column";
   return (
-    <div className="flex items-center gap-1" aria-label={`${label ? `${label}の` : ""}チームファウル${count}個`}>
-      {label && <span className="text-[9.5px] font-bold text-ink-soft mr-0.5">{label}</span>}
+    <div
+      className={`flex items-center ${isColumn ? "flex-col gap-1" : "gap-1"}`}
+      aria-label={`${label ? `${label}の` : ""}チームファウル${count}個`}
+    >
+      {label && (
+        <span className={`text-[9.5px] font-bold text-ink-soft ${isColumn ? "mb-0.5" : "mr-0.5"}`}>{label}</span>
+      )}
       {Array.from({ length: MAX_LAMPS }, (_, i) => (
         <span
           key={i}
