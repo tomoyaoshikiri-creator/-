@@ -23,14 +23,12 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   const locked: Partial<Record<TabKey, boolean>> = { coachNote: !hasCoachNoteAccess(plan) };
 
   return (
-    // デザイン改修前(3ca9e71)のTabBarとpadding/icon/labelサイズを完全に一致させた状態。
-    // ここまでのセッションで試したenv(safe-area-inset-bottom)ベースの動的な余白圧縮・
-    // padding-bottomの段階的な削減・icon/labelの縮小は、実機での見え方の一致確認が
-    // 取れなかったため、判断基準を単純化するためすべて撤回し、改修前と1px単位で
-    // 同一のスタイルへ戻している。唯一の相違点は、視覚サイズに影響しない
-    // position:absoluteのタップ領域拡張(-inset-y-[7px])のみ。
+    // .app-shell側にpadding-bottom: env(safe-area-inset-bottom)を追加し、Home
+    // Indicator分の余白は.app-shell自身の背景色で確保するようにしたため、TabBar
+    // 自身のpadding-bottomは改修前(pb-7.5)のまま残すと二重に余白を確保してしまう。
+    // ここではpb-0にし、pt-2.5・icon(19px)・labelサイズは改修前のまま維持する。
     <nav
-      className={`min-[700px]:hidden flex items-start pt-2.5 pb-7.5 border-t border-line bg-white ${
+      className={`min-[700px]:hidden flex items-start pt-2.5 pb-0 border-t border-line bg-white ${
         dense ? "px-3" : "px-1"
       }`}
     >

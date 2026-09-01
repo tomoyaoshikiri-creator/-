@@ -144,13 +144,19 @@ textarea {
   モバイル(スタンドアロンPWA含む)ではheight:100dvhではなくposition:fixed;inset:0で
   visual viewportへ直接アンカーする(iOSのstandalone PWAではheight:100dvhの計算値と
   実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
-  下端をbottom: env(safe-area-inset-bottom)で止める方式を2度試した(bodyの背景色を
-  グラデーション/単色それぞれで)が、いずれもHome Indicator領域に実機で目立つ色の
-  継ぎ目が生じたため撤回し、画面の物理的な最下端まで自分の背景色で覆うinset:0に戻す。
+  .app-shell自体をbottom: env(safe-area-inset-bottom)で画面の物理的な最下端より
+  手前に止める方式を2度試したが、その下に透けて見える別レイヤー(body等)の色が
+  実機でアプリの背景色と一致せず、目立つ継ぎ目が生じた。今回は.app-shell自体は
+  inset:0のまま画面最下端まで覆い(透ける別レイヤーが存在しない)、代わりに
+  padding-bottom: env(safe-area-inset-bottom)で内側にHome Indicator分の余白を
+  確保する。この余白は必ず.app-shell自身の背景色(--paper)で塗られるため、
+  色の不一致が原理的に起こらない。TabBar.tsx側のpadding-bottomは、ここで
+  二重に確保しないよう別途縮小する。
 */
 .app-shell {
   position: fixed;
   inset: 0;
+  padding-bottom: env(safe-area-inset-bottom);
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
