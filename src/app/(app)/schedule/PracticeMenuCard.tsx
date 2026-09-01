@@ -234,7 +234,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
               ))}
             </select>
             <div className="flex gap-2 mt-2">
-              <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="flex-1 mt-0">
+              <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="!mt-0 flex-1">
                 {copying ? "コピー中…" : "コピーする"}
               </SubmitButton>
               <button
@@ -243,7 +243,7 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
                   setCopyOpen(false);
                   setCopyTargetId("");
                 }}
-                className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
               >
                 キャンセル
               </button>
@@ -315,13 +315,13 @@ function SortableMenuRow({
         <div>
           <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={inputClass()} />
           <div className="flex gap-2 mt-2">
-            <SubmitButton onClick={() => handleEditSave(menu.id)} disabled={savingEdit} className="flex-1 mt-0">
+            <SubmitButton onClick={() => handleEditSave(menu.id)} disabled={savingEdit} className="!mt-0 flex-1">
               {savingEdit ? "保存中…" : "保存する"}
             </SubmitButton>
             <button
               type="button"
               onClick={() => setEditingId(null)}
-              className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
+              className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
             >
               キャンセル
             </button>

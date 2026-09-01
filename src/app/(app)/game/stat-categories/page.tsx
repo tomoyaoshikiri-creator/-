@@ -424,13 +424,13 @@ function SortableCategoryRow({
             />
           </div>
           <div className="flex gap-2 mt-2.5">
-            <SubmitButton onClick={() => handleEditSave(category.id)} disabled={savingEdit} className="flex-1 mt-0">
+            <SubmitButton onClick={() => handleEditSave(category.id)} disabled={savingEdit} className="!mt-0 flex-1">
               {savingEdit ? "保存中…" : "保存する"}
             </SubmitButton>
             <button
               type="button"
               onClick={() => setEditingId(null)}
-              className="flex-1 px-3 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
+              className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
             >
               キャンセル
             </button>
