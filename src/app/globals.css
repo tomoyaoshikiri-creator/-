@@ -146,17 +146,19 @@ textarea {
   実際に描画可能な範囲がズレることがあるため、より堅牢な方式)。
   .app-shell自体をbottom: env(safe-area-inset-bottom)で画面の物理的な最下端より
   手前に止める方式を2度試したが、その下に透けて見える別レイヤー(body等)の色が
-  実機でアプリの背景色と一致せず、目立つ継ぎ目が生じた。今回は.app-shell自体は
+  実機でアプリの背景色と一致せず、目立つ継ぎ目が生じた。そこで.app-shell自体は
   inset:0のまま画面最下端まで覆い(透ける別レイヤーが存在しない)、代わりに
-  padding-bottom: env(safe-area-inset-bottom)で内側にHome Indicator分の余白を
-  確保する。この余白は必ず.app-shell自身の背景色(--paper)で塗られるため、
-  色の不一致が原理的に起こらない。TabBar.tsx側のpadding-bottomは、ここで
-  二重に確保しないよう別途縮小する。
+  padding-bottomで内側にHome Indicator分の余白を確保する方式に変更した。
+  この余白は必ず.app-shell自身の背景色(--paper)で塗られるため色の不一致は
+  起こらないが、env(safe-area-inset-bottom)を100%(実機で約34px)確保すると
+  それでも「余白が多すぎる」との評価だったため、Home Indicatorとの干渉を避け
+  られる最小限(25%、実機で約8-9px)まで絞る。TabBar.tsx側のpadding-bottomは
+  ここで二重に確保しないようpb-0のまま。
 */
 .app-shell {
   position: fixed;
   inset: 0;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom) * 0.25);
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
