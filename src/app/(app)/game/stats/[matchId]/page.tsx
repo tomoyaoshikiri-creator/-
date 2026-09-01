@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
-import { SegButton, FieldLabel } from "@/components/ui/SegButton";
+import { SegButton } from "@/components/ui/SegButton";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { GameStatsLandscape } from "../../GameStatsLandscape";
@@ -769,9 +769,9 @@ export default function GameStatsPage() {
             </div>
           </Card>
 
-          <div className="mt-3">
-            <FieldLabel>クォーター</FieldLabel>
-            <div className="flex gap-1.5">
+          <div className="mt-3 flex items-center gap-2">
+            <span className="flex-none text-[11.5px] text-ink-soft font-bold">クォーター</span>
+            <div className="flex-1 flex gap-1.5">
               {[1, 2, 3, 4].map((q) => (
                 <SegButton key={q} active={quarter === q} onClick={() => setQuarter(q)}>
                   {q}Q

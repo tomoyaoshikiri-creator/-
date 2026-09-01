@@ -56,6 +56,8 @@ function ChipRow({
   showName = false,
   onSelect,
   onOpenMemberChange,
+  onUndo,
+  canUndo,
 }: {
   entrants: StatEntrant[];
   statLines: Record<string, StatTotals>;
@@ -64,6 +66,10 @@ function ChipRow({
   showName?: boolean;
   onSelect: (id: string) => void;
   onOpenMemberChange?: () => void;
+  // 直前の記録を1件取り消す(チーム共通の操作)。渡された側の交代ボタンの
+  // すぐ下に、交代ボタンと同じ大きさで並べて配置する。
+  onUndo?: () => void;
+  canUndo?: boolean;
 }) {
   const activeClass = activeColor === "navy" ? "border-navy bg-navy text-white" : "border-orange bg-orange text-white";
   return (
@@ -97,14 +103,28 @@ function ChipRow({
         );
       })}
       {onOpenMemberChange && (
-        <button
-          type="button"
-          onClick={onOpenMemberChange}
-          className="flex-none flex flex-col items-center justify-center w-14 h-14 rounded-[12px] border border-dashed border-line text-ink-soft font-bold"
-        >
-          <span className="text-[16px] leading-none">⇄</span>
-          <span className="text-[9px] mt-0.5 leading-none">交代</span>
-        </button>
+        <div className="flex-none w-14 h-14 flex flex-col gap-0.5">
+          <button
+            type="button"
+            onClick={onOpenMemberChange}
+            className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-[10px] border border-dashed border-line text-ink-soft font-bold"
+          >
+            <span className="text-[12px] leading-none">⇄</span>
+            <span className="text-[7px] mt-0.5 leading-none">交代</span>
+          </button>
+          {onUndo && (
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className={`flex-1 min-h-0 flex items-center justify-center rounded-[10px] border border-dashed border-danger text-danger font-bold text-[8.5px] ${
+                canUndo ? "" : "opacity-40"
+              }`}
+            >
+              取消
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -211,22 +231,14 @@ export function StatPad({
         showName
         onSelect={(id) => setSelected({ side: "own", id })}
         onOpenMemberChange={onOpenOwnMemberChange}
+        onUndo={handleUndo}
+        canUndo={!!lastEntry}
       />
 
       {ownEntrants.length === 0 && opponentEntrants.length === 0 ? (
         <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
       ) : (
         <>
-          <button
-            type="button"
-            disabled={!lastEntry}
-            onClick={handleUndo}
-            className={`w-full mt-2 py-2 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[12.5px] ${
-              lastEntry ? "" : "opacity-40"
-            }`}
-          >
-            取消
-          </button>
           <Card className="mt-2">
             <div className="grid grid-cols-2 gap-1.5">
               {gridCells.map((cell) => {
