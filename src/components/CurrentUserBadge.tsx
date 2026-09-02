@@ -4,9 +4,31 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
+import { GuardedLink } from "@/components/GuardedLink";
+import { canAccessTab, canIssueInvite, canManageSettings, canManageUsers } from "@/lib/permissions";
+
+function MenuLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3.5 pt-2.5 pb-1 text-[10px] font-bold tracking-wide text-ink-soft/70 first:pt-2">
+      {children}
+    </div>
+  );
+}
+
+function MenuItem({ href, label, onNavigate }: { href: string; label: string; onNavigate: () => void }) {
+  return (
+    <GuardedLink
+      href={href}
+      onClick={onNavigate}
+      className="block w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold text-ink"
+    >
+      {label}
+    </GuardedLink>
+  );
+}
 
 export function CurrentUserBadge() {
-  const { name, role } = useSession();
+  const { name, role, hasMultipleTeams } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -17,6 +39,18 @@ export function CurrentUserBadge() {
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  // 「メンバーを招待」の遷移先(/users)は、既存のROLE_TABS上まだ指導者がアクセスできない
+  // (usersタブを持つのは運営・管理者のみ)。canIssueInvite単独では指導者にもリンクが
+  // 見えてしまい、タップすると/schedule へ弾かれる壊れたリンクになるため、
+  // 実際に/usersへ到達できるロール(canAccessTab)でも同時に絞る。
+  const canShowInvite = canIssueInvite(role) && canAccessTab(role, "users");
+  const canShowUserManagement = canManageUsers(role);
+  const canShowTeamSettings = canManageSettings(role);
+
+  function close() {
+    setOpen(false);
   }
 
   return (
@@ -36,16 +70,41 @@ export function CurrentUserBadge() {
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-1.5 bg-white rounded-lg shadow-lg overflow-hidden z-20 min-w-[110px]">
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={loggingOut}
-              className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold text-danger"
-            >
-              {loggingOut ? "処理中…" : "ログアウト"}
-            </button>
+          <div className="fixed inset-0 z-10" onClick={close} />
+          <div className="absolute right-0 top-full mt-1.5 bg-white rounded-lg shadow-lg z-20 min-w-[180px] overflow-hidden">
+            {/* スマホでドロップダウンが画面外に出ないよう、パネル自体の角丸はそのままに
+                中身だけを最大高+内部スクロールにする。 */}
+            <div className="max-h-[70vh] overflow-y-auto">
+              <MenuLabel>アカウント</MenuLabel>
+              <MenuItem href="/settings" label="自分の設定" onNavigate={close} />
+              <MenuItem href="/settings" label="通知の受け取り" onNavigate={close} />
+              {hasMultipleTeams && <MenuItem href="/select-team" label="チームを切り替える" onNavigate={close} />}
+
+              {(canShowInvite || canShowUserManagement || canShowTeamSettings) && (
+                <>
+                  <div className="border-t border-line" />
+                  <MenuLabel>チーム運営</MenuLabel>
+                  {canShowInvite && <MenuItem href="/users" label="メンバーを招待" onNavigate={close} />}
+                  {canShowUserManagement && <MenuItem href="/users" label="ユーザー管理" onNavigate={close} />}
+                  {canShowTeamSettings && (
+                    <>
+                      <MenuItem href="/settings" label="チーム設定" onNavigate={close} />
+                      <MenuItem href="/settings/plan" label="プラン・お支払い" onNavigate={close} />
+                    </>
+                  )}
+                </>
+              )}
+
+              <div className="border-t border-line" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold text-danger"
+              >
+                {loggingOut ? "処理中…" : "ログアウト"}
+              </button>
+            </div>
           </div>
         </>
       )}
