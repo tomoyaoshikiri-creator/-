@@ -1,5 +1,7 @@
 import { isTargetEligible } from "@/lib/format";
-import type { Attendance, Player, Role, Schedule } from "@/lib/database.types";
+import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
+import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
+import type { Attendance, Player, Role, Schedule, TeamPlan } from "@/lib/database.types";
 
 // ホーム「要対応」カードの1件。予定の詳細(回答・確認そのもの)は既存の独立画面
 // (/schedule/[id])に任せ、ホームはあくまで入口として一覧化するだけに留める。
@@ -150,4 +152,84 @@ export function buildDigestItems(params: {
   }
 
   return items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+}
+
+// 「今日のチーム情報」カード。本日が誕生日の在籍選手を表示する(年齢は出さない)。
+// 該当者がいなければ呼び出し側でカードごと非表示にする。
+export function computeTodayBirthdays<T extends { id: string; name: string; birthday: string | null }>(
+  players: T[],
+  todayStr: string,
+): { id: string; name: string }[] {
+  const todayMonthDay = todayStr.slice(5);
+  return players.filter((p) => p.birthday && p.birthday.slice(5) === todayMonthDay).map((p) => ({ id: p.id, name: p.name }));
+}
+
+// 「直近の試合結果」カード。試合日から指定日数(仕様上は15日)以内のみ表示対象にする。
+export function isWithinDisplayWindow(scheduleDate: string, todayStr: string, maxDays: number): boolean {
+  const diffDays = Math.floor((new Date(todayStr).getTime() - new Date(scheduleDate).getTime()) / 86400000);
+  return diffDays >= 0 && diffDays <= maxDays;
+}
+
+// 試合終了時刻(予定のend_time、未設定ならその日の23:59とみなす)から指定時間(仕様上は72時間)
+// 以内かどうか。この時間以内なら「次の予定」の直後に一度だけ昇格表示する。
+export function isWithinHoursSinceGameEnd(
+  scheduleDate: string,
+  endTime: string | null,
+  nowIso: string,
+  maxHours: number,
+): boolean {
+  const endClock = endTime ? endTime.slice(0, 5) : "23:59";
+  const endMs = new Date(`${scheduleDate}T${endClock}:00`).getTime();
+  const diffHours = (new Date(nowIso).getTime() - endMs) / (60 * 60 * 1000);
+  return diffHours >= 0 && diffHours <= maxHours;
+}
+
+// 「アップグレード導線」カード。複数の上位機能を列挙せず、現ロールが使い得る(role側は
+// 適格)のに現プランでは使えない機能のうち、最も導入しやすい(必要プランが低い)ものを
+// 1件だけ選ぶ。役割・機能ごとの判定は既存のpermissions.ts/plan.tsの関数をそのまま使う。
+export interface UpgradeCandidate {
+  label: string;
+  description: string;
+  requiredPlan: TeamPlan;
+}
+
+const UPGRADE_CANDIDATES: (UpgradeCandidate & {
+  roleEligible: (role: Role) => boolean;
+  planOk: (plan: TeamPlan) => boolean;
+})[] = [
+  {
+    label: "コーチ日報",
+    description: "指導者・管理者だけで共有する日報",
+    requiredPlan: "中間",
+    roleEligible: canWriteCoachNote,
+    planOk: hasCoachNoteAccess,
+  },
+  {
+    label: "カルテ",
+    description: "選手カルテ・チームカルテでスタッツを分析する",
+    requiredPlan: "フル",
+    roleEligible: canViewKarte,
+    planOk: hasKarteTabAccess,
+  },
+  {
+    label: "AI分析",
+    description: "スタッツ・記録からAIが分析コメントを作成する",
+    requiredPlan: "フルプラス",
+    roleEligible: (role) => role === "管理者",
+    planOk: hasAiAnalysisAccess,
+  },
+  {
+    label: "スポーツテスト・検定",
+    description: "スポーツテスト・検定の記録を管理する",
+    requiredPlan: "Max",
+    roleEligible: canViewKarte,
+    planOk: hasSportsTestAccess,
+  },
+];
+
+export function pickUpgradeCandidate(role: Role, plan: TeamPlan): UpgradeCandidate | null {
+  const found = UPGRADE_CANDIDATES.find((c) => c.roleEligible(role) && !c.planOk(plan));
+  if (!found) return null;
+  const { label, description, requiredPlan } = found;
+  return { label, description, requiredPlan };
 }
