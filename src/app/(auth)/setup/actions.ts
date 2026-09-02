@@ -45,5 +45,5 @@ export async function completeSetup(_prev: FormState, formData: FormData): Promi
   });
   if (error) return { error: error.message };
 
-  redirect("/schedule");
+  redirect("/home");
 }

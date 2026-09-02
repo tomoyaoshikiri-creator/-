@@ -54,7 +54,7 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   });
   if (rpcError) return { error: rpcError.message };
 
-  redirect("/schedule");
+  redirect("/home");
 }
 
 export interface AcceptInviteAsExistingUserState {
@@ -94,5 +94,5 @@ export async function acceptInviteAsExistingUser(
   }
 
   revalidatePath("/", "layout");
-  redirect("/schedule");
+  redirect("/home");
 }

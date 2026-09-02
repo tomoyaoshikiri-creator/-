@@ -73,7 +73,7 @@ export default function UsersPage() {
   }, [load]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "users")) router.replace("/schedule");
+    if (!canAccessTab(role, "users")) router.replace("/home");
   }, [role, router]);
 
   async function toggleGuardian(profileId: string, playerId: string) {

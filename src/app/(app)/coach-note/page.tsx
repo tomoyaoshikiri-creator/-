@@ -153,7 +153,7 @@ export default function CoachNotePage() {
   }, [userId, setUnseenIds]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "coachNote") || !hasCoachNoteAccess(plan)) router.replace("/schedule");
+    if (!canAccessTab(role, "coachNote") || !hasCoachNoteAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   function openCoachNote(reportId: string) {

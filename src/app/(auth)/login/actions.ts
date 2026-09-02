@@ -24,5 +24,5 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
 
   // オープンリダイレクト対策: "/"で始まり"//"で始まらない相対パスのみ遷移先として許可する
   const isSafeNext = next.startsWith("/") && !next.startsWith("//");
-  redirect(isSafeNext ? next : "/schedule");
+  redirect(isSafeNext ? next : "/home");
 }

@@ -27,7 +27,7 @@ export default function KarteObogPage() {
   const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   useEffect(() => {

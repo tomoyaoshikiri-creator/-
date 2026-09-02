@@ -117,7 +117,7 @@ export default function KartePlayerPage() {
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   const load = useCallback(async () => {

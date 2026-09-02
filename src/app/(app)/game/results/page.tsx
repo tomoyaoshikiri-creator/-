@@ -61,7 +61,7 @@ export default function GameResultsPage() {
   }, []);
 
   useEffect(() => {
-    if (!canAccessTab(role, "game")) router.replace("/schedule");
+    if (!canAccessTab(role, "game")) router.replace("/home");
   }, [role, router]);
 
   const availableYears = Array.from(

@@ -51,7 +51,7 @@ export default function KartePlayersPage() {
   }, [userId]);
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
