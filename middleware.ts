@@ -58,7 +58,8 @@ export async function middleware(request: NextRequest) {
 
   if (user && (path.startsWith("/login") || path.startsWith("/signup"))) {
     const url = request.nextUrl.clone();
-    url.pathname = "/schedule";
+    // ナビ再設計v3でログイン後の着地を/scheduleから/homeに変更。
+    url.pathname = "/home";
     return redirectWithCookies(url, supabaseResponse);
   }
 
