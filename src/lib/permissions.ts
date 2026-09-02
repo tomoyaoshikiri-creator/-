@@ -98,17 +98,9 @@ export function canAccessTab(role: Role, tab: TabKey): boolean {
 // 「試合」タブのリンク先はロールによって出し分けるため引き続きtabHrefForRoleを使う。
 export const BOTTOM_NAV_TABS: TabKey[] = ["home", "schedule", "notice", "game", "team"];
 
-// ナビ再設計v3 PR1時点の暫定リンク。/home(PR4a)が未実装の間だけ、実在する既存ページへ
-// 暫定的に遷移させる。/teamはPR2で実装済みのため、この暫定リンクからは外した。
-// PR4aがマージされたらこの暫定リンク自体を削除すること。
-const PROVISIONAL_TAB_HREF: Partial<Record<TabKey, string>> = {
-  home: "/schedule",
-};
-
 // 「試合記録」タブのリンク先。指導者・管理者はスタメン登録などができる一覧画面(/game)へ、
 // 一般・運営は結果を見るだけの/game/resultsへ直接飛ばす。
 export function tabHrefForRole(role: Role, tab: TabKey): string {
-  if (PROVISIONAL_TAB_HREF[tab]) return PROVISIONAL_TAB_HREF[tab];
   if (tab === "game" && !canRecordGames(role)) return "/game/results";
   return TAB_PATHS[tab];
 }
