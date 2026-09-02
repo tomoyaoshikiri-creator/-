@@ -10,7 +10,7 @@ import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnsee
 // お知らせ・日報・コーチノートは一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
 // (tab_last_seen)との比較。選手メモ・分析フィードバックは一覧の行ごとに新着かどうかを
 // 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
-export type BadgeTab = "notice" | "report" | "coachNote" | "library";
+export type BadgeTab = "notice" | "report" | "coachNote";
 
 export function useTabBadges(userId: string, teamId: string): Partial<Record<TabKey, boolean>> {
   // AppNavはレイアウト側で1回しかマウントされず、タブ間の遷移では再マウントされない。
@@ -25,21 +25,18 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
     const { data: seenRows } = await supabase.from("tab_last_seen").select("*").eq("user_id", userId);
     const seenMap: Partial<Record<BadgeTab, string>> = {};
     (seenRows ?? []).forEach((r) => {
-      if (r.tab === "notice" || r.tab === "report" || r.tab === "coachNote" || r.tab === "library")
-        seenMap[r.tab] = r.seen_at;
+      if (r.tab === "notice" || r.tab === "report" || r.tab === "coachNote") seenMap[r.tab] = r.seen_at;
     });
     // 一度もそのタブを開いたことが無い場合は、今より前の投稿を新着扱いにしないよう現在時刻を基準にする。
     const now = new Date().toISOString();
     const noticeSeen = seenMap.notice ?? now;
     const reportSeen = seenMap.report ?? now;
     const coachNoteSeen = seenMap.coachNote ?? now;
-    const librarySeen = seenMap.library ?? now;
 
     const [
       { count: noticeCount },
       { count: reportCount },
       { count: coachNoteCount },
-      { count: libraryCount },
       unseenPlayerNotes,
       unseenPlayerAnalysis,
       teamAnalysisUnseen,
@@ -59,32 +56,18 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
         .select("id", { count: "exact", head: true })
         .or(`created_at.gt.${coachNoteSeen},updated_at.gt.${coachNoteSeen}`)
         .neq("author_id", userId),
-      supabase
-        .from("library_items")
-        .select("id", { count: "exact", head: true })
-        .gt("created_at", librarySeen)
-        .neq("uploader_id", userId),
       computeUnseenPlayerNoteIds(userId),
       computeUnseenPlayerAnalysisIds(userId),
       computeTeamAnalysisUnseen(userId, teamId),
     ]);
 
-    const reportUnseen = (reportCount ?? 0) > 0;
-    const coachNoteUnseen = (coachNoteCount ?? 0) > 0;
-    const libraryUnseen = (libraryCount ?? 0) > 0;
-    const karteUnseen = unseenPlayerNotes.size > 0 || unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen;
-
     setBadges({
       notice: (noticeCount ?? 0) > 0,
-      report: reportUnseen,
-      coachNote: coachNoteUnseen,
+      report: (reportCount ?? 0) > 0,
+      coachNote: (coachNoteCount ?? 0) > 0,
       // 「選手一覧」は専用タブを廃止しカルテタブ内のカードに統合したため、
       // 選手メモの未読もカルテタブの赤丸に合流させる。
-      karte: karteUnseen,
-      library: libraryUnseen,
-      // 「チーム」hub配下(チーム日報・コーチ日報・カルテ・ライブラリ)の未読を、
-      // ボトムナビの「チーム」タブに件数ではなく単純ドットで集約する。
-      team: reportUnseen || coachNoteUnseen || karteUnseen || libraryUnseen,
+      karte: unseenPlayerNotes.size > 0 || unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen,
     });
   }, [userId, teamId]);
 

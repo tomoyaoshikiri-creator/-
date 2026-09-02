@@ -11,29 +11,6 @@ const base = {
   strokeLinejoin: "round" as const,
 };
 
-export function HomeIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M4 11l8-7 8 7" />
-      <path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9" />
-      <path d="M10 20v-6h4v6" />
-    </svg>
-  );
-}
-
-// ハブ画面(/team)への入口であることが伝わるよう、UsersIcon(管理者向け・大小非対称の
-// 「管理する側/される側」構図)とは差別化し、同じ大きさの人物2人が並ぶ対等な構図にする。
-export function TeamIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <circle cx="8" cy="9" r="3" />
-      <circle cx="16" cy="9" r="3" />
-      <path d="M3 20c0-3 2.3-5.5 5-5.5s5 2.5 5 5.5" />
-      <path d="M11 20c0-3 2.3-5.5 5-5.5s5 2.5 5 5.5" />
-    </svg>
-  );
-}
-
 export function ScheduleIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
