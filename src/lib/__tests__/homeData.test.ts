@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildDigestItems, computeAttendanceActionItems } from "../homeData";
+import {
+  buildDigestItems,
+  computeAttendanceActionItems,
+  computeTodayBirthdays,
+  isWithinDisplayWindow,
+  isWithinHoursSinceGameEnd,
+  pickUpgradeCandidate,
+} from "../homeData";
 import type { Attendance, Schedule } from "../database.types";
 
 function schedule(overrides: Partial<Schedule>): Schedule {
@@ -197,5 +204,61 @@ describe("buildDigestItems", () => {
       includeCoachNotes: false,
     });
     expect(items).toEqual([]);
+  });
+});
+
+describe("computeTodayBirthdays", () => {
+  it("月日が一致する在籍選手だけを返す(年は問わない、年齢は含めない)", () => {
+    const result = computeTodayBirthdays(
+      [
+        { id: "p1", name: "山田太郎", birthday: "2015-09-05" },
+        { id: "p2", name: "佐藤花子", birthday: "2010-09-05" },
+        { id: "p3", name: "鈴木一郎", birthday: "2015-09-06" },
+        { id: "p4", name: "高橋次郎", birthday: null },
+      ],
+      "2026-09-05",
+    );
+    expect(result).toEqual([
+      { id: "p1", name: "山田太郎" },
+      { id: "p2", name: "佐藤花子" },
+    ]);
+  });
+});
+
+describe("isWithinDisplayWindow", () => {
+  it("試合日から15日以内ならtrue、超えていればfalse", () => {
+    expect(isWithinDisplayWindow("2026-09-01", "2026-09-16", 15)).toBe(true);
+    expect(isWithinDisplayWindow("2026-09-01", "2026-09-17", 15)).toBe(false);
+  });
+
+  it("未来の日付(まだ先の試合)はfalse", () => {
+    expect(isWithinDisplayWindow("2026-09-20", "2026-09-05", 15)).toBe(false);
+  });
+});
+
+describe("isWithinHoursSinceGameEnd", () => {
+  it("end_time設定済みなら、そこから72時間以内かどうかを見る", () => {
+    expect(isWithinHoursSinceGameEnd("2026-09-05", "15:00", "2026-09-08T14:00:00", 72)).toBe(true);
+    expect(isWithinHoursSinceGameEnd("2026-09-05", "15:00", "2026-09-08T16:00:00", 72)).toBe(false);
+  });
+
+  it("end_time未設定なら当日23:59を終了時刻とみなす", () => {
+    expect(isWithinHoursSinceGameEnd("2026-09-05", null, "2026-09-06T23:00:00", 72)).toBe(true);
+  });
+});
+
+describe("pickUpgradeCandidate", () => {
+  it("ロールが適格でプランが不足している最も導入しやすい機能を1件だけ返す", () => {
+    const candidate = pickUpgradeCandidate("指導者", "お試し");
+    expect(candidate).toEqual({ label: "コーチ日報", description: "指導者・管理者だけで共有する日報", requiredPlan: "中間" });
+  });
+
+  it("ロール不適格な機能は候補にしない(一般ロールはコーチ日報の対象外)", () => {
+    const candidate = pickUpgradeCandidate("一般", "お試し");
+    expect(candidate).toBeNull();
+  });
+
+  it("すべての機能がプラン内で使える場合はnull", () => {
+    expect(pickUpgradeCandidate("管理者", "Max")).toBeNull();
   });
 });
