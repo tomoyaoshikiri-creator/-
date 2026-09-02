@@ -8,6 +8,11 @@ import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/database.types";
 
+// 帯同・設営・車出しの人数は、数字を打ち込むのではなくネイティブのホイール/ドラムピッカー
+// (<select>)で選べるようにする(既存の「学年」選択等と同じ方式)。標準(未選択時)は1人。
+const COUNT_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1); // 1〜10
+const SEAT_OPTIONS = Array.from({ length: 11 }, (_, i) => i); // 0〜10(乗車可能人数のみ0を許容)
+
 export function AttendanceEntryForm({
   scheduleId,
   userId,
@@ -38,11 +43,11 @@ export function AttendanceEntryForm({
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<AttendanceStatus | null>(null);
   const [accompany, setAccompany] = useState<YesNo | null>(null);
-  const [accompanyCount, setAccompanyCount] = useState("");
+  const [accompanyCount, setAccompanyCount] = useState("1");
   const [car, setCar] = useState<CarStatus | null>(null);
-  const [seats, setSeats] = useState("");
+  const [seats, setSeats] = useState("1");
   const [setupAvailable, setSetupAvailable] = useState<YesNo | null>(null);
-  const [setupCount, setSetupCount] = useState("");
+  const [setupCount, setSetupCount] = useState("1");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -63,11 +68,11 @@ export function AttendanceEntryForm({
       const { data: a } = await query.maybeSingle();
       setStatus(a?.status ?? null);
       setAccompany(a?.accompany ?? null);
-      setAccompanyCount(a?.accompany_count?.toString() ?? "");
+      setAccompanyCount(a?.accompany_count?.toString() ?? "1");
       setCar(a?.car ?? null);
-      setSeats(a?.seats?.toString() ?? "");
+      setSeats(a?.seats?.toString() ?? "1");
       setSetupAvailable(a?.setup_available ?? null);
-      setSetupCount(a?.setup_count?.toString() ?? "");
+      setSetupCount(a?.setup_count?.toString() ?? "1");
       setNote(a?.note ?? "");
       setRegistered(Boolean(a?.status));
       setLoading(false);
@@ -222,17 +227,20 @@ export function AttendanceEntryForm({
                 {accompany === "あり" && (
                   <div className="mt-3">
                     <FieldLabel>帯同人数</FieldLabel>
-                    <input
-                      type="number"
-                      min={1}
+                    <select
                       className={inputClass()}
                       value={accompanyCount}
                       onChange={(e) => {
                         setAccompanyCount(e.target.value);
                         setRegistered(false);
                       }}
-                      placeholder="例:2"
-                    />
+                    >
+                      {COUNT_OPTIONS.map((n) => (
+                        <option key={n} value={n}>
+                          {n}人
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </>
@@ -268,17 +276,20 @@ export function AttendanceEntryForm({
                 {setupAvailable === "あり" && (
                   <div className="mt-3">
                     <FieldLabel>設営可能人数</FieldLabel>
-                    <input
-                      type="number"
-                      min={1}
+                    <select
                       className={inputClass()}
                       value={setupCount}
                       onChange={(e) => {
                         setSetupCount(e.target.value);
                         setRegistered(false);
                       }}
-                      placeholder="例:2"
-                    />
+                    >
+                      {COUNT_OPTIONS.map((n) => (
+                        <option key={n} value={n}>
+                          {n}人
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </>
@@ -314,17 +325,20 @@ export function AttendanceEntryForm({
                 {car === "可" && (
                   <div className="mt-3">
                     <FieldLabel>乗車可能人数</FieldLabel>
-                    <input
-                      type="number"
-                      min={0}
+                    <select
                       className={inputClass()}
                       value={seats}
                       onChange={(e) => {
                         setSeats(e.target.value);
                         setRegistered(false);
                       }}
-                      placeholder="例:3"
-                    />
+                    >
+                      {SEAT_OPTIONS.map((n) => (
+                        <option key={n} value={n}>
+                          {n}人
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
               </>
