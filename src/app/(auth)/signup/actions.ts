@@ -63,5 +63,5 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   });
   if (rpcError) return { error: rpcError.message };
 
-  redirect("/schedule");
+  redirect("/home");
 }

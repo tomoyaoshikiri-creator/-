@@ -1,6 +1,7 @@
 import type { Role } from "@/lib/database.types";
 
 export type TabKey =
+  | "home"
   | "schedule"
   | "notice"
   | "report"
@@ -10,22 +11,28 @@ export type TabKey =
   | "karte"
   | "library"
   | "users"
-  | "settings";
+  | "settings"
+  | "team";
 
+// ナビ再設計v3(ボトムナビ5タブ化)で、bottom nav上のラベルのみ「予定」「試合」に変更した
+// (中身のページ自体・PAGE_TITLESとしての用途は変えていない。両者を意図的に揃えている)。
 export const TAB_LABELS: Record<TabKey, string> = {
-  schedule: "スケジュール",
+  home: "ホーム",
+  schedule: "予定",
   notice: "お知らせ",
   report: "チーム日報",
   coachNote: "コーチ日報",
   players: "選手一覧",
-  game: "試合記録",
+  game: "試合",
   karte: "カルテ",
   library: "ライブラリ",
   users: "管理",
   settings: "設定",
+  team: "チーム",
 };
 
 export const TAB_PATHS: Record<TabKey, string> = {
+  home: "/home",
   schedule: "/schedule",
   notice: "/notice",
   report: "/report",
@@ -36,19 +43,22 @@ export const TAB_PATHS: Record<TabKey, string> = {
   library: "/library",
   users: "/users",
   settings: "/settings",
+  team: "/team",
 };
 
 export const PAGE_TITLES: Record<TabKey, string> = {
-  schedule: "スケジュール",
+  home: "ホーム",
+  schedule: "予定",
   notice: "お知らせ",
   report: "チーム日報",
   coachNote: "コーチ日報",
   players: "選手一覧",
-  game: "試合記録",
+  game: "試合",
   karte: "カルテ",
   library: "ライブラリ",
   users: "ユーザー管理",
   settings: "設定",
+  team: "チーム",
 };
 
 // 仕様メモ 2章「権限構造」に基づくタブ出し分け。単一のソースとしてUI・ルートガード双方から参照する。
@@ -71,6 +81,11 @@ const ROLE_TABS: Record<Role, TabKey[]> = {
   管理者: ["schedule", "notice", "report", "coachNote", "game", "karte", "library", "users", "settings"],
 };
 
+// ROLE_TABSはページ単体のルートガード(canAccessTab、/report・/coach-note・/users・
+// /game/results等のuseEffect内のリダイレクト判定)専用として維持する。ボトムナビ自体の
+// 表示タブ構成は、ナビ再設計v3(2026-09)以降ロールに関わらず固定のBOTTOM_NAV_TABSを使う
+// (TabBar.tsx / Sidebar.tsx)。「コーチ日報」「選手一覧」「ライブラリ」等はhub(/team)配下の
+// リンクとして残り、ボトムナビの直接のタブではなくなった。
 export function tabsForRole(role: Role): TabKey[] {
   return ROLE_TABS[role];
 }
@@ -78,6 +93,10 @@ export function tabsForRole(role: Role): TabKey[] {
 export function canAccessTab(role: Role, tab: TabKey): boolean {
   return ROLE_TABS[role].includes(tab);
 }
+
+// ボトムナビ／サイドバーに常時表示する固定5タブ(全ロール共通)。
+// 「試合」タブのリンク先はロールによって出し分けるため引き続きtabHrefForRoleを使う。
+export const BOTTOM_NAV_TABS: TabKey[] = ["home", "schedule", "notice", "game", "team"];
 
 // 「試合記録」タブのリンク先。指導者・管理者はスタメン登録などができる一覧画面(/game)へ、
 // 一般・運営は結果を見るだけの/game/resultsへ直接飛ばす。

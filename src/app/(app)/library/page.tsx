@@ -12,6 +12,7 @@ import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile } from "@/lib/storagePath";
 import { formatBytes, formatDateLabel } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
+import { markTabSeen } from "@/lib/tabBadges";
 import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
 
@@ -20,7 +21,7 @@ type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
 
 export default function LibraryPage() {
   const toast = useToast();
-  const { teamId } = useSession();
+  const { teamId, userId } = useSession();
   const [items, setItems] = useState<ItemWithFiles[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
@@ -77,6 +78,12 @@ export default function LibraryPage() {
     loadUsage();
   }, [load, loadUsage]);
 
+  // ナビ再設計v3で「チーム」タブの赤丸に配下(ライブラリ含む)の未読を集約するようになったため、
+  // notice/report/coach-noteと同じ既読記録パターンをここにも追加する(タブの表示内容自体は変更なし)。
+  useEffect(() => {
+    markTabSeen(userId, "library");
+  }, [userId]);
+
   async function handleDelete(item: ItemWithFiles) {
     if (deleteConfirmId !== item.id) {
       setDeleteConfirmId(item.id);
@@ -108,7 +115,7 @@ export default function LibraryPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="ライブラリ" />}
+      header={<AppHeader title="ライブラリ" variant="detail" backHref="/team" />}
       fab={
         <>
           <Fab onClick={() => setModalOpen(true)} />

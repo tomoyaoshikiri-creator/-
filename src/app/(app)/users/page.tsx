@@ -73,7 +73,7 @@ export default function UsersPage() {
   }, [load]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "users")) router.replace("/schedule");
+    if (!canAccessTab(role, "users")) router.replace("/home");
   }, [role, router]);
 
   async function toggleGuardian(profileId: string, playerId: string) {
@@ -180,7 +180,7 @@ export default function UsersPage() {
   const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
 
   return (
-    <PageShell header={<AppHeader title="ユーザー管理" />}>
+    <PageShell header={<AppHeader title="ユーザー管理" variant="detail" backHref="/home" />}>
       <SectionLabel>招待リンクを発行</SectionLabel>
       <Card>
         <div className="flex gap-2">

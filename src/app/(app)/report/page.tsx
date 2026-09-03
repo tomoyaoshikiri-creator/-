@@ -162,7 +162,7 @@ export default function ReportPage() {
   }, [userId, setUnseenIds]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "report")) router.replace("/schedule");
+    if (!canAccessTab(role, "report")) router.replace("/home");
   }, [role, router]);
 
   function openReport(reportId: string) {
@@ -369,7 +369,7 @@ export default function ReportPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="チーム日報" />}
+      header={<AppHeader title="チーム日報" variant="detail" backHref="/team" />}
       fab={
         canWriteReport(role) && (
           <>

@@ -17,9 +17,9 @@ export async function selectTeam(targetTeamId: string): Promise<SelectTeamState 
   if (error) {
     return { error: error.message };
   }
-  // (app)/layout.tsxはredirect先(/schedule)と共有されるセグメントのため、明示的に
+  // (app)/layout.tsxはredirect先(/home)と共有されるセグメントのため、明示的に
   // 無効化しないとクライアント側のRouter Cacheに残っている切り替え前のteam情報が
   // redirect後も表示されてしまう。
   revalidatePath("/", "layout");
-  redirect("/schedule");
+  redirect("/home");
 }

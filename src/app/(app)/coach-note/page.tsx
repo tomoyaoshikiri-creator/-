@@ -153,7 +153,7 @@ export default function CoachNotePage() {
   }, [userId, setUnseenIds]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "coachNote") || !hasCoachNoteAccess(plan)) router.replace("/schedule");
+    if (!canAccessTab(role, "coachNote") || !hasCoachNoteAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   function openCoachNote(reportId: string) {
@@ -360,7 +360,7 @@ export default function CoachNotePage() {
 
   return (
     <PageShell
-      header={<AppHeader title="コーチ日報" accessBadge="coach" />}
+      header={<AppHeader title="コーチ日報" variant="detail" backHref="/team" accessBadge="coach" />}
       fab={
         canWriteCoachNote(role) && (
           <>
