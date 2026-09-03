@@ -101,7 +101,7 @@ export default function KarteTeamGamePage() {
   const columns = showThreePoint ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
 
   useEffect(() => {
-    if (!hasKarteTabAccess(plan)) router.replace("/karte");
+    if (!hasKarteTabAccess(plan)) router.replace("/team");
     else if (!usesDetailedBasketballStats(sport)) router.replace("/karte/team");
   }, [plan, sport, router]);
 

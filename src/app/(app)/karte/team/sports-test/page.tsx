@@ -42,7 +42,7 @@ export default function KarteTeamSportsTestPage() {
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (!hasSportsTestAccess(plan)) router.replace("/karte");
+    if (!hasSportsTestAccess(plan)) router.replace("/team");
   }, [plan, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);

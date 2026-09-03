@@ -356,7 +356,7 @@ export default function HomePage() {
         { href: "/report", label: "チーム日報を書く", show: true },
         { href: "/coach-note", label: "コーチ日報を書く", show: hasCoachNoteAccess(plan) },
         { href: "/game", label: "試合を記録", show: canRecordGames(role) },
-        { href: "/karte", label: "カルテ・分析を開く", show: canViewKarte(role) && hasKarteTabAccess(plan) },
+        { href: "/karte/team", label: "カルテ・分析を開く", show: canViewKarte(role) && hasKarteTabAccess(plan) },
       ].filter((r) => r.show)
     : [];
 

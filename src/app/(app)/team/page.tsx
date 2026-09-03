@@ -56,8 +56,8 @@ export default function TeamHubPage() {
       <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" />
       {isStaff && (
         <>
-          <HubRow href="/karte" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
-          <HubRow href="/karte" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
+          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
+          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
           {hasSportsTestAccess(plan) ? (
             <HubRow href="/karte/team/sports-test" label="成長・テスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
           ) : (

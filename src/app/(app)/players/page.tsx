@@ -106,7 +106,7 @@ export default function PlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手一覧" accessBadge={isStaff ? "coach" : undefined} />}
+      header={<AppHeader title="選手一覧" variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />}
       fab={
         isStaff && (
           <>
