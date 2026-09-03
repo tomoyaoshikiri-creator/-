@@ -39,7 +39,7 @@ export default function KarteTeamPage() {
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (!hasKarteTabAccess(plan)) router.replace("/karte");
+    if (!hasKarteTabAccess(plan)) router.replace("/team");
   }, [plan, router]);
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
@@ -234,7 +234,7 @@ export default function KarteTeamPage() {
   return (
     <PageShell
       header={
-        <AppHeader title="チームカルテ" variant="detail" backHref="/karte" accessBadge={isStaff ? "coach" : undefined} />
+        <AppHeader title="チームカルテ" variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />
       }
     >
       <Link href="/game">

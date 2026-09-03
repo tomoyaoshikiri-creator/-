@@ -115,7 +115,7 @@ export default function LibraryPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="ライブラリ" />}
+      header={<AppHeader title="ライブラリ" variant="detail" backHref="/team" />}
       fab={
         <>
           <Fab onClick={() => setModalOpen(true)} />

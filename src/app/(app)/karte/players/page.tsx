@@ -89,7 +89,7 @@ export default function KartePlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手カルテ" variant="detail" backHref="/karte" accessBadge="coach" />}
+      header={<AppHeader title="選手カルテ" variant="detail" backHref="/team" accessBadge="coach" />}
     >
       {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <div className="flex items-center justify-end mb-2">

@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const canManageTeam = canManageSettings(role);
 
   return (
-    <PageShell header={<AppHeader title="設定" />}>
+    <PageShell header={<AppHeader title="設定" variant="detail" backHref="/home" />}>
       <SectionLabel>アカウント</SectionLabel>
       <Card>
         <SettingsRow href="/settings/name" label="表示名の変更" />

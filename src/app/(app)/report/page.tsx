@@ -369,7 +369,7 @@ export default function ReportPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="チーム日報" />}
+      header={<AppHeader title="チーム日報" variant="detail" backHref="/team" />}
       fab={
         canWriteReport(role) && (
           <>

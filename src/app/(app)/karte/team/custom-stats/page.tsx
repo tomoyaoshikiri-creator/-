@@ -34,7 +34,7 @@ export default function KarteTeamCustomStatsPage() {
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (!hasKarteTabAccess(plan)) router.replace("/karte");
+    if (!hasKarteTabAccess(plan)) router.replace("/team");
     else if (usesDetailedBasketballStats(sport)) router.replace("/karte/team");
   }, [plan, sport, router]);
 
