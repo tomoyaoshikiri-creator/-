@@ -133,7 +133,7 @@ export default function KarteTeamSportsTestPage() {
         <AppHeader
           title="スポーツテスト"
           variant="detail"
-          backHref="/karte/team"
+          backHref="/team"
           accessBadge={isStaff ? "coach" : undefined}
         />
       }
