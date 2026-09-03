@@ -63,6 +63,37 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+// ホーム各カードの見出し。attnバリアント(「要対応」専用)は、左に赤い縦バー・右に件数を添える。
+// バーと件数は状態(要対応の有無・件数)を表すためのもので、見出し文字自体は他カードと同じ
+// text-heading色のまま(文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
+// Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
+function CardHeading({
+  children,
+  variant,
+  count,
+}: {
+  children: React.ReactNode;
+  variant?: "attn";
+  count?: number;
+}) {
+  return (
+    <div className="flex items-center mb-2.5">
+      {variant === "attn" && (
+        <span aria-hidden className="w-[3px] h-[18px] rounded-full bg-danger mr-2 flex-shrink-0" />
+      )}
+      <span className="font-mono font-bold text-[13px] tracking-[0.04em] text-heading">
+        {children}
+        {count !== undefined && (
+          <>
+            {" "}
+            <span className="text-[12px] font-medium text-ink-soft">{count}件</span>
+          </>
+        )}
+      </span>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { userId, teamId, role, plan, category } = useSession();
   const isStaff = canWriteCoachNote(role);
@@ -317,7 +348,7 @@ export default function HomePage() {
       : false;
   const gameResultNode = showGameResult && recentMatch?.schedules && (
     <Card>
-      <div className="font-bold text-[13px] mb-1.5">直近の試合結果</div>
+      <CardHeading>直近の試合結果</CardHeading>
       <Link href="/game/results">
         <div className="flex items-center justify-between">
           <div className="min-w-0">
@@ -362,46 +393,13 @@ export default function HomePage() {
 
   return (
     <PageShell header={<AppHeader title="ホーム" />}>
-      {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
-          ここは入口のみ。0件(success)の場合はカードごと非表示にする。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
-      {scheduleStatus === "success" && actionItems.length > 0 && (
-        <Card>
-          <div className="font-bold text-[13px] mb-1.5">要対応</div>
-          {visibleActionItems.map((item, i) => (
-            <Link key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`} href={`/schedule/${item.scheduleId}`}>
-              <div className={`flex items-center justify-between py-2 ${i > 0 ? "border-t border-line" : ""}`}>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] font-bold flex items-center gap-1.5">
-                    {item.overdue && <span className="text-[9.5px] font-bold text-danger flex-shrink-0">期限超過</span>}
-                    <span className="truncate">{item.scheduleTitle}</span>
-                  </div>
-                  <div className="text-[11px] text-ink-soft mt-0.5">
-                    {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
-                    {" ・ "}
-                    {formatDateLabel(item.scheduleDate)}
-                  </div>
-                </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Link>
-          ))}
-          {actionItemsRest > 0 && (
-            <Link href="/schedule" className="block text-[11.5px] text-ink-soft pt-1.5 border-t border-line mt-1">
-              ほか{actionItemsRest}件
-            </Link>
-          )}
-        </Card>
-      )}
-
       {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
           カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
       {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
       {scheduleStatus === "success" && (
         <Card>
-          <div className="font-bold text-[13px] mb-1.5">次の予定</div>
+          <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
               <Link href={`/schedule/${nextSchedule.id}`}>
@@ -470,8 +468,43 @@ export default function HomePage() {
         </Card>
       )}
 
-      {/* 試合終了から72時間以内は、通常の位置(下記)ではなく「次の予定」の直後に
-          一度だけ昇格表示する。「次の予定」は昇格時も常にこのカードより上に来る。 */}
+      {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
+          ここは入口のみ。0件(success)の場合はカードごと非表示にする。 */}
+      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
+      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+      {scheduleStatus === "success" && actionItems.length > 0 && (
+        <Card>
+          <CardHeading variant="attn" count={actionItems.length}>
+            要対応
+          </CardHeading>
+          {visibleActionItems.map((item, i) => (
+            <Link key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`} href={`/schedule/${item.scheduleId}`}>
+              <div className={`flex items-center justify-between py-2 ${i > 0 ? "border-t border-line" : ""}`}>
+                <div className="min-w-0">
+                  <div className="text-[12.5px] font-bold flex items-center gap-1.5">
+                    {item.overdue && <span className="text-[9.5px] font-bold text-danger flex-shrink-0">期限超過</span>}
+                    <span className="truncate">{item.scheduleTitle}</span>
+                  </div>
+                  <div className="text-[11px] text-ink-soft mt-0.5">
+                    {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
+                    {" ・ "}
+                    {formatDateLabel(item.scheduleDate)}
+                  </div>
+                </div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Link>
+          ))}
+          {actionItemsRest > 0 && (
+            <Link href="/schedule" className="block text-[11.5px] text-ink-soft pt-1.5 border-t border-line mt-1">
+              ほか{actionItemsRest}件
+            </Link>
+          )}
+        </Card>
+      )}
+
+      {/* 試合終了から72時間以内は、通常の位置(下記)ではなく「要対応」の直後に
+          一度だけ昇格表示する。「次の予定」「要対応」は昇格時も常にこのカードより上に来る。 */}
       {elevateGameResult && gameResultNode}
 
       {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
@@ -480,7 +513,7 @@ export default function HomePage() {
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
       {digestStatus === "success" && (
         <Card>
-          <div className="font-bold text-[13px] mb-1.5">新着</div>
+          <CardHeading>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
               {visibleDigest.map((item, i) => (
@@ -504,7 +537,7 @@ export default function HomePage() {
       {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
       {birthdaysStatus === "success" && birthdays.length > 0 && (
         <Card>
-          <div className="font-bold text-[13px] mb-1.5">今日のチーム情報</div>
+          <CardHeading>今日のチーム情報</CardHeading>
           <div className="text-[12.5px]">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
         </Card>
       )}
@@ -513,7 +546,7 @@ export default function HomePage() {
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
         <Card>
-          <div className="font-bold text-[13px] mb-2">作成ショートカット</div>
+          <CardHeading>作成ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
               <Link
