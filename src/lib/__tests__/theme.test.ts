@@ -29,11 +29,11 @@ describe("onColorFor", () => {
   });
 
   it("明るいチームカラーの上では濃色文字を選ぶ", () => {
-    expect(onColorFor("#f5f5f0")).toBe("#1a1a1a");
+    expect(onColorFor("#f5f5f0")).toBe("#14151A");
   });
 
   it("白に近いカラーの上では濃色文字を選ぶ", () => {
-    expect(onColorFor("#fefefe")).toBe("#1a1a1a");
+    expect(onColorFor("#fefefe")).toBe("#14151A");
   });
 
   it("黒に近いカラーの上では白系文字を選ぶ", () => {
@@ -90,7 +90,7 @@ describe("resolveTeamTheme", () => {
     expect(tokens.teamPrimary).toBe("#c0392b");
     expect(tokens.teamSecondary).toBe("#f7d94c");
     expect(tokens.onTeamPrimary).toBe("#ffffff");
-    expect(tokens.onTeamSecondary).toBe("#1a1a1a");
+    expect(tokens.onTeamSecondary).toBe("#14151A");
   });
 
   it("チームカラー未設定(null)の場合はCIRCLE LINESブランドカラーへfallbackする", () => {
@@ -122,7 +122,7 @@ describe("teamThemeStyle", () => {
     expect(style["--team-primary"]).toBe("#c0392b");
     expect(style["--team-secondary"]).toBe("#f7d94c");
     expect(style["--on-team-primary"]).toBe("#ffffff");
-    expect(style["--on-team-secondary"]).toBe("#1a1a1a");
+    expect(style["--on-team-secondary"]).toBe("#14151A");
   });
 
   it("チームカラー未設定の場合、旧tokenは注入せず新tokenのみブランドカラーで提供する(既存挙動の完全維持)", () => {

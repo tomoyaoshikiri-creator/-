@@ -15,7 +15,7 @@ export const BRAND_CYAN = "#08C6E8";
 
 // onTeamPrimary/onTeamSecondaryの候補色。既存の--ink(本文文字色)と対応させ、
 // 「常に白」ではなくコントラストの高い側を選ぶ。
-const ON_COLOR_DARK = "#1a1a1a";
+const ON_COLOR_DARK = "#14151A";
 const ON_COLOR_LIGHT = "#ffffff";
 
 const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -343,7 +343,7 @@ function compositeOverlay(bgHex: string, overlayHex: string, alpha: number): str
 
 // 背景の明暗(on)に応じて、明るいsurfaceまたは暗いsurfaceを選ぶ。
 function surfaceOverlayFor(on: string): string {
-  return on === "#1a1a1a" ? "#ffffff" : "#0a0a0e";
+  return on === ON_COLOR_DARK ? "#ffffff" : "#0a0a0e";
 }
 
 function rgbaCss(hex: string, alpha: number): string {

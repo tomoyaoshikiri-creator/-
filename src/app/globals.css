@@ -17,14 +17,14 @@
     「チームカラー未設定時のfallback色」のみ)。
   */
   --orange: var(--brand-blue);
-  --paper: #faf8f3;
-  --ink: #1a1a1a;
-  --ink-soft: #6b6660;
-  --green: #3e8462;
-  --line: rgba(34, 32, 28, 0.12);
-  --danger: #c0392b;
-  --sky: #3b82c4;
-  --holiday: #c0392b;
+  --paper: #FAFBFC;
+  --ink: #14151A;
+  --ink-soft: #5C636E;
+  --green: #16A34A;
+  --line: rgba(20, 22, 28, 0.10);
+  --danger: #E5484D;
+  --sky: #0A7CD6;
+  --holiday: #DC2626;
 
   /*
     APP-WIDE VISUAL REFRESH: --navyは元々「secondary team accent」(ボタン・選択状態・
@@ -36,7 +36,7 @@
     --navy自体は今後もteamThemeStyle()経由でtheme_accentにより上書きされ続ける
     (secondary team accent用途、ボタン・選択状態・バッジ等)。
   */
-  --heading: #22201c;
+  --heading: #171A1F;
 
   /*
     CIRCLE LINES Phase UI-1: 新ブランドカラー・semantic design token。
@@ -61,7 +61,7 @@
 
   --text-primary: var(--ink);
   --text-secondary: var(--ink-soft);
-  --text-muted: rgba(107, 102, 96, 0.65);
+  --text-muted: rgba(92, 99, 110, 0.62);
 
   --border: var(--line);
 
@@ -107,12 +107,9 @@
   --color-text-muted: var(--text-muted);
   --color-border: var(--border);
 
-  /*
-    MeiryoはWindows標準搭載フォントでWeb配信はできないため、
-    「入っている端末では優先的に使い、無ければNoto Sans JPにフォールバック」という指定にしている。
-  */
-  --font-display: var(--font-display-serif), Meiryo, "メイリオ", var(--font-noto-sans-jp);
-  --font-sans: Meiryo, "メイリオ", var(--font-noto-sans-jp);
+  --font-sans: var(--font-noto-sans-jp), -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", sans-serif;
+  --font-display: var(--font-sans);
   --font-mono: var(--font-roboto-mono);
 }
 
@@ -123,7 +120,7 @@ body {
 }
 
 body {
-  background: linear-gradient(180deg, #f3efe4 0%, #ece5d4 100%);
+  background: #F5F6F8;
   color: var(--ink);
   font-family: var(--font-sans);
 }
