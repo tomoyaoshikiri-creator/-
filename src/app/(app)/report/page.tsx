@@ -162,7 +162,7 @@ export default function ReportPage() {
   }, [userId, setUnseenIds]);
 
   useEffect(() => {
-    if (!canAccessTab(role, "report")) router.replace("/schedule");
+    if (!canAccessTab(role, "report")) router.replace("/home");
   }, [role, router]);
 
   function openReport(reportId: string) {

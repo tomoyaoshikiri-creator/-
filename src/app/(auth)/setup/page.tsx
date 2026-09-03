@@ -26,7 +26,7 @@ export default async function SetupPage() {
   }
 
   if (memberships && memberships.length > 0) {
-    redirect("/schedule");
+    redirect("/home");
   }
 
   return (

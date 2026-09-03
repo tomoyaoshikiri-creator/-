@@ -22,7 +22,7 @@ export default async function SignupPage() {
       redirect("/setup");
     }
 
-    redirect(memberships && memberships.length > 0 ? "/schedule" : "/setup");
+    redirect(memberships && memberships.length > 0 ? "/home" : "/setup");
   }
 
   return (

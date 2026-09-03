@@ -51,9 +51,9 @@ export async function createAdditionalTeam(_prev: FormState, formData: FormData)
     return { switchFailed: true };
   }
 
-  // (app)/layout.tsxはredirect先(/schedule)と直前のページ(/settings/teams/new)で
+  // (app)/layout.tsxはredirect先(/home)と直前のページ(/settings/teams/new)で
   // 共有されるセグメントのため、明示的に無効化しないとクライアント側のRouter Cacheに
   // 残っている切り替え前のteam情報がredirect後も表示されてしまう。
   revalidatePath("/", "layout");
-  redirect("/schedule");
+  redirect("/home");
 }

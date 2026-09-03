@@ -45,5 +45,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/schedule`);
+  return NextResponse.redirect(`${origin}/home`);
 }

@@ -24,5 +24,5 @@ export async function updatePassword(_prev: FormState, formData: FormData): Prom
     return { error: error.message };
   }
 
-  redirect("/schedule");
+  redirect("/home");
 }

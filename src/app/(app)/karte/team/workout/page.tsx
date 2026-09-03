@@ -35,7 +35,7 @@ export default function KarteTeamWorkoutPage() {
   const [expandedTheme, setExpandedTheme] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/schedule");
+    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   useEffect(() => {
