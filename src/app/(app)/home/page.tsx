@@ -405,26 +405,22 @@ export default function HomePage() {
           {nextSchedule ? (
             <>
               <Link href={`/schedule/${nextSchedule.id}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-[14px] font-bold truncate">{nextSchedule.title}</div>
-                    {nextSchedule.attendance_deadline && (
-                      <div className="text-[10.5px] text-ink-soft mt-0.5">
-                        回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                    <span
-                      className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
-                        nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
-                      }`}
-                    >
-                      {nextScheduleNeedsAction ? "要確認" : "回答済み"}
-                    </span>
-                    <div className="text-[11.5px] text-ink-soft text-right">{scheduleMeta(nextSchedule)}</div>
-                  </div>
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                  <span className="text-[14px] font-bold">{nextSchedule.title}</span>
+                  <span className="text-[11.5px] text-ink-soft">{scheduleMeta(nextSchedule)}</span>
+                  <span
+                    className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
+                      nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
+                    }`}
+                  >
+                    {nextScheduleNeedsAction ? "要確認" : "回答済み"}
+                  </span>
                 </div>
+                {nextSchedule.attendance_deadline && (
+                  <div className="text-[10.5px] text-ink-soft mt-0.5">
+                    回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
+                  </div>
+                )}
               </Link>
               {compressedSchedules.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-line space-y-1.5">
