@@ -95,7 +95,7 @@ function CardHeading({
 }
 
 export default function HomePage() {
-  const { userId, teamId, role, plan, category } = useSession();
+  const { userId, teamId, role, plan, category, teamGoal } = useSession();
   const isStaff = canWriteCoachNote(role);
   const todayStr = todayDateStr();
   const nowIso = new Date().toISOString();
@@ -393,6 +393,14 @@ export default function HomePage() {
 
   return (
     <PageShell header={<AppHeader title="ホーム" />}>
+      {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。 */}
+      {teamGoal && (
+        <Card>
+          <CardHeading>チーム目標</CardHeading>
+          <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{teamGoal}</div>
+        </Card>
+      )}
+
       {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
           カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
       {scheduleStatus === "loading" && <CardSkeleton lines={2} />}

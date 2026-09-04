@@ -13,6 +13,7 @@ export interface SessionInfo {
   plan: TeamPlan;
   sport: TeamSport;
   category: TeamCategory;
+  teamGoal: string | null;
   hasMultipleTeams: boolean;
 }
 
