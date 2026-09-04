@@ -52,12 +52,19 @@ export default function TeamHubPage() {
 
   return (
     <PageShell header={<AppHeader title="チーム" />}>
+      <SectionLabel>日報</SectionLabel>
+      <HubRow href="/report" label="チーム日報" description="練習・活動の様子を共有する" unseen={badges.report} />
+      {canCoachNote &&
+        (hasCoachNoteAccess(plan) ? (
+          <HubRow href="/coach-note" label="コーチ日報" description="指導者・管理者だけで共有する日報" unseen={badges.coachNote} />
+        ) : (
+          <LockedFeatureCard label="コーチ日報" description="指導者・管理者だけで共有する日報" requiredPlan="中間" />
+        ))}
+
       <SectionLabel>選手・成長</SectionLabel>
       <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" />
       {isStaff && (
         <>
-          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
-          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
           {hasSportsTestAccess(plan) ? (
             <HubRow href="/karte/team/sports-test" label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
           ) : (
@@ -68,17 +75,10 @@ export default function TeamHubPage() {
           ) : (
             <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="Max" />
           )}
+          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
+          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
         </>
       )}
-
-      <SectionLabel>日報</SectionLabel>
-      <HubRow href="/report" label="チーム日報" description="練習・活動の様子を共有する" unseen={badges.report} />
-      {canCoachNote &&
-        (hasCoachNoteAccess(plan) ? (
-          <HubRow href="/coach-note" label="コーチ日報" description="指導者・管理者だけで共有する日報" unseen={badges.coachNote} />
-        ) : (
-          <LockedFeatureCard label="コーチ日報" description="指導者・管理者だけで共有する日報" requiredPlan="中間" />
-        ))}
 
       <SectionLabel>資料</SectionLabel>
       <HubRow href="/library" label="ライブラリ" description="画像・資料の共有置き場" unseen={badges.library} />
