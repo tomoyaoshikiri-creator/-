@@ -565,7 +565,7 @@ export default function HomePage() {
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
         <Card>
-          <CardHeading>作成ショートカット</CardHeading>
+          <CardHeading>ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
               <Link
