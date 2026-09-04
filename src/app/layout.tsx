@@ -24,6 +24,13 @@ const robotoMono = Roboto_Mono({
 // 領域までシームレスに伸びる状態へ戻す。Bottom Navigation側はTabBar.tsxの
 // padding-bottomを理論上の下限(0)にすることで、可能な限り余白を詰める
 // (icon/labelサイズは改修前のまま変更しない)。
+// Next.jsのMetadata API(appleWebApp.capable)は標準の"mobile-web-app-capable"
+// (apple-プレフィックス無し)しか出力せず、旧来の"apple-mobile-web-app-capable"
+// (apple-プレフィックス付き)は出力しない。iOSのホーム画面追加(standalone)は
+// 依然としてapple-プレフィックス付きの方を見ており、これが無いと
+// viewport-fit=cover / apple-mobile-web-app-status-bar-styleを指定していても
+// env(safe-area-inset-*)が正しく機能しない(常に0扱いになる)ケースがある。
+// otherフィールドで明示的に追加する。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -32,6 +39,9 @@ export const metadata: Metadata = {
     capable: true,
     title: "CIRCLE LINES",
     statusBarStyle: "black-translucent",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
   },
 };
 
