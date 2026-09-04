@@ -193,7 +193,7 @@ export function CalendarView({
               type="button"
               onClick={() => selectDate(c.date)}
               className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs relative ${
-                isColored ? "border-2" : "border"
+                isColored ? "border-[1.5px]" : "border"
               } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${
                 c.otherMonth ? "opacity-25" : ""
               } ${cellCls}`}
