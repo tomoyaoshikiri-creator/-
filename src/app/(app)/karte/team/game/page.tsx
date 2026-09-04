@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
-import { ChevronRightIcon } from "@/components/icons";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
@@ -176,20 +176,11 @@ export default function KarteTeamGamePage() {
       }
     >
       <div className="flex items-center gap-2 mb-3">
-        <div className="relative inline-block">
-          <select
-            className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-            value={fiscalYear}
-            onChange={(e) => setFiscalYear(Number(e.target.value))}
-          >
-            {FISCAL_YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>
-                {y}年度
-              </option>
-            ))}
-          </select>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-        </div>
+        <InlineSelect
+          value={String(fiscalYear)}
+          onChange={(v) => setFiscalYear(Number(v))}
+          options={FISCAL_YEAR_OPTIONS.map((y) => ({ value: String(y), label: `${y}年度` }))}
+        />
         {isStaff && (
           <button
             type="button"

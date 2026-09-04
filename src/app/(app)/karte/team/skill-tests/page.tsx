@@ -10,7 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { ChevronRightIcon } from "@/components/icons";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canViewKarte } from "@/lib/permissions";
 import { hasSkillTestAccess } from "@/lib/plan";
 import { skillTestLevelLabels } from "@/lib/skillTest";
@@ -153,20 +153,11 @@ export default function KarteTeamSkillTestsPage() {
       ) : (
         <div className="mb-3">
           <FieldLabel>検定</FieldLabel>
-          <div className="relative inline-block">
-            <select
-              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-              value={selectedTestId ?? ""}
-              onChange={(e) => setSelectedTestId(e.target.value)}
-            >
-              {tests.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-          </div>
+          <InlineSelect
+            value={selectedTestId ?? ""}
+            onChange={setSelectedTestId}
+            options={tests.map((t) => ({ value: t.id, label: t.name }))}
+          />
         </div>
       )}
 
