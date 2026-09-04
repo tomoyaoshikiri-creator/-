@@ -48,8 +48,11 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         );
       })}
       {/* ホームインジケーター分の帯を白で塗りつぶす。position:absoluteのためnav自体の
-          高さ(flexレイアウト)には加算されず、アイコン/ラベルの位置は変わらない。 */}
-      <span aria-hidden className="absolute inset-x-0 top-full h-[env(safe-area-inset-bottom)] bg-white" />
+          高さ(flexレイアウト)には加算されず、アイコン/ラベルの位置は変わらない。
+          standaloneモードのWebKitではenv(safe-area-inset-bottom)が0のまま解決される
+          既知の不具合があるため、env()が機能しない場合でも最低限の高さを確保できるよう
+          Face ID搭載iPhoneでほぼ共通のホームインジケーター高さ(34px)をmax()で下限にする。 */}
+      <span aria-hidden className="absolute inset-x-0 top-full h-[max(34px,env(safe-area-inset-bottom))] bg-white" />
     </nav>
   );
 }
