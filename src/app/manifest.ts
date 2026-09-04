@@ -11,17 +11,18 @@ import type { MetadataRoute } from "next";
 // TabBar自体をposition:fixed+portalで画面物理下端まで届くよう変更しても
 // 全く同じ位置(68pt手前)で描画が止まることを確認しており、ページ側のCSSでは
 // 制御できない領域である可能性が高いための対応。
-// display: "standalone"→"fullscreen"に変更(検証用)。上記の68pt帯自体を
-// なくせないか試す。fullscreenはOSのシステムUI領域予約を一切要求しない設定の
-// ため、ステータスバー(時刻・電波・バッテリー表示)ごと非表示になる副作用の
-// リスクがある。問題が出た場合はstandaloneに戻すこと。
+// display: 一時的にfullscreenで検証したが、この68pt帯の位置には一切変化がなく
+// (ピクセル単位で同一)、ステータスバー非表示のリスクだけが残る結果になったため
+// standaloneに戻した。この帯自体は本アプリのコード側では解消できない、
+// ホーム画面追加(standalone/fullscreenいずれも)時のiOS側の予約領域と判断し、
+// 上記background_colorによる色の統一のみで対応することとした。
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "CIRCLE LINES",
     short_name: "CIRCLE LINES",
     description: "CIRCLE LINES — チーム運営プラットフォーム",
     start_url: "/",
-    display: "fullscreen",
+    display: "standalone",
     background_color: "#FAFBFC",
     theme_color: "#087cf0",
     icons: [
