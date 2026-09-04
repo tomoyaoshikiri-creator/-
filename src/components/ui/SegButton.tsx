@@ -50,8 +50,9 @@ export function SubmitButton({
       type="button"
       className={`mt-3.5 w-full py-2.5 rounded-lg text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50 ${className}`}
       style={{
-        // ヘッダーと同じ105deg・濃い色→薄い色(左上が濃く、右下にいくほど薄くなる)の見本。
-        background: "linear-gradient(105deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
+        // 濃い色→薄い色(左上が濃く、右下にいくほど薄くなる)の見本。135degはヘッダーの105degより
+        // 対角線に近い、より急な角度。
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
         ...style,
       }}
       {...props}
