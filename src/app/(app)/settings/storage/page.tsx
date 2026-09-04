@@ -42,7 +42,7 @@ export default function SettingsStoragePage() {
   const percent = limitBytes > 0 ? Math.min(100, (usedBytes / limitBytes) * 100) : 0;
 
   return (
-    <PageShell header={<AppHeader title="使用量" variant="detail" backHref="/settings" accessBadge="admin" />}>
+    <PageShell header={<AppHeader title="使用量" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
       <SectionLabel>ストレージ使用量</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>

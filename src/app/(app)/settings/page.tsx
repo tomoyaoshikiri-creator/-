@@ -1,31 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { ChevronRightIcon } from "@/components/icons";
+import { SettingsRow } from "@/components/SettingsRow";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { canManageSettings } from "@/lib/permissions";
-import { PLAN_DISPLAY_LABELS } from "@/lib/format";
-import { SPORT_DISPLAY_LABELS } from "@/lib/sport";
-import { CATEGORY_DISPLAY_LABELS } from "@/lib/category";
-
-function SettingsRow({ href, label, value }: { href: string; label: string; value?: string }) {
-  return (
-    <Link href={href} className="flex items-center justify-between py-2.5 border-b border-line last:border-b-0">
-      <div className="font-bold text-[13.5px]">{label}</div>
-      <div className="flex items-center gap-1.5">
-        {value && <div className="text-[12.5px] text-ink-soft">{value}</div>}
-        <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-      </div>
-    </Link>
-  );
-}
 
 export default function SettingsPage() {
-  const { role, plan, sport, category, hasMultipleTeams } = useSession();
+  const { role, hasMultipleTeams } = useSession();
   const canManageTeam = canManageSettings(role);
 
   return (
@@ -41,17 +25,9 @@ export default function SettingsPage() {
 
       {canManageTeam && (
         <>
-          <SectionLabel>チーム設定</SectionLabel>
+          <SectionLabel>チーム</SectionLabel>
           <Card>
-            <SettingsRow href="/settings/logo" label="ログイン画面" />
-            <SettingsRow href="/settings/color" label="配色" />
-            <SettingsRow href="/settings/storage" label="使用量" />
-            <SettingsRow href="/settings/plan" label="プラン" value={`現在のプラン: ${PLAN_DISPLAY_LABELS[plan]}`} />
-            <SettingsRow
-              href="/settings/category"
-              label="カテゴリー"
-              value={`${CATEGORY_DISPLAY_LABELS[category]} / ${SPORT_DISPLAY_LABELS[sport]}`}
-            />
+            <SettingsRow href="/settings/team" label="チーム設定" />
           </Card>
         </>
       )}
@@ -62,15 +38,6 @@ export default function SettingsPage() {
         <SettingsRow href="/terms" label="利用規約" />
         <SettingsRow href="/tokushoho" label="特定商取引法に基づく表記" />
       </Card>
-
-      {canManageTeam && (
-        <>
-          <SectionLabel>危険な操作</SectionLabel>
-          <Card>
-            <SettingsRow href="/settings/close-account" label="チームを退会する" />
-          </Card>
-        </>
-      )}
     </PageShell>
   );
 }
