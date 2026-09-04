@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
 import { BOTTOM_NAV_TABS, TAB_LABELS, tabHrefForRole, type TabKey } from "@/lib/permissions";
@@ -10,27 +8,26 @@ import { GuardedLink } from "@/components/GuardedLink";
 
 export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
-  // .app-shellはoverflow:hiddenのため、その内部にposition:fixedで配置しても、
-  // .app-shell自身のボックスが画面の物理的な下端まで届いていない場合はそこで
-  // 切り取られてしまう(fixedは「画面のどこに置くか」であって、祖先のoverflow:hidden
-  // による切り取りは別問題)。.app-shellのDOM構造の外(document.body直下)に
-  // portalで描画することで、.app-shellのボックスサイズ・overflow設定に一切
-  // 影響されないようにする。
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
-  const nav = (
+  return (
     // 「アイコンを大きくすればSafe Area分の余白が目立たなくなる」という仮説は、
     // 同時に余白自体もenv(safe-area-inset-bottom)全量に増やしてしまったため
     // 検証にならず、実際には「余白が増えた」という結果になり反証された。これまでの
     // フィードバックの中で最も評価が良かった状態(icon17px/label7px、padding-bottomは
     // 理論上の下限0)へ戻す。
+    //
+    // ホームインジケーター領域に色違いの帯が見える問題は、これまでsafe-area分の
+    // 高さ・位置を合わせる方向(padding拡張・position:fixed・portal等)で何度も
+    // 対策したが解消しなかった。実機で見えていた「帯」は、TabBar自体の背景色
+    // (白 #ffffff)とその外側の背景色(--paper、ごく薄いオフホワイト)の差が
+    // わずか数値上は小さくても、画面いっぱいの直線の継ぎ目として視認されていた
+    // ことが原因だった。位置を合わせるのではなく、TabBarの背景色自体を
+    // ページ背景と同じ--paperにすることで、境目がどこにあっても継ぎ目自体が
+    // 見えなくなるようにする。
     // ナビ再設計v3でタブ数がロールに関わらず常に5個の固定になったため、8タブ時代の
     // dense(px-3)分岐は不要になった。5タブは旧7タブ時代よりさらに1タブあたりの幅に
     // 余裕があるため、旧non-dense(px-1)側の余白をそのまま使う。
-    <nav className="min-[700px]:hidden fixed inset-x-0 bottom-0 flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-white">
+    <nav className="min-[700px]:hidden flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-paper">
       {BOTTOM_NAV_TABS.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
@@ -55,7 +52,4 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
       })}
     </nav>
   );
-
-  if (!mounted) return null;
-  return createPortal(nav, document.body);
 }
