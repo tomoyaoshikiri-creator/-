@@ -9,7 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canRecordGames, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess } from "@/lib/plan";
 import { formatDateLabel, gradeLabel, playerFullName, scheduleMeta, todayDateStr } from "@/lib/format";
 import {
   buildDigestItems,
@@ -387,9 +387,9 @@ export default function HomePage() {
 
   const shortcutRows = isStaff
     ? [
-        { href: "/report", label: "チーム日報を書く", show: true },
         { href: "/coach-note", label: "コーチ日報を書く", show: hasCoachNoteAccess(plan) },
         { href: "/game", label: "試合を記録", show: canRecordGames(role) },
+        { href: "/karte/team/skill-tests", label: "検定管理", show: canViewKarte(role) && hasSkillTestAccess(plan) },
         { href: "/karte/team", label: "カルテ・分析を開く", show: canViewKarte(role) && hasKarteTabAccess(plan) },
       ].filter((r) => r.show)
     : [];
