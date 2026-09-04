@@ -15,8 +15,15 @@ const BRAND_GRADIENT = gradientCss(brandGradientStops());
 export function AuthHeading() {
   return (
     <div className="mb-10 text-center">
+      {/*
+        以前は /brand/circle-lines-icon.png(青い角丸四角のiOSアプリアイコンそのもの)を
+        rounded-2xlで表示していたが、「タイルを置いた」印象になるため、角丸四角の枠を
+        持たないロゴマーク単体(circle-lines-icon-512.pngから白マークを閾値付きで
+        切り出し、ブランドNavy #123BDB で着色した透過PNG)に差し替えた。外接矩形で
+        タイトにトリミング済みなので、正方形指定ではなく幅基準で高さautoにする。
+      */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/circle-lines-icon.png" alt="CIRCLE LINES" className="w-16 h-16 mx-auto mb-4 rounded-lg" />
+      <img src="/brand/circle-lines-logo.png" alt="CIRCLE LINES" className="w-36 h-auto mx-auto mb-4" />
       <h1
         className="font-medium text-3xl tracking-wide"
         style={{
