@@ -14,7 +14,11 @@ export function AppNav({ role, children }: { role: Role; children: React.ReactNo
 
   return (
     <>
-      <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0">
+      {/* TabBarはposition:fixedで画面下端に直接固定されており通常のflexレイアウトから
+          外れているため、コンテンツ側の最下部がその下に隠れないよう、TabBar自体の高さ
+          (pt-2.5+icon17px+gap-0.5+label分、border含め概ね40px)に相当する余白を
+          モバイル幅でのみ確保する。デスクトップ幅ではSidebarを使うため不要。 */}
+      <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0 min-[700px]:pb-0 pb-10">
         <Sidebar role={role} badges={badges} />
         <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
       </div>

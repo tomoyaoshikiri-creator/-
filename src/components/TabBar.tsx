@@ -14,17 +14,19 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // 同時に余白自体もenv(safe-area-inset-bottom)全量に増やしてしまったため
     // 検証にならず、実際には「余白が増えた」という結果になり反証された。これまでの
     // フィードバックの中で最も評価が良かった状態(icon17px/label7px、padding-bottomは
-    // 理論上の下限0)へ戻す。アイコン/ラベル自体の画面上の位置はこれで変更前と同じになる。
+    // 理論上の下限0)へ戻す。
     //
-    // ホームインジケーター領域の背景色がbody/.app-shell側から透けて見える問題は、
-    // TabBar自体の高さ(padding-bottom)を増やすのではなく、position:absoluteで
-    // レイアウトの高さ計算から外した塗りつぶし用の要素(下記fillSafeArea)を
-    // nav の直後に重ねる形で解消する。この要素は通常のflexレイアウトに参加しないため、
-    // アイコン/ラベルの位置・TabBar自体の高さには一切影響しない。
+    // ホームインジケーター領域に色違いの帯が見える問題は、safe-area分を白で
+    // 塗り足す対症療法(padding-bottom拡張・position:absoluteの塗りつぶし要素)を
+    // 何度試しても解消しなかった。.app-shell(position:fixed; inset:0)の下端が、
+    // standaloneモードのiOSで物理的な画面下端まで正しく到達していない疑いが強いため、
+    // TabBar自体をnavの通常のflexレイアウトから外し、position:fixedで画面(viewport)の
+    // 物理的な下端に直接固定する方式に変更した。.app-shellの内部計算に依存しないため、
+    // 確実に画面の一番下に来る。コンテンツ側の余白はAppNav.tsx側で確保している。
     // ナビ再設計v3でタブ数がロールに関わらず常に5個の固定になったため、8タブ時代の
     // dense(px-3)分岐は不要になった。5タブは旧7タブ時代よりさらに1タブあたりの幅に
     // 余裕があるため、旧non-dense(px-1)側の余白をそのまま使う。
-    <nav className="min-[700px]:hidden relative flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-white">
+    <nav className="min-[700px]:hidden fixed inset-x-0 bottom-0 flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-white">
       {BOTTOM_NAV_TABS.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
@@ -47,12 +49,6 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
           </GuardedLink>
         );
       })}
-      {/* ホームインジケーター分の帯を白で塗りつぶす。position:absoluteのためnav自体の
-          高さ(flexレイアウト)には加算されず、アイコン/ラベルの位置は変わらない。
-          standaloneモードのWebKitではenv(safe-area-inset-bottom)が0のまま解決される
-          既知の不具合があるため、env()が機能しない場合でも最低限の高さを確保できるよう
-          Face ID搭載iPhoneでほぼ共通のホームインジケーター高さ(34px)をmax()で下限にする。 */}
-      <span aria-hidden className="absolute inset-x-0 top-full h-[max(34px,env(safe-area-inset-bottom))] bg-white" />
     </nav>
   );
 }
