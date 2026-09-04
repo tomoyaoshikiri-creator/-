@@ -338,7 +338,7 @@ export function NewScheduleModal({
                     key={d}
                     type="button"
                     onClick={() => toggleDate(d)}
-                    className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-navy/8 text-navy"
+                    className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg bg-navy/8 text-navy"
                   >
                     {formatDateLabel(d)} ×
                   </button>
@@ -488,7 +488,7 @@ export function NewScheduleModal({
           type="button"
           onClick={handleDelete}
           disabled={saving || deleting}
-          className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white disabled:opacity-50"
+          className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
           style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
         >
           {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この予定を削除する"}

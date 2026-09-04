@@ -73,7 +73,7 @@ export function GameStatLog({
                         key={q}
                         type="button"
                         onClick={() => onChangeQuarter(e.id, q)}
-                        className={`flex-1 py-1 rounded-[8px] font-bold text-[11.5px] border ${
+                        className={`flex-1 py-1 rounded-lg font-bold text-[11.5px] border ${
                           e.quarter === q ? "bg-orange border-orange text-white" : "border-line text-ink-soft bg-white"
                         }`}
                       >
@@ -84,7 +84,7 @@ export function GameStatLog({
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(e.id)}
-                    className="w-full text-center py-1.5 rounded-[8px] font-bold text-[11.5px] border bg-white"
+                    className="w-full text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
                     style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                   >
                     {deleteConfirmId === e.id ? "もう一度タップで削除確定" : "この記録を削除"}

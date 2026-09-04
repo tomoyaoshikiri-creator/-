@@ -408,7 +408,7 @@ export default function CoachNotePage() {
                   type="button"
                   onClick={() => handleSaveEdit(r.id)}
                   disabled={savingEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                 >
                   {savingEdit ? "保存中…" : "保存"}
                 </button>
@@ -416,7 +416,7 @@ export default function CoachNotePage() {
                   type="button"
                   onClick={() => setEditingId(null)}
                   disabled={savingEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                 >
                   キャンセル
                 </button>
@@ -430,7 +430,7 @@ export default function CoachNotePage() {
             >
               <div className="font-bold text-[14.5px]">
                 {unseenIds.has(r.id) && (
-                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
+                  <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger">
                     NEW
                   </span>
                 )}
@@ -446,7 +446,7 @@ export default function CoachNotePage() {
                         <img
                           src={a.url}
                           alt={a.file_name}
-                          className="w-full rounded-[10px] border border-line object-contain"
+                          className="w-full rounded-lg border border-line object-contain"
                         />
                       </a>
                     ) : a.url ? (
@@ -478,14 +478,14 @@ export default function CoachNotePage() {
                     <button
                       type="button"
                       onClick={() => startEdit(r)}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
                     >
                       編集
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(r.id)}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
                       style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                     >
                       {deleteConfirmId === r.id ? "再タップで削除確定" : "削除"}
@@ -501,14 +501,14 @@ export default function CoachNotePage() {
                         <input
                           value={editCommentBody}
                           onChange={(e) => setEditCommentBody(e.target.value)}
-                          className="w-full min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                          className="w-full min-w-0 border border-line rounded-lg px-2 py-1 text-[12px] bg-white text-ink"
                         />
                         <div className="flex gap-2 mt-1.5">
                           <button
                             type="button"
                             onClick={() => handleSaveCommentEdit(c.id)}
                             disabled={savingCommentEdit}
-                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
+                            className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
                           >
                             {savingCommentEdit ? "保存中…" : "保存"}
                           </button>
@@ -516,7 +516,7 @@ export default function CoachNotePage() {
                             type="button"
                             onClick={() => setEditingCommentId(null)}
                             disabled={savingCommentEdit}
-                            className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-white"
+                            className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-line text-ink-soft bg-white"
                           >
                             キャンセル
                           </button>
@@ -542,14 +542,14 @@ export default function CoachNotePage() {
                             <button
                               type="button"
                               onClick={() => startEditComment(c)}
-                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
+                              className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
                             >
                               編集
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteComment(c.id)}
-                              className="flex-1 text-center py-1 rounded-[8px] font-bold text-[10.5px] border bg-white whitespace-nowrap"
+                              className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border bg-white whitespace-nowrap"
                               style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                             >
                               {deleteCommentConfirmId === c.id ? "再タップで削除確定" : "削除"}
@@ -564,13 +564,13 @@ export default function CoachNotePage() {
                     value={commentDrafts[r.id] ?? ""}
                     onChange={(e) => setCommentDrafts((m) => ({ ...m, [r.id]: e.target.value }))}
                     placeholder="コメントを書く"
-                    className="flex-1 min-w-0 border border-line rounded-[8px] px-2 py-1 text-[12px] bg-white text-ink"
+                    className="flex-1 min-w-0 border border-line rounded-lg px-2 py-1 text-[12px] bg-white text-ink"
                   />
                   <button
                     type="button"
                     onClick={() => handleAddComment(r.id)}
                     disabled={postingCommentId === r.id || !(commentDrafts[r.id] ?? "").trim()}
-                    className="flex-shrink-0 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
                   >
                     送信
                   </button>

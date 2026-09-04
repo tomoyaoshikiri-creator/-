@@ -106,7 +106,7 @@ export default function GameResultsPage() {
       </div>
 
       {!hasFullHistory && (
-        <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-[10px] px-3 py-2 mb-3">
+        <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-lg px-3 py-2 mb-3">
           お試しプランでは直近{FREE_GAME_RESULT_LIMIT}試合分のみ閲覧できます。中間プラン以上で全試合が見られるようになります。
         </div>
       )}
@@ -114,7 +114,7 @@ export default function GameResultsPage() {
       {availableYears.length > 0 && (
         <div className="relative inline-block mb-3.5">
           <select
-            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
             value={fiscalYear === "all" ? "all" : String(fiscalYear)}
             onChange={(e) => setFiscalYear(e.target.value === "all" ? "all" : Number(e.target.value))}
           >
@@ -135,7 +135,7 @@ export default function GameResultsPage() {
         <EmptyState>結果が登録された試合がありません</EmptyState>
       ) : (
         <>
-          <div className="bg-white border border-line rounded-2xl px-4 py-2.5 mb-2.5 text-center">
+          <div className="bg-white border border-line rounded-lg px-4 py-2.5 mb-2.5 text-center">
             <div className="font-extrabold text-[22px] text-heading">
               {matches.length}戦{" "}
               <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
@@ -154,14 +154,14 @@ export default function GameResultsPage() {
             return (
               <div
                 key={m.id}
-                className="bg-white border border-line rounded-2xl px-3.5 py-2 mb-2 flex items-center gap-2"
+                className="bg-white border border-line rounded-lg px-3.5 py-2 mb-2 flex items-center gap-2"
               >
                 <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
                   {m.schedules?.date ? formatDateLabel(m.schedules.date) : "-"}
                 </div>
                 {category === "all" && m.schedules?.game_category && (
                   <span
-                    className={`font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 ${
+                    className={`font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-lg flex-shrink-0 ${
                       m.schedules.game_category === "公式戦" ? "bg-danger/10 text-danger" : "bg-sky/10 text-sky"
                     }`}
                   >

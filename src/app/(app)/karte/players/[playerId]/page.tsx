@@ -445,7 +445,7 @@ export default function KartePlayerPage() {
           <FieldLabel>年度</FieldLabel>
           <div className="relative inline-block">
             <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
               value={fiscalYear}
               onChange={(e) => setFiscalYear(Number(e.target.value))}
             >
@@ -462,7 +462,7 @@ export default function KartePlayerPage() {
           <button
             type="button"
             onClick={() => setAnalysisOpen(true)}
-            className="flex-none px-3 py-1.5 rounded-[10px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
+            className="flex-none px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8"
           >
             分析用抽出
           </button>
@@ -495,7 +495,7 @@ export default function KartePlayerPage() {
             <EmptyState>この年度の出場記録がありません</EmptyState>
           </Card>
         ) : (
-          <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>
@@ -564,7 +564,7 @@ export default function KartePlayerPage() {
           <EmptyState>この年度の出場記録がありません</EmptyState>
         </Card>
       ) : (
-        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
@@ -631,7 +631,7 @@ export default function KartePlayerPage() {
           {sportsTestView === "chart" && (
             <div className="flex gap-1.5">
               <select
-                className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+                className="appearance-none bg-white border border-line rounded-lg px-2 py-1 text-[11.5px] font-bold text-ink"
                 value={sportsTestChartMetric}
                 onChange={(e) => setSportsTestChartMetric(e.target.value as SportsTestMetric)}
               >
@@ -642,7 +642,7 @@ export default function KartePlayerPage() {
                 ))}
               </select>
               <select
-                className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1 text-[11.5px] font-bold text-ink"
+                className="appearance-none bg-white border border-line rounded-lg px-2 py-1 text-[11.5px] font-bold text-ink"
                 value={sportsTestChartRange}
                 onChange={(e) => setSportsTestChartRange(e.target.value as "year" | "all")}
               >
@@ -679,7 +679,7 @@ export default function KartePlayerPage() {
           />
         </Card>
       ) : (
-        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
@@ -725,7 +725,7 @@ export default function KartePlayerPage() {
       )}
       <Link
         href={`/players/${player.id}/sports-test`}
-        className="block mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+        className="block mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
       >
         スポーツテストを入力・編集する
       </Link>
@@ -757,7 +757,7 @@ export default function KartePlayerPage() {
         )}
         <Link
           href={`/players/${player.id}/growth`}
-          className="block mt-3 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-paper"
+          className="block mt-3 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
         >
           記録を入力・編集する
         </Link>
@@ -810,7 +810,7 @@ export default function KartePlayerPage() {
                   type="button"
                   onClick={() => handleSaveNoteEdit(n.id)}
                   disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                 >
                   {savingNoteEdit ? "保存中…" : "保存"}
                 </button>
@@ -818,7 +818,7 @@ export default function KartePlayerPage() {
                   type="button"
                   onClick={() => setEditingNoteId(null)}
                   disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                 >
                   キャンセル
                 </button>
@@ -852,14 +852,14 @@ export default function KartePlayerPage() {
                   <button
                     type="button"
                     onClick={() => startEditNote(n)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
                   >
                     編集
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteNote(n.id)}
-                    className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
                     style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                   >
                     {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}

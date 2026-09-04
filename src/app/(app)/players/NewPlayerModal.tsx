@@ -136,7 +136,7 @@ export function NewPlayerModal({
           </select>
         </div>
       ) : (
-        <div className="mt-3 text-xs text-ink-soft bg-paper border border-dashed border-line rounded-[10px] px-3 py-2.5">
+        <div className="mt-3 text-xs text-ink-soft bg-paper border border-dashed border-line rounded-lg px-3 py-2.5">
           このカテゴリーでは学年を登録しません。
         </div>
       )}

@@ -141,7 +141,7 @@ export default function KarteTeamSportsTestPage() {
       <div className="flex items-center gap-2 mb-3">
         <div className="relative inline-block">
           <select
-            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
             value={fiscalYear}
             onChange={(e) => setFiscalYear(Number(e.target.value))}
           >
@@ -157,7 +157,7 @@ export default function KarteTeamSportsTestPage() {
           <button
             type="button"
             onClick={() => setRankingMode((v) => !v)}
-            className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
+            className={`flex-none text-center px-5 py-2 rounded-lg font-bold text-[13px] border ${
               rankingMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
             }`}
           >
@@ -208,7 +208,7 @@ export default function KarteTeamSportsTestPage() {
             <div className="text-[11px] text-ink-soft mb-1.5">項目名をタップすると、その項目順に並び替わります</div>
           )}
 
-          <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>

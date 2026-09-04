@@ -261,7 +261,7 @@ export default function PlayerNotesPage() {
                       type="button"
                       onClick={() => handleSaveNoteEdit(n.id)}
                       disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                     >
                       {savingNoteEdit ? "保存中…" : "保存"}
                     </button>
@@ -269,7 +269,7 @@ export default function PlayerNotesPage() {
                       type="button"
                       onClick={() => setEditingNoteId(null)}
                       disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                     >
                       キャンセル
                     </button>
@@ -296,14 +296,14 @@ export default function PlayerNotesPage() {
                       <button
                         type="button"
                         onClick={() => startEditNote(n)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                        className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
                       >
                         編集
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteNote(n.id)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                        className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
                         style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                       >
                         {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}

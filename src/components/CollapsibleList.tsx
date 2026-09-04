@@ -24,7 +24,7 @@ export function CollapsibleList<T>({
         <button
           type="button"
           onClick={onShowAll}
-          className="block w-full mt-1 mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-paper"
+          className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
         >
           もっと見る(残り{remaining}件)
         </button>

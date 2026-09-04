@@ -62,7 +62,7 @@ export default function KarteObogPage() {
           <FieldLabel>卒業年度</FieldLabel>
           <div className="relative inline-block mb-3">
             <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
               value={year}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
             >

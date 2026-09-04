@@ -11,7 +11,7 @@ export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-2xl p-5">
+    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <input type="hidden" name="next" value={next ?? ""} />
       <FieldLabel>メールアドレス</FieldLabel>
       <input name="email" type="email" className={inputClass()} required />

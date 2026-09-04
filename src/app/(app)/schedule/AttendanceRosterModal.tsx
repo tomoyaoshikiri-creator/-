@@ -59,7 +59,7 @@ function AttendanceGroup({
   return (
     <div className="mb-3 last:mb-0">
       <div className="font-mono text-[10.5px] tracking-widest uppercase text-ink-soft mb-1.5">{title}</div>
-      <div className="border border-line rounded-2xl overflow-hidden">
+      <div className="border border-line rounded-lg overflow-hidden">
         {rows.map((r) => {
           const status = r.attendance?.status ?? null;
           const editable = isEditable(r.key);

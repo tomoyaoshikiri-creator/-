@@ -29,7 +29,7 @@ export default async function InvitePage({
     return (
       <div>
         <AuthHeading />
-        <div className="bg-white border border-line rounded-2xl p-5 text-[13px] text-ink-soft text-center">
+        <div className="bg-white border border-line rounded-lg p-5 text-[13px] text-ink-soft text-center">
           この招待リンクは無効か、有効期限が切れています。チームの管理者に新しいリンクの発行を依頼してください。
         </div>
       </div>

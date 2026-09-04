@@ -104,7 +104,7 @@ export default function KarteTeamCustomStatsPage() {
       <div className="flex items-center gap-2 mb-3">
         <div className="relative inline-block">
           <select
-            className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+            className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
             value={fiscalYear}
             onChange={(e) => setFiscalYear(Number(e.target.value))}
           >
@@ -141,7 +141,7 @@ export default function KarteTeamCustomStatsPage() {
       ) : categories.length === 0 ? (
         <EmptyState>まだスタッツ項目がありません</EmptyState>
       ) : (
-        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>

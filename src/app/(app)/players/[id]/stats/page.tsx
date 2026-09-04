@@ -178,7 +178,7 @@ export default function PlayerStatsPage() {
                 <EmptyState>この年度の出場記録がありません</EmptyState>
               </Card>
             ) : (
-              <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+              <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
                 <table className="border-collapse text-[11.5px] w-full">
                   <thead>
                     <tr>
@@ -247,7 +247,7 @@ export default function PlayerStatsPage() {
               <EmptyState>この年度の出場記録がありません</EmptyState>
             </Card>
           ) : (
-            <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+            <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
               <table className="border-collapse text-[11.5px] w-full">
                 <thead>
                   <tr>

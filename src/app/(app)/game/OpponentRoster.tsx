@@ -82,7 +82,7 @@ export function OpponentRoster({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full py-2.5 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-white"
+        className="w-full py-2.5 rounded-lg font-bold text-[12.5px] border border-line text-ink-soft bg-white"
       >
         背番号新規登録
       </button>
@@ -101,7 +101,7 @@ export function OpponentRoster({
             type="button"
             onClick={handleAdd}
             disabled={adding || !newNumber.trim()}
-            className="flex-none px-4 rounded-[10px] font-bold text-[12.5px] text-white bg-orange disabled:opacity-50"
+            className="flex-none px-4 rounded-lg font-bold text-[12.5px] text-white bg-orange disabled:opacity-50"
           >
             追加
           </button>
@@ -110,7 +110,7 @@ export function OpponentRoster({
           type="button"
           onClick={handleAddTemplate}
           disabled={addingTemplate}
-          className="w-full mt-1.5 py-1.5 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-paper disabled:opacity-50"
+          className="w-full mt-1.5 py-1.5 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper disabled:opacity-50"
         >
           {addingTemplate ? "登録中…" : "4〜18番を一括登録"}
         </button>
@@ -119,7 +119,7 @@ export function OpponentRoster({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="px-4 py-2 rounded-[10px] font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
+            className="px-4 py-2 rounded-lg font-bold text-[12.5px] border border-line text-ink-soft bg-paper"
           >
             閉じる
           </button>

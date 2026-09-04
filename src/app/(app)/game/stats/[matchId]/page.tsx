@@ -708,7 +708,7 @@ export default function GameStatsPage() {
           <button
             type="button"
             onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+            className="w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
           >
             スターティングの編集
           </button>
@@ -825,7 +825,7 @@ export default function GameStatsPage() {
           <button
             type="button"
             onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+            className="w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
           >
             スターティングの編集
           </button>
@@ -834,7 +834,7 @@ export default function GameStatsPage() {
             type="button"
             onClick={handleResetStats}
             disabled={resetting}
-            className={`w-full mt-4 text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white ${
+            className={`w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border bg-white ${
               resetConfirm ? "" : "opacity-50"
             }`}
             style={{ color: "var(--danger)", borderColor: "var(--danger)" }}

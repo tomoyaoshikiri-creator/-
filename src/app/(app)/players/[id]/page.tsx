@@ -274,7 +274,7 @@ export default function PlayerDetailPage() {
             <div className="mt-3">
               <FieldLabel>学年</FieldLabel>
               {category === "その他" ? (
-                <div className="text-xs text-ink-soft bg-paper border border-dashed border-line rounded-[10px] px-3 py-2.5">
+                <div className="text-xs text-ink-soft bg-paper border border-dashed border-line rounded-lg px-3 py-2.5">
                   このカテゴリーでは学年を登録しません。
                 </div>
               ) : status === "OB・OG" ? (
@@ -346,7 +346,7 @@ export default function PlayerDetailPage() {
               type="button"
               onClick={() => setEditing(false)}
               disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
             >
               キャンセル
             </button>
@@ -357,7 +357,7 @@ export default function PlayerDetailPage() {
             <button
               type="button"
               onClick={handleDelete}
-              className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+              className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
               style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}

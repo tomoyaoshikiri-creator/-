@@ -361,7 +361,7 @@ export default function KarteTeamPage() {
                       type="button"
                       onClick={() => handleSaveNoteEdit(n.id)}
                       disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                     >
                       {savingNoteEdit ? "保存中…" : "保存"}
                     </button>
@@ -369,7 +369,7 @@ export default function KarteTeamPage() {
                       type="button"
                       onClick={() => setEditingNoteId(null)}
                       disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                     >
                       キャンセル
                     </button>
@@ -405,14 +405,14 @@ export default function KarteTeamPage() {
                       <button
                         type="button"
                         onClick={() => startEditNote(n)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                        className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
                       >
                         編集
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteNote(n.id)}
-                        className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                        className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
                         style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                       >
                         {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
@@ -448,7 +448,7 @@ export default function KarteTeamPage() {
         <button
           type="button"
           onClick={() => setAnalysisOpen(true)}
-          className="w-full text-left bg-orange/8 border border-orange rounded-2xl px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
+          className="w-full text-left bg-orange/8 border border-orange rounded-lg px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
         >
           <div className="font-bold text-[12.5px] text-orange">分析用データ抽出〈全体分〉</div>
           <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
@@ -460,7 +460,7 @@ export default function KarteTeamPage() {
           <FieldLabel>年度</FieldLabel>
           <div className="relative inline-block mb-3">
             <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
               value={analysisFiscalYear}
               onChange={(e) => setAnalysisFiscalYear(Number(e.target.value))}
             >

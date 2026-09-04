@@ -12,7 +12,7 @@ export function ForgotPasswordForm() {
 
   if (state.message) {
     return (
-      <div className="bg-white border border-line rounded-2xl p-5 text-center">
+      <div className="bg-white border border-line rounded-lg p-5 text-center">
         <div className="text-[13px] text-ink">{state.message}</div>
         <Link href="/login" className="inline-block mt-4 text-orange font-bold text-[12.5px]">
           ログイン画面に戻る
@@ -22,7 +22,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-2xl p-5">
+    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <div className="text-[12.5px] text-ink-soft mb-4">
         登録済みのメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。
       </div>

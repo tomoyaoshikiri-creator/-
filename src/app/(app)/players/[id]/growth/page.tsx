@@ -194,7 +194,7 @@ export default function PlayerGrowthPage() {
               <button
                 type="button"
                 onClick={() => handleDelete(r.id)}
-                className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-[8px] text-[11px] font-bold border ${
+                className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
                   deleteConfirmId === r.id
                     ? "border-danger text-danger bg-danger/8"
                     : "border-line text-ink-soft bg-paper"

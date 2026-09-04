@@ -191,21 +191,21 @@ export default function ScheduleDetailPage() {
                 <button
                   type="button"
                   onClick={() => setRosterOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-[8px] border border-orange text-[11px] font-bold text-orange bg-orange/8 whitespace-nowrap"
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8 whitespace-nowrap"
                 >
                   出欠一覧
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-[8px] border border-line text-[11px] font-bold text-ink-soft bg-paper whitespace-nowrap"
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-line text-[11px] font-bold text-ink-soft bg-paper whitespace-nowrap"
                 >
                   編集
                 </button>
                 <button
                   type="button"
                   onClick={() => setCopyOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-[8px] border border-line text-[11px] font-bold text-ink-soft bg-paper"
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-line text-[11px] font-bold text-ink-soft bg-paper"
                 >
                   コピーして登録
                 </button>

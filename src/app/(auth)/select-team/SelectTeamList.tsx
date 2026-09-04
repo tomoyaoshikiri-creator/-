@@ -28,14 +28,14 @@ export function SelectTeamList({ memberships }: { memberships: Membership[] }) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-2xl p-2">
+    <div className="bg-white border border-line rounded-lg p-2">
       {memberships.map((m) => (
         <button
           key={m.team_id}
           type="button"
           disabled={pending}
           onClick={() => handleSelect(m.team_id)}
-          className="w-full flex items-center justify-between px-3 py-3 rounded-[10px] text-left disabled:opacity-50 border-b border-line last:border-b-0"
+          className="w-full flex items-center justify-between px-3 py-3 rounded-lg text-left disabled:opacity-50 border-b border-line last:border-b-0"
         >
           <div>
             <div className="font-bold text-[14px]">{m.team_name}</div>

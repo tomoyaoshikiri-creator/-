@@ -10,7 +10,7 @@ export function ResetPasswordForm() {
   const [state, formAction, pending] = useActionState(updatePassword, initialState);
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-2xl p-5">
+    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <div className="text-[12.5px] text-ink-soft mb-4">新しいパスワードを設定してください。</div>
       <FieldLabel>新しいパスワード</FieldLabel>
       <input name="password" type="password" className={inputClass()} required />

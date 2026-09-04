@@ -26,7 +26,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
           const Icon = TAB_ICONS[tab];
           const href = tabHrefForRole(role, tab);
           const isActive = pathname === href || pathname.startsWith(href + "/");
-          const className = `flex items-center gap-2 px-2.5 py-3.5 rounded-[10px] text-[12px] font-bold ${
+          const className = `flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold ${
             isActive ? "bg-orange/10 text-orange" : "text-ink-soft"
           }`;
           return (
