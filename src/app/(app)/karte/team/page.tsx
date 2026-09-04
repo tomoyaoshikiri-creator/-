@@ -33,7 +33,7 @@ const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_Y
 
 export default function KarteTeamPage() {
   const router = useRouter();
-  const { role, userId, teamId, plan, sport } = useSession();
+  const { role, userId, teamId, plan, sport, teamGoal } = useSession();
   const showBasketballStats = usesDetailedBasketballStats(sport);
   const toast = useToast();
   const isStaff = canViewKarte(role);
@@ -237,6 +237,22 @@ export default function KarteTeamPage() {
         <AppHeader title="チームカルテ" variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />
       }
     >
+      {role === "管理者" && (
+        <Link href="/karte/team/goal">
+          <Card className="cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-bold text-[15px]">チーム目標</div>
+                <div className="text-[11.5px] text-ink-soft mt-1">
+                  {teamGoal ? teamGoal : "未設定(ホーム画面に表示されません)"}
+                </div>
+              </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            </div>
+          </Card>
+        </Link>
+      )}
+
       <Link href="/game">
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">

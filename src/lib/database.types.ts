@@ -83,6 +83,8 @@ export interface Database {
           plan: TeamPlan;
           sport: TeamSport;
           category: TeamCategory;
+          // ホーム画面に表示するチーム目標(シーズンのスローガンなど)。未設定はnull。
+          team_goal: string | null;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -105,6 +107,7 @@ export interface Database {
           plan?: TeamPlan;
           sport?: TeamSport;
           category?: TeamCategory;
+          team_goal?: string | null;
           storage_limit_bytes?: number;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
@@ -121,6 +124,7 @@ export interface Database {
           plan: TeamPlan;
           sport: TeamSport;
           category: TeamCategory;
+          team_goal: string | null;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
