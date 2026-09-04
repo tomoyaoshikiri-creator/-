@@ -45,7 +45,7 @@ function SquareChip({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-xl border font-bold ${
+      className={`flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-lg border font-bold ${
         active ? activeClass : "border-line bg-white text-ink"
       }`}
     >
@@ -336,7 +336,7 @@ export function GameStatsLandscape({
           <button
             type="button"
             onClick={onOpenOwnMemberChange}
-            className="mt-2 w-[68px] py-1.5 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[10px]"
+            className="mt-2 w-[68px] py-1.5 rounded-lg border border-dashed border-line text-ink-soft font-bold text-[10px]"
           >
             ⇄ 交代
           </button>
@@ -347,7 +347,7 @@ export function GameStatsLandscape({
             type="button"
             disabled={!lastEntry}
             onClick={handleUndo}
-            className={`w-full mb-2 py-1.5 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[12px] ${
+            className={`w-full mb-2 py-1.5 rounded-lg border border-dashed border-danger text-danger font-bold text-[12px] ${
               lastEntry ? "" : "opacity-40"
             }`}
           >
@@ -365,7 +365,7 @@ export function GameStatsLandscape({
                     type="button"
                     disabled={!selected}
                     onClick={() => setFtModalOpen(true)}
-                    className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
+                    className={`rounded-lg border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
                       selected ? "" : "opacity-45"
                     }`}
                   >
@@ -384,7 +384,7 @@ export function GameStatsLandscape({
                   type="button"
                   disabled={!selected}
                   onClick={() => handleTap(event)}
-                  className={`rounded-xl border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
+                  className={`rounded-lg border border-line bg-paper flex flex-col items-center justify-center gap-0.5 ${
                     selected ? "" : "opacity-45"
                   }`}
                 >
@@ -414,7 +414,7 @@ export function GameStatsLandscape({
           <button
             type="button"
             onClick={onOpenOpponentMemberChange}
-            className="mt-2 w-[68px] py-1.5 rounded-[10px] border border-dashed border-line text-ink-soft font-bold text-[10px]"
+            className="mt-2 w-[68px] py-1.5 rounded-lg border border-dashed border-line text-ink-soft font-bold text-[10px]"
           >
             ⇄ 交代
           </button>
@@ -474,7 +474,7 @@ function LogColumn({
             key={e.id}
             type="button"
             onClick={() => onOpen(e)}
-            className="text-left text-[12px] leading-[1.4] py-1 px-1.5 rounded-md border-b border-line"
+            className="text-left text-[12px] leading-[1.4] py-1 px-1.5 rounded-lg border-b border-line"
           >
             {e.pt !== 0 && (
               <span className={`float-right font-mono font-bold ${e.side === "own" ? "text-orange" : "text-navy"}`}>
@@ -534,7 +534,7 @@ function FixEntryOverlay({
                     key={p.id}
                     type="button"
                     onClick={() => onReassignPlayer("own", p.id)}
-                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] border border-line bg-paper text-[13px] font-bold text-ink"
+                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border border-line bg-paper text-[13px] font-bold text-ink"
                   >
                     <span>
                       #{p.number ?? "-"} {playerFullName(p)}
@@ -556,7 +556,7 @@ function FixEntryOverlay({
                     key={b.event}
                     type="button"
                     onClick={() => onReassignStat(b.event)}
-                    className={`flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-[10px] border text-[13px] font-bold text-ink ${
+                    className={`flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-lg border text-[13px] font-bold text-ink ${
                       checked ? "border-orange bg-orange/10" : "border-line bg-paper"
                     }`}
                   >
@@ -580,7 +580,7 @@ function FixEntryOverlay({
                     key={p.id}
                     type="button"
                     onClick={() => onReassignPlayer("opponent", p.id)}
-                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-[10px] border border-line bg-paper text-[13px] font-bold text-ink"
+                    className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg border border-line bg-paper text-[13px] font-bold text-ink"
                   >
                     <span>#{p.number}</span>
                     <span className={`font-extrabold text-navy ${checked ? "" : "invisible"}`}>✓</span>
@@ -594,7 +594,7 @@ function FixEntryOverlay({
           <button
             type="button"
             onClick={onDelete}
-            className="w-full py-2 rounded-[10px] border border-dashed border-danger text-danger font-bold text-[12.5px] bg-white"
+            className="w-full py-2 rounded-lg border border-dashed border-danger text-danger font-bold text-[12.5px] bg-white"
           >
             この記録を削除
           </button>

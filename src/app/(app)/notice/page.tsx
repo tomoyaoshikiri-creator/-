@@ -142,12 +142,12 @@ export default function NoticePage() {
       <Card key={n.id} className="cursor-pointer" onClick={() => openNotice(n.id)}>
         <div className="font-bold text-[14.5px]">
           {unseenIds.has(n.id) && (
-            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md mr-1.5 bg-danger/10 text-danger">
+            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger">
               NEW
             </span>
           )}
           {n.audience !== "全員" && (
-            <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
+            <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
               {n.audience}
             </span>
           )}
@@ -162,7 +162,7 @@ export default function NoticePage() {
             {attachmentsByNotice[n.id].map((a) => (
               <span
                 key={a.id}
-                className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-navy/8 text-navy"
+                className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg bg-navy/8 text-navy"
               >
                 📎 {a.kind}
               </span>

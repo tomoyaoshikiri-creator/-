@@ -88,7 +88,7 @@ export function AppHeader({
         </span>
         {accessBadge && (
           <span
-            className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-md tracking-wide"
+            className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg tracking-wide"
             style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
           >
             {accessBadge === "admin" ? "管理者専用画面" : "コーチ専用画面"}
@@ -103,7 +103,7 @@ export function AppHeader({
         // 縮まらないため、これが縦方向の実質的な下限。py-0まで詰めても16px入力+約2pxの
         // 内在余白で約18pxとなり、圧縮前(約26px)の約69%(≒2/3)。
         <div
-          className="rounded-[9px] px-3 py-0 flex items-center gap-1"
+          className="rounded-lg px-3 py-0 flex items-center gap-1"
           style={{ background: "var(--header-search-surface)", color: "var(--header-search-on)" }}
         >
           <SearchIcon className="w-3 h-3 opacity-80 flex-shrink-0" />

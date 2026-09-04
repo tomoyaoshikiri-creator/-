@@ -16,7 +16,7 @@ export function AuthHeading() {
   return (
     <div className="mb-10 text-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/circle-lines-icon.png" alt="CIRCLE LINES" className="w-16 h-16 mx-auto mb-4 rounded-2xl" />
+      <img src="/brand/circle-lines-icon.png" alt="CIRCLE LINES" className="w-16 h-16 mx-auto mb-4 rounded-lg" />
       <h1
         className="font-medium text-3xl tracking-wide"
         style={{

@@ -380,7 +380,7 @@ export default function NoticeDetailPage() {
                 {KINDS.map(({ kind, emoji }) => (
                   <label
                     key={kind}
-                    className={`flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
+                    className={`flex-none px-3 py-2 rounded-lg text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
                       newFiles[kind] ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
                     }`}
                   >
@@ -410,7 +410,7 @@ export default function NoticeDetailPage() {
               type="button"
               onClick={() => setEditing(false)}
               disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
             >
               キャンセル
             </button>
@@ -422,7 +422,7 @@ export default function NoticeDetailPage() {
               type="button"
               onClick={handleDeleteNotice}
               disabled={deleting}
-              className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+              className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
               style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
             >
               {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このお知らせを削除する"}
@@ -471,7 +471,7 @@ export default function NoticeDetailPage() {
                         <img
                           src={a.url}
                           alt={a.file_name}
-                          className="w-full rounded-[10px] border border-line object-contain"
+                          className="w-full rounded-lg border border-line object-contain"
                         />
                       </a>
                     ) : a.url ? (

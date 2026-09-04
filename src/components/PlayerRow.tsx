@@ -44,7 +44,7 @@ export function PlayerRow({
           <Link
             href={`/players/${player.id}/notes`}
             onClick={(e) => e.stopPropagation()}
-            className={`relative flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+            className={`relative flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg border whitespace-nowrap ${
               hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
             }`}
           >

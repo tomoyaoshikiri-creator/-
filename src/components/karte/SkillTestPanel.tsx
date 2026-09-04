@@ -146,7 +146,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
                   type="button"
                   onClick={() => handleUpdateLevel(test)}
                   disabled={savingTestId === test.id}
-                  className="flex-none px-3.5 py-2 rounded-[10px] font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                  className="flex-none px-3.5 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
                 >
                   {savingTestId === test.id ? "更新中…" : "更新"}
                 </button>
@@ -194,7 +194,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
                 setShowAddForm(false);
                 setNewName("");
               }}
-              className="flex-1 text-center py-2.5 rounded-[10px] font-bold text-[13px] border border-line text-ink-soft bg-white"
+              className="flex-1 text-center py-2.5 rounded-lg font-bold text-[13px] border border-line text-ink-soft bg-white"
             >
               キャンセル
             </button>
@@ -204,7 +204,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
         <button
           type="button"
           onClick={() => setShowAddForm(true)}
-          className="block w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+          className="block w-full mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
         >
           + 検定を追加
         </button>

@@ -133,7 +133,7 @@ export default function LibraryPage() {
       }
     >
       {limitBytes > 0 && (
-        <div className="bg-white border border-line rounded-2xl px-3.5 py-2.5 mb-3.5">
+        <div className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-3.5">
           <div className="flex items-end justify-between">
             <div className="font-bold text-[15px]">
               {formatBytes(usedBytes)}
@@ -188,7 +188,7 @@ export default function LibraryPage() {
             <Card key={item.id}>
               <div className="font-bold text-[14.5px]">
                 {category && (
-                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 bg-navy/8 text-navy">
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
                     {category.name}
                   </span>
                 )}
@@ -207,7 +207,7 @@ export default function LibraryPage() {
                         <img
                           src={f.url}
                           alt={f.file_name}
-                          className="w-full rounded-[10px] border border-line object-contain"
+                          className="w-full rounded-lg border border-line object-contain"
                         />
                       </a>
                     ) : f.url ? (
@@ -228,7 +228,7 @@ export default function LibraryPage() {
               <button
                 type="button"
                 onClick={() => handleDelete(item)}
-                className="mt-2.5 w-full text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white"
+                className="mt-2.5 w-full text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white"
                 style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
               >
                 {deleteConfirmId === item.id ? "もう一度タップで削除確定" : "削除"}

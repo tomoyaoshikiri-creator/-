@@ -23,7 +23,7 @@ export function MonthPicker({
         aria-label="前の月"
         onClick={() => !atMin && onChange(shiftYearMonth(value, -1))}
         disabled={atMin}
-        className="w-7 h-7 flex items-center justify-center rounded-[8px] border border-line bg-white text-ink-soft flex-shrink-0 disabled:opacity-40"
+        className="w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white text-ink-soft flex-shrink-0 disabled:opacity-40"
       >
         <ChevronRightIcon className="w-3.5 h-3.5 rotate-180" />
       </button>
@@ -32,13 +32,13 @@ export function MonthPicker({
         value={value}
         min={min}
         onChange={(e) => e.target.value && onChange(e.target.value < (min ?? e.target.value) ? min! : e.target.value)}
-        className="font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-[8px] px-2.5 py-1"
+        className="font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-lg px-2.5 py-1"
       />
       <button
         type="button"
         aria-label="次の月"
         onClick={() => onChange(shiftYearMonth(value, 1))}
-        className="w-7 h-7 flex items-center justify-center rounded-[8px] border border-line bg-white text-ink-soft flex-shrink-0"
+        className="w-7 h-7 flex items-center justify-center rounded-lg border border-line bg-white text-ink-soft flex-shrink-0"
       >
         <ChevronRightIcon className="w-3.5 h-3.5" />
       </button>

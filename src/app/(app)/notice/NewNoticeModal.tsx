@@ -229,7 +229,7 @@ export function NewNoticeModal({
           {KINDS.map(({ kind, emoji }) => (
             <label
               key={kind}
-              className={`flex-none px-3 py-2 rounded-[10px] text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
+              className={`flex-none px-3 py-2 rounded-lg text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
                 files[kind] ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
               }`}
             >

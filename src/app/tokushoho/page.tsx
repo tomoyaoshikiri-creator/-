@@ -11,7 +11,7 @@ export default function TokushohoPage() {
         <h1 className="font-medium text-2xl mt-6 mb-2">特定商取引法に基づく表記</h1>
         <p className="text-[12px] text-ink-soft mb-8">制定日: 2026年8月17日</p>
 
-        <div className="text-[12.5px] leading-relaxed bg-white border border-line rounded-2xl p-4 mb-8">
+        <div className="text-[12.5px] leading-relaxed bg-white border border-line rounded-lg p-4 mb-8">
           これは正式公開前のドラフトです。実際の運用開始前に、記載内容について専門家の確認を受けてください。
         </div>
 

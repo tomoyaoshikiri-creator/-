@@ -48,7 +48,7 @@ export function TeamDeletionScreen({
   return (
     <div className="app-shell">
       <div className="flex-1 overflow-y-auto flex flex-col justify-center px-6 py-10">
-        <div className="max-w-md mx-auto w-full bg-white border border-line rounded-2xl p-5 text-center">
+        <div className="max-w-md mx-auto w-full bg-white border border-line rounded-lg p-5 text-center">
           <div className="font-bold text-[15px] mb-2">退会手続き中です</div>
           <div className="text-[12.5px] text-ink-soft leading-relaxed mb-1">
             {formatFullDateLabel(scheduledDeletionAt.slice(0, 10))}に、チームのすべてのデータが完全に削除されます。
@@ -63,7 +63,7 @@ export function TeamDeletionScreen({
                 type="button"
                 onClick={handleRestore}
                 disabled={restoring}
-                className="mt-3.5 w-full py-2.5 rounded-[10px] bg-navy text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50"
+                className="mt-3.5 w-full py-2.5 rounded-lg bg-navy text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50"
               >
                 {restoring ? "処理中…" : "退会を取り消す"}
               </button>
@@ -77,7 +77,7 @@ export function TeamDeletionScreen({
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="mt-3 w-full py-2.5 rounded-[10px] border border-line text-ink-soft font-bold text-[13px] active:opacity-85 disabled:opacity-50"
+            className="mt-3 w-full py-2.5 rounded-lg border border-line text-ink-soft font-bold text-[13px] active:opacity-85 disabled:opacity-50"
           >
             {loggingOut ? "処理中…" : "ログアウト"}
           </button>

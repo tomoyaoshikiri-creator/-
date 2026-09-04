@@ -126,7 +126,7 @@ export default function SettingsLogoPage() {
       ) : (
         <Card>
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div className="w-16 h-16 rounded-lg border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoUrl} alt="チームロゴ" className="w-full h-full object-contain" />
@@ -139,7 +139,7 @@ export default function SettingsLogoPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                className="px-3 py-2 rounded-lg text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
               >
                 {uploading ? "処理中…" : "画像を選ぶ"}
               </button>
@@ -155,7 +155,7 @@ export default function SettingsLogoPage() {
                   type="button"
                   onClick={handleLogoRemove}
                   disabled={uploading}
-                  className="ml-2 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-white text-ink-soft"
+                  className="ml-2 px-3 py-2 rounded-lg text-[12.5px] font-bold border border-line bg-white text-ink-soft"
                 >
                   削除
                 </button>

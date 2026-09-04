@@ -325,7 +325,7 @@ export default function SportsTestPage() {
           </Card>
 
           <SectionLabel>四半期ごとの記録</SectionLabel>
-          <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>

@@ -132,7 +132,7 @@ export default function PlayersPage() {
           <button
             type="button"
             onClick={handleYearUpdate}
-            className="flex-none px-2.5 py-1.5 text-[11px] font-bold border border-line rounded-[10px] bg-paper text-ink-soft"
+            className="flex-none px-2.5 py-1.5 text-[11px] font-bold border border-line rounded-lg bg-paper text-ink-soft"
           >
             {yearConfirm ? "もう一度タップで実行" : "年度更新"}
           </button>

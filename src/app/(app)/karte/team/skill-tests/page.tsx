@@ -155,7 +155,7 @@ export default function KarteTeamSkillTestsPage() {
           <FieldLabel>検定</FieldLabel>
           <div className="relative inline-block">
             <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
               value={selectedTestId ?? ""}
               onChange={(e) => setSelectedTestId(e.target.value)}
             >
@@ -171,7 +171,7 @@ export default function KarteTeamSkillTestsPage() {
       )}
 
       {!loading && selectedTest && (
-        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[65vh] mb-2.5">
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
@@ -195,7 +195,7 @@ export default function KarteTeamSkillTestsPage() {
                     </td>
                     <td className="px-2.5 py-1.5 border-b border-line last:border-b-0">
                       <select
-                        className="appearance-none bg-white border border-line rounded-[8px] px-2 py-1.5 text-[12px] font-bold text-ink w-full"
+                        className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
                         value={current ? String(current.level_index) : ""}
                         disabled={savingPlayerId === p.id}
                         onChange={(e) => handleChangeLevel(p.id, e.target.value)}
@@ -260,7 +260,7 @@ export default function KarteTeamSkillTestsPage() {
                   setShowAddForm(false);
                   setNewName("");
                 }}
-                className="flex-1 text-center py-2.5 rounded-[10px] font-bold text-[13px] border border-line text-ink-soft bg-white"
+                className="flex-1 text-center py-2.5 rounded-lg font-bold text-[13px] border border-line text-ink-soft bg-white"
               >
                 キャンセル
               </button>
@@ -270,7 +270,7 @@ export default function KarteTeamSkillTestsPage() {
           <button
             type="button"
             onClick={() => setShowAddForm(true)}
-            className="block w-full mb-2.5 text-center py-2 rounded-[10px] font-bold text-[12px] border border-line text-ink-soft bg-white"
+            className="block w-full mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
           >
             + 検定を追加
           </button>

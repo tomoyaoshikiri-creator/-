@@ -371,7 +371,7 @@ export function AttendanceEntryForm({
                 type="button"
                 onClick={handleDelete}
                 disabled={saving}
-                className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white disabled:opacity-50"
+                className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
                 style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
               >
                 {deleteConfirm ? "もう一度タップで削除確定" : "この出欠を削除する"}

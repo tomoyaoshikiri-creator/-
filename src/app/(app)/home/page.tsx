@@ -581,7 +581,7 @@ export default function HomePage() {
               <Link
                 key={r.href}
                 href={r.href}
-                className="text-center text-[12px] font-bold py-2.5 rounded-[10px] border border-line text-ink"
+                className="text-center text-[12px] font-bold py-2.5 rounded-lg border border-line text-ink"
               >
                 {r.label}
               </Link>

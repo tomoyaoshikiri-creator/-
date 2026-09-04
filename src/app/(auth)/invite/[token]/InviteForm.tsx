@@ -25,7 +25,7 @@ export function InviteForm({
 
   if (state.message) {
     return (
-      <div className="bg-white border border-line rounded-2xl p-5 text-[13px] text-ink-soft text-center">
+      <div className="bg-white border border-line rounded-lg p-5 text-[13px] text-ink-soft text-center">
         {state.message}
       </div>
     );
@@ -33,7 +33,7 @@ export function InviteForm({
 
   return (
     <>
-      <form action={formAction} className="bg-white border border-line rounded-2xl p-5">
+      <form action={formAction} className="bg-white border border-line rounded-lg p-5">
         <input type="hidden" name="token" value={token} />
         <div className="text-[12.5px] text-ink-soft mb-4">
           {roleLabel}としてチームに参加します。氏名とログイン情報を入力してください。

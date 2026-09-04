@@ -82,7 +82,7 @@ function ChipRow({
             key={e.id}
             type="button"
             onClick={() => onSelect(e.id)}
-            className={`flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-[12px] border font-bold ${
+            className={`flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
               isActive ? activeClass : "border-line bg-white text-ink"
             }`}
           >
@@ -107,7 +107,7 @@ function ChipRow({
           <button
             type="button"
             onClick={onOpenMemberChange}
-            className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-[10px] border border-dashed border-line text-ink-soft font-bold"
+            className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-lg border border-dashed border-line text-ink-soft font-bold"
           >
             <span className="text-[12px] leading-none">⇄</span>
             <span className="text-[7px] mt-0.5 leading-none">交代</span>
@@ -117,7 +117,7 @@ function ChipRow({
               type="button"
               onClick={onUndo}
               disabled={!canUndo}
-              className={`flex-1 min-h-0 flex items-center justify-center rounded-[10px] border border-dashed border-danger text-danger font-bold text-[8.5px] ${
+              className={`flex-1 min-h-0 flex items-center justify-center rounded-lg border border-dashed border-danger text-danger font-bold text-[8.5px] ${
                 canUndo ? "" : "opacity-40"
               }`}
             >
@@ -249,7 +249,7 @@ export function StatPad({
                       type="button"
                       disabled={!selected}
                       onClick={() => setFtModalOpen(true)}
-                      className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-[10px] border border-line bg-paper ${
+                      className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
                         selected ? "" : "opacity-45"
                       }`}
                     >
@@ -268,7 +268,7 @@ export function StatPad({
                     type="button"
                     disabled={!selected}
                     onClick={() => handleTap(event)}
-                    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-[10px] border border-line bg-paper ${
+                    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
                       selected ? "" : "opacity-45"
                     }`}
                   >
