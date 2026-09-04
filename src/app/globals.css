@@ -119,8 +119,16 @@ body {
   overscroll-behavior: none;
 }
 
+/*
+  .app-shellはposition:fixed; inset:0で画面全体を覆うが、iOS Safariでは
+  アドレスバーの表示/非表示に伴う動的ビューポート変化により、タブバー下部の
+  Home Indicator付近にごくわずかな隙間が生じることがある。その隙間からは
+  bodyの背景色が透けて見えるため、.app-shellの背景(--paper)と大きく異なる
+  色にすると帯状の見切れとして目立ってしまう。--paperに近い値にして、
+  隙間が生じても視覚的に馴染むようにする。
+*/
 body {
-  background: #F5F6F8;
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
 }
