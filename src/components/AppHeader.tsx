@@ -34,10 +34,13 @@ export function AppHeader({
       className="px-4.5 pb-3.5"
       style={{
         background: "var(--header-gradient)",
-        // viewport-fit=coverをやめたため、ステータスバー領域はOS側で別途確保され、
-        // Header(このdiv)はステータスバーの下から始まる。env(safe-area-inset-top)は
-        // 実質0になるため、装飾分のpaddingのみを指定する。
-        paddingTop: "0.625rem",
+        // Safe Area(ステータスバー領域)もヘッダー背景の一部として扱い、実コンテンツは
+        // その分だけ下へ押し下げる(env()未対応環境では0になり影響しない)。viewport-fit=cover
+        // 導入前はステータスバー領域がOS管理でHeaderの一部ではなかったため、実機上の視覚占有量が
+        // その分そのまま増える。完全には相殺できないため、以下のcontent側の余白(この
+        // paddingTopの装飾分・行間・下部padding)を必要最小限まで詰め、Safe Area込みの
+        // 総占有量をできるだけ改修前に近づける。
+        paddingTop: "calc(env(safe-area-inset-top) + 0.625rem)",
       }}
     >
       <div className="flex items-center justify-between gap-2">
