@@ -138,7 +138,8 @@ export default function HomePage() {
           .eq("team_id", teamId)
           .gte("date", from)
           .lte("date", to)
-          .order("date", { ascending: true }),
+          .order("date", { ascending: true })
+          .order("start_time", { ascending: true, nullsFirst: false }),
         supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
       ]);
       if (scheduleError) throw scheduleError;
