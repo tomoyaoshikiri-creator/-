@@ -405,11 +405,13 @@ export default function HomePage() {
           {nextSchedule ? (
             <>
               <Link href={`/schedule/${nextSchedule.id}`}>
-                <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                  <span className="text-[14px] font-bold">{nextSchedule.title}</span>
-                  <span className="text-[11.5px] text-ink-soft">{scheduleMeta(nextSchedule)}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[14px] font-bold flex-shrink-0">{nextSchedule.title}</span>
+                  <span className="text-[11.5px] text-ink-soft flex-1 min-w-0 truncate text-center">
+                    {scheduleMeta(nextSchedule)}
+                  </span>
                   <span
-                    className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
+                    className={`flex-shrink-0 text-[10.5px] font-bold px-2 py-1 rounded-full ${
                       nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
                     }`}
                   >
