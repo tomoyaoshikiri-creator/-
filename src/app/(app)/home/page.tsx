@@ -67,6 +67,8 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
 // バーと件数は状態(要対応の有無・件数)を表すためのもので、見出し文字自体は他カードと同じ
 // text-heading色のまま(文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
 // Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
+// 以前はtext-[13px]で本文(12.5〜14px)とほぼ同じ大きさだったため、見出しとして
+// 目立たないというフィードバックを受けtext-[15px]・tracking広め・mb増に調整した。
 function CardHeading({
   children,
   variant,
@@ -77,16 +79,16 @@ function CardHeading({
   count?: number;
 }) {
   return (
-    <div className="flex items-center mb-2.5">
+    <div className="flex items-center mb-3">
       {variant === "attn" && (
-        <span aria-hidden className="w-[3px] h-[18px] rounded-full bg-danger mr-2 flex-shrink-0" />
+        <span aria-hidden className="w-[3px] h-[20px] rounded-full bg-danger mr-2 flex-shrink-0" />
       )}
-      <span className="font-mono font-bold text-[13px] tracking-[0.04em] text-heading">
+      <span className="font-mono font-bold text-[15px] tracking-[0.05em] text-heading">
         {children}
         {count !== undefined && (
           <>
             {" "}
-            <span className="text-[12px] font-medium text-ink-soft">{count}件</span>
+            <span className="text-[12.5px] font-medium text-ink-soft">{count}件</span>
           </>
         )}
       </span>
