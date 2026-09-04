@@ -9,7 +9,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canRecordGames, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess } from "@/lib/plan";
 import { formatDateLabel, gradeLabel, playerFullName, scheduleMeta, todayDateStr } from "@/lib/format";
 import {
   buildDigestItems,
@@ -67,6 +67,8 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
 // バーと件数は状態(要対応の有無・件数)を表すためのもので、見出し文字自体は他カードと同じ
 // text-heading色のまま(文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
 // Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
+// 以前はtext-[13px]で本文(12.5〜14px)とほぼ同じ大きさだったため、見出しとして
+// 目立たないというフィードバックを受けtext-[15px]・tracking広め・mb増に調整した。
 function CardHeading({
   children,
   variant,
@@ -77,16 +79,16 @@ function CardHeading({
   count?: number;
 }) {
   return (
-    <div className="flex items-center mb-2.5">
+    <div className="flex items-center mb-3">
       {variant === "attn" && (
-        <span aria-hidden className="w-[3px] h-[18px] rounded-full bg-danger mr-2 flex-shrink-0" />
+        <span aria-hidden className="w-[3px] h-[20px] rounded-full bg-danger mr-2 flex-shrink-0" />
       )}
-      <span className="font-mono font-bold text-[13px] tracking-[0.04em] text-heading">
+      <span className="font-mono font-bold text-[15px] tracking-[0.05em] text-heading">
         {children}
         {count !== undefined && (
           <>
             {" "}
-            <span className="text-[12px] font-medium text-ink-soft">{count}件</span>
+            <span className="text-[12.5px] font-medium text-ink-soft">{count}件</span>
           </>
         )}
       </span>
@@ -136,7 +138,8 @@ export default function HomePage() {
           .eq("team_id", teamId)
           .gte("date", from)
           .lte("date", to)
-          .order("date", { ascending: true }),
+          .order("date", { ascending: true })
+          .order("start_time", { ascending: true, nullsFirst: false }),
         supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
       ]);
       if (scheduleError) throw scheduleError;
@@ -384,9 +387,9 @@ export default function HomePage() {
 
   const shortcutRows = isStaff
     ? [
-        { href: "/report", label: "チーム日報を書く", show: true },
         { href: "/coach-note", label: "コーチ日報を書く", show: hasCoachNoteAccess(plan) },
         { href: "/game", label: "試合を記録", show: canRecordGames(role) },
+        { href: "/karte/team/skill-tests", label: "検定管理", show: canViewKarte(role) && hasSkillTestAccess(plan) },
         { href: "/karte/team", label: "カルテ・分析を開く", show: canViewKarte(role) && hasKarteTabAccess(plan) },
       ].filter((r) => r.show)
     : [];
@@ -411,16 +414,11 @@ export default function HomePage() {
           {nextSchedule ? (
             <>
               <Link href={`/schedule/${nextSchedule.id}`}>
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <div className="text-[14px] font-bold truncate">{nextSchedule.title}</div>
-                    <div className="text-[11.5px] text-ink-soft mt-0.5">{scheduleMeta(nextSchedule)}</div>
-                    {nextSchedule.attendance_deadline && (
-                      <div className="text-[10.5px] text-ink-soft mt-0.5">
-                        回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[14px] font-bold flex-shrink-0">{nextSchedule.title}</span>
+                  <span className="text-[11.5px] text-ink-soft flex-1 min-w-0 truncate text-center">
+                    {scheduleMeta(nextSchedule)}
+                  </span>
                   <span
                     className={`flex-shrink-0 text-[10.5px] font-bold px-2 py-1 rounded-full ${
                       nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
@@ -429,15 +427,28 @@ export default function HomePage() {
                     {nextScheduleNeedsAction ? "要確認" : "回答済み"}
                   </span>
                 </div>
+                {nextSchedule.attendance_deadline && (
+                  <div className="text-[10.5px] text-ink-soft mt-0.5">
+                    回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
+                  </div>
+                )}
               </Link>
               {compressedSchedules.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-line space-y-1.5">
-                  {compressedSchedules.map((s) => (
-                    <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between">
-                      <span className="text-[11.5px] font-bold truncate">{s.title}</span>
-                      <span className="text-[10.5px] text-ink-soft flex-shrink-0 ml-2">{formatDateLabel(s.date)}</span>
-                    </Link>
-                  ))}
+                  {compressedSchedules.map((s) => {
+                    let timeLabel = "";
+                    if (s.start_time && s.end_time) timeLabel = `${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
+                    else if (s.start_time) timeLabel = `${s.start_time.slice(0, 5)}〜`;
+                    return (
+                      <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between gap-2">
+                        <span className="text-[11.5px] font-bold truncate">{s.title}</span>
+                        <span className="flex-shrink-0 flex items-center gap-1.5 text-[10.5px] text-ink-soft tabular-nums">
+                          <span className="min-w-[44px] text-right">{formatDateLabel(s.date)}</span>
+                          <span className="min-w-[80px] text-right">{timeLabel || "時間未定"}</span>
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
               {myPlayers.length > 0 && (
