@@ -32,7 +32,11 @@ export function MonthPicker({
         value={value}
         min={min}
         onChange={(e) => e.target.value && onChange(e.target.value < (min ?? e.target.value) ? min! : e.target.value)}
-        className="font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-lg px-2.5 py-1"
+        // iOSのtype="month"はネイティブのコントロール外観(appearance)を持っており、
+        // appearance-noneを付けないと、border/paddingを指定してもボタン群より枠が
+        // 太く/窮屈に見えてしまう。appearance-noneでネイティブ外観を消し、こちらの
+        // border(w-7 h-7の矢印ボタンと同じborder border-line)がそのまま反映されるようにする。
+        className="appearance-none font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-lg px-3 py-1 leading-normal"
       />
       <button
         type="button"
