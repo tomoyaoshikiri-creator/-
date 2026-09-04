@@ -38,7 +38,11 @@ export default function SchedulePage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     const [{ data: sch }, { data: att }, { data: roster }] = await Promise.all([
-      supabase.from("schedules").select("*").order("date", { ascending: true }),
+      supabase
+        .from("schedules")
+        .select("*")
+        .order("date", { ascending: true })
+        .order("start_time", { ascending: true, nullsFirst: false }),
       supabase.from("attendances").select("*").eq("user_id", userId),
       supabase.rpc("list_roster_players"),
     ]);
