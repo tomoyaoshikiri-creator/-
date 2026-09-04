@@ -396,12 +396,15 @@ export default function HomePage() {
 
   return (
     <PageShell header={<AppHeader title="ホーム" />}>
-      {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。 */}
+      {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。
+          他のカードは白背景・グレー見出しの一覧の中に埋もれてしまうため、常設のバナー的な
+          役割を意図してアクセントカラー(--orange、チームごとの基調色)で縁取り・背景を
+          薄く着色し、他のカードより一段目立つ見た目にしている。 */}
       {teamGoal && (
-        <Card>
-          <CardHeading>チーム目標</CardHeading>
-          <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{teamGoal}</div>
-        </Card>
+        <div className="rounded-2xl border-2 border-orange bg-orange/8 px-4 py-3.5 mb-2.5">
+          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange mb-1.5">チーム目標</div>
+          <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
+        </div>
       )}
 
       {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
@@ -565,7 +568,7 @@ export default function HomePage() {
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
         <Card>
-          <CardHeading>作成ショートカット</CardHeading>
+          <CardHeading>ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
               <Link
