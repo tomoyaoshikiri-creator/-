@@ -20,10 +20,15 @@ const robotoMono = Roboto_Mono({
   weight: ["500", "700"],
 });
 
-// 【比較検証用・最終試行】viewport-fit=coverを復活させ、Headerがステータスバー
-// 領域までシームレスに伸びる状態へ戻す。Bottom Navigation側はTabBar.tsxの
-// padding-bottomを理論上の下限(0)にすることで、可能な限り余白を詰める
-// (icon/labelサイズは改修前のまま変更しない)。
+// タブバーがホームインジケーター手前(約68pt)で止まる問題について、padding拡張・
+// position:fixed・document.bodyへのportal・manifest.display変更・
+// viewport-fit=cover撤去(status barを不透明に戻す)の5方式を実機のピクセル解析
+// (マゼンタ等の判別可能な色での検証を含む)で確認したが、タブバーの位置は
+// いずれも変化しなかった。viewport-fit=cover撤去はステータスバー周りの見た目を
+// 悪化させる代償だけを生む結果だったため、フチなしヘッダー(黒背景に
+// グラデーションが裏まで伸びるデザイン)を維持する判断とした。この約68pt帯は
+// ページ側のCSS/manifestでは制御できない、ホーム画面追加(standalone)時の
+// iOS側の予約領域として受け入れる。
 // Next.jsのMetadata API(appleWebApp.capable)は標準の"mobile-web-app-capable"
 // (apple-プレフィックス無し)しか出力せず、旧来の"apple-mobile-web-app-capable"
 // (apple-プレフィックス付き)は出力しない。iOSのホーム画面追加(standalone)は

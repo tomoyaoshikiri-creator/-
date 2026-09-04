@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local scratch / verification scripts (not part of the app)
+/scratch_*/
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
