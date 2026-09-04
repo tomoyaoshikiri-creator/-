@@ -581,7 +581,11 @@ export default function HomePage() {
               <Link
                 key={r.href}
                 href={r.href}
-                className="text-center text-[12px] font-bold py-2.5 rounded-lg border border-sky text-sky bg-sky/8"
+                className="text-center text-[12px] font-bold py-2.5 rounded-lg border border-sky text-sky"
+                style={{
+                  background:
+                    "linear-gradient(105deg, color-mix(in srgb, var(--sky) 10%, white) 0%, color-mix(in srgb, var(--sky) 28%, white) 100%)",
+                }}
               >
                 {r.label}
               </Link>
