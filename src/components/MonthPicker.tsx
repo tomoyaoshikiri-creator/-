@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRightIcon } from "@/components/icons";
-import { shiftYearMonth } from "@/lib/format";
+import { monthLabel, shiftYearMonth } from "@/lib/format";
 
 // お知らせ・日報・コーチノートなど、月ごとに絞り込んで表示する一覧の先頭に置く年月ピッカー。
 // デフォルトは当月。input type="month"はiPhone/iPadでは時刻選択と同じホイールUIになる。
@@ -27,17 +27,28 @@ export function MonthPicker({
       >
         <ChevronRightIcon className="w-3.5 h-3.5 rotate-180" />
       </button>
-      <input
-        type="month"
-        value={value}
-        min={min}
-        onChange={(e) => e.target.value && onChange(e.target.value < (min ?? e.target.value) ? min! : e.target.value)}
-        // iOSのtype="month"はネイティブのコントロール外観(appearance)を持っており、
-        // appearance-noneを付けないと、border/paddingを指定してもボタン群より枠が
-        // 太く/窮屈に見えてしまう。appearance-noneでネイティブ外観を消し、こちらの
-        // border(w-7 h-7の矢印ボタンと同じborder border-line)がそのまま反映されるようにする。
-        className="appearance-none font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-lg px-3 py-1 leading-normal"
-      />
+      <div className="relative flex-shrink-0">
+        {/* iOSのtype="month"はappearance-noneを付けてもネイティブのコントロール外観が
+            完全には消えず、矢印ボタンより枠が太く見えてしまう(WebKitの既知の制限)。
+            そのため実際のinputは透明にしてタップ領域・ネイティブのホイールUIだけを担わせ、
+            見た目(枠線・文字)は矢印ボタンと全く同じCSSで描く装飾用divに分離する。 */}
+        <input
+          type="month"
+          value={value}
+          min={min}
+          onChange={(e) =>
+            e.target.value && onChange(e.target.value < (min ?? e.target.value) ? min! : e.target.value)
+          }
+          aria-label="表示する年月"
+          className="peer absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none font-mono text-[13.5px] font-bold text-ink bg-white border border-line rounded-lg px-3 py-1 leading-normal peer-focus-visible:ring-2 peer-focus-visible:ring-orange/40"
+        >
+          {monthLabel(value)}
+        </div>
+      </div>
       <button
         type="button"
         aria-label="次の月"
