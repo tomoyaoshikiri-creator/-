@@ -101,7 +101,7 @@ export default function SettingsColorPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="配色" variant="detail" backHref="/settings" accessBadge="admin" />}>
+    <PageShell header={<AppHeader title="配色" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
       <SectionLabel>配色</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>

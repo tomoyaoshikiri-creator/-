@@ -44,7 +44,7 @@ export default function CloseAccountPage() {
   const canSubmit = confirmText === teamName;
 
   return (
-    <PageShell header={<AppHeader title="チームを退会する" variant="detail" backHref="/settings" accessBadge="admin" />}>
+    <PageShell header={<AppHeader title="チームを退会する" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
       <Card>
         <div className="font-bold text-[13.5px] mb-2">この操作について</div>
         <ul className="text-[12.5px] text-ink-soft leading-relaxed list-disc pl-4 space-y-1">
