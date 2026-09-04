@@ -189,9 +189,9 @@ textarea {
 .auth-shell {
   background: linear-gradient(
     105deg,
-    color-mix(in srgb, var(--brand-blue) 18%, white) 0%,
-    color-mix(in srgb, var(--brand-blue) 10%, white) 55%,
-    color-mix(in srgb, var(--brand-cyan) 5%, white) 100%
+    color-mix(in srgb, var(--brand-blue) 15%, white) 0%,
+    color-mix(in srgb, var(--brand-blue) 8%, white) 55%,
+    color-mix(in srgb, var(--brand-cyan) 3%, white) 100%
   );
 }
 
