@@ -16,18 +16,16 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // フィードバックの中で最も評価が良かった状態(icon17px/label7px、padding-bottomは
     // 理論上の下限0)へ戻す。
     //
-    // ホームインジケーター領域に色違いの帯が見える問題は、これまでsafe-area分の
-    // 高さ・位置を合わせる方向(padding拡張・position:fixed・portal等)で何度も
-    // 対策したが解消しなかった。実機で見えていた「帯」は、TabBar自体の背景色
-    // (白 #ffffff)とその外側の背景色(--paper、ごく薄いオフホワイト)の差が
-    // わずか数値上は小さくても、画面いっぱいの直線の継ぎ目として視認されていた
-    // ことが原因だった。位置を合わせるのではなく、TabBarの背景色自体を
-    // ページ背景と同じ--paperにすることで、境目がどこにあっても継ぎ目自体が
-    // 見えなくなるようにする。
+    // 【診断用・一時的】背景を目視で確実に判別できるマゼンタにしている。
+    // 実機で最新コードが反映されているかを、色の微妙な違いに頼らず確実に
+    // 切り分けるための一時的な変更。原因特定でき次第、本来の配色に戻す。
     // ナビ再設計v3でタブ数がロールに関わらず常に5個の固定になったため、8タブ時代の
     // dense(px-3)分岐は不要になった。5タブは旧7タブ時代よりさらに1タブあたりの幅に
     // 余裕があるため、旧non-dense(px-1)側の余白をそのまま使う。
-    <nav className="min-[700px]:hidden flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-paper">
+    <nav
+      className="min-[700px]:hidden flex items-start pt-2.5 pb-0 px-1 border-t border-line"
+      style={{ backgroundColor: "#FF00FF" }}
+    >
       {BOTTOM_NAV_TABS.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
