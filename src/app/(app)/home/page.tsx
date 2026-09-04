@@ -402,7 +402,7 @@ export default function HomePage() {
           薄く着色し、他のカードより一段目立つ見た目にしている。 */}
       {teamGoal && (
         <div className="rounded-2xl border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
-          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange mb-1">チーム目標</div>
+          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange mb-0.5">チーム目標</div>
           <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
         </div>
       )}
