@@ -175,13 +175,24 @@ textarea {
 /*
   MASTER SPECIFICATION #32: Login/Registration等の認証画面はTeam Brand Screen
   ではなく常にCIRCLE LINES Brand Screen。アプリ本体(.app-shellの--paper、
-  暖色系off-white)とは別に、pale blue → whiteの背景にする。.app-shellの他の
-  プロパティ(flex/max-width/デスクトップでの角丸カード化等)はそのまま
-  流用し、backgroundだけをここで上書きする((auth)/layout.tsxで
+  暖色系off-white)とは別に、ヘッダー(--header-gradient)・ロゴマークと同じ
+  105degの角度でブランドグラデーションを、白を混ぜた淡いトーンで敷く
+  (主張しすぎない背景にするため彩度は抑える)。--brand-navyは沈んだ
+  インディゴに寄って見えるため使わない。--brand-cyanは薄めるとやや緑みが
+  出るため主役にはせず、素直な空色の--brand-blueを軸にし、右下だけ
+  ごく僅かにcyanを効かせる。また単一色に近いと変化が弱く見えるため、
+  開始/終了の彩度差を大きめに取り、グラデーションらしさを出す。
+  .app-shellの他のプロパティ(flex/max-width/デスクトップでの角丸カード化等)は
+  そのまま流用し、backgroundだけをここで上書きする((auth)/layout.tsxで
   "app-shell auth-shell"の2クラスを併用)。
 */
 .auth-shell {
-  background: linear-gradient(180deg, #eaf2fd 0%, #ffffff 55%);
+  background: linear-gradient(
+    105deg,
+    color-mix(in srgb, var(--brand-blue) 15%, white) 0%,
+    color-mix(in srgb, var(--brand-blue) 8%, white) 55%,
+    color-mix(in srgb, var(--brand-cyan) 3%, white) 100%
+  );
 }
 
 /*
