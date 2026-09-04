@@ -40,14 +40,14 @@ export function TypeTag({
         : "bg-orange/10 text-orange";
   const label = type === "game" ? (gameCategory ?? "試合") : type === "event" ? "イベント" : "練習";
   return (
-    <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-md mr-1.5 ${cls}`}>{label}</span>
+    <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 ${cls}`}>{label}</span>
   );
 }
 
 export function NumChip({ num, muted = false }: { num: string; muted?: boolean }) {
   return (
     <div
-      className={`w-8 h-8 rounded-[9px] font-sans font-extrabold text-sm flex items-center justify-center flex-shrink-0 text-white ${
+      className={`w-8 h-8 rounded-lg font-sans font-extrabold text-sm flex items-center justify-center flex-shrink-0 text-white ${
         muted ? "bg-ink-soft" : "bg-orange"
       }`}
     >

@@ -60,7 +60,7 @@ export function InvitePlayerPicker({
               <button
                 type="button"
                 onClick={() => removeRow(index)}
-                className="flex-shrink-0 px-3 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-shrink-0 px-3 rounded-lg text-[12.5px] font-bold border border-line bg-paper text-ink-soft"
               >
                 削除
               </button>

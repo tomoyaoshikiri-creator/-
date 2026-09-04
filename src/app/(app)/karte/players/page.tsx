@@ -96,7 +96,7 @@ export default function KartePlayersPage() {
           <button
             type="button"
             onClick={handleOpenAnalysis}
-            className="flex-none px-3 py-1.5 rounded-[10px] border border-orange text-[11px] font-bold text-orange bg-orange/8"
+            className="flex-none px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8"
           >
             分析用抽出〈一括〉
           </button>

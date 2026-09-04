@@ -114,7 +114,7 @@ export default function CustomStatsPage() {
       ) : players.length === 0 ? (
         <EmptyState>選手が登録されていません</EmptyState>
       ) : (
-        <div className="bg-white border border-line rounded-2xl overflow-auto max-h-[75vh]">
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[75vh]">
           <table className="border-collapse text-[12px] w-full">
             <thead>
               <tr>
@@ -150,7 +150,7 @@ export default function CustomStatsPage() {
                           defaultValue={entry?.value ?? ""}
                           onBlur={(e) => handleChange(p.id, c.id, e.target.value)}
                           disabled={savingKey === key}
-                          className="w-[52px] text-center border border-line rounded-[8px] py-1 text-[12.5px] font-mono"
+                          className="w-[52px] text-center border border-line rounded-lg py-1 text-[12.5px] font-mono"
                         />
                       </td>
                     );

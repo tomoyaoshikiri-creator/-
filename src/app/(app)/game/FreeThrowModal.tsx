@@ -83,7 +83,7 @@ export function FreeThrowModal({
           <button
             type="button"
             onClick={() => setResult(i, false)}
-            className={`flex-1 py-1.5 rounded-[8px] font-bold text-[12.5px] border ${
+            className={`flex-1 py-1.5 rounded-lg font-bold text-[12.5px] border ${
               r === false ? "border-orange bg-orange text-white" : "border-line text-ink bg-white"
             }`}
           >
@@ -92,7 +92,7 @@ export function FreeThrowModal({
           <button
             type="button"
             onClick={() => setResult(i, true)}
-            className={`flex-1 py-1.5 rounded-[8px] font-bold text-[12.5px] border ${
+            className={`flex-1 py-1.5 rounded-lg font-bold text-[12.5px] border ${
               r === true ? "border-orange bg-orange text-white" : "border-line text-ink bg-white"
             }`}
           >

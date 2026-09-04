@@ -103,7 +103,7 @@ export default function KarteTeamWorkoutPage() {
         {availableYears.length > 0 && (
           <div className="relative inline-block">
             <select
-              className="appearance-none bg-white border border-line rounded-[10px] pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
+              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
               value={fiscalYear === "all" ? "all" : String(fiscalYear)}
               onChange={(e) => setFiscalYear(e.target.value === "all" ? "all" : Number(e.target.value))}
             >
@@ -120,7 +120,7 @@ export default function KarteTeamWorkoutPage() {
         <button
           type="button"
           onClick={() => setHistoryMode((v) => !v)}
-          className={`flex-none text-center px-5 py-2 rounded-[10px] font-bold text-[13px] border ${
+          className={`flex-none text-center px-5 py-2 rounded-lg font-bold text-[13px] border ${
             historyMode ? "border-orange bg-orange text-white" : "border-line text-ink-soft bg-white"
           }`}
         >
@@ -138,7 +138,7 @@ export default function KarteTeamWorkoutPage() {
             <SectionLabel>練習履歴({filtered.length}件)</SectionLabel>
             {filtered.map((p) => (
               <Link key={p.id} href={`/schedule/${p.id}`}>
-                <div className="bg-white border border-line rounded-2xl px-3.5 py-2.5 mb-2">
+                <div className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-2">
                   <div className="flex items-center gap-2">
                     <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
                       {formatDateLabel(p.date)}
@@ -166,7 +166,7 @@ export default function KarteTeamWorkoutPage() {
         <>
           <SectionLabel>実施メニューの集計({tallies.length}種類)</SectionLabel>
           {tallies.map((t) => (
-            <div key={t.theme} className="bg-white border border-line rounded-2xl px-3.5 py-2.5 mb-2">
+            <div key={t.theme} className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-2">
               <div
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={() => setExpandedTheme(expandedTheme === t.theme ? null : t.theme)}

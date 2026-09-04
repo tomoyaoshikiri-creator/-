@@ -154,7 +154,7 @@ export function NewDailyReportModal({
       </div>
       <div className="mt-3">
         <FieldLabel>画像・資料を添付</FieldLabel>
-        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-[10px] text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
+        <label className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
           📎 ファイルを選ぶ
           <input
             type="file"

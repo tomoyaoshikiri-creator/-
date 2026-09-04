@@ -125,7 +125,7 @@ export default function SettingsColorPage() {
               type="text"
               value={primary}
               onChange={(e) => setPrimary(e.target.value)}
-              className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+              className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
             />
           </div>
 
@@ -142,7 +142,7 @@ export default function SettingsColorPage() {
                 type="text"
                 value={accent}
                 onChange={(e) => setAccent(e.target.value)}
-                className="flex-1 border border-line rounded-[10px] px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+                className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
               />
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function SettingsColorPage() {
               type="button"
               onClick={handleReset}
               disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-[10px] font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
             >
               デフォルトの配色に戻す
             </button>

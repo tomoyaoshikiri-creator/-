@@ -27,7 +27,7 @@ export function NewTeamForm() {
           </div>
           <Link
             href="/select-team"
-            className="mt-3.5 block w-full py-2.5 rounded-[10px] bg-navy text-white font-bold text-[13px] text-center active:opacity-85"
+            className="mt-3.5 block w-full py-2.5 rounded-lg bg-navy text-white font-bold text-[13px] text-center active:opacity-85"
           >
             チームを切り替える
           </Link>

@@ -430,7 +430,7 @@ function SortableCategoryRow({
             <button
               type="button"
               onClick={() => setEditingId(null)}
-              className="flex-1 py-2.5 rounded-[10px] text-[13px] font-bold border border-line bg-paper text-ink-soft"
+              className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
             >
               キャンセル
             </button>
@@ -464,14 +464,14 @@ function SortableCategoryRow({
               <button
                 type="button"
                 onClick={() => startEdit(category)}
-                className="flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
               >
                 編集
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(category.id)}
-                className={`flex-1 px-3 py-1.5 rounded-[8px] text-[11.5px] font-bold border ${
+                className={`flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border ${
                   deleteConfirmId === category.id
                     ? "border-danger text-danger bg-danger/8"
                     : "border-line text-ink-soft bg-paper"

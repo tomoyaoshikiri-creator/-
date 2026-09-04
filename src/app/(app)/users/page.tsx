@@ -258,7 +258,7 @@ export default function UsersPage() {
                     </div>
                   </div>
                   <select
-                    className="w-auto px-2 py-1.5 text-xs border border-line rounded-[10px] bg-white"
+                    className="w-auto px-2 py-1.5 text-xs border border-line rounded-lg bg-white"
                     value={u.role}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleRoleChange(u.id, e.target.value as Role)}
@@ -299,7 +299,7 @@ export default function UsersPage() {
                                 e.stopPropagation();
                                 toggleGuardian(u.id, p.id);
                               }}
-                              className={`flex-none px-3 py-1.5 rounded-[10px] text-[11px] font-bold border ${
+                              className={`flex-none px-3 py-1.5 rounded-lg text-[11px] font-bold border ${
                                 linked
                                   ? "bg-orange text-white border-orange"
                                   : "bg-paper text-ink-soft border-line"
@@ -335,7 +335,7 @@ export default function UsersPage() {
                       <button
                         type="button"
                         onClick={() => handleDelete(u.id)}
-                        className="w-full text-center py-2 rounded-[10px] font-bold text-[12.5px] border bg-white"
+                        className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
                         style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                       >
                         {deleteConfirmId === u.id ? "もう一度タップで削除確定" : "このユーザーを削除する"}

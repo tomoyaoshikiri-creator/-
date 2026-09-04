@@ -133,7 +133,7 @@ export default function SettingsPlanPage() {
               {PLAN_OPTIONS.map((opt) => (
                 <div
                   key={opt.plan}
-                  className={`rounded-[10px] p-3 mb-2.5 border ${opt.highlight ? "border-orange bg-orange/5" : "border-line bg-paper"}`}
+                  className={`rounded-lg p-3 mb-2.5 border ${opt.highlight ? "border-orange bg-orange/5" : "border-line bg-paper"}`}
                 >
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <div className="font-bold text-[13px]">{PLAN_DISPLAY_LABELS[opt.plan]}</div>

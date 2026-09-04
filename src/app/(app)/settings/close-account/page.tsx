@@ -70,7 +70,7 @@ export default function CloseAccountPage() {
           type="button"
           onClick={handleRequestDeletion}
           disabled={!canSubmit || submitting}
-          className="mt-3.5 w-full py-2.5 rounded-[10px] font-bold text-[13px] active:opacity-85 disabled:opacity-50 border"
+          className="mt-3.5 w-full py-2.5 rounded-lg font-bold text-[13px] active:opacity-85 disabled:opacity-50 border"
           style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "white" }}
         >
           {submitting ? "処理中…" : "チームを退会する"}

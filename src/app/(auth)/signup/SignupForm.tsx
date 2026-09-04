@@ -18,14 +18,14 @@ export function SignupForm() {
 
   if (state.message) {
     return (
-      <div className="bg-white border border-line rounded-2xl p-5 text-[13px] text-ink-soft text-center">
+      <div className="bg-white border border-line rounded-lg p-5 text-[13px] text-ink-soft text-center">
         {state.message}
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-2xl p-5">
+    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <div className="text-[12.5px] text-ink-soft mb-4">
         新しくチームを立ち上げます。登録した方が最初の管理者になります。
       </div>

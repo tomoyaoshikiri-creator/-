@@ -380,7 +380,7 @@ export default function GameDetailPage() {
                   type="button"
                   onClick={handleAddMatch}
                   disabled={addingMatch}
-                  className="flex-none px-3 py-1.5 rounded-[10px] text-[11px] font-bold border border-line text-ink-soft bg-paper"
+                  className="flex-none px-3 py-1.5 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper"
                 >
                   {addingMatch ? "追加中…" : "+ 試合を追加"}
                 </button>
@@ -439,7 +439,7 @@ export default function GameDetailPage() {
 
                 {matchResult && (
                   <div
-                    className="mt-2 text-center font-bold text-[13px] py-1.5 rounded-[8px] bg-paper"
+                    className="mt-2 text-center font-bold text-[13px] py-1.5 rounded-lg bg-paper"
                     style={{
                       color:
                         matchResult === "勝ち"
@@ -471,7 +471,7 @@ export default function GameDetailPage() {
                   type="button"
                   onClick={handleDeleteMatch}
                   disabled={deletingMatch}
-                  className={`mt-2.5 w-full text-center py-2 rounded-[10px] font-bold text-[12px] border bg-white disabled:opacity-50 ${
+                  className={`mt-2.5 w-full text-center py-2 rounded-lg font-bold text-[12px] border bg-white disabled:opacity-50 ${
                     deleteMatchConfirmId === selectedMatch.id ? "" : "opacity-50"
                   }`}
                   style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
@@ -508,7 +508,7 @@ export default function GameDetailPage() {
                           type="button"
                           onClick={() => handleSaveNoteEdit(n.id)}
                           disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                         >
                           {savingNoteEdit ? "保存中…" : "保存"}
                         </button>
@@ -516,7 +516,7 @@ export default function GameDetailPage() {
                           type="button"
                           onClick={() => setEditingNoteId(null)}
                           disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-white"
+                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                         >
                           キャンセル
                         </button>
@@ -543,14 +543,14 @@ export default function GameDetailPage() {
                           <button
                             type="button"
                             onClick={() => startEditNote(n)}
-                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                            className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
                           >
                             編集
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteNote(n.id)}
-                            className="flex-1 text-center py-1.5 rounded-[8px] font-bold text-[11px] border bg-white whitespace-nowrap"
+                            className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
                             style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
                           >
                             {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
@@ -580,7 +580,7 @@ export default function GameDetailPage() {
                         setShowAddNote(false);
                         setNoteBody("");
                       }}
-                      className="flex-1 text-center py-2.5 rounded-[10px] font-bold text-[13px] border border-line text-ink-soft bg-white"
+                      className="flex-1 text-center py-2.5 rounded-lg font-bold text-[13px] border border-line text-ink-soft bg-white"
                     >
                       キャンセル
                     </button>
