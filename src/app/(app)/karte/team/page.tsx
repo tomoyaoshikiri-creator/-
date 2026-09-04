@@ -11,6 +11,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
@@ -458,20 +459,12 @@ export default function KarteTeamPage() {
       {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <Modal open={analysisOpen} onClose={() => setAnalysisOpen(false)} title="分析用データ抽出〈全体分〉">
           <FieldLabel>年度</FieldLabel>
-          <div className="relative inline-block mb-3">
-            <select
-              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-              value={analysisFiscalYear}
-              onChange={(e) => setAnalysisFiscalYear(Number(e.target.value))}
-            >
-              {FISCAL_YEAR_OPTIONS.map((y) => (
-                <option key={y} value={y}>
-                  {y}年度
-                </option>
-              ))}
-            </select>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-          </div>
+          <InlineSelect
+            className="mb-3"
+            value={String(analysisFiscalYear)}
+            onChange={(v) => setAnalysisFiscalYear(Number(v))}
+            options={FISCAL_YEAR_OPTIONS.map((y) => ({ value: String(y), label: `${y}年度` }))}
+          />
 
           <FieldLabel>追加で重視してほしい点(任意)</FieldLabel>
           <textarea

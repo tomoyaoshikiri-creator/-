@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
+import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -101,21 +102,14 @@ export default function KarteTeamWorkoutPage() {
     >
       <div className="flex items-center gap-2 mb-3.5 flex-wrap">
         {availableYears.length > 0 && (
-          <div className="relative inline-block">
-            <select
-              className="appearance-none bg-white border border-line rounded-lg pl-3 pr-8 py-1.5 text-[12.5px] font-bold text-ink"
-              value={fiscalYear === "all" ? "all" : String(fiscalYear)}
-              onChange={(e) => setFiscalYear(e.target.value === "all" ? "all" : Number(e.target.value))}
-            >
-              <option value="all">すべての年度</option>
-              {availableYears.map((y) => (
-                <option key={y} value={y}>
-                  {fiscalYearLabel(y)}
-                </option>
-              ))}
-            </select>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft absolute right-2.5 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none" />
-          </div>
+          <InlineSelect
+            value={fiscalYear === "all" ? "all" : String(fiscalYear)}
+            onChange={(v) => setFiscalYear(v === "all" ? "all" : Number(v))}
+            options={[
+              { value: "all", label: "すべての年度" },
+              ...availableYears.map((y) => ({ value: String(y), label: fiscalYearLabel(y) })),
+            ]}
+          />
         )}
         <button
           type="button"
