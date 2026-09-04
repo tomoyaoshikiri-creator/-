@@ -12,9 +12,10 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
   return (
     // 「アイコンを大きくすればSafe Area分の余白が目立たなくなる」という仮説は、
     // 同時に余白自体もenv(safe-area-inset-bottom)全量に増やしてしまったため
-    // 検証にならず、実際には「余白が増えた」という結果になり反証された。これまでの
-    // フィードバックの中で最も評価が良かった状態(icon17px/label7px、padding-bottomは
-    // 理論上の下限0)へ戻す。
+    // 検証にならず、実際には「余白が増えた」という結果になり反証された(この時の
+    // アイコンサイズはicon17px/label7px)。21px→26pxの範囲でフィードバックを受け
+    // 現在はicon23px/label9.5pxで調整中。padding-bottom(pb-0)やSafe Area関連の
+    // CSSには一切触れておらず、アイコン・文字のサイズのみを変更している。
     //
     // ホームインジケーター領域に色違いの帯が見える問題は、padding拡張・
     // position:fixed・document.bodyへのportal描画など複数の方式を実機の
@@ -34,18 +35,18 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
-        const className = `relative flex-1 min-w-0 text-center text-[7px] font-medium flex flex-col items-center gap-0.5 ${
+        const className = `relative flex-1 min-w-0 text-center text-[9.5px] font-medium flex flex-col items-center gap-1 ${
           isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         return (
           <GuardedLink key={tab} href={href} className={className}>
             {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
-            <span aria-hidden className="absolute -inset-y-[9px] inset-x-0" />
+            <span aria-hidden className="absolute -inset-y-[6px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[17px] h-[17px]" />
+              <Icon className="w-[23px] h-[23px]" />
               {badges[tab] && (
-                <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-danger border border-white" />
+                <span className="absolute -top-0.5 -right-0.5 w-[8.5px] h-[8.5px] rounded-full bg-danger border border-white" />
               )}
             </span>
             <span className="whitespace-nowrap leading-none">{TAB_LABELS[tab]}</span>
