@@ -37,10 +37,18 @@ function addDaysStr(dateStr: string, days: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// 各カードの縁取り色。安っぽい原色そのままではなく、白と混ぜて彩度を落とした
+// パステル寄りの色にすることで、複数カードが並んでも派手になりすぎないようにしている。
+// カードの内容に緩く対応させている(次の予定=sky、要対応=danger(既存の赤バーと揃える)、
+// 新着=green、今日のチーム情報/ショートカット=orange(ブランドの基調色、team_primaryに追従))。
+function cardAccent(token: "sky" | "danger" | "green" | "orange"): string {
+  return `color-mix(in srgb, var(--${token}) 35%, white)`;
+}
+
 // スケルトンと実カードでpadding・行高を揃え、読み込み完了時のレイアウトシフトを防ぐ。
-function CardSkeleton({ lines = 2 }: { lines?: number }) {
+function CardSkeleton({ lines = 2, borderColor }: { lines?: number; borderColor?: string }) {
   return (
-    <Card>
+    <Card style={borderColor ? { borderColor } : undefined}>
       <div className="animate-pulse space-y-2">
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="h-3.5 rounded bg-line" style={{ width: i === 0 ? "55%" : "85%" }} />
@@ -50,9 +58,9 @@ function CardSkeleton({ lines = 2 }: { lines?: number }) {
   );
 }
 
-function ErrorRetry({ onRetry }: { onRetry: () => void }) {
+function ErrorRetry({ onRetry, borderColor }: { onRetry: () => void; borderColor?: string }) {
   return (
-    <Card>
+    <Card style={borderColor ? { borderColor } : undefined}>
       <div className="flex items-center justify-between">
         <span className="text-[12.5px] text-ink-soft">読み込みに失敗しました</span>
         <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange flex-shrink-0">
@@ -350,7 +358,7 @@ export default function HomePage() {
       ? isWithinHoursSinceGameEnd(recentMatch.schedules.date, recentMatch.schedules.end_time, nowIso, 72)
       : false;
   const gameResultNode = showGameResult && recentMatch?.schedules && (
-    <Card>
+    <Card style={{ borderColor: cardAccent("green") }}>
       <CardHeading>直近の試合結果</CardHeading>
       <Link href="/game/results">
         <div className="flex items-center justify-between">
@@ -409,10 +417,10 @@ export default function HomePage() {
 
       {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
           カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+      {scheduleStatus === "loading" && <CardSkeleton lines={2} borderColor={cardAccent("sky")} />}
+      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} borderColor={cardAccent("sky")} />}
       {scheduleStatus === "success" && (
-        <Card>
+        <Card style={{ borderColor: cardAccent("sky") }}>
           <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
@@ -492,10 +500,10 @@ export default function HomePage() {
 
       {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
           ここは入口のみ。0件(success)の場合はカードごと非表示にする。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+      {scheduleStatus === "loading" && <CardSkeleton lines={3} borderColor={cardAccent("danger")} />}
+      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} borderColor={cardAccent("danger")} />}
       {scheduleStatus === "success" && actionItems.length > 0 && (
-        <Card>
+        <Card style={{ borderColor: cardAccent("danger") }}>
           <CardHeading variant="attn" count={actionItems.length}>
             要対応
           </CardHeading>
@@ -531,10 +539,10 @@ export default function HomePage() {
 
       {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
           ホームを開いただけでは既読にしない(既読化は各既存タブ側のmarkTabSeenのみで行う)。 */}
-      {digestStatus === "loading" && <CardSkeleton lines={3} />}
-      {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
+      {digestStatus === "loading" && <CardSkeleton lines={3} borderColor={cardAccent("green")} />}
+      {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} borderColor={cardAccent("green")} />}
       {digestStatus === "success" && (
-        <Card>
+        <Card style={{ borderColor: cardAccent("green") }}>
           <CardHeading>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
@@ -555,10 +563,10 @@ export default function HomePage() {
       )}
 
       {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ非表示。 */}
-      {birthdaysStatus === "loading" && <CardSkeleton lines={1} />}
-      {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
+      {birthdaysStatus === "loading" && <CardSkeleton lines={1} borderColor={cardAccent("orange")} />}
+      {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} borderColor={cardAccent("orange")} />}
       {birthdaysStatus === "success" && birthdays.length > 0 && (
-        <Card>
+        <Card style={{ borderColor: cardAccent("orange") }}>
           <CardHeading>今日のチーム情報</CardHeading>
           <div className="text-[12.5px]">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
         </Card>
@@ -567,7 +575,7 @@ export default function HomePage() {
       {/* 作成ショートカット: 指導者・管理者のみ。有効な行が1つも無ければカード自体を出さない
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
-        <Card>
+        <Card style={{ borderColor: cardAccent("orange") }}>
           <CardHeading>ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
@@ -589,8 +597,8 @@ export default function HomePage() {
       )}
 
       {/* 直近の試合結果(通常位置)。72時間以内の昇格表示と両方に出ることはない。 */}
-      {gameResultStatus === "loading" && <CardSkeleton lines={2} />}
-      {gameResultStatus === "error" && <ErrorRetry onRetry={loadGameResult} />}
+      {gameResultStatus === "loading" && <CardSkeleton lines={2} borderColor={cardAccent("green")} />}
+      {gameResultStatus === "error" && <ErrorRetry onRetry={loadGameResult} borderColor={cardAccent("green")} />}
       {!elevateGameResult && gameResultNode}
 
       {/* アップグレード導線: 現ロールが使い得るのに現プランでは使えない機能のうち1件だけを案内する。 */}
