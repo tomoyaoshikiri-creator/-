@@ -88,7 +88,7 @@ export function CurrentUserBadge() {
                   {canShowUserManagement && <MenuItem href="/users" label="ユーザー管理" onNavigate={close} />}
                   {canShowTeamSettings && (
                     <>
-                      <MenuItem href="/settings" label="チーム設定" onNavigate={close} />
+                      <MenuItem href="/settings/team" label="チーム設定" onNavigate={close} />
                       <MenuItem href="/settings/plan" label="プラン・お支払い" onNavigate={close} />
                     </>
                   )}
