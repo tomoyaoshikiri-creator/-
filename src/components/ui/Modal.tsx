@@ -60,7 +60,7 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
         // SubmitButton/SegButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
         // 薄い方は黒を混ぜず、白を混ぜて明るくする。
         background:
-          "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 75%, white) 100%)",
+          "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
         boxShadow: "0 10px 20px -6px color-mix(in srgb, var(--orange) 55%, transparent)",
       }}
     >
