@@ -45,10 +45,13 @@ function cardAccent(token: "sky" | "danger" | "green" | "orange"): string {
   return `color-mix(in srgb, var(--${token}) 35%, white)`;
 }
 
+// Cardのデフォルト(rounded-2xl)より少し角を立たせるため、全カード共通でこの半径に揃える。
+const CARD_RADIUS = "0.75rem";
+
 // スケルトンと実カードでpadding・行高を揃え、読み込み完了時のレイアウトシフトを防ぐ。
 function CardSkeleton({ lines = 2, borderColor }: { lines?: number; borderColor?: string }) {
   return (
-    <Card style={borderColor ? { borderColor } : undefined}>
+    <Card style={{ borderRadius: CARD_RADIUS, ...(borderColor && { borderColor }) }}>
       <div className="animate-pulse space-y-2">
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="h-3.5 rounded bg-line" style={{ width: i === 0 ? "55%" : "85%" }} />
@@ -60,7 +63,7 @@ function CardSkeleton({ lines = 2, borderColor }: { lines?: number; borderColor?
 
 function ErrorRetry({ onRetry, borderColor }: { onRetry: () => void; borderColor?: string }) {
   return (
-    <Card style={borderColor ? { borderColor } : undefined}>
+    <Card style={{ borderRadius: CARD_RADIUS, ...(borderColor && { borderColor }) }}>
       <div className="flex items-center justify-between">
         <span className="text-[12.5px] text-ink-soft">読み込みに失敗しました</span>
         <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange flex-shrink-0">
@@ -358,7 +361,7 @@ export default function HomePage() {
       ? isWithinHoursSinceGameEnd(recentMatch.schedules.date, recentMatch.schedules.end_time, nowIso, 72)
       : false;
   const gameResultNode = showGameResult && recentMatch?.schedules && (
-    <Card style={{ borderColor: cardAccent("green") }}>
+    <Card style={{ borderColor: cardAccent("green"), borderRadius: CARD_RADIUS }}>
       <CardHeading>直近の試合結果</CardHeading>
       <Link href="/game/results">
         <div className="flex items-center justify-between">
@@ -409,7 +412,7 @@ export default function HomePage() {
           役割を意図してアクセントカラー(--orange、チームごとの基調色)で縁取り・背景を
           薄く着色し、他のカードより一段目立つ見た目にしている。 */}
       {teamGoal && (
-        <div className="rounded-2xl border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
+        <div className="rounded-xl border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
           <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange mb-0.5">チーム目標</div>
           <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
         </div>
@@ -420,7 +423,7 @@ export default function HomePage() {
       {scheduleStatus === "loading" && <CardSkeleton lines={2} borderColor={cardAccent("sky")} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} borderColor={cardAccent("sky")} />}
       {scheduleStatus === "success" && (
-        <Card style={{ borderColor: cardAccent("sky") }}>
+        <Card style={{ borderColor: cardAccent("sky"), borderRadius: CARD_RADIUS }}>
           <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
@@ -503,7 +506,7 @@ export default function HomePage() {
       {scheduleStatus === "loading" && <CardSkeleton lines={3} borderColor={cardAccent("danger")} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} borderColor={cardAccent("danger")} />}
       {scheduleStatus === "success" && actionItems.length > 0 && (
-        <Card style={{ borderColor: cardAccent("danger") }}>
+        <Card style={{ borderColor: cardAccent("danger"), borderRadius: CARD_RADIUS }}>
           <CardHeading variant="attn" count={actionItems.length}>
             要対応
           </CardHeading>
@@ -542,7 +545,7 @@ export default function HomePage() {
       {digestStatus === "loading" && <CardSkeleton lines={3} borderColor={cardAccent("green")} />}
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} borderColor={cardAccent("green")} />}
       {digestStatus === "success" && (
-        <Card style={{ borderColor: cardAccent("green") }}>
+        <Card style={{ borderColor: cardAccent("green"), borderRadius: CARD_RADIUS }}>
           <CardHeading>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
@@ -566,7 +569,7 @@ export default function HomePage() {
       {birthdaysStatus === "loading" && <CardSkeleton lines={1} borderColor={cardAccent("orange")} />}
       {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} borderColor={cardAccent("orange")} />}
       {birthdaysStatus === "success" && birthdays.length > 0 && (
-        <Card style={{ borderColor: cardAccent("orange") }}>
+        <Card style={{ borderColor: cardAccent("orange"), borderRadius: CARD_RADIUS }}>
           <CardHeading>今日のチーム情報</CardHeading>
           <div className="text-[12.5px]">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
         </Card>
@@ -575,7 +578,7 @@ export default function HomePage() {
       {/* 作成ショートカット: 指導者・管理者のみ。有効な行が1つも無ければカード自体を出さない
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
-        <Card style={{ borderColor: cardAccent("orange") }}>
+        <Card style={{ borderColor: cardAccent("orange"), borderRadius: CARD_RADIUS }}>
           <CardHeading>ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
