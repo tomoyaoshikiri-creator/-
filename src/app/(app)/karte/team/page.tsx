@@ -16,7 +16,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
@@ -279,36 +279,6 @@ export default function KarteTeamPage() {
           </div>
         </Card>
       </Link>
-
-      {hasSportsTestAccess(plan) && (
-        <Link href="/karte/team/sports-test">
-          <Card className="cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-bold text-[15px]">スポーツテスト</div>
-                <div className="text-[11.5px] text-ink-soft mt-1">
-                  {isStaff ? "選手ごとのスポーツテスト結果" : "チーム平均のスポーツテスト結果"}
-                </div>
-              </div>
-              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-            </div>
-          </Card>
-        </Link>
-      )}
-
-      {hasSkillTestAccess(plan) && isStaff && (
-        <Link href="/karte/team/skill-tests">
-          <Card className="cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-bold text-[15px]">検定管理</div>
-                <div className="text-[11.5px] text-ink-soft mt-1">選手ごとの検定ランクを一括で管理</div>
-              </div>
-              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-            </div>
-          </Card>
-        </Link>
-      )}
 
       {isStaff && (
         <Link href="/karte/team/workout">

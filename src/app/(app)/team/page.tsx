@@ -8,7 +8,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasCoachNoteAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasCoachNoteAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
 // ナビ再設計v3の「チーム」hub。既存画面(選手一覧・カルテ・チーム日報・コーチ日報・
@@ -62,6 +62,11 @@ export default function TeamHubPage() {
             <HubRow href="/karte/team/sports-test" label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
           ) : (
             <LockedFeatureCard label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" requiredPlan="Max" />
+          )}
+          {hasSkillTestAccess(plan) ? (
+            <HubRow href="/karte/team/skill-tests" label="検定管理" description="選手ごとの検定ランクを一括で管理" />
+          ) : (
+            <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="Max" />
           )}
         </>
       )}
