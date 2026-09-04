@@ -18,7 +18,7 @@ export function SegButton({ active = false, variant = "default", className = "",
           ? {
               // SubmitButtonと同じ135deg・濃い色→薄い色のグラデーション。
               background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
+                "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 18%) 0%, var(--orange) 100%)",
               ...style,
             }
           : style
@@ -60,7 +60,7 @@ export function SubmitButton({
       style={{
         // 濃い色→薄い色(左上が濃く、右下にいくほど薄くなる)の見本。135degはヘッダーの105degより
         // 対角線に近い、より急な角度。
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 18%) 0%, var(--orange) 100%)",
         ...style,
       }}
       {...props}
