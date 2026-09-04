@@ -5,16 +5,24 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "default" | "small";
 };
 
-export function SegButton({ active = false, variant = "default", className = "", ...props }: Props) {
+export function SegButton({ active = false, variant = "default", className = "", style, ...props }: Props) {
   const size = variant === "small" ? "px-3 py-1.5 text-[11px]" : "py-2 text-[12.5px]";
   return (
     <button
       type="button"
       className={`flex-1 text-center rounded-lg font-bold border transition-colors ${size} ${
-        active
-          ? "bg-orange text-white border-orange"
-          : "bg-paper text-ink-soft border-line"
+        active ? "text-white border-orange" : "bg-paper text-ink-soft border-line"
       } ${className}`}
+      style={
+        active
+          ? {
+              // SubmitButtonと同じ135deg・濃い色→薄い色のグラデーション。
+              background:
+                "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
+              ...style,
+            }
+          : style
+      }
       {...props}
     />
   );

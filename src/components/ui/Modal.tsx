@@ -54,9 +54,12 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="absolute right-4 bottom-4 w-10 h-10 rounded-full bg-orange flex items-center justify-center text-xl font-bold z-10"
+      className="absolute right-4 bottom-4 w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold z-10"
       style={{
         color: "var(--on-team-primary)",
+        // SubmitButton/SegButtonと同じ135deg・濃い色→薄い色のグラデーション。
+        background:
+          "linear-gradient(135deg, color-mix(in srgb, var(--orange) 100%, black 6%) 0%, var(--orange) 100%)",
         boxShadow: "0 10px 20px -6px color-mix(in srgb, var(--orange) 55%, transparent)",
       }}
     >
