@@ -20,17 +20,18 @@ const robotoMono = Roboto_Mono({
   weight: ["500", "700"],
 });
 
-// 【比較検証用・最終試行】viewport-fit=coverを復活させ、Headerがステータスバー
-// 領域までシームレスに伸びる状態へ戻す。Bottom Navigation側はTabBar.tsxの
-// padding-bottomを理論上の下限(0)にすることで、可能な限り余白を詰める
-// (icon/labelサイズは改修前のまま変更しない)。
+// 【実験】タブバーがホームインジケーター手前(約68pt)で止まる問題について、
+// padding拡張・position:fixed・document.bodyへのportal・manifest.display変更の
+// 4方式を実機のピクセル解析(マゼンタ等の判別可能な色での検証を含む)で確認したが、
+// いずれも全く同じ位置で描画が止まった。viewport-fit=cover(Headerがステータスバー
+// 裏までグラデーションで伸びる、フチなしデザイン)とstatusBarStyle:
+// black-translucentの組み合わせが、iOS側でこの約68pt帯を予約させている本命の
+// 原因という仮説のもと、この2つをやめてOS標準のステータスバー表示に戻す。
 // Next.jsのMetadata API(appleWebApp.capable)は標準の"mobile-web-app-capable"
 // (apple-プレフィックス無し)しか出力せず、旧来の"apple-mobile-web-app-capable"
 // (apple-プレフィックス付き)は出力しない。iOSのホーム画面追加(standalone)は
-// 依然としてapple-プレフィックス付きの方を見ており、これが無いと
-// viewport-fit=cover / apple-mobile-web-app-status-bar-styleを指定していても
-// env(safe-area-inset-*)が正しく機能しない(常に0扱いになる)ケースがある。
-// otherフィールドで明示的に追加する。
+// 依然としてapple-プレフィックス付きの方を見ているため、otherフィールドで
+// 明示的に追加している(こちらは実験対象ではなく維持)。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "CIRCLE LINES",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
@@ -48,7 +49,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
