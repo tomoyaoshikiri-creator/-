@@ -405,33 +405,43 @@ export default function HomePage() {
           {nextSchedule ? (
             <>
               <Link href={`/schedule/${nextSchedule.id}`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-[14px] font-bold truncate">{nextSchedule.title}</div>
-                    <div className="text-[11.5px] text-ink-soft mt-0.5">{scheduleMeta(nextSchedule)}</div>
                     {nextSchedule.attendance_deadline && (
                       <div className="text-[10.5px] text-ink-soft mt-0.5">
                         回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
                       </div>
                     )}
                   </div>
-                  <span
-                    className={`flex-shrink-0 text-[10.5px] font-bold px-2 py-1 rounded-full ${
-                      nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
-                    }`}
-                  >
-                    {nextScheduleNeedsAction ? "要確認" : "回答済み"}
-                  </span>
+                  <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                    <span
+                      className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
+                        nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
+                      }`}
+                    >
+                      {nextScheduleNeedsAction ? "要確認" : "回答済み"}
+                    </span>
+                    <div className="text-[11.5px] text-ink-soft text-right">{scheduleMeta(nextSchedule)}</div>
+                  </div>
                 </div>
               </Link>
               {compressedSchedules.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-line space-y-1.5">
-                  {compressedSchedules.map((s) => (
-                    <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between">
-                      <span className="text-[11.5px] font-bold truncate">{s.title}</span>
-                      <span className="text-[10.5px] text-ink-soft flex-shrink-0 ml-2">{formatDateLabel(s.date)}</span>
-                    </Link>
-                  ))}
+                  {compressedSchedules.map((s) => {
+                    let timeLabel = "";
+                    if (s.start_time && s.end_time) timeLabel = `${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
+                    else if (s.start_time) timeLabel = `${s.start_time.slice(0, 5)}〜`;
+                    return (
+                      <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between gap-2">
+                        <span className="text-[11.5px] font-bold truncate">{s.title}</span>
+                        <span className="flex-shrink-0 flex items-center gap-1.5 text-[10.5px] text-ink-soft tabular-nums">
+                          <span className="min-w-[44px] text-right">{formatDateLabel(s.date)}</span>
+                          <span className="min-w-[80px] text-right">{timeLabel || "時間未定"}</span>
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
               {myPlayers.length > 0 && (
