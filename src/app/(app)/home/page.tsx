@@ -45,9 +45,7 @@ function addDaysStr(dateStr: string, days: number): string {
 const CARD_BORDER = "color-mix(in srgb, var(--sky) 35%, white)";
 const CARD_BAR = "var(--sky)";
 
-// Cardのデフォルト(rounded-2xl)より少し角を立たせるため、全カード共通でこの半径に揃える。
-const CARD_RADIUS = "0.5rem";
-const CARD_STYLE = { borderColor: CARD_BORDER, borderRadius: CARD_RADIUS };
+const CARD_STYLE = { borderColor: CARD_BORDER };
 
 // スケルトンと実カードでpadding・行高を揃え、読み込み完了時のレイアウトシフトを防ぐ。
 function CardSkeleton({ lines = 2 }: { lines?: number }) {
@@ -75,14 +73,23 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-// ホーム各カードの見出し。左の縦バーは全カード共通(CARD_BAR)で、カードの色分けはしない。
-// 件数(「要対応」専用)は状態(件数)を表すためのもので、見出し文字自体は他カードと同じ
-// text-heading色のまま(文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
+// ホーム各カードの見出し。左の縦バーは全カード共通でCARD_BARだが、「要対応」だけは
+// 緊急度を示すため赤(--danger)にする(barColorで個別に上書き)。件数(「要対応」専用)は
+// 状態(件数)を表すためのもので、見出し文字自体は他カードと同じtext-heading色のまま
+// (文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
 // Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
-function CardHeading({ children, count }: { children: React.ReactNode; count?: number }) {
+function CardHeading({
+  children,
+  count,
+  barColor = CARD_BAR,
+}: {
+  children: React.ReactNode;
+  count?: number;
+  barColor?: string;
+}) {
   return (
     <div className="flex items-center mb-3">
-      <span aria-hidden className="w-[3px] h-[20px] rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: CARD_BAR }} />
+      <span aria-hidden className="w-[3px] h-[20px] rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: barColor }} />
       <span className="font-mono font-bold text-[15px] tracking-[0.05em] text-heading">
         {children}
         {count !== undefined && (
@@ -496,7 +503,7 @@ export default function HomePage() {
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
       {scheduleStatus === "success" && actionItems.length > 0 && (
         <Card style={CARD_STYLE}>
-          <CardHeading count={actionItems.length}>
+          <CardHeading count={actionItems.length} barColor="var(--danger)">
             要対応
           </CardHeading>
           {visibleActionItems.map((item, i) => (
