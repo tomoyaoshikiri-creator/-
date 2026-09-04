@@ -116,7 +116,10 @@ export default function GameListPage() {
           const isPast = g.date < todayDateStr();
           return (
             <Link key={g.id} href={`/game/${g.id}`}>
-              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "var(--paper)" } : undefined}>
+              {/* --paperがスキン統一(色調整)で白(bg-white、Cardのデフォルト背景)とほぼ
+                  見分けが付かない値になり、済んだ試合の色分けが実質見えなくなっていたため、
+                  はっきり差が出る--lineに変更した。 */}
+              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "var(--line)" } : undefined}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-[14.5px]">
