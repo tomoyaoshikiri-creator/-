@@ -13,7 +13,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // 「アイコンを大きくすればSafe Area分の余白が目立たなくなる」という仮説は、
     // 同時に余白自体もenv(safe-area-inset-bottom)全量に増やしてしまったため
     // 検証にならず、実際には「余白が増えた」という結果になり反証された(この時の
-    // アイコンサイズはicon17px/label7px)。今回のサイズ変更(icon21px/label9px)は
+    // アイコンサイズはicon17px/label7px)。今回のサイズ変更(icon26px/label10px)は
     // padding-bottom(pb-0)やSafe Area関連のCSSには一切触れておらず、アイコン・
     // 文字のサイズのみを大きくしたもの。
     //
@@ -35,18 +35,18 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
-        const className = `relative flex-1 min-w-0 text-center text-[9px] font-medium flex flex-col items-center gap-1 ${
+        const className = `relative flex-1 min-w-0 text-center text-[10px] font-medium flex flex-col items-center gap-1 ${
           isActive ? "text-orange font-bold" : "text-ink-soft"
         }`;
         return (
           <GuardedLink key={tab} href={href} className={className}>
             {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
-            <span aria-hidden className="absolute -inset-y-[7px] inset-x-0" />
+            <span aria-hidden className="absolute -inset-y-[5px] inset-x-0" />
             <span className="relative inline-flex">
-              <Icon className="w-[21px] h-[21px]" />
+              <Icon className="w-[26px] h-[26px]" />
               {badges[tab] && (
-                <span className="absolute -top-0.5 -right-0.5 w-[8px] h-[8px] rounded-full bg-danger border border-white" />
+                <span className="absolute -top-0.5 -right-0.5 w-[9px] h-[9px] rounded-full bg-danger border border-white" />
               )}
             </span>
             <span className="whitespace-nowrap leading-none">{TAB_LABELS[tab]}</span>
