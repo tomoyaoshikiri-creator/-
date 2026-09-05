@@ -114,6 +114,23 @@ describe("computeAttendanceActionItems", () => {
     expect(items[1]).toMatchObject({ scheduleId: "s1", overdue: false });
   });
 
+  it("過去の予定(スケジュール日が今日より前)は含めない", () => {
+    const items = computeAttendanceActionItems({
+      todayStr: "2026-09-10",
+      role: "一般",
+      userId: "guardian1",
+      schedules: [
+        schedule({ id: "past", date: "2026-09-05" }),
+        schedule({ id: "today", date: "2026-09-10" }),
+        schedule({ id: "future", date: "2026-09-15" }),
+      ],
+      myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
+      attendances: [],
+      requireUnlinkedGuardianAttendance: true,
+    });
+    expect(items.map((i) => i.scheduleId).sort()).toEqual(["future", "today"]);
+  });
+
   it("出席で車出しが必要な予定なのに未回答ならcarSetup項目になる", () => {
     const items = computeAttendanceActionItems({
       todayStr: "2026-09-05",
