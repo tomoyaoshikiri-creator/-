@@ -46,7 +46,7 @@ export function NewNoticeModal({
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState<NoticeAudience>("全員");
   const [targetGradeMin, setTargetGradeMin] = useState("");
-  const [files, setFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
+  const [files, setFiles] = useState<Partial<Record<AttachmentKind, File[]>>>({});
   const [saving, setSaving] = useState(false);
 
   useUnsavedChangesGuard(
@@ -55,7 +55,7 @@ export function NewNoticeModal({
         body.trim() !== "" ||
         audience !== "全員" ||
         targetGradeMin !== "" ||
-        Object.keys(files).length > 0),
+        Object.values(files).some((list) => (list?.length ?? 0) > 0)),
   );
 
   function reset() {
@@ -66,13 +66,20 @@ export function NewNoticeModal({
     setFiles({});
   }
 
-  function pickFile(kind: AttachmentKind, file: File | undefined) {
-    setFiles((prev) => {
-      const next = { ...prev };
-      if (file) next[kind] = file;
-      else delete next[kind];
-      return next;
-    });
+  function addFiles(kind: AttachmentKind, fileList: FileList | null) {
+    if (!fileList) return;
+    // 一部端末でArray.from(FileList)がFileListの反復に失敗し空配列になる事象への対策として、
+    // インデックスで1件ずつ取り出す(FileList.item()経由)方式にしている。
+    const picked: File[] = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList.item(i);
+      if (f) picked.push(f);
+    }
+    setFiles((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), ...picked] }));
+  }
+
+  function removeFile(kind: AttachmentKind, index: number) {
+    setFiles((prev) => ({ ...prev, [kind]: (prev[kind] ?? []).filter((_, i) => i !== index) }));
   }
 
   async function handleSubmit() {
@@ -90,11 +97,13 @@ export function NewNoticeModal({
 
     // 1) 全添付をStorageへアップロードしきってから本体行を作る(1件でも失敗したら
     // 本体行自体を作らず、それまでにアップロード済みの分だけ後始末する)。
-    const entries = Object.entries(files) as [AttachmentKind, File][];
+    const entries = (Object.entries(files) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
+      list.map((file) => [kind, file] as [AttachmentKind, File]),
+    );
     const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
     for (const [kind, file] of entries) {
       const uploadFile = await resizeImageFile(file);
-      const path = `${teamId}/${noticeId}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
+      const path = `${teamId}/${noticeId}/${attachmentKindSlug(kind)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
       if (uploadError) {
         const cleanupOk = await cleanupUploadedObjects(
@@ -230,28 +239,45 @@ export function NewNoticeModal({
             <label
               key={kind}
               className={`flex-none px-3 py-2 rounded-lg text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
-                files[kind] ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
+                (files[kind]?.length ?? 0) > 0 ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
               }`}
             >
               {emoji} {kind}
+              {(files[kind]?.length ?? 0) > 0 ? `(${files[kind]!.length})` : ""}
               <input
                 type="file"
                 accept="image/*,application/pdf"
+                multiple
                 className="hidden"
-                onChange={(e) => pickFile(kind, e.target.files?.[0])}
+                onChange={(e) => {
+                  addFiles(kind, e.target.files);
+                  e.target.value = "";
+                }}
               />
             </label>
           ))}
         </div>
-        <div className="mt-1.5">
-          {Object.entries(files).map(([kind, file]) => (
-            <div key={kind} className="text-xs text-ink-soft">
-              {kind}: {file.name}
-            </div>
-          ))}
+        <div className="mt-1.5 space-y-1">
+          {(Object.entries(files) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
+            list.map((file, i) => (
+              <div key={`${kind}-${i}`} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
+                <span className="truncate">
+                  {kind}: {file.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeFile(kind, i)}
+                  className="flex-none font-bold"
+                  style={{ color: "var(--danger)" }}
+                >
+                  削除
+                </button>
+              </div>
+            )),
+          )}
         </div>
         <div className="text-xs text-ink-soft mt-1.5">
-          ※タップすると端末の「カメラロール」「ファイル」などから選べます
+          ※タップすると端末の「カメラロール」「ファイル」などから選べます(複数選択可)
         </div>
       </div>
 

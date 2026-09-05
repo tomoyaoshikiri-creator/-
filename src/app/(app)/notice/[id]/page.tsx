@@ -57,7 +57,7 @@ export default function NoticeDetailPage() {
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState<NoticeAudience>("全員");
   const [targetGradeMin, setTargetGradeMin] = useState("");
-  const [newFiles, setNewFiles] = useState<Partial<Record<AttachmentKind, File>>>({});
+  const [newFiles, setNewFiles] = useState<Partial<Record<AttachmentKind, File[]>>>({});
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -70,7 +70,7 @@ export default function NoticeDetailPage() {
         body !== (notice.body ?? "") ||
         audience !== notice.audience ||
         targetGradeMin !== (notice.target_grade_min ?? "") ||
-        Object.keys(newFiles).length > 0),
+        Object.values(newFiles).some((list) => (list?.length ?? 0) > 0)),
   );
 
   const load = useCallback(async () => {
@@ -146,13 +146,18 @@ export default function NoticeDetailPage() {
     setEditing(true);
   }
 
-  function pickFile(kind: AttachmentKind, file: File | undefined) {
-    setNewFiles((prev) => {
-      const next = { ...prev };
-      if (file) next[kind] = file;
-      else delete next[kind];
-      return next;
-    });
+  function addNewFiles(kind: AttachmentKind, fileList: FileList | null) {
+    if (!fileList) return;
+    const picked: File[] = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList.item(i);
+      if (f) picked.push(f);
+    }
+    setNewFiles((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), ...picked] }));
+  }
+
+  function removeNewFile(kind: AttachmentKind, index: number) {
+    setNewFiles((prev) => ({ ...prev, [kind]: (prev[kind] ?? []).filter((_, i) => i !== index) }));
   }
 
   async function handleRemoveAttachment(attachment: AttachmentWithUrl) {
@@ -206,14 +211,16 @@ export default function NoticeDetailPage() {
     // お知らせ本体の更新は上記で既に確定している(ロールバックしない)。
     // 今回追加しようとした添付だけを対象に、1件でも失敗したら今回追加分全体を取り消す
     // (既存のお知らせ本体・既存添付には一切影響を与えない)。
-    const entries = Object.entries(newFiles) as [AttachmentKind, File][];
+    const entries = (Object.entries(newFiles) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
+      list.map((file) => [kind, file] as [AttachmentKind, File]),
+    );
     const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
     const insertedAttachmentIds: string[] = [];
     let failureMessage: string | null = null;
 
     for (const [kind, file] of entries) {
       const uploadFile = await resizeImageFile(file);
-      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}.${safeExt(uploadFile.name)}`;
+      const path = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
       if (uploadError) {
         failureMessage = `${kind}のアップロードに失敗しました: ${uploadError.message}`;
@@ -381,26 +388,44 @@ export default function NoticeDetailPage() {
                   <label
                     key={kind}
                     className={`flex-none px-3 py-2 rounded-lg text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
-                      newFiles[kind] ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
+                      (newFiles[kind]?.length ?? 0) > 0 ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
                     }`}
                   >
                     {emoji} {kind}
+                    {(newFiles[kind]?.length ?? 0) > 0 ? `(${newFiles[kind]!.length})` : ""}
                     <input
                       type="file"
                       accept="image/*,application/pdf"
+                      multiple
                       className="hidden"
-                      onChange={(e) => pickFile(kind, e.target.files?.[0])}
+                      onChange={(e) => {
+                        addNewFiles(kind, e.target.files);
+                        e.target.value = "";
+                      }}
                     />
                   </label>
                 ))}
               </div>
-              <div className="mt-1.5">
-                {Object.entries(newFiles).map(([kind, file]) => (
-                  <div key={kind} className="text-xs text-ink-soft">
-                    {kind}: {file.name}
-                  </div>
-                ))}
+              <div className="mt-1.5 space-y-1">
+                {(Object.entries(newFiles) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
+                  list.map((file, i) => (
+                    <div key={`${kind}-${i}`} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
+                      <span className="truncate">
+                        {kind}: {file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeNewFile(kind, i)}
+                        className="flex-none font-bold"
+                        style={{ color: "var(--danger)" }}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  )),
+                )}
               </div>
+              <div className="text-xs text-ink-soft mt-1.5">複数選択できます</div>
             </div>
 
             <SubmitButton onClick={handleSave} disabled={saving}>
