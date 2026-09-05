@@ -150,10 +150,38 @@ export default function UsersPage() {
     load();
   }
 
-  function copyInviteUrl(token: string) {
+  // navigator.clipboard.writeText()は非対応ブラウザ・セキュアコンテキスト外・iOSの
+  // ホーム画面追加アプリ(PWA)など一部環境で使えない/黙って失敗することがある。
+  // 以前はエラーを一切見ずに常に「コピーしました」と表示していたため、実際には
+  // 何もコピーされていないのに成功したように見えるのが「コピーできない」不具合の原因
+  // だった。ここでは実際に成功した場合のみ成功トーストを出し、失敗時は非対応環境向けの
+  // execCommand("copy")フォールバックを試し、それも失敗したら手動コピーを促す。
+  async function copyInviteUrl(token: string) {
     const url = `${origin}/invite/${token}`;
-    navigator.clipboard?.writeText(url);
-    toast("リンクをコピーしました");
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast("リンクをコピーしました");
+        return;
+      } catch {
+        // フォールバックへ続行
+      }
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = url;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch {
+      copied = false;
+    }
+    document.body.removeChild(textarea);
+    toast(copied ? "リンクをコピーしました" : "コピーに失敗しました。上の欄を長押しして手動でコピーしてください");
   }
 
   async function handleRevoke(id: string) {
