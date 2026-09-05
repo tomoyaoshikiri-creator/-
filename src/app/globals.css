@@ -111,6 +111,11 @@
     "Hiragino Kaku Gothic ProN", "Yu Gothic Medium", "Yu Gothic", sans-serif;
   --font-display: var(--font-sans);
   --font-mono: var(--font-roboto-mono);
+
+  /* アプリ全体の角丸(rounded-lg)を6pxに統一。Tailwindのデフォルトは8pxだが、ここを
+     上書きするだけでrounded-lgを使っている全箇所(カード・ボタン・入力欄など)に
+     一括で反映される(個別ファイルの変更は不要)。 */
+  --radius-lg: 6px;
 }
 
 html,
