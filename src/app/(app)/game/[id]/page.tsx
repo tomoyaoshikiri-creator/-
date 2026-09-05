@@ -15,6 +15,8 @@ import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
+import { resizeImageFile } from "@/lib/resizeImage";
+import { isImageFile, safeExt } from "@/lib/storagePath";
 import { formatDateLabel, scheduleMeta } from "@/lib/format";
 import type { GameMatch, GameMatchNote, GameMatchNoteReaction, ReactionType, Schedule } from "@/lib/database.types";
 
@@ -37,6 +39,9 @@ export default function GameDetailPage() {
   const [teamScore, setTeamScore] = useState("");
   const [opponentScore, setOpponentScore] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [scorePhotoPath, setScorePhotoPath] = useState<string | null>(null);
+  const [scorePhotoUrl, setScorePhotoUrl] = useState<string | null>(null);
+  const [uploadingScorePhoto, setUploadingScorePhoto] = useState(false);
   const [savingMatch, setSavingMatch] = useState(false);
   const [deletingMatch, setDeletingMatch] = useState(false);
   const [deleteMatchConfirmId, setDeleteMatchConfirmId] = useState<string | null>(null);
@@ -107,7 +112,21 @@ export default function GameDetailPage() {
     setTeamScore(m?.team_score != null ? String(m.team_score) : "");
     setOpponentScore(m?.opponent_score != null ? String(m.opponent_score) : "");
     setVideoUrl(m?.video_url ?? "");
+    setScorePhotoPath(m?.score_photo_path ?? null);
   }, [selectedMatchId, matches]);
+
+  // score_photo_pathはgame-score-photosバケット(非公開)のキーなので、表示のたびに署名付きURLを発行する。
+  useEffect(() => {
+    if (!scorePhotoPath) {
+      setScorePhotoUrl(null);
+      return;
+    }
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.storage.from("game-score-photos").createSignedUrl(scorePhotoPath, 60 * 60);
+      setScorePhotoUrl(data?.signedUrl ?? null);
+    })();
+  }, [scorePhotoPath]);
 
   useEffect(() => {
     if (!canRecordGames(role)) router.replace("/game/results");
@@ -312,6 +331,54 @@ export default function GameDetailPage() {
     toast("対戦結果を保存しました");
   }
 
+  async function handleScorePhotoChange(file: File | undefined) {
+    if (!file || !selectedMatchId) return;
+    if (/\.(heic|heif)$/i.test(file.name)) {
+      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      return;
+    }
+    setUploadingScorePhoto(true);
+    const supabase = createClient();
+    const uploadFile = await resizeImageFile(file);
+    const path = `${teamId}/${selectedMatchId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
+    const { error: uploadError } = await supabase.storage.from("game-score-photos").upload(path, uploadFile);
+    if (uploadError) {
+      setUploadingScorePhoto(false);
+      toast(`アップロードに失敗しました: ${uploadError.message}`);
+      return;
+    }
+    const { error } = await supabase.from("game_matches").update({ score_photo_path: path }).eq("id", selectedMatchId);
+    setUploadingScorePhoto(false);
+    if (error) {
+      toast(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    setScorePhotoPath(path);
+    setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: path } : m)));
+    toast("スコア表を登録しました");
+  }
+
+  async function handleScorePhotoRemove() {
+    if (!selectedMatchId || !scorePhotoPath) return;
+    setUploadingScorePhoto(true);
+    const supabase = createClient();
+    const { error: removeError } = await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
+    if (removeError) {
+      setUploadingScorePhoto(false);
+      toast(`削除に失敗しました: ${removeError.message}`);
+      return;
+    }
+    const { error } = await supabase.from("game_matches").update({ score_photo_path: null }).eq("id", selectedMatchId);
+    setUploadingScorePhoto(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    setScorePhotoPath(null);
+    setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: null } : m)));
+    toast("スコア表を削除しました");
+  }
+
   async function handleDeleteMatch() {
     if (!selectedMatchId) return;
     if (deleteMatchConfirmId !== selectedMatchId) {
@@ -470,6 +537,59 @@ export default function GameDetailPage() {
                     onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="例:https://www.youtube.com/playlist?list=..."
                   />
+                </div>
+
+                <div className="mt-3">
+                  <FieldLabel>スコア表</FieldLabel>
+                  {scorePhotoUrl ? (
+                    isImageFile(scorePhotoPath ?? "") ? (
+                      <a href={scorePhotoUrl} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={scorePhotoUrl}
+                          alt="スコア表"
+                          className="w-full rounded-lg border border-line object-contain"
+                        />
+                      </a>
+                    ) : (
+                      <a
+                        href={scorePhotoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-orange font-bold text-xs"
+                      >
+                        📎 スコア表を開く
+                      </a>
+                    )
+                  ) : (
+                    <div className="text-xs text-ink-soft">まだ登録されていません</div>
+                  )}
+                  <div className="flex gap-2 mt-1.5">
+                    <label className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
+                      {uploadingScorePhoto ? "処理中…" : scorePhotoPath ? "差し替える" : "写真・ファイルを選ぶ"}
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        disabled={uploadingScorePhoto}
+                        onChange={(e) => {
+                          handleScorePhotoChange(e.target.files?.[0]);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {scorePhotoPath && (
+                      <button
+                        type="button"
+                        onClick={handleScorePhotoRemove}
+                        disabled={uploadingScorePhoto}
+                        className="px-3 py-2 rounded-lg text-[12.5px] font-bold border bg-white disabled:opacity-50"
+                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      >
+                        削除
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <SubmitButton onClick={handleSaveMatch} disabled={savingMatch}>
