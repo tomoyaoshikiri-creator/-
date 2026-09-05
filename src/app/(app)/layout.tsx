@@ -44,7 +44,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     supabase.rpc("list_my_team_memberships"),
     supabase
       .from("teams")
-      .select("name, theme_primary, theme_accent, logo_path, plan, sport, category, team_goal, deletion_requested_at")
+      .select(
+        "name, theme_primary, theme_accent, logo_path, plan, sport, category, team_goal, require_unlinked_guardian_attendance, deletion_requested_at",
+      )
       .eq("id", bootstrap.team_id!)
       .single<{
         name: string;
@@ -55,6 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         sport: SessionInfo["sport"];
         category: SessionInfo["category"];
         team_goal: string | null;
+        require_unlinked_guardian_attendance: boolean;
         deletion_requested_at: string | null;
       }>(),
     supabase.from("profiles").select("id, name").eq("id", session.user.id).single<{ id: string; name: string }>(),
@@ -110,6 +113,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           sport: team?.sport ?? "ミニバスケットボール",
           category: team?.category ?? "小学生",
           teamGoal: team?.team_goal ?? null,
+          requireUnlinkedGuardianAttendance: team?.require_unlinked_guardian_attendance ?? true,
         }}
       >
         <ToastProvider>
