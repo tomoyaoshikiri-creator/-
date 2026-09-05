@@ -63,18 +63,25 @@ export default function TeamHubPage() {
 
       <SectionLabel>選手・成長</SectionLabel>
       <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" />
+      {isStaff &&
+        (hasSportsTestAccess(plan) ? (
+          <HubRow href="/karte/team/sports-test" label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
+        ) : (
+          <LockedFeatureCard label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" requiredPlan="Max" />
+        ))}
+      {/* 検定管理は一般・運営にも開放している(見られるのは自分に紐づく選手の分のみ、
+          スタッフは全選手を編集可能)ため、isStaffで囲わずロールを問わず表示する。 */}
+      {hasSkillTestAccess(plan) ? (
+        <HubRow
+          href="/karte/team/skill-tests"
+          label="検定管理"
+          description={isStaff ? "選手ごとの検定ランクを一括で管理" : "紐づく選手の検定ランクを見る"}
+        />
+      ) : (
+        <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="Max" />
+      )}
       {isStaff && (
         <>
-          {hasSportsTestAccess(plan) ? (
-            <HubRow href="/karte/team/sports-test" label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
-          ) : (
-            <LockedFeatureCard label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" requiredPlan="Max" />
-          )}
-          {hasSkillTestAccess(plan) ? (
-            <HubRow href="/karte/team/skill-tests" label="検定管理" description="選手ごとの検定ランクを一括で管理" />
-          ) : (
-            <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="Max" />
-          )}
           <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
           <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
         </>
