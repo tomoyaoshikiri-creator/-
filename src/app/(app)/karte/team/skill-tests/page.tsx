@@ -19,13 +19,13 @@ import type { Player, PlayerSkillTestProgress, SkillTest } from "@/lib/database.
 
 export default function KarteTeamSkillTestsPage() {
   const router = useRouter();
-  const { role, teamId, plan } = useSession();
+  const { role, teamId, plan, userId } = useSession();
   const toast = useToast();
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
-    if (!hasSkillTestAccess(plan) || !isStaff) router.replace("/karte/team");
-  }, [plan, isStaff, router]);
+    if (!hasSkillTestAccess(plan)) router.replace("/karte/team");
+  }, [plan, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [tests, setTests] = useState<SkillTest[]>([]);
@@ -43,24 +43,32 @@ export default function KarteTeamSkillTestsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: t }] = await Promise.all([
+    const [{ data: p }, { data: t }, { data: links }] = await Promise.all([
       supabase.from("players").select("*"),
       supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
+      // 一般・運営は自分に紐づく選手の分しか見られない(player_skill_test_progressの
+      // RLSと同じ方針)。playersテーブル自体はRLS上チーム全員分が見えてしまうため、
+      // 選手一覧はここでクライアント側から絞り込む。
+      isStaff ? Promise.resolve({ data: null }) : supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
     ]);
-    const activePlayers = sortPlayers((p ?? []).filter((row) => row.status !== "OB・OG"));
+    let activePlayers = sortPlayers((p ?? []).filter((row) => row.status !== "OB・OG"));
+    if (!isStaff) {
+      const linkedIds = new Set((links ?? []).map((l) => l.player_id));
+      activePlayers = activePlayers.filter((row) => linkedIds.has(row.id));
+    }
     setPlayers(activePlayers);
     setTests(t ?? []);
     setSelectedTestId((cur) => cur ?? (t && t.length > 0 ? t[0].id : null));
     setLoading(false);
-  }, []);
+  }, [isStaff, userId]);
 
   useEffect(() => {
-    if (!hasSkillTestAccess(plan) || !isStaff) return;
+    if (!hasSkillTestAccess(plan)) return;
     load();
-  }, [load, plan, isStaff]);
+  }, [load, plan]);
 
   useEffect(() => {
-    if (!hasSkillTestAccess(plan) || !isStaff || !selectedTestId) {
+    if (!hasSkillTestAccess(plan) || !selectedTestId) {
       setProgress([]);
       return;
     }
@@ -73,7 +81,7 @@ export default function KarteTeamSkillTestsPage() {
         .order("created_at", { ascending: false });
       setProgress(data ?? []);
     })();
-  }, [selectedTestId, plan, isStaff]);
+  }, [selectedTestId, plan]);
 
   const selectedTest = tests.find((t) => t.id === selectedTestId) ?? null;
   const levels = selectedTest ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count) : [];
@@ -143,7 +151,7 @@ export default function KarteTeamSkillTestsPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="検定" variant="detail" backHref="/karte/team" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="検定" variant="detail" backHref="/karte/team" />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : tests.length === 0 ? (
@@ -161,7 +169,13 @@ export default function KarteTeamSkillTestsPage() {
         </div>
       )}
 
-      {!loading && selectedTest && (
+      {!loading && selectedTest && players.length === 0 && (
+        <Card>
+          <EmptyState>{isStaff ? "選手が登録されていません" : "紐づく選手が登録されていません"}</EmptyState>
+        </Card>
+      )}
+
+      {!loading && selectedTest && players.length > 0 && (
         <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
@@ -185,19 +199,25 @@ export default function KarteTeamSkillTestsPage() {
                       </Link>
                     </td>
                     <td className="px-2.5 py-1.5 border-b border-line last:border-b-0">
-                      <select
-                        className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
-                        value={current ? String(current.level_index) : ""}
-                        disabled={savingPlayerId === p.id}
-                        onChange={(e) => handleChangeLevel(p.id, e.target.value)}
-                      >
-                        <option value="">未設定</option>
-                        {levels.map((label, idx) => (
-                          <option key={idx} value={idx}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                      {isStaff ? (
+                        <select
+                          className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
+                          value={current ? String(current.level_index) : ""}
+                          disabled={savingPlayerId === p.id}
+                          onChange={(e) => handleChangeLevel(p.id, e.target.value)}
+                        >
+                          <option value="">未設定</option>
+                          {levels.map((label, idx) => (
+                            <option key={idx} value={idx}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="font-bold text-[12px] text-ink">
+                          {current ? levels[current.level_index] : "未設定"}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -208,6 +228,7 @@ export default function KarteTeamSkillTestsPage() {
       )}
 
       {!loading &&
+        isStaff &&
         (showAddForm ? (
           <Card>
             <FieldLabel>検定名</FieldLabel>

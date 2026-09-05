@@ -38,7 +38,7 @@ function SportsTestLegend() {
 
 export default function KarteTeamSportsTestPage() {
   const router = useRouter();
-  const { role, plan } = useSession();
+  const { role, plan, userId } = useSession();
   const isStaff = canViewKarte(role);
 
   useEffect(() => {
@@ -54,17 +54,30 @@ export default function KarteTeamSportsTestPage() {
   const [sortKey, setSortKey] = useState<SportsTestMetric>("sprint20m");
   const [loading, setLoading] = useState(true);
 
+  // 一般・運営は自分に紐づく選手だけを取得する(sports_test_recordsのRLSと同じ方針)。
+  // playersテーブル自体はRLS上チーム全員分が見えてしまうため、ここで絞り込む。
   useEffect(() => {
-    if (!isStaff || !hasSportsTestAccess(plan)) return;
+    if (!hasSportsTestAccess(plan)) return;
     (async () => {
       const supabase = createClient();
-      const { data: p } = await supabase.from("players").select("*");
+      if (isStaff) {
+        const { data: p } = await supabase.from("players").select("*");
+        setPlayers(sortPlayers(p ?? []));
+        return;
+      }
+      const { data: links } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
+      const linkedIds = (links ?? []).map((l) => l.player_id);
+      if (linkedIds.length === 0) {
+        setPlayers([]);
+        return;
+      }
+      const { data: p } = await supabase.from("players").select("*").in("id", linkedIds);
       setPlayers(sortPlayers(p ?? []));
     })();
-  }, [isStaff, plan]);
+  }, [isStaff, plan, userId]);
 
   useEffect(() => {
-    if (!isStaff || !hasSportsTestAccess(plan)) return;
+    if (!hasSportsTestAccess(plan)) return;
     (async () => {
       setLoading(true);
       const supabase = createClient();
@@ -77,11 +90,10 @@ export default function KarteTeamSportsTestPage() {
       setSportsTestRecords(data ?? []);
       setLoading(false);
     })();
-  }, [isStaff, fiscalYear, quarter, plan]);
+  }, [fiscalYear, quarter, plan]);
 
   useEffect(() => {
     if (isStaff || !hasSportsTestAccess(plan)) return;
-    setLoading(true);
     (async () => {
       const supabase = createClient();
       const { data } = await supabase.rpc("team_sports_test_averages", {
@@ -89,7 +101,6 @@ export default function KarteTeamSportsTestPage() {
         p_quarter: quarter,
       });
       setTeamAverageRow(data?.[0] ?? null);
-      setLoading(false);
     })();
   }, [isStaff, fiscalYear, quarter, plan]);
 
@@ -191,6 +202,52 @@ export default function KarteTeamSportsTestPage() {
               </div>
             )}
           </Card>
+
+          {sportsTestValues.length > 0 && (
+            <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+              <table className="border-collapse text-[11.5px] w-full">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 top-0 h-11 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
+                      選手
+                    </th>
+                    {SPORTS_TEST_RANKING_METRICS.map((m) => (
+                      <th
+                        key={m.value}
+                        className="sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight text-ink-soft"
+                      >
+                        <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
+                        <div className="whitespace-nowrap">{m.abbrLines[1]}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sportsTestValues.map(({ player: p, values }) => (
+                    <tr key={p.id}>
+                      <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                        <Link href={`/karte/players/${p.id}`} className="font-bold">
+                          #{p.number ?? "-"} {playerFullName(p)}
+                        </Link>
+                      </td>
+                      {SPORTS_TEST_RANKING_METRICS.map((m) => {
+                        const v = values[m.value];
+                        return (
+                          <td
+                            key={m.value}
+                            className="w-[54px] min-w-[54px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0"
+                          >
+                            {v === null || v === undefined ? "-" : v}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           <SportsTestLegend />
         </>
       ) : (
