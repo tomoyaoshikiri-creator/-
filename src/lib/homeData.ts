@@ -37,8 +37,11 @@ export function computeAttendanceActionItems(params: {
   schedules: Schedule[];
   myPlayers: MinimalPlayer[];
   attendances: Attendance[];
+  // 選手に紐づいていない一般・運営メンバーにも「自分」名義の出欠を求めるか
+  // (チーム設定teams.require_unlinked_guardian_attendance、デフォルトtrue)。
+  requireUnlinkedGuardianAttendance: boolean;
 }): AttendanceActionItem[] {
-  const { todayStr, role, userId, schedules, myPlayers, attendances } = params;
+  const { todayStr, role, userId, schedules, myPlayers, attendances, requireUnlinkedGuardianAttendance } = params;
   const isStaff = role === "指導者" || role === "管理者";
   const items: AttendanceActionItem[] = [];
 
@@ -77,13 +80,16 @@ export function computeAttendanceActionItems(params: {
   }
 
   for (const schedule of schedules) {
+    // 過去の予定は「要対応」に出さない(取得範囲自体は日程一覧表示用に過去14日分も
+    // 含んでいるため、ここで絞り込む)。
+    if (schedule.date < todayStr) continue;
     const eligiblePlayers = myPlayers.filter((p) => isTargetEligible(p.grade, schedule.target_grade_min));
     eligiblePlayers.forEach((p) => {
       pushIfNeeded(schedule, p.name, attendanceByPlayer.get(`${schedule.id}:${p.id}`));
     });
     if (isStaff) {
       pushIfNeeded(schedule, "本人", attendanceBySelf.get(schedule.id));
-    } else if (eligiblePlayers.length === 0) {
+    } else if (eligiblePlayers.length === 0 && requireUnlinkedGuardianAttendance) {
       pushIfNeeded(schedule, "自分", attendanceBySelf.get(schedule.id));
     }
   }

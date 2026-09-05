@@ -14,6 +14,7 @@ export interface SessionInfo {
   sport: TeamSport;
   category: TeamCategory;
   teamGoal: string | null;
+  requireUnlinkedGuardianAttendance: boolean;
   hasMultipleTeams: boolean;
 }
 

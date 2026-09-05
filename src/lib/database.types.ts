@@ -85,6 +85,9 @@ export interface Database {
           category: TeamCategory;
           // ホーム画面に表示するチーム目標(シーズンのスローガンなど)。未設定はnull。
           team_goal: string | null;
+          // 選手に紐づいていない一般・運営メンバーにも「自分」名義の出欠登録を
+          // 求めるかどうか。デフォルトtrue。
+          require_unlinked_guardian_attendance: boolean;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
@@ -108,6 +111,7 @@ export interface Database {
           sport?: TeamSport;
           category?: TeamCategory;
           team_goal?: string | null;
+          require_unlinked_guardian_attendance?: boolean;
           storage_limit_bytes?: number;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
@@ -125,6 +129,7 @@ export interface Database {
           sport: TeamSport;
           category: TeamCategory;
           team_goal: string | null;
+          require_unlinked_guardian_attendance: boolean;
           storage_limit_bytes: number;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
