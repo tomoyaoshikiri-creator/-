@@ -63,14 +63,20 @@ export default function TeamHubPage() {
 
       <SectionLabel>選手・成長</SectionLabel>
       <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" />
-      {isStaff &&
-        (hasSportsTestAccess(plan) ? (
-          <HubRow href="/karte/team/sports-test" label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" />
-        ) : (
-          <LockedFeatureCard label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" requiredPlan="Max" />
-        ))}
-      {/* 検定管理は一般・運営にも開放している(見られるのは自分に紐づく選手の分のみ、
-          スタッフは全選手を編集可能)ため、isStaffで囲わずロールを問わず表示する。 */}
+      {/* スポーツテスト・検定管理は一般・運営にも開放している(見られるのは自分に紐づく
+          選手の記録+チーム平均のみ、スタッフは全選手を見る・編集できる)ため、
+          isStaffで囲わずロールを問わず表示する。 */}
+      {hasSportsTestAccess(plan) ? (
+        <HubRow
+          href="/karte/team/sports-test"
+          label="スポーツテスト"
+          description={
+            isStaff ? "スポーツテスト・身長体重の記録をチームで比較する" : "紐づく選手の記録とチーム平均を見る"
+          }
+        />
+      ) : (
+        <LockedFeatureCard label="スポーツテスト" description="スポーツテスト・身長体重の記録をチームで比較する" requiredPlan="Max" />
+      )}
       {hasSkillTestAccess(plan) ? (
         <HubRow
           href="/karte/team/skill-tests"
