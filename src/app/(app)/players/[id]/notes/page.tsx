@@ -135,12 +135,20 @@ export default function PlayerNotesPage() {
     }
     setSavingNote(true);
     const supabase = createClient();
-    const { error } = await supabase.from("player_notes").insert({
+    const payload = {
       team_id: player.team_id,
       player_id: player.id,
       author_id: userId,
       body: noteBody.trim(),
-    });
+    };
+    let { error } = await supabase.from("player_notes").insert(payload);
+    if (error) {
+      // アプリをバックグラウンドから復帰した直後などは認証トークンが失効直後で
+      // 一度目の書き込みだけ失敗し、すぐ再送信すると成功することがある。
+      // getSession()でトークンを最新化してから1回だけ自動的に再試行する。
+      await supabase.auth.getSession();
+      ({ error } = await supabase.from("player_notes").insert(payload));
+    }
     setSavingNote(false);
     if (error) {
       toast(`登録に失敗しました: ${error.message}`);
