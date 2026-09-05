@@ -104,7 +104,7 @@ function CardHeading({
 }
 
 export default function HomePage() {
-  const { userId, teamId, role, plan, category, teamGoal } = useSession();
+  const { userId, teamId, role, plan, category, teamGoal, requireUnlinkedGuardianAttendance } = useSession();
   const isStaff = canWriteCoachNote(role);
   const todayStr = todayDateStr();
   const nowIso = new Date().toISOString();
@@ -185,6 +185,7 @@ export default function HomePage() {
           schedules: schedules ?? [],
           myPlayers: myPlayerList,
           attendances: relevantAttendances,
+          requireUnlinkedGuardianAttendance,
         }),
       );
       setUpcoming((schedules ?? []).filter((s) => s.date >= todayStr));
@@ -193,7 +194,7 @@ export default function HomePage() {
     } catch {
       setScheduleStatus("error");
     }
-  }, [teamId, userId, role, todayStr]);
+  }, [teamId, userId, role, todayStr, requireUnlinkedGuardianAttendance]);
 
   const loadDigest = useCallback(async () => {
     setDigestStatus("loading");

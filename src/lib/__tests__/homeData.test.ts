@@ -62,6 +62,7 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items).toEqual([
       { scheduleId: "s1", scheduleTitle: "通常練習", scheduleDate: "2026-09-10", targetLabel: "山田太郎", kind: "unanswered", overdue: false },
@@ -76,6 +77,7 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1", target_grade_min: "4" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items).toEqual([
       { scheduleId: "s1", scheduleTitle: "通常練習", scheduleDate: "2026-09-10", targetLabel: "自分", kind: "unanswered", overdue: false },
@@ -90,6 +92,7 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items.map((i) => i.targetLabel).sort()).toEqual(["山田太郎", "本人"]);
   });
@@ -105,9 +108,27 @@ describe("computeAttendanceActionItems", () => {
       ],
       myPlayers: [],
       attendances: [],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items[0]).toMatchObject({ scheduleId: "s2", overdue: true });
     expect(items[1]).toMatchObject({ scheduleId: "s1", overdue: false });
+  });
+
+  it("過去の予定(スケジュール日が今日より前)は含めない", () => {
+    const items = computeAttendanceActionItems({
+      todayStr: "2026-09-10",
+      role: "一般",
+      userId: "guardian1",
+      schedules: [
+        schedule({ id: "past", date: "2026-09-05" }),
+        schedule({ id: "today", date: "2026-09-10" }),
+        schedule({ id: "future", date: "2026-09-15" }),
+      ],
+      myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
+      attendances: [],
+      requireUnlinkedGuardianAttendance: true,
+    });
+    expect(items.map((i) => i.scheduleId).sort()).toEqual(["future", "today"]);
   });
 
   it("出席で車出しが必要な予定なのに未回答ならcarSetup項目になる", () => {
@@ -118,6 +139,7 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1", type: "game", venue_type: "アウェイ" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [attendance({ schedule_id: "s1", player_id: "p1", status: "出席", car: null })],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items).toEqual([
       { scheduleId: "s1", scheduleTitle: "通常練習", scheduleDate: "2026-09-10", targetLabel: "山田太郎", kind: "carSetup", overdue: false },
@@ -132,6 +154,7 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1", type: "game", venue_type: "アウェイ" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [attendance({ schedule_id: "s1", player_id: "p1", status: "欠席", car: null })],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items).toEqual([]);
   });
@@ -144,8 +167,37 @@ describe("computeAttendanceActionItems", () => {
       schedules: [schedule({ id: "s1" })],
       myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
       attendances: [attendance({ schedule_id: "s1", player_id: "p1", status: "出席" })],
+      requireUnlinkedGuardianAttendance: true,
     });
     expect(items).toEqual([]);
+  });
+
+  it("requireUnlinkedGuardianAttendanceがfalseなら、紐づく選手がいない一般ユーザーの自分の出欠は求めない", () => {
+    const items = computeAttendanceActionItems({
+      todayStr: "2026-09-05",
+      role: "一般",
+      userId: "guardian1",
+      schedules: [schedule({ id: "s1", target_grade_min: "4" })],
+      myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
+      attendances: [],
+      requireUnlinkedGuardianAttendance: false,
+    });
+    expect(items).toEqual([]);
+  });
+
+  it("requireUnlinkedGuardianAttendanceがfalseでも、指導者・管理者本人の出欠は引き続き求める", () => {
+    const items = computeAttendanceActionItems({
+      todayStr: "2026-09-05",
+      role: "指導者",
+      userId: "coach1",
+      schedules: [schedule({ id: "s1" })],
+      myPlayers: [],
+      attendances: [],
+      requireUnlinkedGuardianAttendance: false,
+    });
+    expect(items).toEqual([
+      { scheduleId: "s1", scheduleTitle: "通常練習", scheduleDate: "2026-09-10", targetLabel: "本人", kind: "unanswered", overdue: false },
+    ]);
   });
 });
 

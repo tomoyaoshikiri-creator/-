@@ -46,8 +46,9 @@ function buildMessage(schedule: Schedule, reminderType: ReminderType): { title: 
   return { title: "📅 出欠登録はお済みですか?", body: `「${schedule.title}」(${dateLabel})の出欠登録がまだ済んでいません` };
 }
 
-// 出欠フォーム(schedule/[id]/page.tsx)と同じ対象範囲判定で、未登録の人を洗い出す。
-// key: profile_id, value: 対象のラベル(選手名、または「本人」「自分」)の一覧。
+// 出欠フォーム(schedule/[id]/page.tsx)と同じ対象範囲判定(teams.require_unlinked_guardian_attendance
+// による「紐づく選手がいない一般・運営メンバー」への「自分」出欠要否の分岐も含む)で、
+// 未登録の人を洗い出す。key: profile_id, value: 対象のラベル(選手名、または「本人」「自分」)の一覧。
 // 対象ユーザーの抽出はprofiles.team_id(legacy)ではなくteam_memberships.team_idを正本とする。
 // このRoute全体がservice_roleクライアント(rolbypassrls=trueをローカルDBで実測確認済み)で
 // 動作するため、RLSポリシーが0件のteam_membershipsも直接SELECTできる。
@@ -57,11 +58,17 @@ async function computeUnregisteredRecipients(
 ): Promise<Map<string, string[]>> {
   const recipients = new Map<string, string[]>();
 
-  const [{ data: players }, { data: memberships }, { data: attendances }] = await Promise.all([
+  const [{ data: players }, { data: memberships }, { data: attendances }, { data: team }] = await Promise.all([
     supabase.from("players").select("*").eq("team_id", schedule.team_id).eq("status", "在籍"),
     supabase.from("team_memberships").select("user_id, role").eq("team_id", schedule.team_id),
     supabase.from("attendances").select("*").eq("schedule_id", schedule.id),
+    supabase
+      .from("teams")
+      .select("require_unlinked_guardian_attendance")
+      .eq("id", schedule.team_id)
+      .single<{ require_unlinked_guardian_attendance: boolean }>(),
   ]);
+  const requireUnlinkedGuardianAttendance = team?.require_unlinked_guardian_attendance ?? true;
   const membershipUserIds = (memberships ?? []).map((m) => m.user_id);
   const { data: profiles } =
     membershipUserIds.length > 0
@@ -109,7 +116,11 @@ async function computeUnregisteredRecipients(
         arr.push("本人");
         recipients.set(profile.id, arr);
       }
-    } else if (!coveredGuardianIds.has(profile.id) && !attByUser.has(profile.id)) {
+    } else if (
+      requireUnlinkedGuardianAttendance &&
+      !coveredGuardianIds.has(profile.id) &&
+      !attByUser.has(profile.id)
+    ) {
       const arr = recipients.get(profile.id) ?? [];
       arr.push("自分");
       recipients.set(profile.id, arr);

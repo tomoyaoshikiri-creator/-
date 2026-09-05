@@ -28,7 +28,7 @@ interface AttendanceSubject {
 export default function ScheduleDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { userId, role } = useSession();
+  const { userId, role, requireUnlinkedGuardianAttendance } = useSession();
   const toast = useToast();
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -95,7 +95,7 @@ export default function ScheduleDetailPage() {
     for (const p of eligibleLinked) {
       list.push({ key: p.id, playerId: p.id, label: playerFullName(p) });
     }
-    if (list.length === 0) {
+    if (list.length === 0 && requireUnlinkedGuardianAttendance) {
       list.push({ key: "self", playerId: null, label: "自分" });
     }
     setSubjects(list);
@@ -130,7 +130,7 @@ export default function ScheduleDetailPage() {
     setProxyPlayerId("");
     setUnlinkedGuardianId("");
     setLoading(false);
-  }, [params.id, userId, role]);
+  }, [params.id, userId, role, requireUnlinkedGuardianAttendance]);
 
   useEffect(() => {
     load();
