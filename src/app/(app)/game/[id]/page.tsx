@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -22,11 +22,15 @@ export default function GameDetailPage() {
   const params = useParams<{ id: string }>();
   const gameId = params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { userId, teamId, role, sport } = useSession();
   const toast = useToast();
   const [game, setGame] = useState<Schedule | null>(null);
   const [matches, setMatches] = useState<GameMatch[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState("");
+  // 試合結果一覧から特定の試合をタップして来た場合、その試合を初期選択にする(一度使ったら消費する)。
+  // refにするのはstateにするとloadMatchesのdepsが変わって再フェッチが走ってしまうため。
+  const pendingMatchIdRef = useRef(searchParams.get("matchId") ?? "");
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [addingMatch, setAddingMatch] = useState(false);
   const [opponent, setOpponent] = useState("");
@@ -82,7 +86,12 @@ export default function GameDetailPage() {
         if (created) list = [created];
       }
       setMatches(list);
-      setSelectedMatchId((prev) => (list.some((m) => m.id === prev) ? prev : (list[0]?.id ?? "")));
+      const pendingMatchId = pendingMatchIdRef.current;
+      pendingMatchIdRef.current = "";
+      setSelectedMatchId((prev) => {
+        if (pendingMatchId && list.some((m) => m.id === pendingMatchId)) return pendingMatchId;
+        return list.some((m) => m.id === prev) ? prev : (list[0]?.id ?? "");
+      });
       setMatchesLoading(false);
     },
     [teamId],

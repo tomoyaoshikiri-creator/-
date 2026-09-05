@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
@@ -146,11 +147,11 @@ export default function GameResultsPage() {
             const opponentScore = m.opponent_score ?? 0;
             const diff = teamScore - opponentScore;
             const result = diff > 0 ? "勝ち" : diff < 0 ? "負け" : "引き分け";
-            return (
-              <div
-                key={m.id}
-                className="bg-white border border-line rounded-lg px-3.5 py-2 mb-2 flex items-center gap-2"
-              >
+            const rowClassName = `bg-white border border-line rounded-lg px-3.5 py-2 mb-2 flex items-center gap-2${
+              canRecordGames(role) ? " cursor-pointer" : ""
+            }`;
+            const rowContent = (
+              <>
                 <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
                   {m.schedules?.date ? formatDateLabel(m.schedules.date) : "-"}
                 </div>
@@ -171,12 +172,30 @@ export default function GameResultsPage() {
                 </div>
                 <Pill tone={result === "勝ち" ? "ok" : result === "負け" ? "absent" : "pending"}>{result}</Pill>
                 {m.video_url ? (
-                  <a href={m.video_url} target="_blank" rel="noreferrer" aria-label="動画を見る" className="flex-shrink-0">
+                  <a
+                    href={m.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="動画を見る"
+                    className="flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <VideoIcon className="w-[15px] h-[15px] text-orange" />
                   </a>
                 ) : (
                   <span className="flex-shrink-0 w-[15px]" />
                 )}
+              </>
+            );
+            // 結果を編集できるのは試合記録を操作できるロール(指導者・管理者)のみ。
+            // それ以外のロールは/game/[id]がガードでリダイレクトしてしまうため、タップ不可のまま表示する。
+            return canRecordGames(role) ? (
+              <Link key={m.id} href={`/game/${m.schedule_id}?matchId=${m.id}`} className={rowClassName}>
+                {rowContent}
+              </Link>
+            ) : (
+              <div key={m.id} className={rowClassName}>
+                {rowContent}
               </div>
             );
           })}
