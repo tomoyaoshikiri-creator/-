@@ -139,7 +139,13 @@ export function buildDigestItems(params: {
     if (r.author_id === userId) return;
     const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
     if (latest <= reportSeen) return;
-    items.push({ id: r.id, source: "report", label: `チーム日報: ${truncate(r.body, 24)}`, timestamp: latest, href: "/report" });
+    items.push({
+      id: r.id,
+      source: "report",
+      label: `チーム日報: ${truncate(r.body, 24)}`,
+      timestamp: latest,
+      href: `/report/${r.id}`,
+    });
   });
 
   if (includeCoachNotes) {
@@ -152,7 +158,7 @@ export function buildDigestItems(params: {
         source: "coachNote",
         label: `コーチ日報: ${truncate(r.body, 24)}`,
         timestamp: latest,
-        href: "/coach-note",
+        href: `/coach-note/${r.id}`,
       });
     });
   }
