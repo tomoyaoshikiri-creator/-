@@ -109,12 +109,15 @@ export function ReactionSummary({ reactions }: { reactions: ReactionRow[] }) {
   })).filter((r) => r.count > 0);
   if (grouped.length === 0) return null;
   return (
-    <div className="flex items-center gap-2 mt-1.5">
+    <div className="flex items-center gap-1.5 mt-1.5">
       {grouped.map(({ type, src, alt, count }) => (
-        <span key={type} className="flex items-center gap-0.5">
+        <span
+          key={type}
+          className="flex items-center gap-1 px-2 py-1 rounded-full border border-orange bg-orange/8"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={alt} className="w-3.5 h-3.5" />
-          <span className="text-[10.5px] font-bold text-ink-soft">{count}</span>
+          <img src={src} alt={alt} className="w-4 h-4" />
+          <span className="text-[10.5px] font-bold text-orange">{count}</span>
         </span>
       ))}
     </div>
