@@ -97,3 +97,26 @@ export function ReactionButtons({
     </div>
   );
 }
+
+// 日付だけの一覧行などで、押されているスタンプだけを非インタラクティブに小さく表示する。
+// (タップしての追加・取り消しは詳細画面のReactionButtonsで行う)
+export function ReactionSummary({ reactions }: { reactions: ReactionRow[] }) {
+  const grouped = REACTIONS.map(({ type, src, alt }) => ({
+    type,
+    src,
+    alt,
+    count: reactions.filter((r) => r.reaction_type === type).length,
+  })).filter((r) => r.count > 0);
+  if (grouped.length === 0) return null;
+  return (
+    <div className="flex items-center gap-2 mt-1.5">
+      {grouped.map(({ type, src, alt, count }) => (
+        <span key={type} className="flex items-center gap-0.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt={alt} className="w-3.5 h-3.5" />
+          <span className="text-[10.5px] font-bold text-ink-soft">{count}</span>
+        </span>
+      ))}
+    </div>
+  );
+}

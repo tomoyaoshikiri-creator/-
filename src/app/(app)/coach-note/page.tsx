@@ -13,13 +13,14 @@ import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { MonthPicker } from "@/components/MonthPicker";
 import { CollapsibleList } from "@/components/CollapsibleList";
+import { ReactionSummary } from "@/components/ReactionButtons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab } from "@/lib/permissions";
 import { hasCoachNoteAccess } from "@/lib/plan";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenCoachNoteIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
-import type { Report } from "@/lib/database.types";
+import type { Report, ReportReaction } from "@/lib/database.types";
 import { NewCoachNoteModal } from "./NewCoachNoteModal";
 
 export default function CoachNotePage() {
@@ -31,6 +32,7 @@ export default function CoachNotePage() {
   const [showAll, setShowAll] = useState(false);
   const cacheKey = useCallback((field: string) => `coachNote:${monthValue}:${field}`, [monthValue]);
   const [reports, setReports] = useCachedState<Report[]>(cacheKey("reports"), []);
+  const [reactions, setReactions] = useCachedState<ReportReaction[]>(cacheKey("reactions"), []);
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("coachNote:unseenIds", new Set());
 
@@ -45,8 +47,15 @@ export default function CoachNotePage() {
       .lt("date", end)
       .order("created_at", { ascending: false });
     setReports(r ?? []);
+    const reportIds = (r ?? []).map((x) => x.id);
+    if (reportIds.length > 0) {
+      const { data: rc } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
+      setReactions(rc ?? []);
+    } else {
+      setReactions([]);
+    }
     setLoading(false);
-  }, [monthValue, cacheKey, setReports]);
+  }, [monthValue, cacheKey, setReports, setReactions]);
 
   useEffect(() => {
     load();
@@ -111,6 +120,7 @@ export default function CoachNotePage() {
                   </div>
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
+                <ReactionSummary reactions={reactions.filter((rc) => rc.report_id === r.id)} />
               </Card>
             </Link>
           )}

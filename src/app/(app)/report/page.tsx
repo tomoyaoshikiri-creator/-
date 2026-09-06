@@ -13,13 +13,14 @@ import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { MonthPicker } from "@/components/MonthPicker";
 import { CollapsibleList } from "@/components/CollapsibleList";
+import { ReactionSummary } from "@/components/ReactionButtons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab } from "@/lib/permissions";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenDailyReportIds } from "@/lib/itemBadges";
 import { currentYearMonth, dateDaysAgoStr, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
-import type { DailyReport } from "@/lib/database.types";
+import type { DailyReport, DailyReportReaction } from "@/lib/database.types";
 import { NewDailyReportModal } from "./NewDailyReportModal";
 
 export default function ReportPage() {
@@ -34,6 +35,7 @@ export default function ReportPage() {
   const [showAll, setShowAll] = useState(false);
   const cacheKey = useCallback((field: string) => `report:${monthValue}:${field}`, [monthValue]);
   const [reports, setReports] = useCachedState<DailyReport[]>(cacheKey("reports"), []);
+  const [reactions, setReactions] = useCachedState<DailyReportReaction[]>(cacheKey("reactions"), []);
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("report:unseenIds", new Set());
 
@@ -49,8 +51,15 @@ export default function ReportPage() {
       .lt("date", end)
       .order("created_at", { ascending: false });
     setReports(r ?? []);
+    const reportIds = (r ?? []).map((x) => x.id);
+    if (reportIds.length > 0) {
+      const { data: rc } = await supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds);
+      setReactions(rc ?? []);
+    } else {
+      setReactions([]);
+    }
     setLoading(false);
-  }, [monthValue, earliestAllowedDate, cacheKey, setReports]);
+  }, [monthValue, earliestAllowedDate, cacheKey, setReports, setReactions]);
 
   useEffect(() => {
     load();
@@ -120,6 +129,7 @@ export default function ReportPage() {
                   </div>
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
+                <ReactionSummary reactions={reactions.filter((rc) => rc.daily_report_id === r.id)} />
               </Card>
             </Link>
           )}
