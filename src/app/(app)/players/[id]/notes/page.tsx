@@ -9,7 +9,8 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { Fab, Modal } from "@/components/ui/Modal";
+import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
@@ -30,6 +31,7 @@ export default function PlayerNotesPage() {
   const [reactions, setReactions] = useState<PlayerNoteReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function PlayerNotesPage() {
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
 
-  useUnsavedChangesGuard(noteBody.trim() !== "");
+  useUnsavedChangesGuard(modalOpen && noteBody.trim() !== "");
   const editingNote = notes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
 
@@ -155,6 +157,7 @@ export default function PlayerNotesPage() {
       return;
     }
     setNoteBody("");
+    setModalOpen(false);
     toast("メモを登録しました");
     load();
   }
@@ -212,6 +215,26 @@ export default function PlayerNotesPage() {
           backHref={`/players/${params.id}`}
           accessBadge="coach"
         />
+      }
+      fab={
+        player && (
+          <>
+            <Fab onClick={() => setModalOpen(true)} />
+            <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="メモを追加">
+              <FieldLabel>内容</FieldLabel>
+              <textarea
+                rows={3}
+                className={inputClass()}
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                placeholder="例:左手のレイアップが安定してきた"
+              />
+              <SubmitButton onClick={handleAddNote} disabled={savingNote}>
+                {savingNote ? "登録中…" : "メモを登録する"}
+              </SubmitButton>
+            </Modal>
+          </>
+        )
       }
     >
       {loading ? (
@@ -322,20 +345,6 @@ export default function PlayerNotesPage() {
               ),
             )
           )}
-
-          <SectionLabel>メモを追加</SectionLabel>
-          <Card>
-            <textarea
-              rows={3}
-              className={inputClass()}
-              value={noteBody}
-              onChange={(e) => setNoteBody(e.target.value)}
-              placeholder="例:左手のレイアップが安定してきた"
-            />
-            <SubmitButton onClick={handleAddNote} disabled={savingNote}>
-              {savingNote ? "登録中…" : "メモを登録する"}
-            </SubmitButton>
-          </Card>
         </>
       )}
     </PageShell>
