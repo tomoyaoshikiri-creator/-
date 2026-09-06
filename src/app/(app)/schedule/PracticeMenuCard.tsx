@@ -30,7 +30,7 @@ interface CopyTarget {
   title: string;
 }
 
-export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
+export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: string; scheduleDate: string }) {
   const { teamId, userId, role, plan } = useSession();
   const toast = useToast();
   const canManage = canManagePracticeMenus(role);
@@ -154,7 +154,11 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
       .neq("id", scheduleId)
       .order("date", { ascending: false })
       .limit(50);
-    setCopyTargets(data ?? []);
+    const targets = data ?? [];
+    setCopyTargets(targets);
+    // デフォルトはコピー元より後で一番近い練習日(次回の練習)。無ければ未選択のまま。
+    const next = targets.filter((t) => t.date > scheduleDate).sort((a, b) => a.date.localeCompare(b.date))[0];
+    setCopyTargetId(next?.id ?? "");
   }
 
   async function handleCopy() {
@@ -200,28 +204,6 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
         )}
       </div>
       <Card>
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={menus.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-            {menus.map((m, idx) => (
-              <SortableMenuRow
-                key={m.id}
-                menu={m}
-                idx={idx}
-                canManage={canManage}
-                editingId={editingId}
-                editValue={editValue}
-                setEditValue={setEditValue}
-                savingEdit={savingEdit}
-                handleEditSave={handleEditSave}
-                setEditingId={setEditingId}
-                expandedId={expandedId}
-                setExpandedId={setExpandedId}
-                deleteConfirmId={deleteConfirmId}
-                handleDelete={handleDelete}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
         {canManage && menus.length > 0 && copyOpen && (
           <div className="border-b border-line pb-2.5 mb-2.5">
             <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
@@ -250,6 +232,28 @@ export function PracticeMenuCard({ scheduleId }: { scheduleId: string }) {
             </div>
           </div>
         )}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={menus.map((m) => m.id)} strategy={verticalListSortingStrategy}>
+            {menus.map((m, idx) => (
+              <SortableMenuRow
+                key={m.id}
+                menu={m}
+                idx={idx}
+                canManage={canManage}
+                editingId={editingId}
+                editValue={editValue}
+                setEditValue={setEditValue}
+                savingEdit={savingEdit}
+                handleEditSave={handleEditSave}
+                setEditingId={setEditingId}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                deleteConfirmId={deleteConfirmId}
+                handleDelete={handleDelete}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
         {canManage && hasAccess && (
           <div>
             <FieldLabel>入力欄</FieldLabel>

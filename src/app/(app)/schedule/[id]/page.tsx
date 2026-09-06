@@ -263,7 +263,7 @@ export default function ScheduleDetailPage() {
             />
           ))}
 
-          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} />}
+          {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} scheduleDate={schedule.date} />}
 
           {role === "管理者" && proxyPlayers.length > 0 && (
             <>
