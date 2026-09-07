@@ -34,8 +34,6 @@ export default function KarteTeamSkillTestsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newKyuCount, setNewKyuCount] = useState("0");
-  const [newKyuLabel, setNewKyuLabel] = useState("級");
   // チャプター(段): 「スタート編」「入門編」のように名前と、その中の級の数を個別に持つ。
   const [chapterDrafts, setChapterDrafts] = useState<ChapterDraft[]>([]);
   const [addingTest, setAddingTest] = useState(false);
@@ -55,25 +53,13 @@ export default function KarteTeamSkillTestsPage() {
 
   function resetAddForm() {
     setNewName("");
-    setNewKyuCount("0");
-    setNewKyuLabel("級");
     setChapterDrafts([]);
   }
 
   async function handleAddTest() {
     const name = newName.trim();
-    const kyuCount = Number(newKyuCount);
-    const kyuLabel = newKyuLabel.trim();
     if (!name) {
       toast("検定名を入力してください");
-      return;
-    }
-    if (!Number.isInteger(kyuCount) || kyuCount < 0 || kyuCount > 30) {
-      toast("級の数を正しく入力してください");
-      return;
-    }
-    if (!kyuLabel || kyuLabel.length > 10) {
-      toast("級の呼び方を正しく入力してください");
       return;
     }
     if (chapterDrafts.some((c) => !c.name.trim() || c.name.trim().length > 20)) {
@@ -84,8 +70,8 @@ export default function KarteTeamSkillTestsPage() {
       toast("チャプター内の級数を正しく入力してください");
       return;
     }
-    if (kyuCount === 0 && chapterDrafts.length === 0) {
-      toast("級の数かチャプターのどちらかを設定してください");
+    if (chapterDrafts.length === 0) {
+      toast("チャプターを1つ以上追加してください");
       return;
     }
     setAddingTest(true);
@@ -95,11 +81,11 @@ export default function KarteTeamSkillTestsPage() {
       .insert({
         team_id: teamId,
         name,
-        kyu_count: kyuCount,
-        kyu_label: kyuLabel,
-        // dan_count/dan_kyu_countはチャプター未使用時のみのフォールバック用。列の既定値(dan_count=5)
-        // に頼ると、あとでチャプターを全部消したときに意図せず旧来の段が復活してしまうため、
-        // このフォームで作る検定では明示的に0にしておく。
+        // kyu_count/kyu_label/dan_count/dan_kyu_countはチャプター未使用時のみのフォールバック用。
+        // 列の既定値(kyu_count=10,dan_count=5)に頼ると意図しない旧来の級・段が現れてしまうため、
+        // このフォームで作る検定ではすべてチャプターに一本化し、明示的に0にしておく。
+        kyu_count: 0,
+        kyu_label: "級",
         dan_count: 0,
         dan_kyu_count: 0,
         chapters: chapterDrafts.map((c) => ({ name: c.name.trim(), kyu_count: Number(c.kyuCount) })),
@@ -132,34 +118,8 @@ export default function KarteTeamSkillTestsPage() {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="例:ドリブル検定"
               />
-              <div className="mt-3 flex gap-2">
-                <div className="flex-1">
-                  <FieldLabel>級の数(任意)</FieldLabel>
-                  <input
-                    type="number"
-                    min={0}
-                    max={30}
-                    className={inputClass()}
-                    value={newKyuCount}
-                    onChange={(e) => setNewKyuCount(e.target.value)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <FieldLabel>級の呼び方</FieldLabel>
-                  <input
-                    className={inputClass()}
-                    value={newKyuLabel}
-                    onChange={(e) => setNewKyuLabel(e.target.value)}
-                    maxLength={10}
-                  />
-                </div>
-              </div>
-              <div className="text-[11px] text-ink-soft mt-1">
-                下のチャプターに入る前段階の級です。不要であれば0のままで構いません。
-              </div>
-
               <div className="mt-4">
-                <FieldLabel>チャプター(任意)</FieldLabel>
+                <FieldLabel>チャプター</FieldLabel>
                 <div className="text-[11px] text-ink-soft mb-2">
                   「スタート編」「入門編」のように名前を付け、それぞれの中の級の数を個別に設定できます(例:スタート編=4級まで、入門編=10級まで)。
                 </div>
