@@ -14,9 +14,99 @@ import { Modal } from "@/components/ui/Modal";
 import { Pill } from "@/components/ui/Pill";
 import { canViewKarte } from "@/lib/permissions";
 import { hasSkillTestAccess } from "@/lib/plan";
-import { isSkillTestDanCrossing, skillTestLevelLabels } from "@/lib/skillTest";
+import { isSkillTestDanCrossing, skillTestLevelGroups, skillTestLevelLabels } from "@/lib/skillTest";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest, TeamMember } from "@/lib/database.types";
+
+// ランク選択欄。チャプターが1つもない検定はこれまで通りフラットな1つのプルダウンにするが、
+// チャプターがある検定は「チャプター」「その中の級」の2段階セレクトにする
+// (級だけでも数十件並ぶフラットな1つのプルダウンは選びにくいため)。
+function LevelPicker({
+  test,
+  levels,
+  valueIndex,
+  onChange,
+  disabled,
+  variant = "table",
+}: {
+  test: SkillTest;
+  levels: string[];
+  valueIndex: number | null;
+  onChange: (index: number) => void;
+  disabled?: boolean;
+  variant?: "table" | "modal";
+}) {
+  // <select>はglobals.cssのiOSズーム防止ルール(input,select,textarea{font-size:16px !important})
+  // により文字サイズをこれ以上小さくできないため、paddingを詰めて見た目のサイズを抑える。
+  const tableSelectClass = "appearance-none bg-white border border-line rounded-lg px-1.5 py-0.5 text-[12px] text-ink";
+
+  if (test.chapters.length === 0) {
+    return (
+      <select
+        className={variant === "table" ? `${tableSelectClass} w-full` : inputClass()}
+        value={valueIndex ?? ""}
+        disabled={disabled}
+        onChange={(e) => e.target.value !== "" && onChange(Number(e.target.value))}
+      >
+        <option value="">未設定</option>
+        {levels.map((label, idx) => (
+          <option key={idx} value={idx}>
+            {label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  const groups = skillTestLevelGroups(test.kyu_count, test.kyu_label, test.chapters);
+  const groupIdx = valueIndex === null ? -1 : groups.findIndex((g) => valueIndex >= g.startIndex && valueIndex < g.startIndex + g.count);
+  const group = groupIdx >= 0 ? groups[groupIdx] : null;
+  const selectClass = variant === "table" ? `${tableSelectClass} flex-1 min-w-0` : inputClass("flex-1");
+
+  return (
+    <div className={variant === "table" ? "flex gap-1" : "flex gap-1.5"}>
+      <select
+        className={selectClass}
+        value={groupIdx}
+        disabled={disabled}
+        onChange={(e) => {
+          const g = groups[Number(e.target.value)];
+          if (g) onChange(g.startIndex);
+        }}
+      >
+        <option value={-1}>未設定</option>
+        {groups.map((g, i) => (
+          <option key={i} value={i}>
+            {g.label}
+          </option>
+        ))}
+      </select>
+      <select
+        className={selectClass}
+        value={group && valueIndex !== null ? valueIndex - group.startIndex : ""}
+        disabled={disabled || !group}
+        onChange={(e) => {
+          if (!group || e.target.value === "") return;
+          onChange(group.startIndex + Number(e.target.value));
+        }}
+      >
+        {group ? (
+          Array.from({ length: group.count }, (_, i) => {
+            const idx = group.startIndex + i;
+            const label = test.level_names[String(idx)]?.trim() || `${group.count - i}${test.kyu_label}`;
+            return (
+              <option key={i} value={i}>
+                {label}
+              </option>
+            );
+          })
+        ) : (
+          <option value="">-</option>
+        )}
+      </select>
+    </div>
+  );
+}
 
 export default function KarteTeamSkillTestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -48,10 +138,10 @@ export default function KarteTeamSkillTestDetailPage() {
   const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 検定の設定編集(指導者・管理者向け): 級の呼び方、段(チャプター)の一覧、各レベルの任意の
-  // 名前、検定自体の削除を行える。
+  // 検定の設定編集(指導者・管理者向け): 段(チャプター)の一覧、各レベルの任意の名前、
+  // 検定自体の削除を行える。級の呼び方は常に「級」固定(kyu_count/kyu_labelはチャプター
+  // 未使用の旧来検定のみが使うフォールバック用の列で、この画面からは編集させない)。
   const [editingSettings, setEditingSettings] = useState(false);
-  const [kyuLabelDraft, setKyuLabelDraft] = useState("級");
   const [chapterDrafts, setChapterDrafts] = useState<{ name: string; kyuCount: string }[]>([]);
   const [levelNameDrafts, setLevelNameDrafts] = useState<string[]>([]);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -300,31 +390,29 @@ export default function KarteTeamSkillTestDetailPage() {
 
   function openSettingsEditor() {
     if (!test) return;
-    // kyu_label/dan_label/chaptersは後発のマイグレーションで追加した列のため、未適用の環境
-    // (マイグレーション未実行のDB)ではundefinedで返ってくることがある。その場合でも
-    // モーダルが開けるよう、既定値にフォールバックする。
-    setKyuLabelDraft(test.kyu_label ?? "級");
+    // chaptersは後発のマイグレーションで追加した列のため、未適用の環境(マイグレーション
+    // 未実行のDB)ではundefinedで返ってくることがある。その場合でもモーダルが開けるよう、
+    // 既定値にフォールバックする。
     setChapterDrafts((test.chapters ?? []).map((c) => ({ name: c.name, kyuCount: String(c.kyu_count) })));
     setLevelNameDrafts(defaultLevels.map((_, idx) => test.level_names[String(idx)] ?? ""));
     setConfirmingDelete(false);
     setEditingSettings(true);
   }
 
-  // チャプターの追加・削除・級数変更は各段の区切り(level_index)自体を変えるため、級側
-  // (既存のまま)のカスタム名は引き継ぎつつ、段側のカスタム名はいったんリセットする
-  // (チャプター名だけの変更はlevel_indexに影響しないため、この関数は呼ばない)。
+  // チャプターの追加・削除・級数変更は、それより後ろの区切り(level_index)を変えるため、
+  // カスタム名はいったんリセットする(チャプター名だけの変更はlevel_indexに影響しないため、
+  // この関数は呼ばない)。
   function resetDanLevelNameDrafts(chapters: { name: string; kyuCount: string }[]) {
-    if (!test) return;
     const newDefaults = skillTestLevelLabels(
-      test.kyu_count,
-      test.dan_count,
+      0,
+      0,
       null,
       0,
-      kyuLabelDraft || "級",
+      "級",
       "段",
       chapters.map((c) => ({ name: c.name, kyu_count: Number(c.kyuCount) || 0 })),
     );
-    setLevelNameDrafts((prev) => newDefaults.map((_, idx) => (idx < test.kyu_count ? (prev[idx] ?? "") : "")));
+    setLevelNameDrafts(newDefaults.map(() => ""));
   }
 
   function addChapterDraft() {
@@ -357,11 +445,6 @@ export default function KarteTeamSkillTestDetailPage() {
 
   async function saveSettings() {
     if (!test) return;
-    const kyuLabel = kyuLabelDraft.trim();
-    if (!kyuLabel || kyuLabel.length > 10) {
-      toast("級の呼び方を正しく入力してください");
-      return;
-    }
     if (chapterDrafts.some((c) => !c.name.trim() || c.name.trim().length > 20)) {
       toast("チャプター名を正しく入力してください");
       return;
@@ -370,6 +453,10 @@ export default function KarteTeamSkillTestDetailPage() {
       chapterDrafts.some((c) => !Number.isInteger(Number(c.kyuCount)) || Number(c.kyuCount) < 1 || Number(c.kyuCount) > 30)
     ) {
       toast("チャプター内の級数を正しく入力してください");
+      return;
+    }
+    if (chapterDrafts.length === 0 && test.dan_count === 0) {
+      toast("チャプターを1つ以上追加してください");
       return;
     }
     setSavingSettings(true);
@@ -382,7 +469,11 @@ export default function KarteTeamSkillTestDetailPage() {
     const { data, error } = await supabase
       .from("skill_tests")
       .update({
-        kyu_label: kyuLabel,
+        // kyu_count/kyu_labelはチャプター未使用の旧来検定のみが使うフォールバック用の列。
+        // この画面で保存するとチャプターに一本化されるため、常に0/既定値へ揃える
+        // (これにより、まだ残っていた古い級の範囲もこの保存で消える)。
+        kyu_count: 0,
+        kyu_label: "級",
         chapters: chapterDrafts.map((c) => ({ name: c.name.trim(), kyu_count: Number(c.kyuCount) })),
         level_names: levelNames,
       })
@@ -477,19 +568,13 @@ export default function KarteTeamSkillTestDetailPage() {
                           {isStaff ? (
                             // player_skill_test_progress_insertのRLSは指導者・管理者による
                             // 任意選手への直接記録を許可しているため、申請フローを経由させない。
-                            <select
-                              className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
-                              value={current ? String(current.level_index) : ""}
+                            <LevelPicker
+                              test={test}
+                              levels={levels}
+                              valueIndex={current ? current.level_index : null}
                               disabled={savingPlayerId === p.id}
-                              onChange={(e) => handleStaffChangeLevel(p.id, e.target.value)}
-                            >
-                              <option value="">未設定</option>
-                              {levels.map((label, idx) => (
-                                <option key={idx} value={idx}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(idx) => handleStaffChangeLevel(p.id, String(idx))}
+                            />
                           ) : (
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-[12px]">{current ? current.level_label : "未設定"}</span>
@@ -605,19 +690,13 @@ export default function KarteTeamSkillTestDetailPage() {
           <>
             <div className="text-[12.5px] font-bold mb-3">{playerFullName(requestPlayer)}</div>
             <FieldLabel>申請するランク</FieldLabel>
-            <select
-              className={inputClass()}
-              value={requestLevelIdx}
-              onChange={(e) => setRequestLevelIdx(e.target.value)}
-            >
-              <option value="">選択してください</option>
-              {levels.map((label, idx) => (
-                <option key={idx} value={idx}>
-                  {label}
-                  {isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, idx, test.chapters) ? "(要承認)" : ""}
-                </option>
-              ))}
-            </select>
+            <LevelPicker
+              test={test}
+              levels={levels}
+              variant="modal"
+              valueIndex={requestLevelIdx === "" ? null : Number(requestLevelIdx)}
+              onChange={(idx) => setRequestLevelIdx(String(idx))}
+            />
             <div className="mt-3">
               <FieldLabel>承認者(指導者・管理者から1名選択)</FieldLabel>
               <select
@@ -652,30 +731,19 @@ export default function KarteTeamSkillTestDetailPage() {
         {test &&
           (() => {
             const draftDefaultLevels = skillTestLevelLabels(
-              test.kyu_count,
-              test.dan_count,
+              0,
+              0,
               null,
               0,
-              kyuLabelDraft || "級",
+              "級",
               "段",
               chapterDrafts.map((c) => ({ name: c.name, kyu_count: Number(c.kyuCount) || 0 })),
             );
             return (
               <>
-                <FieldLabel>級の呼び方</FieldLabel>
-                <input
-                  className={inputClass()}
-                  value={kyuLabelDraft}
-                  onChange={(e) => setKyuLabelDraft(e.target.value)}
-                  maxLength={10}
-                />
-                <div className="text-[11px] text-ink-soft mt-1 mb-3">
-                  下のチャプターに入る前段階の級(現在{test.kyu_count}{kyuLabelDraft || "級"})の呼び方にも使われます。
-                </div>
-
                 <FieldLabel>チャプター(段)</FieldLabel>
                 <div className="text-[11px] text-ink-soft mb-2">
-                  「スタート編」「入門編」のように名前を付け、それぞれの中の級の数を個別に設定できます(例:スタート編=4{kyuLabelDraft || "級"}まで、入門編=10{kyuLabelDraft || "級"}まで)。次のチャプターへ進む昇格のみ要承認で、チャプター内の{kyuLabelDraft || "級"}への昇格はこれまでの{kyuLabelDraft || "級"}と同じ扱いになります。
+                  「スタート編」「入門編」のように名前を付け、それぞれの中の級の数を個別に設定できます(例:スタート編=4級まで、入門編=10級まで)。次のチャプターへ進む昇格のみ要承認で、チャプター内の級への昇格はこれまでの級と同じ扱いになります。
                 </div>
                 <div className="flex flex-col gap-2 mb-2">
                   {chapterDrafts.map((c, idx) => (
@@ -691,7 +759,7 @@ export default function KarteTeamSkillTestDetailPage() {
                         type="number"
                         min={1}
                         max={30}
-                        className={inputClass("w-16 flex-none")}
+                        className={inputClass("!w-16 flex-none")}
                         value={c.kyuCount}
                         onChange={(e) => updateChapterKyuCount(idx, e.target.value)}
                       />
