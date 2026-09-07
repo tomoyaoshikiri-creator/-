@@ -19,6 +19,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // pdf.js(pdfjs-dist)のWorkerスクリプトをそのまま静的配信しているだけの
+    // 第三者製 minified ファイル(src/lib/pdfThumbnail.ts参照)。
+    "public/pdf.worker.min.mjs",
   ]),
 ]);
 

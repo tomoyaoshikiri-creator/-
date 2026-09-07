@@ -330,6 +330,7 @@ export interface Database {
           storage_path: string;
           file_name: string;
           size_bytes: number;
+          thumbnail_path: string | null;
           created_at: string;
         };
         Insert: {
@@ -339,6 +340,7 @@ export interface Database {
           storage_path: string;
           file_name: string;
           size_bytes?: number;
+          thumbnail_path?: string | null;
         };
         Update: Record<string, never>;
         Relationships: [];
