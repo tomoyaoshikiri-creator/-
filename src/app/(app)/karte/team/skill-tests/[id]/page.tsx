@@ -300,8 +300,11 @@ export default function KarteTeamSkillTestDetailPage() {
 
   function openSettingsEditor() {
     if (!test) return;
-    setKyuLabelDraft(test.kyu_label);
-    setChapterDrafts(test.chapters.map((c) => ({ name: c.name, kyuCount: String(c.kyu_count) })));
+    // kyu_label/dan_label/chaptersは後発のマイグレーションで追加した列のため、未適用の環境
+    // (マイグレーション未実行のDB)ではundefinedで返ってくることがある。その場合でも
+    // モーダルが開けるよう、既定値にフォールバックする。
+    setKyuLabelDraft(test.kyu_label ?? "級");
+    setChapterDrafts((test.chapters ?? []).map((c) => ({ name: c.name, kyuCount: String(c.kyu_count) })));
     setLevelNameDrafts(defaultLevels.map((_, idx) => test.level_names[String(idx)] ?? ""));
     setConfirmingDelete(false);
     setEditingSettings(true);
