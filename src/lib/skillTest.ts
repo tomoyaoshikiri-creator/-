@@ -38,6 +38,22 @@ export function skillTestLevelLabels(
   return defaults.map((label, idx) => levelNames[String(idx)]?.trim() || label);
 }
 
+export type SkillTestLevelGroup = { label: string; startIndex: number; count: number };
+
+// levelsの一覧を「プレフィックスの級」「チャプター」ごとのグループに分割する。ランク選択を
+// 「チャプターを選ぶ→その中の級を選ぶ」の2段階セレクトにする際に使う(フラットな1つの
+// 巨大なプルダウンだと選びにくいため)。チャプターが無い検定では呼び出し側で使わない想定。
+export function skillTestLevelGroups(kyuCount: number, kyuLabel: string, chapters: SkillTestChapter[]): SkillTestLevelGroup[] {
+  const groups: SkillTestLevelGroup[] = [];
+  if (kyuCount > 0) groups.push({ label: kyuLabel, startIndex: 0, count: kyuCount });
+  let cursor = kyuCount;
+  for (const chapter of chapters) {
+    if (chapter.kyu_count > 0) groups.push({ label: chapter.name, startIndex: cursor, count: chapter.kyu_count });
+    cursor += chapter.kyu_count;
+  }
+  return groups;
+}
+
 // level_indexが「段(チャプター)そのものへの昇格」(=新しい段/チャプターへの突入。承認フロー上
 // ブロッキング扱い)か、「段内の級への昇格」(=同じ段/チャプターの中でのステップアップ。
 // 承認フロー上は級扱い)かを判定する。

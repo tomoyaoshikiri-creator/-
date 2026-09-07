@@ -14,9 +14,97 @@ import { Modal } from "@/components/ui/Modal";
 import { Pill } from "@/components/ui/Pill";
 import { canViewKarte } from "@/lib/permissions";
 import { hasSkillTestAccess } from "@/lib/plan";
-import { isSkillTestDanCrossing, skillTestLevelLabels } from "@/lib/skillTest";
+import { isSkillTestDanCrossing, skillTestLevelGroups, skillTestLevelLabels } from "@/lib/skillTest";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest, TeamMember } from "@/lib/database.types";
+
+// ランク選択欄。チャプターが1つもない検定はこれまで通りフラットな1つのプルダウンにするが、
+// チャプターがある検定は「チャプター」「その中の級」の2段階セレクトにする
+// (級だけでも数十件並ぶフラットな1つのプルダウンは選びにくいため)。
+function LevelPicker({
+  test,
+  levels,
+  valueIndex,
+  onChange,
+  disabled,
+  variant = "table",
+}: {
+  test: SkillTest;
+  levels: string[];
+  valueIndex: number | null;
+  onChange: (index: number) => void;
+  disabled?: boolean;
+  variant?: "table" | "modal";
+}) {
+  const tableSelectClass = "appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink";
+
+  if (test.chapters.length === 0) {
+    return (
+      <select
+        className={variant === "table" ? `${tableSelectClass} w-full` : inputClass()}
+        value={valueIndex ?? ""}
+        disabled={disabled}
+        onChange={(e) => e.target.value !== "" && onChange(Number(e.target.value))}
+      >
+        <option value="">未設定</option>
+        {levels.map((label, idx) => (
+          <option key={idx} value={idx}>
+            {label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  const groups = skillTestLevelGroups(test.kyu_count, test.kyu_label, test.chapters);
+  const groupIdx = valueIndex === null ? -1 : groups.findIndex((g) => valueIndex >= g.startIndex && valueIndex < g.startIndex + g.count);
+  const group = groupIdx >= 0 ? groups[groupIdx] : null;
+  const selectClass = variant === "table" ? `${tableSelectClass} flex-1 min-w-0` : inputClass("flex-1");
+
+  return (
+    <div className="flex gap-1.5">
+      <select
+        className={selectClass}
+        value={groupIdx}
+        disabled={disabled}
+        onChange={(e) => {
+          const g = groups[Number(e.target.value)];
+          if (g) onChange(g.startIndex);
+        }}
+      >
+        <option value={-1}>未設定</option>
+        {groups.map((g, i) => (
+          <option key={i} value={i}>
+            {g.label}
+          </option>
+        ))}
+      </select>
+      <select
+        className={selectClass}
+        value={group && valueIndex !== null ? valueIndex - group.startIndex : ""}
+        disabled={disabled || !group}
+        onChange={(e) => {
+          if (!group || e.target.value === "") return;
+          onChange(group.startIndex + Number(e.target.value));
+        }}
+      >
+        {group ? (
+          Array.from({ length: group.count }, (_, i) => {
+            const idx = group.startIndex + i;
+            const label = test.level_names[String(idx)]?.trim() || `${group.count - i}${test.kyu_label}`;
+            return (
+              <option key={i} value={i}>
+                {label}
+              </option>
+            );
+          })
+        ) : (
+          <option value="">-</option>
+        )}
+      </select>
+    </div>
+  );
+}
 
 export default function KarteTeamSkillTestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -477,19 +565,13 @@ export default function KarteTeamSkillTestDetailPage() {
                           {isStaff ? (
                             // player_skill_test_progress_insertのRLSは指導者・管理者による
                             // 任意選手への直接記録を許可しているため、申請フローを経由させない。
-                            <select
-                              className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
-                              value={current ? String(current.level_index) : ""}
+                            <LevelPicker
+                              test={test}
+                              levels={levels}
+                              valueIndex={current ? current.level_index : null}
                               disabled={savingPlayerId === p.id}
-                              onChange={(e) => handleStaffChangeLevel(p.id, e.target.value)}
-                            >
-                              <option value="">未設定</option>
-                              {levels.map((label, idx) => (
-                                <option key={idx} value={idx}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(idx) => handleStaffChangeLevel(p.id, String(idx))}
+                            />
                           ) : (
                             <div className="flex items-center gap-2">
                               <span className="font-bold text-[12px]">{current ? current.level_label : "未設定"}</span>
@@ -605,19 +687,13 @@ export default function KarteTeamSkillTestDetailPage() {
           <>
             <div className="text-[12.5px] font-bold mb-3">{playerFullName(requestPlayer)}</div>
             <FieldLabel>申請するランク</FieldLabel>
-            <select
-              className={inputClass()}
-              value={requestLevelIdx}
-              onChange={(e) => setRequestLevelIdx(e.target.value)}
-            >
-              <option value="">選択してください</option>
-              {levels.map((label, idx) => (
-                <option key={idx} value={idx}>
-                  {label}
-                  {isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, idx, test.chapters) ? "(要承認)" : ""}
-                </option>
-              ))}
-            </select>
+            <LevelPicker
+              test={test}
+              levels={levels}
+              variant="modal"
+              valueIndex={requestLevelIdx === "" ? null : Number(requestLevelIdx)}
+              onChange={(idx) => setRequestLevelIdx(String(idx))}
+            />
             <div className="mt-3">
               <FieldLabel>承認者(指導者・管理者から1名選択)</FieldLabel>
               <select
@@ -691,7 +767,7 @@ export default function KarteTeamSkillTestDetailPage() {
                         type="number"
                         min={1}
                         max={30}
-                        className={inputClass("w-16 flex-none")}
+                        className={inputClass("!w-16 flex-none")}
                         value={c.kyuCount}
                         onChange={(e) => updateChapterKyuCount(idx, e.target.value)}
                       />

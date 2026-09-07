@@ -179,7 +179,7 @@ export default function KarteTeamSkillTestsPage() {
                         type="number"
                         min={1}
                         max={30}
-                        className={inputClass("w-16 flex-none")}
+                        className={inputClass("!w-16 flex-none")}
                         value={c.kyuCount}
                         onChange={(e) =>
                           setChapterDrafts((prev) =>
