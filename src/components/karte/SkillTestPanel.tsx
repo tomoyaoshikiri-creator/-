@@ -12,7 +12,7 @@ import type { PlayerSkillTestProgress, SkillTest } from "@/lib/database.types";
 // カルテの選手個人ページ専用。検定(級・段制の技能検定)の作成・ランク更新をここで行う
 // (選手一覧側の選手個人ページは閲覧専用)。
 export function SkillTestPanel({ playerId }: { playerId: string }) {
-  const { teamId } = useSession();
+  const { teamId, userId } = useSession();
   const toast = useToast();
   const [tests, setTests] = useState<SkillTest[]>([]);
   const [progress, setProgress] = useState<PlayerSkillTestProgress[]>([]);
@@ -95,6 +95,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
       player_id: playerId,
       skill_test_id: test.id,
       level_index: Number(raw),
+      recorded_by: userId,
     });
     setSavingTestId(null);
     if (error) {
@@ -122,7 +123,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
       ) : (
         tests.map((test) => {
           const current = latestFor(test.id);
-          const levels = skillTestLevelLabels(test.kyu_count, test.dan_count);
+          const levels = skillTestLevelLabels(test.kyu_count, test.dan_count, test.level_names);
           return (
             <Card key={test.id} className="mb-2.5">
               <div className="flex items-center justify-between mb-2">
