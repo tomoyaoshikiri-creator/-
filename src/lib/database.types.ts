@@ -1052,6 +1052,9 @@ export interface Database {
           // 級・段それぞれの呼び方(既定は「級」「段」)。
           kyu_label: string;
           dan_label: string;
+          // 段を番号(初段/2段…)ではなく名前付きチャプターのリストとして扱う場合の設定。
+          // 空配列の場合は、これまで通りdan_count/dan_kyu_countによる番号付きの段になる。
+          chapters: { name: string; kyu_count: number }[];
           // level_indexをキーにしたカスタム名(未設定/空文字の場合は自動採番のラベルにフォールバック)。
           level_names: Record<string, string>;
           created_at: string;
@@ -1065,6 +1068,7 @@ export interface Database {
           dan_kyu_count?: number;
           kyu_label?: string;
           dan_label?: string;
+          chapters?: { name: string; kyu_count: number }[];
           level_names?: Record<string, string>;
         };
         Update: Partial<{
@@ -1074,6 +1078,7 @@ export interface Database {
           dan_kyu_count: number;
           kyu_label: string;
           dan_label: string;
+          chapters: { name: string; kyu_count: number }[];
           level_names: Record<string, string>;
         }>;
         Relationships: [];

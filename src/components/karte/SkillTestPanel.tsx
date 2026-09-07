@@ -130,6 +130,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
             test.dan_kyu_count,
             test.kyu_label,
             test.dan_label,
+            test.chapters,
           );
           return (
             <Card key={test.id} className="mb-2.5">

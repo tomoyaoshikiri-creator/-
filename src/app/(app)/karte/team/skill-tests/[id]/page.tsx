@@ -48,12 +48,11 @@ export default function KarteTeamSkillTestDetailPage() {
   const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 検定の設定編集(指導者・管理者向け): 段内の級数、級・段の呼び方、各レベルの任意の名前、
-  // 検定自体の削除を行える。
+  // 検定の設定編集(指導者・管理者向け): 級の呼び方、段(チャプター)の一覧、各レベルの任意の
+  // 名前、検定自体の削除を行える。
   const [editingSettings, setEditingSettings] = useState(false);
-  const [danKyuCountDraft, setDanKyuCountDraft] = useState("0");
   const [kyuLabelDraft, setKyuLabelDraft] = useState("級");
-  const [danLabelDraft, setDanLabelDraft] = useState("段");
+  const [chapterDrafts, setChapterDrafts] = useState<{ name: string; kyuCount: string }[]>([]);
   const [levelNameDrafts, setLevelNameDrafts] = useState<string[]>([]);
   const [savingSettings, setSavingSettings] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -118,7 +117,15 @@ export default function KarteTeamSkillTestDetailPage() {
 
   // defaultLevelsは自動採番のみ(設定編集画面のプレースホルダ用)、levelsはカスタム名を反映した表示用。
   const defaultLevels = test
-    ? skillTestLevelLabels(test.kyu_count, test.dan_count, null, test.dan_kyu_count, test.kyu_label, test.dan_label)
+    ? skillTestLevelLabels(
+        test.kyu_count,
+        test.dan_count,
+        null,
+        test.dan_kyu_count,
+        test.kyu_label,
+        test.dan_label,
+        test.chapters,
+      )
     : [];
   const levels = test
     ? skillTestLevelLabels(
@@ -128,6 +135,7 @@ export default function KarteTeamSkillTestDetailPage() {
         test.dan_kyu_count,
         test.kyu_label,
         test.dan_label,
+        test.chapters,
       )
     : [];
   const instructors = teamMembers.filter((m) => m.role === "指導者" || m.role === "管理者");
@@ -188,9 +196,9 @@ export default function KarteTeamSkillTestDetailPage() {
   async function submitRequest() {
     if (!test || !requestPlayer || requestLevelIdx === "" || !requestApproverId) return;
     const targetIndex = Number(requestLevelIdx);
-    // 段そのものへの昇格(新しい段への突入)だけが要承認のブロッキング対象。同じ段の中の
-    // 級への昇格(dan_kyu_count>0の検定のみ発生しうる)は、これまでの級と同じ即時反映+事後承認。
-    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex);
+    // 段(チャプター)そのものへの昇格(新しい段/チャプターへの突入)だけが要承認のブロッキング
+    // 対象。同じ段/チャプターの中の級への昇格は、これまでの級と同じ即時反映+事後承認。
+    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex, test.chapters);
     const label = levels[targetIndex];
     setSubmittingRequest(true);
     const supabase = createClient();
@@ -292,34 +300,73 @@ export default function KarteTeamSkillTestDetailPage() {
 
   function openSettingsEditor() {
     if (!test) return;
-    setDanKyuCountDraft(String(test.dan_kyu_count));
     setKyuLabelDraft(test.kyu_label);
-    setDanLabelDraft(test.dan_label);
+    setChapterDrafts(test.chapters.map((c) => ({ name: c.name, kyuCount: String(c.kyu_count) })));
     setLevelNameDrafts(defaultLevels.map((_, idx) => test.level_names[String(idx)] ?? ""));
     setConfirmingDelete(false);
     setEditingSettings(true);
   }
 
-  // 段内の級数を変えると各段の区切り(level_index)自体が変わるため、級側(既存のまま)の
-  // カスタム名は引き継ぎつつ、段側のカスタム名はいったんリセットする。
-  function handleDanKyuCountDraftChange(value: string) {
-    setDanKyuCountDraft(value);
+  // チャプターの追加・削除・級数変更は各段の区切り(level_index)自体を変えるため、級側
+  // (既存のまま)のカスタム名は引き継ぎつつ、段側のカスタム名はいったんリセットする
+  // (チャプター名だけの変更はlevel_indexに影響しないため、この関数は呼ばない)。
+  function resetDanLevelNameDrafts(chapters: { name: string; kyuCount: string }[]) {
     if (!test) return;
-    const newDefaults = skillTestLevelLabels(test.kyu_count, test.dan_count, null, Number(value) || 0);
+    const newDefaults = skillTestLevelLabels(
+      test.kyu_count,
+      test.dan_count,
+      null,
+      0,
+      kyuLabelDraft || "級",
+      "段",
+      chapters.map((c) => ({ name: c.name, kyu_count: Number(c.kyuCount) || 0 })),
+    );
     setLevelNameDrafts((prev) => newDefaults.map((_, idx) => (idx < test.kyu_count ? (prev[idx] ?? "") : "")));
+  }
+
+  function addChapterDraft() {
+    setChapterDrafts((prev) => {
+      const next = [...prev, { name: "", kyuCount: "10" }];
+      resetDanLevelNameDrafts(next);
+      return next;
+    });
+  }
+
+  function removeChapterDraft(idx: number) {
+    setChapterDrafts((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      resetDanLevelNameDrafts(next);
+      return next;
+    });
+  }
+
+  function updateChapterName(idx: number, name: string) {
+    setChapterDrafts((prev) => prev.map((row, i) => (i === idx ? { ...row, name } : row)));
+  }
+
+  function updateChapterKyuCount(idx: number, kyuCount: string) {
+    setChapterDrafts((prev) => {
+      const next = prev.map((row, i) => (i === idx ? { ...row, kyuCount } : row));
+      resetDanLevelNameDrafts(next);
+      return next;
+    });
   }
 
   async function saveSettings() {
     if (!test) return;
-    const danKyuCount = Number(danKyuCountDraft);
     const kyuLabel = kyuLabelDraft.trim();
-    const danLabel = danLabelDraft.trim();
-    if (!Number.isInteger(danKyuCount) || danKyuCount < 0 || danKyuCount > 30) {
-      toast("段内の級数を正しく入力してください");
+    if (!kyuLabel || kyuLabel.length > 10) {
+      toast("級の呼び方を正しく入力してください");
       return;
     }
-    if (!kyuLabel || kyuLabel.length > 10 || !danLabel || danLabel.length > 10) {
-      toast("級・段の呼び方を正しく入力してください");
+    if (chapterDrafts.some((c) => !c.name.trim() || c.name.trim().length > 20)) {
+      toast("チャプター名を正しく入力してください");
+      return;
+    }
+    if (
+      chapterDrafts.some((c) => !Number.isInteger(Number(c.kyuCount)) || Number(c.kyuCount) < 1 || Number(c.kyuCount) > 30)
+    ) {
+      toast("チャプター内の級数を正しく入力してください");
       return;
     }
     setSavingSettings(true);
@@ -331,7 +378,11 @@ export default function KarteTeamSkillTestDetailPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("skill_tests")
-      .update({ dan_kyu_count: danKyuCount, kyu_label: kyuLabel, dan_label: danLabel, level_names: levelNames })
+      .update({
+        kyu_label: kyuLabel,
+        chapters: chapterDrafts.map((c) => ({ name: c.name.trim(), kyu_count: Number(c.kyuCount) })),
+        level_names: levelNames,
+      })
       .eq("id", test.id)
       .select("*")
       .single();
@@ -560,7 +611,7 @@ export default function KarteTeamSkillTestDetailPage() {
               {levels.map((label, idx) => (
                 <option key={idx} value={idx}>
                   {label}
-                  {isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, idx) ? "(要承認)" : ""}
+                  {isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, idx, test.chapters) ? "(要承認)" : ""}
                 </option>
               ))}
             </select>
@@ -580,7 +631,7 @@ export default function KarteTeamSkillTestDetailPage() {
             </div>
             <div className="text-[11px] text-ink-soft mt-3">
               {requestLevelIdx !== "" &&
-              isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, Number(requestLevelIdx))
+              isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, Number(requestLevelIdx), test.chapters)
                 ? "段への昇格は、承認されるまでランクに反映されません。"
                 : "級は申請と同時にランクへ反映されますが、承認者による事後確認の対象になります。"}
             </div>
@@ -601,65 +652,86 @@ export default function KarteTeamSkillTestDetailPage() {
               test.kyu_count,
               test.dan_count,
               null,
-              Number(danKyuCountDraft) || 0,
+              0,
               kyuLabelDraft || "級",
-              danLabelDraft || "段",
+              "段",
+              chapterDrafts.map((c) => ({ name: c.name, kyu_count: Number(c.kyuCount) || 0 })),
             );
             return (
               <>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <FieldLabel>級の呼び方</FieldLabel>
-                    <input
-                      className={inputClass()}
-                      value={kyuLabelDraft}
-                      onChange={(e) => setKyuLabelDraft(e.target.value)}
-                      maxLength={10}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <FieldLabel>段の呼び方</FieldLabel>
-                    <input
-                      className={inputClass()}
-                      value={danLabelDraft}
-                      onChange={(e) => setDanLabelDraft(e.target.value)}
-                      maxLength={10}
-                    />
-                  </div>
-                </div>
-                <div className="mt-3">
-                  <FieldLabel>段内の級数</FieldLabel>
-                  <input
-                    type="number"
-                    min={0}
-                    max={30}
-                    className={inputClass()}
-                    value={danKyuCountDraft}
-                    onChange={(e) => handleDanKyuCountDraftChange(e.target.value)}
-                  />
-                </div>
+                <FieldLabel>級の呼び方</FieldLabel>
+                <input
+                  className={inputClass()}
+                  value={kyuLabelDraft}
+                  onChange={(e) => setKyuLabelDraft(e.target.value)}
+                  maxLength={10}
+                />
                 <div className="text-[11px] text-ink-soft mt-1 mb-3">
-                  段内の級数が0の場合、段はサブランクなし(初{danLabelDraft || "段"}・2{danLabelDraft || "段"}…)のままです。数を指定すると、各段が「(段名)1{kyuLabelDraft || "級"}」〜「(段名)N{kyuLabelDraft || "級"}」に分かれます。段そのものへの昇格のみ引き続き要承認で、段内の{kyuLabelDraft || "級"}への昇格は{kyuLabelDraft || "級"}と同じ扱いになります。
+                  下のチャプターに入る前段階の級(現在{test.kyu_count}{kyuLabelDraft || "級"})の呼び方にも使われます。
                 </div>
-                <FieldLabel>レベル名(空欄は自動採番のまま)</FieldLabel>
-                <div className="flex flex-col gap-2">
-                  {draftDefaultLevels.map((defaultLabel, idx) => (
+
+                <FieldLabel>チャプター(段)</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">
+                  「スタート編」「入門編」のように名前を付け、それぞれの中の級の数を個別に設定できます(例:スタート編=4{kyuLabelDraft || "級"}まで、入門編=10{kyuLabelDraft || "級"}まで)。次のチャプターへ進む昇格のみ要承認で、チャプター内の{kyuLabelDraft || "級"}への昇格はこれまでの{kyuLabelDraft || "級"}と同じ扱いになります。
+                </div>
+                <div className="flex flex-col gap-2 mb-2">
+                  {chapterDrafts.map((c, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="text-[11px] text-ink-soft w-16 flex-shrink-0">{defaultLabel}</span>
                       <input
                         className={inputClass("flex-1")}
-                        value={levelNameDrafts[idx] ?? ""}
-                        onChange={(e) =>
-                          setLevelNameDrafts((prev) => {
-                            const next = [...prev];
-                            next[idx] = e.target.value;
-                            return next;
-                          })
-                        }
-                        placeholder={defaultLabel}
+                        value={c.name}
+                        onChange={(e) => updateChapterName(idx, e.target.value)}
+                        placeholder="例:スタート編"
+                        maxLength={20}
                       />
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        className={inputClass("w-16 flex-none")}
+                        value={c.kyuCount}
+                        onChange={(e) => updateChapterKyuCount(idx, e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeChapterDraft(idx)}
+                        className="flex-none w-8 h-8 rounded-lg border border-line text-ink-soft font-bold"
+                        aria-label="このチャプターを削除"
+                      >
+                        ×
+                      </button>
                     </div>
                   ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addChapterDraft}
+                  className="w-full text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
+                >
+                  + チャプターを追加
+                </button>
+
+                <div className="mt-4">
+                  <FieldLabel>レベル名(空欄は自動採番のまま)</FieldLabel>
+                  <div className="flex flex-col gap-2">
+                    {draftDefaultLevels.map((defaultLabel, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-[11px] text-ink-soft w-16 flex-shrink-0">{defaultLabel}</span>
+                        <input
+                          className={inputClass("flex-1")}
+                          value={levelNameDrafts[idx] ?? ""}
+                          onChange={(e) =>
+                            setLevelNameDrafts((prev) => {
+                              const next = [...prev];
+                              next[idx] = e.target.value;
+                              return next;
+                            })
+                          }
+                          placeholder={defaultLabel}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <SubmitButton onClick={saveSettings} disabled={savingSettings}>
                   {savingSettings ? "保存中…" : "保存する"}
