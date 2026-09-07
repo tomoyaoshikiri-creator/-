@@ -1047,6 +1047,8 @@ export interface Database {
           name: string;
           kyu_count: number;
           dan_count: number;
+          // level_indexをキーにしたカスタム名(未設定/空文字の場合は自動採番のラベルにフォールバック)。
+          level_names: Record<string, string>;
           created_at: string;
         };
         Insert: {
@@ -1055,11 +1057,13 @@ export interface Database {
           name: string;
           kyu_count?: number;
           dan_count?: number;
+          level_names?: Record<string, string>;
         };
         Update: Partial<{
           name: string;
           kyu_count: number;
           dan_count: number;
+          level_names: Record<string, string>;
         }>;
         Relationships: [];
       };

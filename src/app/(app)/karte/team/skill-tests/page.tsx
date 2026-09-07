@@ -55,6 +55,11 @@ export default function KarteTeamSkillTestsPage() {
   const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  // レベル名編集(指導者・管理者向け): 級・段それぞれに任意の名前を設定できる。
+  const [editingLevelNames, setEditingLevelNames] = useState(false);
+  const [levelNameDrafts, setLevelNameDrafts] = useState<string[]>([]);
+  const [savingLevelNames, setSavingLevelNames] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
@@ -114,7 +119,11 @@ export default function KarteTeamSkillTestsPage() {
   }, [loadProgress]);
 
   const selectedTest = tests.find((t) => t.id === selectedTestId) ?? null;
-  const levels = selectedTest ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count) : [];
+  // defaultLevelsは自動採番のみ(カスタム名編集画面のプレースホルダ用)、levelsはカスタム名を反映した表示用。
+  const defaultLevels = selectedTest ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count) : [];
+  const levels = selectedTest
+    ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count, selectedTest.level_names)
+    : [];
   const instructors = teamMembers.filter((m) => m.role === "指導者" || m.role === "管理者");
 
   function memberName(id: string) {
@@ -311,6 +320,37 @@ export default function KarteTeamSkillTestsPage() {
     setSelectedTestId(data.id);
   }
 
+  function openLevelNameEditor() {
+    if (!selectedTest) return;
+    setLevelNameDrafts(defaultLevels.map((_, idx) => selectedTest.level_names[String(idx)] ?? ""));
+    setEditingLevelNames(true);
+  }
+
+  async function saveLevelNames() {
+    if (!selectedTest) return;
+    setSavingLevelNames(true);
+    const levelNames: Record<string, string> = {};
+    levelNameDrafts.forEach((value, idx) => {
+      const trimmed = value.trim();
+      if (trimmed) levelNames[String(idx)] = trimmed;
+    });
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("skill_tests")
+      .update({ level_names: levelNames })
+      .eq("id", selectedTest.id)
+      .select("*")
+      .single();
+    setSavingLevelNames(false);
+    if (error || !data) {
+      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      return;
+    }
+    setTests((prev) => prev.map((t) => (t.id === data.id ? data : t)));
+    setEditingLevelNames(false);
+    toast("レベル名を更新しました");
+  }
+
   const pendingQueue = requests.filter((r) => r.status === "pending");
   const myRequests = requests.filter((r) => r.requested_by === userId);
 
@@ -330,6 +370,15 @@ export default function KarteTeamSkillTestsPage() {
             onChange={setSelectedTestId}
             options={tests.map((t) => ({ value: t.id, label: t.name }))}
           />
+          {isStaff && selectedTest && (
+            <button
+              type="button"
+              onClick={openLevelNameEditor}
+              className="mt-1.5 text-[11px] font-bold text-orange underline"
+            >
+              レベル名を編集
+            </button>
+          )}
         </div>
       )}
 
@@ -591,6 +640,38 @@ export default function KarteTeamSkillTestsPage() {
               disabled={submittingRequest || requestLevelIdx === "" || !requestApproverId}
             >
               {submittingRequest ? "送信中…" : "申請する"}
+            </SubmitButton>
+          </>
+        )}
+      </Modal>
+
+      <Modal open={editingLevelNames} onClose={() => setEditingLevelNames(false)} title="レベル名を編集">
+        {selectedTest && (
+          <>
+            <div className="text-[11px] text-ink-soft mb-3">
+              空欄のまま保存すると、そのランクは自動採番のラベル(例:{defaultLevels[0] ?? "3級"})のままになります。
+            </div>
+            <div className="flex flex-col gap-2">
+              {defaultLevels.map((defaultLabel, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[11px] text-ink-soft w-12 flex-shrink-0">{defaultLabel}</span>
+                  <input
+                    className={inputClass("flex-1")}
+                    value={levelNameDrafts[idx] ?? ""}
+                    onChange={(e) =>
+                      setLevelNameDrafts((prev) => {
+                        const next = [...prev];
+                        next[idx] = e.target.value;
+                        return next;
+                      })
+                    }
+                    placeholder={defaultLabel}
+                  />
+                </div>
+              ))}
+            </div>
+            <SubmitButton onClick={saveLevelNames} disabled={savingLevelNames}>
+              {savingLevelNames ? "保存中…" : "保存する"}
             </SubmitButton>
           </>
         )}
