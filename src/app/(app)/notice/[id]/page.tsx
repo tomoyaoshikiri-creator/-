@@ -481,10 +481,6 @@ export default function NoticeDetailPage() {
               </Card>
             </>
           )}
-          <SectionLabel>本文</SectionLabel>
-          <Card>
-            <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
-          </Card>
           {attachments.length > 0 && (
             <>
               <SectionLabel>添付資料</SectionLabel>
@@ -500,7 +496,7 @@ export default function NoticeDetailPage() {
                         <img
                           src={a.url}
                           alt={a.file_name}
-                          className="w-full rounded-lg border border-line object-contain"
+                          className="w-28 h-28 rounded-lg border border-line object-cover"
                         />
                       </a>
                     ) : a.url ? (
@@ -513,6 +509,10 @@ export default function NoticeDetailPage() {
               </Card>
             </>
           )}
+          <SectionLabel>本文</SectionLabel>
+          <Card>
+            <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
+          </Card>
 
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
 
