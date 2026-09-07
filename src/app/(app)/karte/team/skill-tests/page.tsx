@@ -35,6 +35,8 @@ export default function KarteTeamSkillTestsPage() {
   const [newKyuCount, setNewKyuCount] = useState("10");
   const [newDanCount, setNewDanCount] = useState("5");
   const [newDanKyuCount, setNewDanKyuCount] = useState("0");
+  const [newKyuLabel, setNewKyuLabel] = useState("級");
+  const [newDanLabel, setNewDanLabel] = useState("段");
   const [addingTest, setAddingTest] = useState(false);
 
   const load = useCallback(async () => {
@@ -55,6 +57,8 @@ export default function KarteTeamSkillTestsPage() {
     const kyuCount = Number(newKyuCount);
     const danCount = Number(newDanCount);
     const danKyuCount = Number(newDanKyuCount);
+    const kyuLabel = newKyuLabel.trim();
+    const danLabel = newDanLabel.trim();
     if (!name) {
       toast("検定名を入力してください");
       return;
@@ -73,11 +77,23 @@ export default function KarteTeamSkillTestsPage() {
       toast("段内の級数を正しく入力してください");
       return;
     }
+    if (!kyuLabel || kyuLabel.length > 10 || !danLabel || danLabel.length > 10) {
+      toast("級・段の呼び方を正しく入力してください");
+      return;
+    }
     setAddingTest(true);
     const supabase = createClient();
     const { data, error } = await supabase
       .from("skill_tests")
-      .insert({ team_id: teamId, name, kyu_count: kyuCount, dan_count: danCount, dan_kyu_count: danKyuCount })
+      .insert({
+        team_id: teamId,
+        name,
+        kyu_count: kyuCount,
+        dan_count: danCount,
+        dan_kyu_count: danKyuCount,
+        kyu_label: kyuLabel,
+        dan_label: danLabel,
+      })
       .select("*")
       .single();
     setAddingTest(false);
@@ -89,6 +105,8 @@ export default function KarteTeamSkillTestsPage() {
     setNewKyuCount("10");
     setNewDanCount("5");
     setNewDanKyuCount("0");
+    setNewKyuLabel("級");
+    setNewDanLabel("段");
     setModalOpen(false);
     setTests((prev) => [...prev, data]);
     toast("検定を追加しました");
@@ -146,6 +164,26 @@ export default function KarteTeamSkillTestsPage() {
                 />
                 <div className="text-[11px] text-ink-soft mt-1">
                   各段の中にも級を作りたい場合のみ入力してください(例:3→初段1級〜初段3級)。あとから変更もできます。
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <div className="flex-1">
+                  <FieldLabel>級の呼び方</FieldLabel>
+                  <input
+                    className={inputClass()}
+                    value={newKyuLabel}
+                    onChange={(e) => setNewKyuLabel(e.target.value)}
+                    maxLength={10}
+                  />
+                </div>
+                <div className="flex-1">
+                  <FieldLabel>段の呼び方</FieldLabel>
+                  <input
+                    className={inputClass()}
+                    value={newDanLabel}
+                    onChange={(e) => setNewDanLabel(e.target.value)}
+                    maxLength={10}
+                  />
                 </div>
               </div>
               <SubmitButton onClick={handleAddTest} disabled={addingTest}>

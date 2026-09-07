@@ -1,5 +1,6 @@
 // 検定(級・段制の技能検定)のランク一覧を生成する。級の数・段の数はチームが検定ごとに自由に設定できる。
 // 並び順は0始まりで、級側(数字が大きいほど下位)→段側(数字が大きいほど上位)の順に昇順。
+// kyuLabel/danLabelで「級」「段」それぞれの呼び方を検定ごとに変更できる(既定は「級」「段」)。
 // danKyuCountが1以上の場合、各段の中にもさらに級(サブランク)を持たせる
 // (例: danKyuCount=3なら 初段1級→初段2級→初段3級→2段1級→…)。0(既定)の場合は
 // 従来通り段はサブランクなしの単一ランク(初段/2段/…)になる。
@@ -10,13 +11,15 @@ export function skillTestLevelLabels(
   danCount: number,
   levelNames?: Record<string, string> | null,
   danKyuCount: number = 0,
+  kyuLabel: string = "級",
+  danLabel: string = "段",
 ): string[] {
-  const kyus = Array.from({ length: Math.max(0, kyuCount) }, (_, i) => `${kyuCount - i}級`);
+  const kyus = Array.from({ length: Math.max(0, kyuCount) }, (_, i) => `${kyuCount - i}${kyuLabel}`);
   const subCount = Math.max(danKyuCount, 1);
   const dans = Array.from({ length: Math.max(0, danCount) * subCount }, (_, i) => {
     const danNumber = Math.floor(i / subCount) + 1;
-    const danLabel = danNumber === 1 ? "初段" : `${danNumber}段`;
-    return danKyuCount > 0 ? `${danLabel}${(i % subCount) + 1}級` : danLabel;
+    const danNumberLabel = danNumber === 1 ? `初${danLabel}` : `${danNumber}${danLabel}`;
+    return danKyuCount > 0 ? `${danNumberLabel}${(i % subCount) + 1}${kyuLabel}` : danNumberLabel;
   });
   const defaults = [...kyus, ...dans];
   if (!levelNames) return defaults;

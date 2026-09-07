@@ -123,7 +123,14 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
       ) : (
         tests.map((test) => {
           const current = latestFor(test.id);
-          const levels = skillTestLevelLabels(test.kyu_count, test.dan_count, test.level_names, test.dan_kyu_count);
+          const levels = skillTestLevelLabels(
+            test.kyu_count,
+            test.dan_count,
+            test.level_names,
+            test.dan_kyu_count,
+            test.kyu_label,
+            test.dan_label,
+          );
           return (
             <Card key={test.id} className="mb-2.5">
               <div className="flex items-center justify-between mb-2">

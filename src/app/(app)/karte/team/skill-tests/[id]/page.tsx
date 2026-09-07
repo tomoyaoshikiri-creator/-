@@ -48,11 +48,16 @@ export default function KarteTeamSkillTestDetailPage() {
   const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // 検定の設定編集(指導者・管理者向け): 段内の級数と、級・段それぞれの任意の名前を設定できる。
+  // 検定の設定編集(指導者・管理者向け): 段内の級数、級・段の呼び方、各レベルの任意の名前、
+  // 検定自体の削除を行える。
   const [editingSettings, setEditingSettings] = useState(false);
   const [danKyuCountDraft, setDanKyuCountDraft] = useState("0");
+  const [kyuLabelDraft, setKyuLabelDraft] = useState("級");
+  const [danLabelDraft, setDanLabelDraft] = useState("段");
   const [levelNameDrafts, setLevelNameDrafts] = useState<string[]>([]);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletingTest, setDeletingTest] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,9 +117,18 @@ export default function KarteTeamSkillTestDetailPage() {
   }, [loadProgress]);
 
   // defaultLevelsは自動採番のみ(設定編集画面のプレースホルダ用)、levelsはカスタム名を反映した表示用。
-  const defaultLevels = test ? skillTestLevelLabels(test.kyu_count, test.dan_count, null, test.dan_kyu_count) : [];
+  const defaultLevels = test
+    ? skillTestLevelLabels(test.kyu_count, test.dan_count, null, test.dan_kyu_count, test.kyu_label, test.dan_label)
+    : [];
   const levels = test
-    ? skillTestLevelLabels(test.kyu_count, test.dan_count, test.level_names, test.dan_kyu_count)
+    ? skillTestLevelLabels(
+        test.kyu_count,
+        test.dan_count,
+        test.level_names,
+        test.dan_kyu_count,
+        test.kyu_label,
+        test.dan_label,
+      )
     : [];
   const instructors = teamMembers.filter((m) => m.role === "指導者" || m.role === "管理者");
 
@@ -279,7 +293,10 @@ export default function KarteTeamSkillTestDetailPage() {
   function openSettingsEditor() {
     if (!test) return;
     setDanKyuCountDraft(String(test.dan_kyu_count));
+    setKyuLabelDraft(test.kyu_label);
+    setDanLabelDraft(test.dan_label);
     setLevelNameDrafts(defaultLevels.map((_, idx) => test.level_names[String(idx)] ?? ""));
+    setConfirmingDelete(false);
     setEditingSettings(true);
   }
 
@@ -295,8 +312,14 @@ export default function KarteTeamSkillTestDetailPage() {
   async function saveSettings() {
     if (!test) return;
     const danKyuCount = Number(danKyuCountDraft);
+    const kyuLabel = kyuLabelDraft.trim();
+    const danLabel = danLabelDraft.trim();
     if (!Number.isInteger(danKyuCount) || danKyuCount < 0 || danKyuCount > 30) {
       toast("段内の級数を正しく入力してください");
+      return;
+    }
+    if (!kyuLabel || kyuLabel.length > 10 || !danLabel || danLabel.length > 10) {
+      toast("級・段の呼び方を正しく入力してください");
       return;
     }
     setSavingSettings(true);
@@ -308,7 +331,7 @@ export default function KarteTeamSkillTestDetailPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("skill_tests")
-      .update({ dan_kyu_count: danKyuCount, level_names: levelNames })
+      .update({ dan_kyu_count: danKyuCount, kyu_label: kyuLabel, dan_label: danLabel, level_names: levelNames })
       .eq("id", test.id)
       .select("*")
       .single();
@@ -320,6 +343,25 @@ export default function KarteTeamSkillTestDetailPage() {
     setTest(data);
     setEditingSettings(false);
     toast("検定の設定を更新しました");
+  }
+
+  // 検定自体の削除(記録・申請もon delete cascadeで一緒に消える)。誤タップ防止のため2回タップで確定する。
+  async function handleDeleteTest() {
+    if (!test) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    setDeletingTest(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("skill_tests").delete().eq("id", test.id);
+    setDeletingTest(false);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("検定を削除しました");
+    router.push("/karte/team/skill-tests");
   }
 
   const pendingQueue = requests.filter((r) => r.status === "pending");
@@ -345,7 +387,7 @@ export default function KarteTeamSkillTestDetailPage() {
               onClick={openSettingsEditor}
               className="mb-3 text-[11px] font-bold text-orange underline"
             >
-              検定の設定を編集
+              設定を編集
             </button>
           )}
 
@@ -552,7 +594,7 @@ export default function KarteTeamSkillTestDetailPage() {
         )}
       </Modal>
 
-      <Modal open={editingSettings} onClose={() => setEditingSettings(false)} title="検定の設定を編集">
+      <Modal open={editingSettings} onClose={() => setEditingSettings(false)} title="設定を編集">
         {test &&
           (() => {
             const draftDefaultLevels = skillTestLevelLabels(
@@ -560,20 +602,44 @@ export default function KarteTeamSkillTestDetailPage() {
               test.dan_count,
               null,
               Number(danKyuCountDraft) || 0,
+              kyuLabelDraft || "級",
+              danLabelDraft || "段",
             );
             return (
               <>
-                <FieldLabel>段内の級数</FieldLabel>
-                <input
-                  type="number"
-                  min={0}
-                  max={30}
-                  className={inputClass()}
-                  value={danKyuCountDraft}
-                  onChange={(e) => handleDanKyuCountDraftChange(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <FieldLabel>級の呼び方</FieldLabel>
+                    <input
+                      className={inputClass()}
+                      value={kyuLabelDraft}
+                      onChange={(e) => setKyuLabelDraft(e.target.value)}
+                      maxLength={10}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <FieldLabel>段の呼び方</FieldLabel>
+                    <input
+                      className={inputClass()}
+                      value={danLabelDraft}
+                      onChange={(e) => setDanLabelDraft(e.target.value)}
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <FieldLabel>段内の級数</FieldLabel>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    className={inputClass()}
+                    value={danKyuCountDraft}
+                    onChange={(e) => handleDanKyuCountDraftChange(e.target.value)}
+                  />
+                </div>
                 <div className="text-[11px] text-ink-soft mt-1 mb-3">
-                  0の場合、段はサブランクなし(初段・2段…)のままです。数を指定すると、各段が「(段名)1級」〜「(段名)N級」に分かれます(例:3→初段1級〜初段3級→2段1級〜…)。段そのものへの昇格のみ引き続き要承認で、段内の級への昇格は級と同じ扱いになります。
+                  段内の級数が0の場合、段はサブランクなし(初{danLabelDraft || "段"}・2{danLabelDraft || "段"}…)のままです。数を指定すると、各段が「(段名)1{kyuLabelDraft || "級"}」〜「(段名)N{kyuLabelDraft || "級"}」に分かれます。段そのものへの昇格のみ引き続き要承認で、段内の{kyuLabelDraft || "級"}への昇格は{kyuLabelDraft || "級"}と同じ扱いになります。
                 </div>
                 <FieldLabel>レベル名(空欄は自動採番のまま)</FieldLabel>
                 <div className="flex flex-col gap-2">
@@ -598,6 +664,15 @@ export default function KarteTeamSkillTestDetailPage() {
                 <SubmitButton onClick={saveSettings} disabled={savingSettings}>
                   {savingSettings ? "保存中…" : "保存する"}
                 </SubmitButton>
+                <button
+                  type="button"
+                  onClick={handleDeleteTest}
+                  disabled={deletingTest}
+                  className="mt-3 w-full text-center py-2.5 rounded-lg font-bold text-[13px] border bg-white disabled:opacity-50"
+                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                >
+                  {deletingTest ? "削除中…" : confirmingDelete ? "本当に削除しますか?(記録もすべて消えます・もう一度タップで削除)" : "この検定を削除"}
+                </button>
               </>
             );
           })()}
