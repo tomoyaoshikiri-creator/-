@@ -8,14 +8,16 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { Modal } from "@/components/ui/Modal";
+import { Pill } from "@/components/ui/Pill";
 import { canViewKarte } from "@/lib/permissions";
 import { hasSkillTestAccess } from "@/lib/plan";
 import { skillTestLevelLabels } from "@/lib/skillTest";
 import { playerFullName, sortPlayers } from "@/lib/format";
-import type { Player, PlayerSkillTestProgress, SkillTest } from "@/lib/database.types";
+import type { Player, PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest, TeamMember } from "@/lib/database.types";
 
 export default function KarteTeamSkillTestsPage() {
   const router = useRouter();
@@ -31,6 +33,8 @@ export default function KarteTeamSkillTestsPage() {
   const [tests, setTests] = useState<SkillTest[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [progress, setProgress] = useState<PlayerSkillTestProgress[]>([]);
+  const [requests, setRequests] = useState<SkillTestPromotionRequest[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingPlayerId, setSavingPlayerId] = useState<string | null>(null);
 
@@ -40,16 +44,30 @@ export default function KarteTeamSkillTestsPage() {
   const [newDanCount, setNewDanCount] = useState("5");
   const [addingTest, setAddingTest] = useState(false);
 
+  // 申請モーダル(一般・運営専用): 選手を選んでランクと承認者を指定し、申請する。
+  const [requestPlayer, setRequestPlayer] = useState<Player | null>(null);
+  const [requestLevelIdx, setRequestLevelIdx] = useState("");
+  const [requestApproverId, setRequestApproverId] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+
+  // 承認キュー(指導者・管理者向け): 却下時のみ理由コメントの入力を求める。
+  const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: t }, { data: links }] = await Promise.all([
+    const [{ data: p }, { data: t }, { data: links }, { data: members }] = await Promise.all([
       supabase.from("players").select("*"),
       supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
       // 一般・運営は自分に紐づく選手の分しか見られない(player_skill_test_progressの
       // RLSと同じ方針)。playersテーブル自体はRLS上チーム全員分が見えてしまうため、
       // 選手一覧はここでクライアント側から絞り込む。
       isStaff ? Promise.resolve({ data: null }) : supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
+      // 承認者候補(指導者・管理者)の選択・申請者や承認者の表示名解決の両方に使う。
+      // list_team_members()はロールを問わず呼び出せる(email/last_active_atのみ管理者限定)。
+      supabase.rpc("list_team_members"),
     ]);
     let activePlayers = sortPlayers((p ?? []).filter((row) => row.status !== "OB・OG"));
     if (!isStaff) {
@@ -58,6 +76,7 @@ export default function KarteTeamSkillTestsPage() {
     }
     setPlayers(activePlayers);
     setTests(t ?? []);
+    setTeamMembers(members ?? []);
     setSelectedTestId((cur) => cur ?? (t && t.length > 0 ? t[0].id : null));
     setLoading(false);
   }, [isStaff, userId]);
@@ -67,30 +86,61 @@ export default function KarteTeamSkillTestsPage() {
     load();
   }, [load, plan]);
 
-  useEffect(() => {
+  const loadProgress = useCallback(async () => {
     if (!hasSkillTestAccess(plan) || !selectedTestId) {
       setProgress([]);
+      setRequests([]);
       return;
     }
-    (async () => {
-      const supabase = createClient();
-      const { data } = await supabase
+    const supabase = createClient();
+    const [{ data: prog }, { data: reqs }] = await Promise.all([
+      supabase
         .from("player_skill_test_progress")
         .select("*")
         .eq("skill_test_id", selectedTestId)
-        .order("created_at", { ascending: false });
-      setProgress(data ?? []);
-    })();
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("skill_test_promotion_requests")
+        .select("*")
+        .eq("skill_test_id", selectedTestId)
+        .order("created_at", { ascending: false }),
+    ]);
+    setProgress(prog ?? []);
+    setRequests(reqs ?? []);
   }, [selectedTestId, plan]);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   const selectedTest = tests.find((t) => t.id === selectedTestId) ?? null;
   const levels = selectedTest ? skillTestLevelLabels(selectedTest.kyu_count, selectedTest.dan_count) : [];
+  const instructors = teamMembers.filter((m) => m.role === "指導者" || m.role === "管理者");
 
-  function latestFor(playerId: string) {
-    return progress.find((row) => row.player_id === playerId) ?? null;
+  function memberName(id: string) {
+    return teamMembers.find((m) => m.id === id)?.name ?? "不明なメンバー";
   }
 
-  async function handleChangeLevel(playerId: string, indexStr: string) {
+  function playerName(id: string) {
+    const p = players.find((row) => row.id === id);
+    return p ? playerFullName(p) : "不明な選手";
+  }
+
+  // 却下された申請に紐づくprogress行(級の即時反映分)は「現在のランク」の判定から除外する
+  // (追記型ログのため行自体は消さない)。
+  function latestFor(playerId: string) {
+    const rejectedProgressIds = new Set(
+      requests.filter((r) => r.status === "rejected" && r.progress_id).map((r) => r.progress_id),
+    );
+    return progress.find((row) => row.player_id === playerId && !rejectedProgressIds.has(row.id)) ?? null;
+  }
+
+  function pendingRequestFor(playerId: string) {
+    return requests.find((row) => row.player_id === playerId && row.status === "pending") ?? null;
+  }
+
+  // 指導者・管理者が自分で編集する場合、この申請フローを経由せず直接反映する。
+  async function handleStaffChangeLevel(playerId: string, indexStr: string) {
     if (!selectedTest || indexStr === "") return;
     setSavingPlayerId(playerId);
     const supabase = createClient();
@@ -111,6 +161,116 @@ export default function KarteTeamSkillTestsPage() {
       return;
     }
     setProgress((prev) => [data, ...prev]);
+  }
+
+  function openRequestModal(player: Player) {
+    setRequestPlayer(player);
+    setRequestLevelIdx("");
+    setRequestApproverId(instructors[0]?.id ?? "");
+  }
+
+  // 一般・運営からの申請。級は即時反映+事後承認、段は承認されるまで反映しない(ブロッキング)。
+  async function submitRequest() {
+    if (!selectedTest || !requestPlayer || requestLevelIdx === "" || !requestApproverId) return;
+    const targetIndex = Number(requestLevelIdx);
+    const isDan = targetIndex >= selectedTest.kyu_count;
+    const label = levels[targetIndex];
+    setSubmittingRequest(true);
+    const supabase = createClient();
+
+    if (!isDan) {
+      const { data: progressRow, error: progressError } = await supabase
+        .from("player_skill_test_progress")
+        .insert({
+          team_id: teamId,
+          player_id: requestPlayer.id,
+          skill_test_id: selectedTest.id,
+          level_index: targetIndex,
+          recorded_by: userId,
+        })
+        .select("*")
+        .single();
+      if (progressError || !progressRow) {
+        setSubmittingRequest(false);
+        toast(`更新に失敗しました: ${progressError?.message ?? ""}`);
+        return;
+      }
+      const { error: reqError } = await supabase.from("skill_test_promotion_requests").insert({
+        team_id: teamId,
+        player_id: requestPlayer.id,
+        skill_test_id: selectedTest.id,
+        target_level_index: targetIndex,
+        target_level_label: label,
+        is_dan: false,
+        progress_id: progressRow.id,
+        requested_by: userId,
+        approver_id: requestApproverId,
+      });
+      setSubmittingRequest(false);
+      if (reqError) {
+        toast(`申請の送信に失敗しました: ${reqError.message}`);
+        return;
+      }
+      toast("ランクを更新し、承認を申請しました");
+    } else {
+      const { error: reqError } = await supabase.from("skill_test_promotion_requests").insert({
+        team_id: teamId,
+        player_id: requestPlayer.id,
+        skill_test_id: selectedTest.id,
+        target_level_index: targetIndex,
+        target_level_label: label,
+        is_dan: true,
+        requested_by: userId,
+        approver_id: requestApproverId,
+      });
+      setSubmittingRequest(false);
+      if (reqError) {
+        toast(`申請の送信に失敗しました: ${reqError.message}`);
+        return;
+      }
+      toast("昇段申請を送信しました。承認をお待ちください");
+    }
+    setRequestPlayer(null);
+    await loadProgress();
+  }
+
+  async function handleApprove(request: SkillTestPromotionRequest) {
+    setDecidingId(request.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("skill_test_promotion_requests")
+      .update({ status: "approved" })
+      .eq("id", request.id);
+    setDecidingId(null);
+    if (error) {
+      toast(`承認に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("承認しました");
+    await loadProgress();
+  }
+
+  async function handleReject() {
+    if (!rejectingRequest) return;
+    if (!rejectReason.trim()) {
+      toast("却下理由を入力してください");
+      return;
+    }
+    setDecidingId(rejectingRequest.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("skill_test_promotion_requests")
+      .update({ status: "rejected", reject_reason: rejectReason.trim() })
+      .eq("id", rejectingRequest.id);
+    setDecidingId(null);
+    if (error) {
+      toast(`却下に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("却下しました");
+    setRejectingRequest(null);
+    setRejectReason("");
+    await loadProgress();
   }
 
   async function handleAddTest() {
@@ -150,6 +310,9 @@ export default function KarteTeamSkillTestsPage() {
     setTests((prev) => [...prev, data]);
     setSelectedTestId(data.id);
   }
+
+  const pendingQueue = requests.filter((r) => r.status === "pending");
+  const myRequests = requests.filter((r) => r.requested_by === userId);
 
   return (
     <PageShell header={<AppHeader title="検定" variant="detail" backHref="/karte/team" />}>
@@ -192,6 +355,7 @@ export default function KarteTeamSkillTestsPage() {
             <tbody>
               {players.map((p) => {
                 const current = latestFor(p.id);
+                const pending = isStaff ? null : pendingRequestFor(p.id);
                 return (
                   <tr key={p.id}>
                     <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
@@ -200,22 +364,39 @@ export default function KarteTeamSkillTestsPage() {
                       </Link>
                     </td>
                     <td className="px-2.5 py-1.5 border-b border-line last:border-b-0">
-                      {/* 一般・運営はplayersを自分の紐づく選手だけに絞り込み済みなので、
-                          ここでは編集可否をisStaffで分けず常に編集可能にする
-                          (player_skill_test_progress_insertのRLSも同じ範囲を許可している)。 */}
-                      <select
-                        className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
-                        value={current ? String(current.level_index) : ""}
-                        disabled={savingPlayerId === p.id}
-                        onChange={(e) => handleChangeLevel(p.id, e.target.value)}
-                      >
-                        <option value="">未設定</option>
-                        {levels.map((label, idx) => (
-                          <option key={idx} value={idx}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                      {isStaff ? (
+                        // player_skill_test_progress_insertのRLSは指導者・管理者による
+                        // 任意選手への直接記録を許可しているため、申請フローを経由させない。
+                        <select
+                          className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
+                          value={current ? String(current.level_index) : ""}
+                          disabled={savingPlayerId === p.id}
+                          onChange={(e) => handleStaffChangeLevel(p.id, e.target.value)}
+                        >
+                          <option value="">未設定</option>
+                          {levels.map((label, idx) => (
+                            <option key={idx} value={idx}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[12px]">{current ? current.level_label : "未設定"}</span>
+                          {pending ? (
+                            <Pill tone="pending">{pending.target_level_label}へ申請中</Pill>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={instructors.length === 0}
+                              onClick={() => openRequestModal(p)}
+                              className="text-[11px] font-bold text-orange underline disabled:opacity-40 disabled:no-underline"
+                            >
+                              ランクを申請
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -223,6 +404,88 @@ export default function KarteTeamSkillTestsPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!loading && !isStaff && instructors.length === 0 && selectedTest && players.length > 0 && (
+        <div className="text-[11px] text-ink-soft mb-2.5">承認者となる指導者・管理者が登録されていないため、申請できません。</div>
+      )}
+
+      {!loading && selectedTest && !isStaff && myRequests.length > 0 && (
+        <>
+          <SectionLabel>あなたの申請状況</SectionLabel>
+          <Card className="mb-2.5">
+            <div className="flex flex-col gap-2.5">
+              {myRequests.map((r) => (
+                <div key={r.id} className="flex items-start justify-between gap-2 text-[12px]">
+                  <div>
+                    <div className="font-bold">
+                      {playerName(r.player_id)} ・ {r.target_level_label}
+                      {r.is_dan ? "(承認制)" : ""}
+                    </div>
+                    <div className="text-[11px] text-ink-soft mt-0.5">承認者: {memberName(r.approver_id)}</div>
+                    {r.status === "rejected" && r.reject_reason && (
+                      <div className="text-[11px] text-danger mt-0.5">却下理由: {r.reject_reason}</div>
+                    )}
+                  </div>
+                  <Pill tone={r.status === "approved" ? "ok" : r.status === "rejected" ? "absent" : "pending"}>
+                    {r.status === "approved" ? "承認済み" : r.status === "rejected" ? "却下" : "承認待ち"}
+                  </Pill>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {!loading && selectedTest && isStaff && pendingQueue.length > 0 && (
+        <>
+          <SectionLabel>承認待ちの申請</SectionLabel>
+          <Card className="mb-2.5">
+            <div className="flex flex-col gap-3">
+              {pendingQueue.map((r) => {
+                const isMine = r.approver_id === userId;
+                return (
+                  <div key={r.id} className="flex items-start justify-between gap-2 text-[12px]">
+                    <div>
+                      <div className="font-bold">
+                        {playerName(r.player_id)} ・ {r.target_level_label}
+                        {r.is_dan ? "(段・要承認)" : "(級・事後承認)"}
+                      </div>
+                      <div className="text-[11px] text-ink-soft mt-0.5">
+                        申請者: {memberName(r.requested_by)} ／ 承認者: {memberName(r.approver_id)}
+                      </div>
+                    </div>
+                    {isMine ? (
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          disabled={decidingId === r.id}
+                          onClick={() => handleApprove(r)}
+                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-orange text-orange disabled:opacity-50"
+                        >
+                          承認
+                        </button>
+                        <button
+                          type="button"
+                          disabled={decidingId === r.id}
+                          onClick={() => {
+                            setRejectingRequest(r);
+                            setRejectReason("");
+                          }}
+                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-line text-ink-soft disabled:opacity-50"
+                        >
+                          却下
+                        </button>
+                      </div>
+                    ) : (
+                      <Pill tone="watch">承認待ち</Pill>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </>
       )}
 
       {!loading &&
@@ -285,6 +548,74 @@ export default function KarteTeamSkillTestsPage() {
             + 検定を追加
           </button>
         ))}
+
+      <Modal open={!!requestPlayer} onClose={() => setRequestPlayer(null)} title="ランクを申請">
+        {requestPlayer && selectedTest && (
+          <>
+            <div className="text-[12.5px] font-bold mb-3">{playerFullName(requestPlayer)}</div>
+            <FieldLabel>申請するランク</FieldLabel>
+            <select
+              className={inputClass()}
+              value={requestLevelIdx}
+              onChange={(e) => setRequestLevelIdx(e.target.value)}
+            >
+              <option value="">選択してください</option>
+              {levels.map((label, idx) => (
+                <option key={idx} value={idx}>
+                  {label}
+                  {idx >= selectedTest.kyu_count ? "(要承認)" : ""}
+                </option>
+              ))}
+            </select>
+            <div className="mt-3">
+              <FieldLabel>承認者(指導者・管理者から1名選択)</FieldLabel>
+              <select
+                className={inputClass()}
+                value={requestApproverId}
+                onChange={(e) => setRequestApproverId(e.target.value)}
+              >
+                {instructors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}({m.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-[11px] text-ink-soft mt-3">
+              {requestLevelIdx !== "" && Number(requestLevelIdx) >= selectedTest.kyu_count
+                ? "段への昇格は、承認されるまでランクに反映されません。"
+                : "級は申請と同時にランクへ反映されますが、承認者による事後確認の対象になります。"}
+            </div>
+            <SubmitButton
+              onClick={submitRequest}
+              disabled={submittingRequest || requestLevelIdx === "" || !requestApproverId}
+            >
+              {submittingRequest ? "送信中…" : "申請する"}
+            </SubmitButton>
+          </>
+        )}
+      </Modal>
+
+      <Modal open={!!rejectingRequest} onClose={() => setRejectingRequest(null)} title="申請を却下">
+        {rejectingRequest && (
+          <>
+            <div className="text-[12.5px] font-bold mb-3">
+              {playerName(rejectingRequest.player_id)} ・ {rejectingRequest.target_level_label}
+            </div>
+            <FieldLabel>却下理由</FieldLabel>
+            <textarea
+              className={inputClass()}
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="却下する理由を入力してください"
+            />
+            <SubmitButton onClick={handleReject} disabled={decidingId === rejectingRequest.id || !rejectReason.trim()}>
+              {decidingId === rejectingRequest.id ? "送信中…" : "却下する"}
+            </SubmitButton>
+          </>
+        )}
+      </Modal>
     </PageShell>
   );
 }
