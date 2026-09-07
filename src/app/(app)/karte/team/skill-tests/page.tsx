@@ -101,6 +101,7 @@ export default function KarteTeamSkillTestsPage() {
         player_id: playerId,
         skill_test_id: selectedTest.id,
         level_index: Number(indexStr),
+        recorded_by: userId,
       })
       .select("*")
       .single();
@@ -199,25 +200,22 @@ export default function KarteTeamSkillTestsPage() {
                       </Link>
                     </td>
                     <td className="px-2.5 py-1.5 border-b border-line last:border-b-0">
-                      {isStaff ? (
-                        <select
-                          className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
-                          value={current ? String(current.level_index) : ""}
-                          disabled={savingPlayerId === p.id}
-                          onChange={(e) => handleChangeLevel(p.id, e.target.value)}
-                        >
-                          <option value="">未設定</option>
-                          {levels.map((label, idx) => (
-                            <option key={idx} value={idx}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="font-bold text-[12px] text-ink">
-                          {current ? levels[current.level_index] : "未設定"}
-                        </span>
-                      )}
+                      {/* 一般・運営はplayersを自分の紐づく選手だけに絞り込み済みなので、
+                          ここでは編集可否をisStaffで分けず常に編集可能にする
+                          (player_skill_test_progress_insertのRLSも同じ範囲を許可している)。 */}
+                      <select
+                        className="appearance-none bg-white border border-line rounded-lg px-2 py-1.5 text-[12px] font-bold text-ink w-full"
+                        value={current ? String(current.level_index) : ""}
+                        disabled={savingPlayerId === p.id}
+                        onChange={(e) => handleChangeLevel(p.id, e.target.value)}
+                      >
+                        <option value="">未設定</option>
+                        {levels.map((label, idx) => (
+                          <option key={idx} value={idx}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 );
