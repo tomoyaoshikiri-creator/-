@@ -75,7 +75,11 @@ export function NewNoticeModal({
       const f = fileList.item(i);
       if (f) picked.push(f);
     }
+    if (picked.length === 0) return;
     setFiles((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), ...picked] }));
+    // 端末側の複数選択が実際に何件渡ってきたかをその場で分かるようにする
+    // (一部端末で複数選択したはずが1件しか渡らない事象の切り分け用)。
+    toast(`${picked.length}件を選択しました(${kind})`);
   }
 
   function removeFile(kind: AttachmentKind, index: number) {
