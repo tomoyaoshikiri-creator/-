@@ -34,6 +34,7 @@ export default function KarteTeamSkillTestsPage() {
   const [newName, setNewName] = useState("");
   const [newKyuCount, setNewKyuCount] = useState("10");
   const [newDanCount, setNewDanCount] = useState("5");
+  const [newDanKyuCount, setNewDanKyuCount] = useState("0");
   const [addingTest, setAddingTest] = useState(false);
 
   const load = useCallback(async () => {
@@ -53,6 +54,7 @@ export default function KarteTeamSkillTestsPage() {
     const name = newName.trim();
     const kyuCount = Number(newKyuCount);
     const danCount = Number(newDanCount);
+    const danKyuCount = Number(newDanKyuCount);
     if (!name) {
       toast("検定名を入力してください");
       return;
@@ -67,11 +69,15 @@ export default function KarteTeamSkillTestsPage() {
       toast("級・段の数を正しく入力してください");
       return;
     }
+    if (!Number.isInteger(danKyuCount) || danKyuCount < 0 || danKyuCount > 30) {
+      toast("段内の級数を正しく入力してください");
+      return;
+    }
     setAddingTest(true);
     const supabase = createClient();
     const { data, error } = await supabase
       .from("skill_tests")
-      .insert({ team_id: teamId, name, kyu_count: kyuCount, dan_count: danCount })
+      .insert({ team_id: teamId, name, kyu_count: kyuCount, dan_count: danCount, dan_kyu_count: danKyuCount })
       .select("*")
       .single();
     setAddingTest(false);
@@ -82,6 +88,7 @@ export default function KarteTeamSkillTestsPage() {
     setNewName("");
     setNewKyuCount("10");
     setNewDanCount("5");
+    setNewDanKyuCount("0");
     setModalOpen(false);
     setTests((prev) => [...prev, data]);
     toast("検定を追加しました");
@@ -124,6 +131,21 @@ export default function KarteTeamSkillTestsPage() {
                     value={newDanCount}
                     onChange={(e) => setNewDanCount(e.target.value)}
                   />
+                </div>
+              </div>
+              <div className="mt-3">
+                <FieldLabel>段内の級数(任意)</FieldLabel>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  className={inputClass()}
+                  value={newDanKyuCount}
+                  onChange={(e) => setNewDanKyuCount(e.target.value)}
+                  placeholder="0"
+                />
+                <div className="text-[11px] text-ink-soft mt-1">
+                  各段の中にも級を作りたい場合のみ入力してください(例:3→初段1級〜初段3級)。あとから変更もできます。
                 </div>
               </div>
               <SubmitButton onClick={handleAddTest} disabled={addingTest}>

@@ -14,7 +14,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Pill } from "@/components/ui/Pill";
 import { canViewKarte } from "@/lib/permissions";
 import { hasSkillTestAccess } from "@/lib/plan";
-import { skillTestLevelLabels } from "@/lib/skillTest";
+import { isSkillTestDanCrossing, skillTestLevelLabels } from "@/lib/skillTest";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest, TeamMember } from "@/lib/database.types";
 
@@ -48,10 +48,11 @@ export default function KarteTeamSkillTestDetailPage() {
   const [rejectingRequest, setRejectingRequest] = useState<SkillTestPromotionRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  // レベル名編集(指導者・管理者向け): 級・段それぞれに任意の名前を設定できる。
-  const [editingLevelNames, setEditingLevelNames] = useState(false);
+  // 検定の設定編集(指導者・管理者向け): 段内の級数と、級・段それぞれの任意の名前を設定できる。
+  const [editingSettings, setEditingSettings] = useState(false);
+  const [danKyuCountDraft, setDanKyuCountDraft] = useState("0");
   const [levelNameDrafts, setLevelNameDrafts] = useState<string[]>([]);
-  const [savingLevelNames, setSavingLevelNames] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -110,9 +111,11 @@ export default function KarteTeamSkillTestDetailPage() {
     loadProgress();
   }, [loadProgress]);
 
-  // defaultLevelsは自動採番のみ(カスタム名編集画面のプレースホルダ用)、levelsはカスタム名を反映した表示用。
-  const defaultLevels = test ? skillTestLevelLabels(test.kyu_count, test.dan_count) : [];
-  const levels = test ? skillTestLevelLabels(test.kyu_count, test.dan_count, test.level_names) : [];
+  // defaultLevelsは自動採番のみ(設定編集画面のプレースホルダ用)、levelsはカスタム名を反映した表示用。
+  const defaultLevels = test ? skillTestLevelLabels(test.kyu_count, test.dan_count, null, test.dan_kyu_count) : [];
+  const levels = test
+    ? skillTestLevelLabels(test.kyu_count, test.dan_count, test.level_names, test.dan_kyu_count)
+    : [];
   const instructors = teamMembers.filter((m) => m.role === "指導者" || m.role === "管理者");
 
   function memberName(id: string) {
@@ -171,7 +174,9 @@ export default function KarteTeamSkillTestDetailPage() {
   async function submitRequest() {
     if (!test || !requestPlayer || requestLevelIdx === "" || !requestApproverId) return;
     const targetIndex = Number(requestLevelIdx);
-    const isDan = targetIndex >= test.kyu_count;
+    // 段そのものへの昇格(新しい段への突入)だけが要承認のブロッキング対象。同じ段の中の
+    // 級への昇格(dan_kyu_count>0の検定のみ発生しうる)は、これまでの級と同じ即時反映+事後承認。
+    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex);
     const label = levels[targetIndex];
     setSubmittingRequest(true);
     const supabase = createClient();
@@ -271,15 +276,30 @@ export default function KarteTeamSkillTestDetailPage() {
     await loadProgress();
   }
 
-  function openLevelNameEditor() {
+  function openSettingsEditor() {
     if (!test) return;
+    setDanKyuCountDraft(String(test.dan_kyu_count));
     setLevelNameDrafts(defaultLevels.map((_, idx) => test.level_names[String(idx)] ?? ""));
-    setEditingLevelNames(true);
+    setEditingSettings(true);
   }
 
-  async function saveLevelNames() {
+  // 段内の級数を変えると各段の区切り(level_index)自体が変わるため、級側(既存のまま)の
+  // カスタム名は引き継ぎつつ、段側のカスタム名はいったんリセットする。
+  function handleDanKyuCountDraftChange(value: string) {
+    setDanKyuCountDraft(value);
     if (!test) return;
-    setSavingLevelNames(true);
+    const newDefaults = skillTestLevelLabels(test.kyu_count, test.dan_count, null, Number(value) || 0);
+    setLevelNameDrafts((prev) => newDefaults.map((_, idx) => (idx < test.kyu_count ? (prev[idx] ?? "") : "")));
+  }
+
+  async function saveSettings() {
+    if (!test) return;
+    const danKyuCount = Number(danKyuCountDraft);
+    if (!Number.isInteger(danKyuCount) || danKyuCount < 0 || danKyuCount > 30) {
+      toast("段内の級数を正しく入力してください");
+      return;
+    }
+    setSavingSettings(true);
     const levelNames: Record<string, string> = {};
     levelNameDrafts.forEach((value, idx) => {
       const trimmed = value.trim();
@@ -288,18 +308,18 @@ export default function KarteTeamSkillTestDetailPage() {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("skill_tests")
-      .update({ level_names: levelNames })
+      .update({ dan_kyu_count: danKyuCount, level_names: levelNames })
       .eq("id", test.id)
       .select("*")
       .single();
-    setSavingLevelNames(false);
+    setSavingSettings(false);
     if (error || !data) {
       toast(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setTest(data);
-    setEditingLevelNames(false);
-    toast("レベル名を更新しました");
+    setEditingSettings(false);
+    toast("検定の設定を更新しました");
   }
 
   const pendingQueue = requests.filter((r) => r.status === "pending");
@@ -322,10 +342,10 @@ export default function KarteTeamSkillTestDetailPage() {
           {isStaff && (
             <button
               type="button"
-              onClick={openLevelNameEditor}
+              onClick={openSettingsEditor}
               className="mb-3 text-[11px] font-bold text-orange underline"
             >
-              レベル名を編集
+              検定の設定を編集
             </button>
           )}
 
@@ -498,7 +518,7 @@ export default function KarteTeamSkillTestDetailPage() {
               {levels.map((label, idx) => (
                 <option key={idx} value={idx}>
                   {label}
-                  {idx >= test.kyu_count ? "(要承認)" : ""}
+                  {isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, idx) ? "(要承認)" : ""}
                 </option>
               ))}
             </select>
@@ -517,7 +537,8 @@ export default function KarteTeamSkillTestDetailPage() {
               </select>
             </div>
             <div className="text-[11px] text-ink-soft mt-3">
-              {requestLevelIdx !== "" && Number(requestLevelIdx) >= test.kyu_count
+              {requestLevelIdx !== "" &&
+              isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, Number(requestLevelIdx))
                 ? "段への昇格は、承認されるまでランクに反映されません。"
                 : "級は申請と同時にランクへ反映されますが、承認者による事後確認の対象になります。"}
             </div>
@@ -531,36 +552,55 @@ export default function KarteTeamSkillTestDetailPage() {
         )}
       </Modal>
 
-      <Modal open={editingLevelNames} onClose={() => setEditingLevelNames(false)} title="レベル名を編集">
-        {test && (
-          <>
-            <div className="text-[11px] text-ink-soft mb-3">
-              空欄のまま保存すると、そのランクは自動採番のラベル(例:{defaultLevels[0] ?? "3級"})のままになります。
-            </div>
-            <div className="flex flex-col gap-2">
-              {defaultLevels.map((defaultLabel, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="text-[11px] text-ink-soft w-12 flex-shrink-0">{defaultLabel}</span>
-                  <input
-                    className={inputClass("flex-1")}
-                    value={levelNameDrafts[idx] ?? ""}
-                    onChange={(e) =>
-                      setLevelNameDrafts((prev) => {
-                        const next = [...prev];
-                        next[idx] = e.target.value;
-                        return next;
-                      })
-                    }
-                    placeholder={defaultLabel}
-                  />
+      <Modal open={editingSettings} onClose={() => setEditingSettings(false)} title="検定の設定を編集">
+        {test &&
+          (() => {
+            const draftDefaultLevels = skillTestLevelLabels(
+              test.kyu_count,
+              test.dan_count,
+              null,
+              Number(danKyuCountDraft) || 0,
+            );
+            return (
+              <>
+                <FieldLabel>段内の級数</FieldLabel>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  className={inputClass()}
+                  value={danKyuCountDraft}
+                  onChange={(e) => handleDanKyuCountDraftChange(e.target.value)}
+                />
+                <div className="text-[11px] text-ink-soft mt-1 mb-3">
+                  0の場合、段はサブランクなし(初段・2段…)のままです。数を指定すると、各段が「(段名)1級」〜「(段名)N級」に分かれます(例:3→初段1級〜初段3級→2段1級〜…)。段そのものへの昇格のみ引き続き要承認で、段内の級への昇格は級と同じ扱いになります。
                 </div>
-              ))}
-            </div>
-            <SubmitButton onClick={saveLevelNames} disabled={savingLevelNames}>
-              {savingLevelNames ? "保存中…" : "保存する"}
-            </SubmitButton>
-          </>
-        )}
+                <FieldLabel>レベル名(空欄は自動採番のまま)</FieldLabel>
+                <div className="flex flex-col gap-2">
+                  {draftDefaultLevels.map((defaultLabel, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-[11px] text-ink-soft w-16 flex-shrink-0">{defaultLabel}</span>
+                      <input
+                        className={inputClass("flex-1")}
+                        value={levelNameDrafts[idx] ?? ""}
+                        onChange={(e) =>
+                          setLevelNameDrafts((prev) => {
+                            const next = [...prev];
+                            next[idx] = e.target.value;
+                            return next;
+                          })
+                        }
+                        placeholder={defaultLabel}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <SubmitButton onClick={saveSettings} disabled={savingSettings}>
+                  {savingSettings ? "保存中…" : "保存する"}
+                </SubmitButton>
+              </>
+            );
+          })()}
       </Modal>
 
       <Modal open={!!rejectingRequest} onClose={() => setRejectingRequest(null)} title="申請を却下">

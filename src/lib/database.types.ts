@@ -1047,6 +1047,8 @@ export interface Database {
           name: string;
           kyu_count: number;
           dan_count: number;
+          // 各段の中に持たせる級(サブランク)の数。0の場合は段はサブランクなしの単一ランク。
+          dan_kyu_count: number;
           // level_indexをキーにしたカスタム名(未設定/空文字の場合は自動採番のラベルにフォールバック)。
           level_names: Record<string, string>;
           created_at: string;
@@ -1057,12 +1059,14 @@ export interface Database {
           name: string;
           kyu_count?: number;
           dan_count?: number;
+          dan_kyu_count?: number;
           level_names?: Record<string, string>;
         };
         Update: Partial<{
           name: string;
           kyu_count: number;
           dan_count: number;
+          dan_kyu_count: number;
           level_names: Record<string, string>;
         }>;
         Relationships: [];
