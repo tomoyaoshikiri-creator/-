@@ -6,9 +6,10 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
-import { attachmentKindSlug, safeExt } from "@/lib/storagePath";
+import { attachmentKindSlug, safeExt, isPdfFile } from "@/lib/storagePath";
 import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
@@ -104,16 +105,23 @@ export function NewNoticeModal({
     const entries = (Object.entries(files) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
       list.map((file) => [kind, file] as [AttachmentKind, File]),
     );
-    const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
+    type UploadedEntry = { kind: AttachmentKind; path: string; file: File; uploadFile: File; thumbnailPath: string | null };
+    const toObjectRefs = (list: UploadedEntry[]) =>
+      list.flatMap((u) =>
+        u.thumbnailPath
+          ? [
+              { bucket: "notice-attachments", path: u.path },
+              { bucket: "notice-attachments", path: u.thumbnailPath },
+            ]
+          : [{ bucket: "notice-attachments", path: u.path }],
+      );
+    const uploaded: UploadedEntry[] = [];
     for (const [kind, file] of entries) {
       const uploadFile = await resizeImageFile(file);
       const path = `${teamId}/${noticeId}/${attachmentKindSlug(kind)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage.from("notice-attachments").upload(path, uploadFile);
       if (uploadError) {
-        const cleanupOk = await cleanupUploadedObjects(
-          supabase,
-          uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
-        );
+        const cleanupOk = await cleanupUploadedObjects(supabase, toObjectRefs(uploaded));
         setSaving(false);
         toast(
           `${kind}のアップロードに失敗しました: ${uploadError.message}` +
@@ -121,7 +129,20 @@ export function NewNoticeModal({
         );
         return;
       }
-      uploaded.push({ kind, path, file, uploadFile });
+
+      // PDFはサムネイル画像を生成し、原本と並べてアップロードしておく(生成失敗時は
+      // thumbnailPath: nullのままとし、表示側は汎用アイコンにフォールバックする)。
+      let thumbnailPath: string | null = null;
+      if (isPdfFile(uploadFile.name)) {
+        const thumb = await generatePdfThumbnail(uploadFile);
+        if (thumb) {
+          const thumbPath = `${teamId}/${noticeId}/${attachmentKindSlug(kind)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-thumb.jpg`;
+          const { error: thumbError } = await supabase.storage.from("notice-attachments").upload(thumbPath, thumb);
+          if (!thumbError) thumbnailPath = thumbPath;
+        }
+      }
+
+      uploaded.push({ kind, path, file, uploadFile, thumbnailPath });
     }
 
     const { data: notice, error } = await supabase
@@ -139,10 +160,7 @@ export function NewNoticeModal({
       .single();
 
     if (error || !notice) {
-      const cleanupOk = await cleanupUploadedObjects(
-        supabase,
-        uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
-      );
+      const cleanupOk = await cleanupUploadedObjects(supabase, toObjectRefs(uploaded));
       setSaving(false);
       toast(
         `登録に失敗しました: ${error?.message ?? ""}` +
@@ -160,12 +178,13 @@ export function NewNoticeModal({
         storage_path: u.path,
         file_name: u.file.name,
         size_bytes: u.uploadFile.size,
+        thumbnail_path: u.thumbnailPath,
       });
       if (attachError) {
         const rollbackOk = await rollbackParentAndObjects(supabase, {
           parentTable: "notices",
           parentId: notice.id,
-          uploadedObjects: uploaded.map((x) => ({ bucket: "notice-attachments", path: x.path })),
+          uploadedObjects: toObjectRefs(uploaded),
         });
         setSaving(false);
         toast(

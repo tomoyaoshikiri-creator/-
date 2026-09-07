@@ -18,6 +18,7 @@ import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { attachmentKindSlug, isImageFile, isPdfFile, safeExt } from "@/lib/storagePath";
 import { cleanupUploadedObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
 import type {
   AttachmentKind,
   Notice,
@@ -27,7 +28,7 @@ import type {
   ReactionType,
 } from "@/lib/database.types";
 
-type AttachmentWithUrl = NoticeAttachment & { url: string | null };
+type AttachmentWithUrl = NoticeAttachment & { url: string | null; thumbUrl: string | null };
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "対戦表", emoji: "📋" },
@@ -90,7 +91,10 @@ export default function NoticeDetailPage() {
           const { data: signed } = await supabase.storage
             .from("notice-attachments")
             .createSignedUrl(a.storage_path, 60 * 60);
-          return { ...a, url: signed?.signedUrl ?? null };
+          const { data: signedThumb } = a.thumbnail_path
+            ? await supabase.storage.from("notice-attachments").createSignedUrl(a.thumbnail_path, 60 * 60)
+            : { data: null };
+          return { ...a, url: signed?.signedUrl ?? null, thumbUrl: signedThumb?.signedUrl ?? null };
         }),
       );
       setAttachments(withUrls);
@@ -167,9 +171,10 @@ export default function NoticeDetailPage() {
   async function handleRemoveAttachment(attachment: AttachmentWithUrl) {
     setRemovingId(attachment.id);
     const supabase = createClient();
-    const { error: storageError } = await supabase.storage
-      .from("notice-attachments")
-      .remove([attachment.storage_path]);
+    const pathsToRemove = attachment.thumbnail_path
+      ? [attachment.storage_path, attachment.thumbnail_path]
+      : [attachment.storage_path];
+    const { error: storageError } = await supabase.storage.from("notice-attachments").remove(pathsToRemove);
     if (storageError) {
       setRemovingId(null);
       toast(`削除に失敗しました: ${storageError.message}`);
@@ -218,7 +223,8 @@ export default function NoticeDetailPage() {
     const entries = (Object.entries(newFiles) as [AttachmentKind, File[]][]).flatMap(([kind, list]) =>
       list.map((file) => [kind, file] as [AttachmentKind, File]),
     );
-    const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File }[] = [];
+    const uploaded: { kind: AttachmentKind; path: string; file: File; uploadFile: File; thumbnailPath: string | null }[] =
+      [];
     const insertedAttachmentIds: string[] = [];
     let failureMessage: string | null = null;
 
@@ -230,7 +236,20 @@ export default function NoticeDetailPage() {
         failureMessage = `${kind}のアップロードに失敗しました: ${uploadError.message}`;
         break;
       }
-      uploaded.push({ kind, path, file, uploadFile });
+
+      // PDFはサムネイル画像を生成し、原本と並べてアップロードしておく(生成失敗時は
+      // thumbnailPath: nullのままとし、表示側は汎用アイコンにフォールバックする)。
+      let thumbnailPath: string | null = null;
+      if (isPdfFile(uploadFile.name)) {
+        const thumb = await generatePdfThumbnail(uploadFile);
+        if (thumb) {
+          const thumbPath = `${teamId}/${notice.id}/${attachmentKindSlug(kind)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-thumb.jpg`;
+          const { error: thumbError } = await supabase.storage.from("notice-attachments").upload(thumbPath, thumb);
+          if (!thumbError) thumbnailPath = thumbPath;
+        }
+      }
+
+      uploaded.push({ kind, path, file, uploadFile, thumbnailPath });
       const { data: attachRow, error: attachError } = await supabase
         .from("notice_attachments")
         .insert({
@@ -239,6 +258,7 @@ export default function NoticeDetailPage() {
           storage_path: path,
           file_name: file.name,
           size_bytes: uploadFile.size,
+          thumbnail_path: thumbnailPath,
         })
         .select()
         .single();
@@ -260,7 +280,14 @@ export default function NoticeDetailPage() {
       }
       const objectsOk = await cleanupUploadedObjects(
         supabase,
-        uploaded.map((u) => ({ bucket: "notice-attachments", path: u.path })),
+        uploaded.flatMap((u) =>
+          u.thumbnailPath
+            ? [
+                { bucket: "notice-attachments", path: u.path },
+                { bucket: "notice-attachments", path: u.thumbnailPath },
+              ]
+            : [{ bucket: "notice-attachments", path: u.path }],
+        ),
       );
       cleanupOk = cleanupOk && objectsOk;
       setSaving(false);
@@ -291,7 +318,7 @@ export default function NoticeDetailPage() {
     if (attachments.length > 0) {
       const { error: storageError } = await supabase.storage
         .from("notice-attachments")
-        .remove(attachments.map((a) => a.storage_path));
+        .remove(attachments.flatMap((a) => (a.thumbnail_path ? [a.storage_path, a.thumbnail_path] : [a.storage_path])));
       if (storageError) {
         setDeleting(false);
         toast(`削除に失敗しました: ${storageError.message}`);
@@ -488,6 +515,7 @@ export default function NoticeDetailPage() {
                 <div className="flex flex-wrap gap-2">
                   {attachments.map((a) => {
                     const isImage = isImageFile(a.file_name);
+                    const thumbSrc = isImage ? a.url : a.thumbUrl;
                     return (
                       <a
                         key={a.id}
@@ -499,9 +527,9 @@ export default function NoticeDetailPage() {
                           a.url ? "" : "pointer-events-none opacity-50"
                         }`}
                       >
-                        {a.url && isImage ? (
+                        {thumbSrc ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={a.url} alt={a.file_name} className="w-full h-full object-cover" />
+                          <img src={thumbSrc} alt={a.file_name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-paper text-ink-soft text-[10.5px] font-bold">
                             {isPdfFile(a.file_name) ? "📄 PDF" : "📎"}
