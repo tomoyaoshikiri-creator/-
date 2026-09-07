@@ -81,7 +81,7 @@ export default function TeamHubPage() {
         <HubRow
           href="/karte/team/skill-tests"
           label="検定管理"
-          description={isStaff ? "選手ごとの検定ランクを一括で管理" : "紐づく選手の検定ランクを見る"}
+          description={isStaff ? "選手ごとの検定ランクを一括で管理" : "紐づく選手の検定ランクを編集する"}
         />
       ) : (
         <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="Max" />

@@ -1088,6 +1088,43 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      skill_test_promotion_requests: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          skill_test_id: string;
+          target_level_index: number;
+          target_level_label: string;
+          is_dan: boolean;
+          progress_id: string | null;
+          requested_by: string;
+          approver_id: string;
+          status: "pending" | "approved" | "rejected";
+          reject_reason: string | null;
+          decided_by: string | null;
+          decided_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          skill_test_id: string;
+          target_level_index: number;
+          target_level_label: string;
+          is_dan: boolean;
+          progress_id?: string | null;
+          requested_by: string;
+          approver_id: string;
+          status?: "pending" | "approved" | "rejected";
+        };
+        Update: {
+          status?: "pending" | "approved" | "rejected";
+          reject_reason?: string | null;
+        };
+        Relationships: [];
+      };
       sports_test_records: {
         Row: {
           id: string;
@@ -1636,6 +1673,7 @@ export type NoticeReaction = Database["public"]["Tables"]["notice_reactions"]["R
 export type TabLastSeen = Database["public"]["Tables"]["tab_last_seen"]["Row"];
 export type SkillTest = Database["public"]["Tables"]["skill_tests"]["Row"];
 export type PlayerSkillTestProgress = Database["public"]["Tables"]["player_skill_test_progress"]["Row"];
+export type SkillTestPromotionRequest = Database["public"]["Tables"]["skill_test_promotion_requests"]["Row"];
 export type ItemLastSeen = Database["public"]["Tables"]["item_last_seen"]["Row"];
 export type GameMatch = Database["public"]["Tables"]["game_matches"]["Row"];
 export type GameMatchNote = Database["public"]["Tables"]["game_match_notes"]["Row"];
