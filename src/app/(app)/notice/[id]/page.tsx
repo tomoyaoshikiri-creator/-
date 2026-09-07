@@ -15,7 +15,7 @@ import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { formatDateLabel, gradeLabel } from "@/lib/format";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
-import { attachmentKindSlug, isImageFile, safeExt } from "@/lib/storagePath";
+import { attachmentKindSlug, isImageFile, isPdfFile, safeExt } from "@/lib/storagePath";
 import { cleanupUploadedObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import type {
@@ -481,38 +481,43 @@ export default function NoticeDetailPage() {
               </Card>
             </>
           )}
-          <SectionLabel>本文</SectionLabel>
-          <Card>
-            <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
-          </Card>
           {attachments.length > 0 && (
             <>
               <SectionLabel>添付資料</SectionLabel>
               <Card>
-                {attachments.map((a) => (
-                  <div key={a.id} className="mb-3 last:mb-0">
-                    <div className="text-xs text-ink-soft mb-1.5">
-                      {KINDS.find((k) => k.kind === a.kind)?.emoji ?? "📎"} {a.kind}:{a.file_name}
-                    </div>
-                    {a.url && isImageFile(a.file_name) ? (
-                      <a href={a.url} target="_blank" rel="noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={a.url}
-                          alt={a.file_name}
-                          className="w-full rounded-lg border border-line object-contain"
-                        />
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((a) => {
+                    const isImage = isImageFile(a.file_name);
+                    return (
+                      <a
+                        key={a.id}
+                        href={a.url ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`${a.kind}:${a.file_name}`}
+                        className={`w-20 h-20 flex-shrink-0 rounded-lg border border-line overflow-hidden ${
+                          a.url ? "" : "pointer-events-none opacity-50"
+                        }`}
+                      >
+                        {a.url && isImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={a.url} alt={a.file_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-paper text-ink-soft text-[10.5px] font-bold">
+                            {isPdfFile(a.file_name) ? "📄 PDF" : "📎"}
+                          </div>
+                        )}
                       </a>
-                    ) : a.url ? (
-                      <a href={a.url} target="_blank" rel="noreferrer" className="text-orange font-bold text-xs">
-                        開く
-                      </a>
-                    ) : null}
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </Card>
             </>
           )}
+          <SectionLabel>本文</SectionLabel>
+          <Card>
+            <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
+          </Card>
 
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
 
