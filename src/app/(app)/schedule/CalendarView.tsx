@@ -158,7 +158,7 @@ export function CalendarView({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {cells.map((c, i) => {
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
