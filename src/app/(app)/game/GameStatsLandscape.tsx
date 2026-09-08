@@ -49,12 +49,14 @@ function SquareChip({
   onSelect: () => void;
 }) {
   const activeClass = activeColor === "navy" ? "bg-navy border-navy text-white" : "bg-orange border-orange text-white";
+  // 出場中の選手であることがひと目で分かるよう、選択中でなくても枠線は常にチームカラーで色付けする。
+  const idleClass = activeColor === "navy" ? "border-navy bg-white text-ink" : "border-orange bg-white text-ink";
   return (
     <button
       type="button"
       onClick={onSelect}
       className={`flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-lg border font-bold ${
-        active ? activeClass : "border-line bg-white text-ink"
+        active ? activeClass : idleClass
       }`}
     >
       {showName && entrant.name && (
@@ -86,27 +88,29 @@ interface LogRowData {
   kind: "stat" | "timeout";
 }
 
-// SectionLabelのaction相当。自チーム/相手チームの選手チップ列の外側(中央から遠い側)の角に
-// 絶対配置し、選手選択の有無に関わらずタップでその場のクォーターのタイムアウトを記録する。
+// 自チーム/相手チームの選手チップ列の見出しの上に、中央から遠い側(外側)へ寄せて置く。
+// 選手選択の有無に関わらずタップでその場のクォーターのタイムアウトを記録する。
+// 列自体はitems-centerで子要素を中央寄せするため、self-start/self-endで個別に
+// 端へ寄せる(見出しラベル自体は影響を受けず、中央のまま)。
 function TimeoutButton({
   color,
   count,
   onTap,
-  corner,
+  align,
 }: {
   color: "orange" | "navy";
   count: number;
   onTap: () => void;
-  corner: "left" | "right";
+  align: "start" | "end";
 }) {
   const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange";
   return (
     <button
       type="button"
       onClick={onTap}
-      className={`absolute top-0 ${corner === "left" ? "left-0" : "right-0"} px-2 py-1 rounded-lg border bg-white font-bold text-[9.5px] whitespace-nowrap ${colorClass}`}
+      className={`${align === "start" ? "self-start" : "self-end"} mb-1 px-2 py-1 rounded-lg border bg-white font-bold text-[9.5px] whitespace-nowrap ${colorClass}`}
     >
-      ⏱ タイムアウト{count > 0 ? ` ${count}` : ""}
+      タイムアウト{count > 0 ? ` ${count}` : ""}
     </button>
   );
 }
@@ -381,8 +385,8 @@ export function GameStatsLandscape({
           align="left"
         />
 
-        <div className="relative flex flex-col items-center min-h-0">
-          <TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} corner="left" />
+        <div className="flex flex-col items-center min-h-0">
+          <TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} align="start" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">自チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {ownEntrants.map((e) => (
@@ -460,8 +464,8 @@ export function GameStatsLandscape({
           </div>
         </div>
 
-        <div className="relative flex flex-col items-center min-h-0">
-          <TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} corner="right" />
+        <div className="flex flex-col items-center min-h-0">
+          <TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} align="end" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">相手チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {opponentEntrants.map((e) => (
