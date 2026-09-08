@@ -66,7 +66,7 @@ function TimeoutButton({
       onClick={onTap}
       className={`flex-none normal-case tracking-normal px-2.5 py-1 rounded-lg border bg-white font-bold text-[11px] ${colorClass}`}
     >
-      ⏱ タイムアウト{count > 0 ? ` ${count}` : ""}
+      タイムアウト{count > 0 ? ` ${count}` : ""}
     </button>
   );
 }
@@ -95,6 +95,8 @@ function ChipRow({
   canUndo?: boolean;
 }) {
   const activeClass = activeColor === "navy" ? "border-navy bg-navy text-white" : "border-orange bg-orange text-white";
+  // 出場中の選手であることがひと目で分かるよう、選択中でなくても枠線は常にチームカラーで色付けする。
+  const idleClass = activeColor === "navy" ? "border-navy bg-white text-ink" : "border-orange bg-white text-ink";
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1">
       {entrants.map((e) => {
@@ -106,7 +108,7 @@ function ChipRow({
             type="button"
             onClick={() => onSelect(e.id)}
             className={`flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
-              isActive ? activeClass : "border-line bg-white text-ink"
+              isActive ? activeClass : idleClass
             }`}
           >
             {showName && e.name && (
