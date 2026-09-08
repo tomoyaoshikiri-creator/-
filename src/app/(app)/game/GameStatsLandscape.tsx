@@ -147,6 +147,8 @@ export function GameStatsLandscape({
   onOwnTimeout,
   onOpponentTimeout,
   onDeleteTimeoutEvent,
+  possession,
+  onSetPossession,
 }: {
   quarter: number;
   onQuarterChange: (q: number) => void;
@@ -179,12 +181,13 @@ export function GameStatsLandscape({
   onOwnTimeout: () => void;
   onOpponentTimeout: () => void;
   onDeleteTimeoutEvent: (eventId: string) => Promise<void>;
+  possession: "own" | "opponent" | null;
+  onSetPossession: (side: "own" | "opponent") => void;
 }) {
   const { sport } = useSession();
   const gridCells = buildGridCells(usesThreePointScoring(sport));
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
-  const [possession, setPossession] = useState<"own" | "opponent" | null>(null);
   const [correcting, setCorrecting] = useState<LogRowData | null>(null);
 
   const selectedEntrant = selected
@@ -347,7 +350,7 @@ export function GameStatsLandscape({
       <div className="relative flex items-center justify-center gap-2.5 py-1.5 border-t border-b border-line">
         <button
           type="button"
-          onClick={() => setPossession("own")}
+          onClick={() => onSetPossession("own")}
           aria-label="自チームにポゼッション"
           className={`text-[26px] leading-none -mt-2.5 scale-x-[-1] ${possession === "own" ? "text-danger" : "text-ink-soft"}`}
         >
@@ -355,7 +358,7 @@ export function GameStatsLandscape({
         </button>
         <button
           type="button"
-          onClick={() => setPossession("opponent")}
+          onClick={() => onSetPossession("opponent")}
           aria-label="相手チームにポゼッション"
           className={`text-[26px] leading-none -mt-2.5 ${possession === "opponent" ? "text-danger" : "text-ink-soft"}`}
         >
