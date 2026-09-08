@@ -465,18 +465,34 @@ export default function GameDetailPage() {
           </div>
 
           {selectedMatch && (
-            <SubmitButton
-              onClick={() =>
-                router.push(
-                  usesDetailedBasketballStats(sport)
-                    ? `/game/stats/${selectedMatch.id}`
-                    : `/game/custom-stats/${selectedMatch.id}`,
-                )
-              }
-              className="bg-orange"
-            >
-              スタッツを入力
-            </SubmitButton>
+            <div className="mt-3.5 flex gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    usesDetailedBasketballStats(sport)
+                      ? `/game/stats/${selectedMatch.id}`
+                      : `/game/custom-stats/${selectedMatch.id}`,
+                  )
+                }
+                className="flex-1 py-2.5 rounded-lg border border-orange text-white font-bold text-[13px] active:opacity-85"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+                }}
+              >
+                スタッツを入力
+              </button>
+              {usesDetailedBasketballStats(sport) && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/game/stats/${selectedMatch.id}/view`)}
+                  className="flex-1 py-2.5 rounded-lg border border-orange text-orange font-bold text-[13px] bg-orange/8 active:opacity-85"
+                >
+                  スタッツを見る
+                </button>
+              )}
+            </div>
           )}
 
           {selectedMatch && (
