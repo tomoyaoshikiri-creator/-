@@ -987,6 +987,25 @@ export interface Database {
         Update: { quarter?: number };
         Relationships: [];
       };
+      game_timeout_events: {
+        Row: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          side: "own" | "opponent";
+          quarter: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          match_id: string;
+          side: "own" | "opponent";
+          quarter: number;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       team_stat_categories: {
         Row: {
           id: string;
@@ -1643,6 +1662,21 @@ export interface Database {
         Args: { p_event_id: string };
         Returns: void;
       };
+      record_game_timeout: {
+        Args: { p_match_id: string; p_side: string; p_quarter: number };
+        Returns: {
+          id: string;
+          team_id: string;
+          match_id: string;
+          side: "own" | "opponent";
+          quarter: number;
+          created_at: string;
+        };
+      };
+      delete_game_timeout_event: {
+        Args: { p_event_id: string };
+        Returns: void;
+      };
       reset_match_stats: {
         Args: { p_match_id: string };
         Returns: void;
@@ -1710,6 +1744,7 @@ export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_pla
 export type GameOpponentRecord = Database["public"]["Tables"]["game_opponent_records"]["Row"];
 export type GameOpponentStatLine = Database["public"]["Tables"]["game_opponent_stat_lines"]["Row"];
 export type GameOpponentStatEvent = Database["public"]["Tables"]["game_opponent_stat_events"]["Row"];
+export type GameTimeoutEvent = Database["public"]["Tables"]["game_timeout_events"]["Row"];
 export type TeamStatCategory = Database["public"]["Tables"]["team_stat_categories"]["Row"];
 export type GamePlayerStatEntry = Database["public"]["Tables"]["game_player_stat_entries"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];

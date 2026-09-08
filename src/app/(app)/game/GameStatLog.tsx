@@ -8,8 +8,11 @@ export interface StatLogEntry {
   id: string;
   quarter: number;
   entrantLabel: string;
-  event: StatEvent;
+  event: StatEvent | "timeout";
   delta: number;
+  // タイムアウトは対応するクォーター修正RPCを持たないため、修正UIを出さない。
+  // 省略時はtrue(通常のスタッツ)として扱う。
+  quarterEditable?: boolean;
 }
 
 // HOOP Jのプレーバイプレーログを再現した、直近の記録一覧(新しい順)。
@@ -46,7 +49,10 @@ export function GameStatLog({
       <SectionLabel>{title}</SectionLabel>
       <Card>
         {events.slice(0, 20).map((e) => {
-          const pts = statEventPoints(e.event, e.delta);
+          const isTimeout = e.event === "timeout";
+          const pts = e.event === "timeout" ? 0 : statEventPoints(e.event, e.delta);
+          const label = e.event === "timeout" ? "タイムアウト" : statEventLabel(e.event);
+          const quarterEditable = e.quarterEditable ?? !isTimeout;
           const expanded = expandedId === e.id;
           return (
             <div key={e.id} className="border-b border-line last:border-b-0">
@@ -58,7 +64,7 @@ export function GameStatLog({
                   <span className="font-mono text-ink-soft mr-1">{e.quarter}Q</span>
                   <span className="font-bold">{e.entrantLabel}</span>
                   <span className="text-ink-soft ml-1">
-                    {statEventLabel(e.event)}
+                    {label}
                     {e.delta < 0 ? "(取消)" : ""}
                   </span>
                 </div>
@@ -66,21 +72,25 @@ export function GameStatLog({
               </div>
               {expanded && (
                 <div className="pb-2.5">
-                  <div className="text-[10.5px] font-bold text-ink-soft mb-1">クォーターを修正</div>
-                  <div className="flex gap-1.5 mb-2">
-                    {[1, 2, 3, 4].map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => onChangeQuarter(e.id, q)}
-                        className={`flex-1 py-1 rounded-lg font-bold text-[11.5px] border ${
-                          e.quarter === q ? "bg-orange border-orange text-white" : "border-line text-ink-soft bg-white"
-                        }`}
-                      >
-                        {q}Q
-                      </button>
-                    ))}
-                  </div>
+                  {quarterEditable && (
+                    <>
+                      <div className="text-[10.5px] font-bold text-ink-soft mb-1">クォーターを修正</div>
+                      <div className="flex gap-1.5 mb-2">
+                        {[1, 2, 3, 4].map((q) => (
+                          <button
+                            key={q}
+                            type="button"
+                            onClick={() => onChangeQuarter(e.id, q)}
+                            className={`flex-1 py-1 rounded-lg font-bold text-[11.5px] border ${
+                              e.quarter === q ? "bg-orange border-orange text-white" : "border-line text-ink-soft bg-white"
+                            }`}
+                          >
+                            {q}Q
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(e.id)}
