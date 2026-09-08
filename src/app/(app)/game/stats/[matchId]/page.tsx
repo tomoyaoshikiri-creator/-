@@ -28,6 +28,8 @@ import {
   recordOpponentGameStat,
   deleteGameStatEvent,
   deleteOpponentGameStatEvent,
+  recordGameTimeout,
+  deleteGameTimeoutEvent,
   resetMatchStats,
   teamFoulCount,
   type StatEvent,
@@ -40,6 +42,7 @@ import type {
   GameOpponentStatLine,
   GamePlayerStatLine,
   GameStatEvent,
+  GameTimeoutEvent,
   Player,
   Schedule,
 } from "@/lib/database.types";
@@ -75,6 +78,7 @@ export default function GameStatsPage() {
   const [opponentMemberModalOpen, setOpponentMemberModalOpen] = useState(false);
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
   const [opponentStatEvents, setOpponentStatEvents] = useState<GameOpponentStatEvent[]>([]);
+  const [timeoutEvents, setTimeoutEvents] = useState<GameTimeoutEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -191,12 +195,25 @@ export default function GameStatsPage() {
     setOpponentStatEvents(data ?? []);
   }, [matchId]);
 
+  const loadTimeoutEvents = useCallback(async () => {
+    if (!matchId) return;
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("game_timeout_events")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setTimeoutEvents(data ?? []);
+  }, [matchId]);
+
   useEffect(() => {
     loadStatLines();
     loadStatEvents();
     loadOpponentStatLines();
     loadOpponentStatEvents();
-  }, [loadStatLines, loadStatEvents, loadOpponentStatLines, loadOpponentStatEvents]);
+    loadTimeoutEvents();
+  }, [loadStatLines, loadStatEvents, loadOpponentStatLines, loadOpponentStatEvents, loadTimeoutEvents]);
 
   useEffect(() => {
     if (!canRecordGames(role)) router.replace("/game/results");
@@ -536,6 +553,40 @@ export default function GameStatsPage() {
     toast("記録を削除しました");
   }
 
+  async function handleTimeout(side: "own" | "opponent") {
+    if (!matchId) return;
+    const supabase = createClient();
+    const { data, error } = await recordGameTimeout(supabase, matchId, side, quarter);
+    if (error) {
+      toast(`タイムアウトの記録に失敗しました: ${error.message}`);
+      return;
+    }
+    if (data) setTimeoutEvents((prev) => [data, ...prev]);
+  }
+
+  async function handleDeleteTimeoutEvent(eventId: string) {
+    const supabase = createClient();
+    const { error } = await deleteGameTimeoutEvent(supabase, eventId);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    setTimeoutEvents((prev) => prev.filter((e) => e.id !== eventId));
+    toast("記録を削除しました");
+  }
+
+  // 記録ログはスタッツ(statEvents)とタイムアウト(timeoutEvents)を混ぜて表示しているため、
+  // 削除も渡されたidがどちら由来かを見て振り分ける。
+  async function handleDeleteOwnLogEntry(id: string) {
+    if (timeoutEvents.some((e) => e.id === id && e.side === "own")) await handleDeleteTimeoutEvent(id);
+    else await handleDeleteStatEvent(id);
+  }
+
+  async function handleDeleteOpponentLogEntry(id: string) {
+    if (timeoutEvents.some((e) => e.id === id && e.side === "opponent")) await handleDeleteTimeoutEvent(id);
+    else await handleDeleteOpponentStatEvent(id);
+  }
+
   async function handleResetStats() {
     if (!resetConfirm) {
       setResetConfirm(true);
@@ -555,6 +606,7 @@ export default function GameStatsPage() {
     setStatEvents([]);
     setOpponentStatLines({});
     setOpponentStatEvents([]);
+    setTimeoutEvents([]);
     setStarters([]);
     setSubs([]);
     setBenchedStarterIds([]);
@@ -619,26 +671,57 @@ export default function GameStatsPage() {
     checked: opponentOnCourtIds.includes(p.id),
   }));
 
-  const ownLog: StatLogEntry[] = statEvents.map((e) => {
-    const p = players.find((pl) => pl.id === e.player_id);
-    return {
-      id: e.id,
-      quarter: e.quarter,
-      entrantLabel: p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "-",
-      event: e.event,
-      delta: e.delta,
-    };
-  });
-  const opponentLog: StatLogEntry[] = opponentStatEvents.map((e) => {
-    const p = opponentPlayers.find((op) => op.id === e.opponent_player_id);
-    return {
-      id: e.id,
-      quarter: e.quarter,
-      entrantLabel: p ? `#${p.number}` : "-",
-      event: e.event,
-      delta: e.delta,
-    };
-  });
+  // タイムアウトも記録ログに含めるため、statEvents(選手単位)とtimeoutEvents(チーム単位)を
+  // 作成日時の降順でマージする。どちらも既にDBから作成日時降順で読み込まれている。
+  function buildLog(
+    statSource: { id: string; quarter: number; entrantLabel: string; event: StatEvent; delta: number; createdAt: string }[],
+    timeoutSource: GameTimeoutEvent[],
+  ): StatLogEntry[] {
+    const rows = [
+      ...statSource.map((e) => ({ entry: e, createdAt: e.createdAt })),
+      ...timeoutSource.map((e) => ({
+        entry: {
+          id: e.id,
+          quarter: e.quarter,
+          entrantLabel: "",
+          event: "timeout" as const,
+          delta: 0,
+          quarterEditable: false,
+        },
+        createdAt: e.created_at,
+      })),
+    ];
+    return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((r) => r.entry);
+  }
+
+  const ownLog: StatLogEntry[] = buildLog(
+    statEvents.map((e) => {
+      const p = players.find((pl) => pl.id === e.player_id);
+      return {
+        id: e.id,
+        quarter: e.quarter,
+        entrantLabel: p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "-",
+        event: e.event,
+        delta: e.delta,
+        createdAt: e.created_at,
+      };
+    }),
+    timeoutEvents.filter((e) => e.side === "own"),
+  );
+  const opponentLog: StatLogEntry[] = buildLog(
+    opponentStatEvents.map((e) => {
+      const p = opponentPlayers.find((op) => op.id === e.opponent_player_id);
+      return {
+        id: e.id,
+        quarter: e.quarter,
+        entrantLabel: p ? `#${p.number}` : "-",
+        event: e.event,
+        delta: e.delta,
+        createdAt: e.created_at,
+      };
+    }),
+    timeoutEvents.filter((e) => e.side === "opponent"),
+  );
 
   // スタッツから記録された得点の集計。試合結果一覧などで使う公式スコア(game_matches.team_score/
   // opponent_score)とは別物として扱い、ここでは書き込まない(手入力の得点と混ざって二重計上に
@@ -694,6 +777,10 @@ export default function GameStatsPage() {
             resetConfirm={resetConfirm}
             resetting={resetting}
             onResetAll={handleResetStats}
+            timeoutEvents={timeoutEvents}
+            onOwnTimeout={() => handleTimeout("own")}
+            onOpponentTimeout={() => handleTimeout("opponent")}
+            onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
           />
 
           <div ref={opponentRosterRef}>
@@ -797,6 +884,10 @@ export default function GameStatsPage() {
               onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
               onDeleteStatEvent={handleDeleteStatEvent}
               onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
+              timeoutEvents={timeoutEvents}
+              onOwnTimeout={() => handleTimeout("own")}
+              onOpponentTimeout={() => handleTimeout("opponent")}
+              onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
             />
           </div>
 
@@ -813,13 +904,13 @@ export default function GameStatsPage() {
             title="自チームの記録ログ"
             events={ownLog}
             onChangeQuarter={handleChangeStatEventQuarter}
-            onDelete={handleDeleteStatEvent}
+            onDelete={handleDeleteOwnLogEntry}
           />
           <GameStatLog
             title="相手チームの記録ログ"
             events={opponentLog}
             onChangeQuarter={handleChangeOpponentStatEventQuarter}
-            onDelete={handleDeleteOpponentStatEvent}
+            onDelete={handleDeleteOpponentLogEntry}
           />
 
           <button
