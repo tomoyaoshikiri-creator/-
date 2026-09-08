@@ -158,7 +158,7 @@ export function CalendarView({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-0">
         {cells.map((c, i) => {
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
@@ -192,7 +192,7 @@ export function CalendarView({
               key={c.date}
               type="button"
               onClick={() => selectDate(c.date)}
-              className={`aspect-[4/3] rounded-lg flex flex-col items-center justify-center text-xs relative ${
+              className={`aspect-[4/3] rounded flex flex-col items-center justify-center text-xs relative ${
                 isColored ? "border-[1.5px]" : "border"
               } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${
                 c.otherMonth ? "opacity-25" : ""
