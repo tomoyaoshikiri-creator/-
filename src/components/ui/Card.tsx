@@ -12,9 +12,13 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
 export function SectionLabel({
   children,
   align = "left",
+  action,
 }: {
   children: React.ReactNode;
   align?: "left" | "right";
+  // ラベルと反対側(線の外側の端)に置く任意の操作ボタンなど。ラベルがleftなら右端、
+  // rightなら左端に来るため、左右対称な画面でも自然に対角の配置になる。
+  action?: React.ReactNode;
 }) {
   const line = <span className="flex-1 h-px bg-line" />;
   const label = <span>{children}</span>;
@@ -22,6 +26,7 @@ export function SectionLabel({
     <div className="font-mono text-[13px] font-bold tracking-widest uppercase text-ink mb-2.5 flex items-center gap-2">
       {align === "right" ? (
         <>
+          {action}
           {line}
           {label}
         </>
@@ -29,6 +34,7 @@ export function SectionLabel({
         <>
           {label}
           {line}
+          {action}
         </>
       )}
     </div>

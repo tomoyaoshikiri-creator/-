@@ -15,7 +15,15 @@ import {
   type StatTotals,
 } from "@/lib/gameStats";
 import { playerFullName, formatSlashDateLabel } from "@/lib/format";
-import type { GameMatch, GameOpponentPlayer, GameOpponentStatEvent, GameStatEvent, Player, Schedule } from "@/lib/database.types";
+import type {
+  GameMatch,
+  GameOpponentPlayer,
+  GameOpponentStatEvent,
+  GameStatEvent,
+  GameTimeoutEvent,
+  Player,
+  Schedule,
+} from "@/lib/database.types";
 
 type Side = "own" | "opponent";
 
@@ -70,10 +78,37 @@ interface LogRowData {
   id: string;
   quarter: number;
   who: string;
-  event: StatEvent;
+  event: StatEvent | "timeout";
   pt: number;
   side: Side;
   playerId: string;
+  createdAt: string;
+  kind: "stat" | "timeout";
+}
+
+// SectionLabelのaction相当。自チーム/相手チームの選手チップ列の外側(中央から遠い側)の角に
+// 絶対配置し、選手選択の有無に関わらずタップでその場のクォーターのタイムアウトを記録する。
+function TimeoutButton({
+  color,
+  count,
+  onTap,
+  corner,
+}: {
+  color: "orange" | "navy";
+  count: number;
+  onTap: () => void;
+  corner: "left" | "right";
+}) {
+  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange";
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className={`absolute top-0 ${corner === "left" ? "left-0" : "right-0"} px-2 py-1 rounded-lg border bg-white font-bold text-[9.5px] whitespace-nowrap ${colorClass}`}
+    >
+      ⏱ タイムアウト{count > 0 ? ` ${count}` : ""}
+    </button>
+  );
 }
 
 export function GameStatsLandscape({
@@ -104,6 +139,10 @@ export function GameStatsLandscape({
   resetConfirm,
   resetting,
   onResetAll,
+  timeoutEvents,
+  onOwnTimeout,
+  onOpponentTimeout,
+  onDeleteTimeoutEvent,
 }: {
   quarter: number;
   onQuarterChange: (q: number) => void;
@@ -132,6 +171,10 @@ export function GameStatsLandscape({
   resetConfirm: boolean;
   resetting: boolean;
   onResetAll: () => void;
+  timeoutEvents: GameTimeoutEvent[];
+  onOwnTimeout: () => void;
+  onOpponentTimeout: () => void;
+  onDeleteTimeoutEvent: (eventId: string) => Promise<void>;
 }) {
   const { sport } = useSession();
   const gridCells = buildGridCells(usesThreePointScoring(sport));
@@ -163,7 +206,8 @@ export function GameStatsLandscape({
     setSelected(null);
   }
 
-  // 選手選択の有無にかかわらず、自チーム・相手チームを通じて直前に記録された1件を取り消す。
+  // 選手選択の有無にかかわらず、自チーム・相手チームのスタッツ+タイムアウトを通じて
+  // 直前に記録された1件を取り消す。
   const allEvents: LogRowData[] = [
     ...ownStatEvents.map((e) => {
       const p = players.find((pl) => pl.id === e.player_id);
@@ -175,6 +219,8 @@ export function GameStatsLandscape({
         pt: statEventPoints(e.event, e.delta),
         side: "own" as const,
         playerId: e.player_id,
+        createdAt: e.created_at,
+        kind: "stat" as const,
       };
     }),
     ...opponentStatEvents.map((e) => {
@@ -187,25 +233,36 @@ export function GameStatsLandscape({
         pt: statEventPoints(e.event, e.delta),
         side: "opponent" as const,
         playerId: e.opponent_player_id,
+        createdAt: e.created_at,
+        kind: "stat" as const,
       };
     }),
+    ...timeoutEvents.map((e) => ({
+      id: e.id,
+      quarter: e.quarter,
+      who: "",
+      event: "timeout" as const,
+      pt: 0,
+      side: e.side,
+      playerId: "",
+      createdAt: e.created_at,
+      kind: "timeout" as const,
+    })),
   ];
   const currentQuarterEvents = allEvents
     .filter((e) => e.quarter === quarter)
-    .sort((a, b) => {
-      const aSrc = a.side === "own" ? ownStatEvents : opponentStatEvents;
-      const bSrc = b.side === "own" ? ownStatEvents : opponentStatEvents;
-      const aCreated = aSrc.find((x) => x.id === a.id)?.created_at ?? "";
-      const bCreated = bSrc.find((x) => x.id === b.id)?.created_at ?? "";
-      return bCreated.localeCompare(aCreated);
-    });
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const lastEntry = currentQuarterEvents[0];
 
   async function handleUndo() {
     if (!lastEntry) return;
-    if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
+    if (lastEntry.kind === "timeout") await onDeleteTimeoutEvent(lastEntry.id);
+    else if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
     else await onDeleteOpponentStatEvent(lastEntry.id);
   }
+
+  const ownTimeoutCount = timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter).length;
+  const opponentTimeoutCount = timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter).length;
 
   async function reassignEntry(newSide: Side, newPlayerId: string, newEvent: StatEvent) {
     if (!correcting) return;
@@ -316,9 +373,16 @@ export function GameStatsLandscape({
         className="grid gap-2.5 pt-3 pb-4"
         style={{ gridTemplateColumns: "minmax(150px,190px) 112fr 540fr 112fr minmax(150px,190px)" }}
       >
-        <LogColumn title="自チームの記録ログ" entries={currentQuarterEvents.filter((e) => e.side === "own")} onOpen={setCorrecting} align="left" />
+        <LogColumn
+          title="自チームの記録ログ"
+          entries={currentQuarterEvents.filter((e) => e.side === "own")}
+          onOpen={setCorrecting}
+          onDeleteTimeout={onDeleteTimeoutEvent}
+          align="left"
+        />
 
-        <div className="flex flex-col items-center min-h-0">
+        <div className="relative flex flex-col items-center min-h-0">
+          <TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} corner="left" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">自チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {ownEntrants.map((e) => (
@@ -396,7 +460,8 @@ export function GameStatsLandscape({
           </div>
         </div>
 
-        <div className="flex flex-col items-center min-h-0">
+        <div className="relative flex flex-col items-center min-h-0">
+          <TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} corner="right" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">相手チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {opponentEntrants.map((e) => (
@@ -424,6 +489,7 @@ export function GameStatsLandscape({
           title="相手チームの記録ログ"
           entries={currentQuarterEvents.filter((e) => e.side === "opponent")}
           onOpen={setCorrecting}
+          onDeleteTimeout={onDeleteTimeoutEvent}
           align="right"
         />
       </div>
@@ -443,7 +509,7 @@ export function GameStatsLandscape({
           players={players}
           opponentPlayers={opponentPlayers}
           onClose={() => setCorrecting(null)}
-          onReassignPlayer={(side, playerId) => reassignEntry(side, playerId, correcting.event)}
+          onReassignPlayer={(side, playerId) => reassignEntry(side, playerId, correcting.event as StatEvent)}
           onReassignStat={(event) => reassignEntry(correcting.side, correcting.playerId, event)}
           onDelete={deleteCorrecting}
         />
@@ -456,13 +522,37 @@ function LogColumn({
   title,
   entries,
   onOpen,
+  onDeleteTimeout,
   align,
 }: {
   title: string;
   entries: LogRowData[];
   onOpen: (entry: LogRowData) => void;
+  onDeleteTimeout: (id: string) => Promise<void>;
   align: "left" | "right";
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  function handleRowClick(e: LogRowData) {
+    if (e.kind !== "timeout") {
+      onOpen(e);
+      return;
+    }
+    setExpandedId((cur) => (cur === e.id ? null : e.id));
+  }
+
+  function handleDeleteClick(id: string) {
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId((cur) => (cur === id ? null : cur)), 3000);
+      return;
+    }
+    setDeleteConfirmId(null);
+    setExpandedId(null);
+    onDeleteTimeout(id);
+  }
+
   return (
     <div className="max-w-[178px] justify-self-center flex flex-col min-h-0">
       <div className={`font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5 ${align === "right" ? "text-right" : ""}`}>
@@ -470,21 +560,32 @@ function LogColumn({
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-0.5">
         {entries.map((e) => (
-          <button
-            key={e.id}
-            type="button"
-            onClick={() => onOpen(e)}
-            className="text-left text-[12px] leading-[1.4] py-1 px-1.5 rounded-lg border-b border-line"
-          >
-            {e.pt !== 0 && (
-              <span className={`float-right font-mono font-bold ${e.side === "own" ? "text-orange" : "text-navy"}`}>
-                {e.pt > 0 ? `+${e.pt}` : e.pt}
-              </span>
+          <div key={e.id}>
+            <button
+              type="button"
+              onClick={() => handleRowClick(e)}
+              className="w-full text-left text-[12px] leading-[1.4] py-1 px-1.5 rounded-lg border-b border-line"
+            >
+              {e.pt !== 0 && (
+                <span className={`float-right font-mono font-bold ${e.side === "own" ? "text-orange" : "text-navy"}`}>
+                  {e.pt > 0 ? `+${e.pt}` : e.pt}
+                </span>
+              )}
+              <span className="font-mono text-ink-soft mr-1">{e.quarter}Q</span>
+              <span className="font-bold">{e.who}</span>
+              <span className="text-ink-soft ml-1">{e.kind === "timeout" ? "タイムアウト" : statEventLabel(e.event as StatEvent)}</span>
+            </button>
+            {e.kind === "timeout" && expandedId === e.id && (
+              <button
+                type="button"
+                onClick={() => handleDeleteClick(e.id)}
+                className="w-full text-center py-1 mb-1 rounded-lg font-bold text-[10.5px] border bg-white"
+                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              >
+                {deleteConfirmId === e.id ? "もう一度タップで削除確定" : "この記録を削除"}
+              </button>
             )}
-            <span className="font-mono text-ink-soft mr-1">{e.quarter}Q</span>
-            <span className="font-bold">{e.who}</span>
-            <span className="text-ink-soft ml-1">{statEventLabel(e.event)}</span>
-          </button>
+          </div>
         ))}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
 import { STAT_BUTTONS, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
-import type { GameStatEvent, GameOpponentStatEvent } from "@/lib/database.types";
+import type { GameStatEvent, GameOpponentStatEvent, GameTimeoutEvent } from "@/lib/database.types";
 
 export interface StatEntrant {
   id: string;
@@ -46,6 +46,29 @@ const THREE_POINT_CELLS: GridCell[] = [statCell("three_make"), statCell("three_m
 export function buildGridCells(showThreePoint: boolean): GridCell[] {
   if (!showThreePoint) return BASE_GRID_CELLS;
   return [BASE_GRID_CELLS[0], BASE_GRID_CELLS[1], ...THREE_POINT_CELLS, ...BASE_GRID_CELLS.slice(2)];
+}
+
+// SectionLabelのactionスロットに置く、チーム単位のタイムアウト記録ボタン。
+// 選手の選択状態に関わらず常にタップでき、その場でクォーターのタイムアウト回数を1つ記録する。
+function TimeoutButton({
+  color,
+  count,
+  onTap,
+}: {
+  color: "orange" | "navy";
+  count: number;
+  onTap: () => void;
+}) {
+  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange";
+  return (
+    <button
+      type="button"
+      onClick={onTap}
+      className={`flex-none normal-case tracking-normal px-2.5 py-1 rounded-lg border bg-white font-bold text-[11px] ${colorClass}`}
+    >
+      ⏱ タイムアウト{count > 0 ? ` ${count}` : ""}
+    </button>
+  );
 }
 
 function ChipRow({
@@ -146,6 +169,10 @@ export function StatPad({
   onOpenOpponentMemberChange,
   onDeleteStatEvent,
   onDeleteOpponentStatEvent,
+  timeoutEvents,
+  onOwnTimeout,
+  onOpponentTimeout,
+  onDeleteTimeoutEvent,
 }: {
   quarter: number;
   ownEntrants: StatEntrant[];
@@ -162,6 +189,10 @@ export function StatPad({
   onOpenOpponentMemberChange: () => void;
   onDeleteStatEvent: (eventId: string) => Promise<void>;
   onDeleteOpponentStatEvent: (eventId: string) => Promise<void>;
+  timeoutEvents: GameTimeoutEvent[];
+  onOwnTimeout: () => void;
+  onOpponentTimeout: () => void;
+  onDeleteTimeoutEvent: (eventId: string) => Promise<void>;
 }) {
   const { sport } = useSession();
   const gridCells = buildGridCells(usesThreePointScoring(sport));
@@ -201,29 +232,56 @@ export function StatPad({
     setSelected(null);
   }
 
-  // 選手選択の有無にかかわらず、自チーム・相手チームを通じて直前に記録された1件を取り消す。
-  // 両イベント配列は作成日時の降順で読み込まれている前提で、それぞれの先頭同士を比較する。
+  // 選手選択の有無にかかわらず、自チーム・相手チームのスタッツ+タイムアウトを通じて
+  // 直前に記録された1件を取り消す。各イベント配列は作成日時の降順で読み込まれている前提で、
+  // それぞれの先頭同士を比較する。
   const ownLast = ownStatEvents.find((e) => e.quarter === quarter);
   const opponentLast = opponentStatEvents.find((e) => e.quarter === quarter);
-  const lastEntry: { side: Side; id: string } | null = !ownLast
-    ? opponentLast
-      ? { side: "opponent", id: opponentLast.id }
-      : null
-    : !opponentLast
-      ? { side: "own", id: ownLast.id }
-      : ownLast.created_at >= opponentLast.created_at
-        ? { side: "own", id: ownLast.id }
-        : { side: "opponent", id: opponentLast.id };
+  const ownTimeoutLast = timeoutEvents.find((e) => e.side === "own" && e.quarter === quarter);
+  const opponentTimeoutLast = timeoutEvents.find((e) => e.side === "opponent" && e.quarter === quarter);
+
+  type LastEntry = { kind: "stat" | "timeout"; side: Side; id: string; createdAt: string };
+  const undoCandidates: LastEntry[] = [
+    ownLast && { kind: "stat" as const, side: "own" as const, id: ownLast.id, createdAt: ownLast.created_at },
+    opponentLast && {
+      kind: "stat" as const,
+      side: "opponent" as const,
+      id: opponentLast.id,
+      createdAt: opponentLast.created_at,
+    },
+    ownTimeoutLast && {
+      kind: "timeout" as const,
+      side: "own" as const,
+      id: ownTimeoutLast.id,
+      createdAt: ownTimeoutLast.created_at,
+    },
+    opponentTimeoutLast && {
+      kind: "timeout" as const,
+      side: "opponent" as const,
+      id: opponentTimeoutLast.id,
+      createdAt: opponentTimeoutLast.created_at,
+    },
+  ].filter((x): x is LastEntry => !!x);
+  const lastEntry =
+    undoCandidates.length === 0
+      ? null
+      : undoCandidates.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b));
 
   async function handleUndo() {
     if (!lastEntry) return;
-    if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
+    if (lastEntry.kind === "timeout") await onDeleteTimeoutEvent(lastEntry.id);
+    else if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
     else await onDeleteOpponentStatEvent(lastEntry.id);
   }
 
+  const ownTimeoutCount = timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter).length;
+  const opponentTimeoutCount = timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter).length;
+
   return (
     <>
-      <SectionLabel>自チームのスタッツ</SectionLabel>
+      <SectionLabel action={<TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} />}>
+        自チームのスタッツ
+      </SectionLabel>
       <ChipRow
         entrants={ownEntrants}
         statLines={ownStatLines}
@@ -291,7 +349,12 @@ export function StatPad({
           onSelect={(id) => setSelected({ side: "opponent", id })}
           onOpenMemberChange={onOpenOpponentMemberChange}
         />
-        <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
+        <SectionLabel
+          align="right"
+          action={<TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} />}
+        >
+          相手チームのスタッツ
+        </SectionLabel>
       </div>
 
       {selectedEntrant && (

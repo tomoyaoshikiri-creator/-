@@ -263,6 +263,20 @@ export function resetMatchStats(supabase: SupabaseClient<Database>, matchId: str
   return supabase.rpc("reset_match_stats", { p_match_id: matchId });
 }
 
+// タイムアウトは選手に紐づかないチーム単位の記録のため、他のスタッツとは別のRPCを使う。
+export function recordGameTimeout(
+  supabase: SupabaseClient<Database>,
+  matchId: string,
+  side: "own" | "opponent",
+  quarter: number,
+) {
+  return supabase.rpc("record_game_timeout", { p_match_id: matchId, p_side: side, p_quarter: quarter });
+}
+
+export function deleteGameTimeoutEvent(supabase: SupabaseClient<Database>, eventId: string) {
+  return supabase.rpc("delete_game_timeout_event", { p_event_id: eventId });
+}
+
 // 指定クォーターのチームファウル数(選手個人のfoulsイベントをチーム単位で合算)。
 // バスケットボール・ミニバスケットボールいずれもチームファウルはクォーターごとにリセットされるルールのため、
 // quarterで絞り込んだ上で合算する。
