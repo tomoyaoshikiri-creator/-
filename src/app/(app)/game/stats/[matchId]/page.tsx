@@ -79,6 +79,9 @@ export default function GameStatsPage() {
   const [opponentStatLines, setOpponentStatLines] = useState<Record<string, GameOpponentStatLine>>({});
   const [opponentStatEvents, setOpponentStatEvents] = useState<GameOpponentStatEvent[]>([]);
   const [timeoutEvents, setTimeoutEvents] = useState<GameTimeoutEvent[]>([]);
+  // どちらのチームがボールを保持しているかの目印。DBには保存せず、画面を開いている間だけの
+  // 表示用状態(縦画面・横画面の切り替え時も保持されるようここで一元管理する)。
+  const [possession, setPossession] = useState<"own" | "opponent" | null>(null);
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -781,6 +784,8 @@ export default function GameStatsPage() {
             onOwnTimeout={() => handleTimeout("own")}
             onOpponentTimeout={() => handleTimeout("opponent")}
             onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
+            possession={possession}
+            onSetPossession={setPossession}
           />
 
           <div ref={opponentRosterRef}>
@@ -835,6 +840,14 @@ export default function GameStatsPage() {
               第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
             </div>
             <div className="flex items-center justify-center gap-2 mt-1.5">
+              <button
+                type="button"
+                onClick={() => setPossession("own")}
+                aria-label="自チームにポゼッション"
+                className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger" : "text-ink-soft"}`}
+              >
+                ➡︎
+              </button>
               <TeamFoulLamps direction="column" count={ownQuarterFouls} />
               <div className="flex items-center gap-6">
                 <div className="text-center">
@@ -848,6 +861,14 @@ export default function GameStatsPage() {
                 </div>
               </div>
               <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
+              <button
+                type="button"
+                onClick={() => setPossession("opponent")}
+                aria-label="相手チームにポゼッション"
+                className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger" : "text-ink-soft"}`}
+              >
+                ➡︎
+              </button>
             </div>
             <div className="text-[10px] text-ink-soft text-center mt-1">
               スタッツの記録から集計した得点です。
