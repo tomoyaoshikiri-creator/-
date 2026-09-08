@@ -158,7 +158,7 @@ export function CalendarView({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0">
+      <div className="grid grid-cols-7 border border-line rounded-lg overflow-hidden divide-x divide-y divide-line">
         {cells.map((c, i) => {
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
@@ -175,16 +175,17 @@ export function CalendarView({
                 : null;
           const isSelected = selectedDate === c.date;
           const isToday = c.date === todayStr;
-          const isColored = isSelected || dayColor !== null;
+          // 月全体を1枚の四角として枠を持たせ、各マスは区切り線(divide)だけで分ける。
+          // マスごとの個別の枠色は持たせず、背景色だけで選択中・予定ありを示す。
           const cellCls = isSelected
-            ? "bg-navy/10 border-navy font-bold"
+            ? "bg-navy/10 font-bold"
             : dayColor === "danger"
-              ? "bg-danger/22 border-danger font-bold"
+              ? "bg-danger/22 font-bold"
               : dayColor === "sky"
-                ? "bg-sky/18 border-sky font-bold"
+                ? "bg-sky/18 font-bold"
                 : dayColor === "orange"
-                  ? "bg-orange/18 border-orange font-bold"
-                  : "bg-white border-line";
+                  ? "bg-orange/18 font-bold"
+                  : "bg-white";
           const dotCls =
             dayColor === "danger" ? "bg-danger" : dayColor === "sky" ? "bg-sky" : dayColor === "orange" ? "bg-orange" : "";
           return (
@@ -192,11 +193,9 @@ export function CalendarView({
               key={c.date}
               type="button"
               onClick={() => selectDate(c.date)}
-              className={`aspect-[4/3] rounded flex flex-col items-center justify-center text-xs relative ${
-                isColored ? "border-[1.5px]" : "border"
-              } ${!isSelected && isToday ? "outline outline-2 outline-green" : ""} ${
-                c.otherMonth ? "opacity-25" : ""
-              } ${cellCls}`}
+              className={`aspect-[4/3] flex flex-col items-center justify-center text-xs relative ${
+                !isSelected && isToday ? "outline outline-2 -outline-offset-2 outline-green" : ""
+              } ${c.otherMonth ? "opacity-25" : ""} ${cellCls}`}
             >
               {hasBirthday && <span className="absolute top-0.5 right-0.5 text-[9px] leading-none">🎂</span>}
               <span className={holiday ? HOLIDAY_TEXT_CLASS[holiday] : ""}>{c.day}</span>
