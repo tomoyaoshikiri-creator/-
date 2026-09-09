@@ -5,6 +5,7 @@ import { NavigationGuardProvider } from "@/lib/navigationGuard";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppNav } from "@/components/AppNav";
 import { InactivityLogout } from "@/components/InactivityLogout";
+import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
 import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
@@ -119,6 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <ToastProvider>
           <NavigationGuardProvider>
             <InactivityLogout />
+            <PushPermissionPrompt />
             <AppNav role={role}>{children}</AppNav>
           </NavigationGuardProvider>
         </ToastProvider>
