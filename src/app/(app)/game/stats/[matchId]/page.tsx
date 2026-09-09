@@ -623,7 +623,11 @@ export default function GameStatsPage() {
   const onCourtIds = Array.from(
     new Set([...starters.filter((id) => !benchedStarterIds.includes(id)), ...subs]),
   );
-  const onCourtPlayers = players.filter((p) => onCourtIds.includes(p.id));
+  // このスタッツ入力画面のチップ表示は、学年ではなく背番号の若い順に並べる
+  // (選手一覧・メンバーチェンジ画面など他の一覧は学年順のsortPlayersのまま)。
+  const onCourtPlayers = players
+    .filter((p) => onCourtIds.includes(p.id))
+    .sort((a, b) => (a.number ? parseInt(a.number, 10) : Infinity) - (b.number ? parseInt(b.number, 10) : Infinity));
   const ownEntrants: StatEntrant[] = onCourtPlayers.map((p) => ({
     id: p.id,
     number: p.number,
