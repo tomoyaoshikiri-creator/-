@@ -701,33 +701,40 @@ export default function GameStatsPage() {
     return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((r) => r.entry);
   }
 
+  // 記録ログ(自チーム/相手チームの記録ログ表示)は、現在選択中のクォータータブの
+  // 記録だけを表示する。undo用のownStatEvents/opponentStatEvents(StatPad等に渡す方)は
+  // クォーター横断の直近履歴のままにしたいため、ここではログ表示用の配列だけを絞り込む。
   const ownLog: StatLogEntry[] = buildLog(
-    statEvents.map((e) => {
-      const p = players.find((pl) => pl.id === e.player_id);
-      return {
-        id: e.id,
-        quarter: e.quarter,
-        entrantLabel: p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "-",
-        event: e.event,
-        delta: e.delta,
-        createdAt: e.created_at,
-      };
-    }),
-    timeoutEvents.filter((e) => e.side === "own"),
+    statEvents
+      .filter((e) => e.quarter === quarter)
+      .map((e) => {
+        const p = players.find((pl) => pl.id === e.player_id);
+        return {
+          id: e.id,
+          quarter: e.quarter,
+          entrantLabel: p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "-",
+          event: e.event,
+          delta: e.delta,
+          createdAt: e.created_at,
+        };
+      }),
+    timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter),
   );
   const opponentLog: StatLogEntry[] = buildLog(
-    opponentStatEvents.map((e) => {
-      const p = opponentPlayers.find((op) => op.id === e.opponent_player_id);
-      return {
-        id: e.id,
-        quarter: e.quarter,
-        entrantLabel: p ? `#${p.number}` : "-",
-        event: e.event,
-        delta: e.delta,
-        createdAt: e.created_at,
-      };
-    }),
-    timeoutEvents.filter((e) => e.side === "opponent"),
+    opponentStatEvents
+      .filter((e) => e.quarter === quarter)
+      .map((e) => {
+        const p = opponentPlayers.find((op) => op.id === e.opponent_player_id);
+        return {
+          id: e.id,
+          quarter: e.quarter,
+          entrantLabel: p ? `#${p.number}` : "-",
+          event: e.event,
+          delta: e.delta,
+          createdAt: e.created_at,
+        };
+      }),
+    timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter),
   );
 
   // スタッツから記録された得点の集計。試合結果一覧などで使う公式スコア(game_matches.team_score/
