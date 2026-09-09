@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-const TIMEOUT_MS = 15 * 60 * 1000;
+const TIMEOUT_MS = 60 * 60 * 1000;
 const ACTIVITY_EVENTS = ["click", "keydown", "touchstart", "scroll"] as const;
 
 export function InactivityLogout() {
