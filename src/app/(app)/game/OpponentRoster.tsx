@@ -115,6 +115,24 @@ export function OpponentRoster({
           {addingTemplate ? "登録中…" : "4〜18番を一括登録"}
         </button>
 
+        {opponentPlayers.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[11px] font-bold text-ink-soft mb-1.5">登録済み({opponentPlayers.length}人)</div>
+            <div className="flex flex-wrap gap-1.5">
+              {[...opponentPlayers]
+                .sort((a, b) => Number(a.number) - Number(b.number))
+                .map((p) => (
+                  <span
+                    key={p.id}
+                    className="px-2.5 py-1 rounded-full border border-line bg-paper font-mono font-bold text-[12px] text-ink"
+                  >
+                    #{p.number}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-end mt-3">
           <button
             type="button"
