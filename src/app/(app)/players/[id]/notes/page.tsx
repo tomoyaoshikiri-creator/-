@@ -12,6 +12,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName, sortPlayers } from "@/lib/format";
@@ -22,7 +23,7 @@ import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib
 export default function PlayerNotesPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId } = useSession();
+  const { role, userId, name } = useSession();
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [prevId, setPrevId] = useState<string | null>(null);
@@ -113,6 +114,15 @@ export default function PlayerNotesPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
+      const authorId = notes.find((n) => n.id === noteId)?.author_id;
+      if (authorId && authorId !== userId) {
+        sendPushNotification({
+          title: "リアクションがつきました",
+          body: `${name}さんが${playerFullName(player)}のメモにリアクションしました`,
+          url: `/players/${player.id}/notes`,
+          targetUserIds: [authorId],
+        });
+      }
     }
     loadReactions();
   }
@@ -159,6 +169,12 @@ export default function PlayerNotesPage() {
     setNoteBody("");
     setModalOpen(false);
     toast("メモを登録しました");
+    sendPushNotification({
+      title: "📝 選手メモが登録されました",
+      body: `${playerFullName(player)}のメモが登録されました`,
+      url: `/players/${player.id}/notes`,
+      targetRoles: ["指導者", "管理者"],
+    });
     load();
   }
 

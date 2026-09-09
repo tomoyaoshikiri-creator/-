@@ -11,6 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -25,7 +26,7 @@ export default function GameDetailPage() {
   const gameId = params.id;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userId, teamId, role, sport } = useSession();
+  const { userId, teamId, role, sport, name } = useSession();
   const toast = useToast();
   const [game, setGame] = useState<Schedule | null>(null);
   const [matches, setMatches] = useState<GameMatch[]>([]);
@@ -200,6 +201,15 @@ export default function GameDetailPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
+      const authorId = notes.find((n) => n.id === noteId)?.author_id;
+      if (authorId && authorId !== userId) {
+        sendPushNotification({
+          title: "リアクションがつきました",
+          body: `${name}さんがコーチメモにリアクションしました`,
+          url: `/game/${gameId}`,
+          targetUserIds: [authorId],
+        });
+      }
     }
     loadNoteReactions();
   }
@@ -226,6 +236,13 @@ export default function GameDetailPage() {
     setNoteBody("");
     setShowAddNote(false);
     toast("コーチメモを登録しました");
+    const match = matches.find((m) => m.id === selectedMatchId);
+    sendPushNotification({
+      title: "📝 コーチメモが登録されました",
+      body: match?.opponent ? `vs ${match.opponent} のコーチメモが登録されました` : "コーチメモが登録されました",
+      url: `/game/${gameId}`,
+      targetRoles: ["指導者", "管理者"],
+    });
     loadNotes(selectedMatchId);
   }
 

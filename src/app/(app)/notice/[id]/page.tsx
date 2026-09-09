@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -41,7 +42,7 @@ const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "運営以上"
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { teamId, role, userId, category } = useSession();
+  const { teamId, role, userId, name, category } = useSession();
   const toast = useToast();
   const audiences = (canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ")).filter(
     (a) => a !== "学年指定" || category !== "その他",
@@ -135,6 +136,14 @@ export default function NoticeDetailPage() {
       if (error) {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
+      }
+      if (notice.sender_id && notice.sender_id !== userId) {
+        sendPushNotification({
+          title: "リアクションがつきました",
+          body: `${name}さんが「${notice.title}」にリアクションしました`,
+          url: `/notice/${notice.id}`,
+          targetUserIds: [notice.sender_id],
+        });
       }
     }
     loadReactions();

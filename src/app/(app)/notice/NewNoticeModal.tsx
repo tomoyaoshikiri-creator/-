@@ -14,6 +14,7 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { gradeLabel } from "@/lib/format";
+import { sendPushNotification } from "@/lib/pushNotify";
 import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
@@ -197,14 +198,7 @@ export function NewNoticeModal({
 
     setSaving(false);
     reset();
-    // プッシュ通知の送信はベストエフォート。鍵未設定や送信失敗があっても
-    // お知らせの登録自体は完了しているので、ここでは結果を待たず・エラーも無視する
-    // (失敗の詳細はサーバー側のログ(/api/push/notify)に残る)。
-    fetch("/api/push/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "📢 新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` }),
-    }).catch(() => {});
+    sendPushNotification({ title: "📢 新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` });
     onCreated();
   }
 
