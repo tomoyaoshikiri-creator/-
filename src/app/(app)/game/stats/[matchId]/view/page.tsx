@@ -85,22 +85,28 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                   選手
                 </th>
-                {[
-                  "PTS",
-                  "FG",
-                  ...(showThreePoint ? ["3P"] : []),
-                  "FT",
-                  "REB",
-                  "AST",
-                  "STL",
-                  "BLK",
-                  "TOV",
-                  "PF",
-                  "EFF",
-                ].map((h) => (
+                {["PTS", "FG", ...(showThreePoint ? ["3P"] : []), "FT"].map((h) => (
                   <th
                     key={h}
-                    className="sticky top-0 h-9 bg-paper z-20 px-2 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
+                    className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
+                  >
+                    {h}
+                  </th>
+                ))}
+                <th
+                  colSpan={2}
+                  className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
+                >
+                  <div>REB</div>
+                  <div className="flex justify-center gap-3 text-[8.5px] leading-none font-bold">
+                    <span>OFR</span>
+                    <span>DFR</span>
+                  </div>
+                </th>
+                {["AST", "STL", "BLK", "TOV", "PF", "EFF"].map((h) => (
+                  <th
+                    key={h}
+                    className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
                   >
                     {h}
                   </th>
@@ -113,78 +119,93 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                   <td className="sticky left-0 bg-white z-10 px-2.5 py-1.5 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
                     {r.label}
                   </td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono font-bold text-orange">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono font-bold text-orange">
                     {r.line.pts}
                   </td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
                     {r.line.fg_made}/{r.line.fg_att}
                     <span className="text-ink-soft"> ({fgPct(r.line)})</span>
                   </td>
                   {showThreePoint && (
-                    <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
+                    <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
                       {r.line.three_made}/{r.line.three_att}
                       <span className="text-ink-soft"> ({threePct(r.line)})</span>
                     </td>
                   )}
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono whitespace-nowrap">
                     {r.line.ft_made}/{r.line.ft_att}
                     <span className="text-ink-soft"> ({ftPct(r.line)})</span>
                   </td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.reb}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.ast}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.stl}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.blk}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.tov}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.fouls}</td>
-                  <td className="px-2 py-1.5 text-center border-b border-line last:border-b-0 font-mono">{r.line.eff}</td>
+                  <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">
+                    <div className="font-bold">{r.line.reb}</div>
+                    <div className="text-ink-soft text-[10px]">
+                      {r.line.reb_off} - {r.line.reb_def}
+                    </div>
+                  </td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.ast}</td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.stl}</td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.blk}</td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.tov}</td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.fouls}</td>
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">{r.line.eff}</td>
                 </tr>
               ))}
               <tr>
                 <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">合計</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono font-bold text-orange">{total.pts}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange">{total.pts}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                   {total.fg_made}/{total.fg_att}
                   <span className="text-ink-soft"> ({fgPct(total)})</span>
                 </td>
                 {showThreePoint && (
-                  <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                     {total.three_made}/{total.three_att}
                     <span className="text-ink-soft"> ({threePct(total)})</span>
                   </td>
                 )}
-                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                   {total.ft_made}/{total.ft_att}
                   <span className="text-ink-soft"> ({ftPct(total)})</span>
                 </td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.reb}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.ast}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.stl}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.blk}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.tov}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.fouls}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono text-ink-soft">-</td>
+                <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
+                  <div className="font-bold">{total.reb}</div>
+                  <div className="text-ink-soft text-[10px]">
+                    {total.reb_off} - {total.reb_def}
+                  </div>
+                </td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.ast}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.stl}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.blk}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.tov}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.fouls}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono text-ink-soft">-</td>
               </tr>
               <tr>
                 <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">平均</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono font-bold text-orange">{avg(total.pts)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange">{avg(total.pts)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                   {avg(total.fg_made)}/{avg(total.fg_att)}
                 </td>
                 {showThreePoint && (
-                  <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                     {avg(total.three_made)}/{avg(total.three_att)}
                   </td>
                 )}
-                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono whitespace-nowrap">
                   {avg(total.ft_made)}/{avg(total.ft_att)}
                 </td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.reb)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.ast)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.stl)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.blk)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.tov)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.fouls)}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.eff)}</td>
+                <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
+                  <div className="font-bold">{avg(total.reb)}</div>
+                  <div className="text-ink-soft text-[10px]">
+                    {avg(total.reb_off)} - {avg(total.reb_def)}
+                  </div>
+                </td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.ast)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.stl)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.blk)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.tov)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.fouls)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{avg(total.eff)}</td>
               </tr>
             </tbody>
           </table>
