@@ -303,12 +303,14 @@ export default function PlayerDetailPage() {
             </div>
 
             <div className="mt-3">
-              <FieldLabel>誕生日</FieldLabel>
-              <BirthdaySelect value={birthday} onChange={setBirthday} />
-              <div className="flex items-center justify-between mt-2">
-                <div className="text-[11.5px] font-bold text-ink-soft">誕生日を公開する</div>
-                <Switch checked={birthdayVisible} onChange={setBirthdayVisible} />
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[11.5px] font-bold text-ink-soft">誕生日</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[10.5px] font-bold text-ink-soft">公開する</div>
+                  <Switch checked={birthdayVisible} onChange={setBirthdayVisible} />
+                </div>
               </div>
+              <BirthdaySelect value={birthday} onChange={setBirthday} />
               <div className="text-xs text-ink-soft mt-1">
                 オフにすると、誕生日お祝い通知やカレンダーの🎂表示の対象外になります。
               </div>
