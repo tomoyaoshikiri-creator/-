@@ -30,7 +30,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
     // ナビ再設計v3でタブ数がロールに関わらず常に5個の固定になったため、8タブ時代の
     // dense(px-3)分岐は不要になった。5タブは旧7タブ時代よりさらに1タブあたりの幅に
     // 余裕があるため、旧non-dense(px-1)側の余白をそのまま使う。
-    <nav className="min-[700px]:hidden flex items-start pt-2.5 pb-0 px-1 border-t border-line bg-paper">
+    <nav className="min-[700px]:hidden flex items-start pt-1 pb-0 px-1 border-t border-line bg-paper">
       {BOTTOM_NAV_TABS.map((tab) => {
         const Icon = TAB_ICONS[tab];
         const href = tabHrefForRole(role, tab);
