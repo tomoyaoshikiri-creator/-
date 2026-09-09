@@ -3,7 +3,7 @@
 
 export type Role = "一般" | "運営" | "指導者" | "管理者";
 export type UserStatus = "アクティブ" | "休止";
-export type ScheduleType = "practice" | "game" | "event";
+export type ScheduleType = "practice" | "game" | "event" | "other";
 // 種別が"game"の予定にのみ意味を持つ区分。試合記録・試合結果一覧の絞り込みにも使う。
 export type GameCategory = "練習試合" | "公式戦";
 // 種別が"game"の予定にのみ意味を持つ。アウェイは車出し、ホームは会場設営のヒアリングになる。
