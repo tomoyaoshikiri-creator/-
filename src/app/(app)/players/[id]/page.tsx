@@ -479,7 +479,7 @@ export default function PlayerDetailPage() {
                       return (
                         <div
                           key={test.id}
-                          className="flex items-center justify-between py-1.5 border-b border-line last:border-b-0"
+                          className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 border-b border-line last:border-b-0"
                         >
                           <span className="font-bold">{test.name}</span>
                           <span className="text-ink-soft">{current ? current.level_label : "未設定"}</span>
