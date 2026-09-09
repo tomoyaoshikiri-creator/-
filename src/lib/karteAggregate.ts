@@ -243,6 +243,76 @@ export function computeTeamAverages(
   };
 }
 
+export interface SeasonStatTotals {
+  pts: number;
+  reb: number;
+  rebOff: number;
+  rebDef: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  tov: number;
+  fouls: number;
+  fgMade: number;
+  fgAtt: number;
+  threeMade: number;
+  threeAtt: number;
+  ftMade: number;
+  ftAtt: number;
+  twoMade: number;
+  twoAtt: number;
+}
+
+// GAME_COLUMNSの「シーズン合計」行用。computeSeasonAveragesが1試合あたりの平均を
+// 返すのに対し、こちらはFG/FTの分母・分子も含めた単純合計を返す。
+export function computeSeasonTotals(lines: GamePlayerStatLine[]): SeasonStatTotals {
+  const sum = lines.reduce(
+    (acc, l) => ({
+      pts: acc.pts + l.pts,
+      reb: acc.reb + l.reb,
+      rebOff: acc.rebOff + l.reb_off,
+      rebDef: acc.rebDef + l.reb_def,
+      ast: acc.ast + l.ast,
+      stl: acc.stl + l.stl,
+      blk: acc.blk + l.blk,
+      tov: acc.tov + l.tov,
+      fouls: acc.fouls + l.fouls,
+      fgMade: acc.fgMade + l.fg_made,
+      fgAtt: acc.fgAtt + l.fg_att,
+      threeMade: acc.threeMade + l.three_made,
+      threeAtt: acc.threeAtt + l.three_att,
+      ftMade: acc.ftMade + l.ft_made,
+      ftAtt: acc.ftAtt + l.ft_att,
+    }),
+    {
+      pts: 0,
+      reb: 0,
+      rebOff: 0,
+      rebDef: 0,
+      ast: 0,
+      stl: 0,
+      blk: 0,
+      tov: 0,
+      fouls: 0,
+      fgMade: 0,
+      fgAtt: 0,
+      threeMade: 0,
+      threeAtt: 0,
+      ftMade: 0,
+      ftAtt: 0,
+    },
+  );
+  return {
+    ...sum,
+    twoMade: sum.fgMade - sum.threeMade,
+    twoAtt: sum.fgAtt - sum.threeAtt,
+  };
+}
+
+export function pctString(made: number, att: number): string {
+  return att > 0 ? `${Math.round((made / att) * 100)}%` : "-";
+}
+
 // ここから下は、バスケットボール・ミニバスケットボール以外の競技向けの
 // カスタムスタッツ(チームが自由に定義する項目)の集計。上のGAME_COLUMNS/
 // computeSeasonAverages/computeTeamAveragesとは別の、汎用的な集計ロジック。
