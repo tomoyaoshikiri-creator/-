@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { Switch } from "@/components/ui/Switch";
 import { ChevronRightIcon } from "@/components/icons";
 import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
@@ -51,6 +52,7 @@ export default function PlayerDetailPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [status, setStatus] = useState<PlayerStatus>("在籍");
   const [birthday, setBirthday] = useState("");
+  const [birthdayVisible, setBirthdayVisible] = useState(true);
 
   useUnsavedChangesGuard(
     editing &&
@@ -63,7 +65,8 @@ export default function PlayerDetailPage() {
         number !== (player.number ?? "") ||
         JSON.stringify([...positions].sort()) !== JSON.stringify([...player.positions].sort()) ||
         status !== player.status ||
-        birthday !== (player.birthday ?? "")),
+        birthday !== (player.birthday ?? "") ||
+        birthdayVisible !== player.birthday_visible),
   );
 
   const load = useCallback(async () => {
@@ -143,6 +146,7 @@ export default function PlayerDetailPage() {
     setPositions(player.positions);
     setStatus(player.status);
     setBirthday(player.birthday ?? "");
+    setBirthdayVisible(player.birthday_visible);
     setDeleteConfirm(false);
     setEditing(true);
   }
@@ -171,6 +175,7 @@ export default function PlayerDetailPage() {
         positions,
         status,
         birthday: birthday || null,
+        birthday_visible: birthdayVisible,
       })
       .eq("id", player.id);
     setSaving(false);
@@ -300,6 +305,13 @@ export default function PlayerDetailPage() {
             <div className="mt-3">
               <FieldLabel>誕生日</FieldLabel>
               <BirthdaySelect value={birthday} onChange={setBirthday} />
+              <div className="flex items-center justify-between mt-2">
+                <div className="text-[11.5px] font-bold text-ink-soft">誕生日を公開する</div>
+                <Switch checked={birthdayVisible} onChange={setBirthdayVisible} />
+              </div>
+              <div className="text-xs text-ink-soft mt-1">
+                オフにすると、誕生日お祝い通知やカレンダーの🎂表示の対象外になります。
+              </div>
             </div>
 
             <div className="mt-3">
@@ -366,7 +378,21 @@ export default function PlayerDetailPage() {
         </>
       ) : (
         <>
-          <SectionLabel>基本情報</SectionLabel>
+          <SectionLabel
+            action={
+              isStaff && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                >
+                  編集する
+                </button>
+              )
+            }
+          >
+            基本情報
+          </SectionLabel>
           <Card>
             <div className="text-[13.5px] text-ink">
               {player.sei_kana ?? ""}
@@ -463,8 +489,6 @@ export default function PlayerDetailPage() {
               </Card>
             </>
           )}
-
-          {isStaff && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
       )}
         </>

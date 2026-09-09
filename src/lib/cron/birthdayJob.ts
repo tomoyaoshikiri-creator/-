@@ -18,6 +18,7 @@ export async function runBirthdayReminders(
     .from("players")
     .select("*")
     .eq("status", "在籍")
+    .eq("birthday_visible", true)
     .not("birthday", "is", null);
 
   const birthdayPlayers = (players ?? []).filter((p) => p.birthday && p.birthday.slice(5, 10) === monthDay);
