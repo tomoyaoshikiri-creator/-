@@ -31,7 +31,7 @@ import {
   computeSeasonTotals,
   pctString,
   GAME_COLUMNS,
-  THREE_POINT_GAME_COLUMNS,
+  buildGameColumns,
   SPORTS_TEST_RANKING_METRICS,
   type SportsTestMetric,
 } from "@/lib/karteAggregate";
@@ -83,7 +83,7 @@ export default function KartePlayerPage() {
   const router = useRouter();
   const { role, userId, plan, sport, category } = useSession();
   const toast = useToast();
-  const columns = usesThreePointScoring(sport) ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
+  const columns = buildGameColumns(usesThreePointScoring(sport));
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [prevId, setPrevId] = useState<string | null>(null);
@@ -508,8 +508,8 @@ export default function KartePlayerPage() {
                         >
                           <div>REB</div>
                           <div className="flex justify-center gap-2 text-[8px] leading-none font-bold">
-                            <span>OFR</span>
-                            <span>DFR</span>
+                            <span>OFF</span>
+                            <span>DEF</span>
                           </div>
                         </th>
                       );

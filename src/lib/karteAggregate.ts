@@ -30,27 +30,37 @@ export interface SeasonStatAverages {
   threeAttTotal: number;
 }
 
-// 得点・FG成功率・FT成功率・アシスト・OFリバウンド・DFリバウンド・スティール・ブロック・
-// ターンオーバー・EFFの順。チームカルテ・選手カルテの表で共通して使う列定義。
+// 得点・FG成功率・FT成功率・アシスト・OFリバウンド・DFリバウンド・ブロック・スティール・
+// ターンオーバー・ファウル・EFFの順。チームカルテ・選手カルテの表で共通して使う列定義。
+// 試合ごとのボックススコア(game/stats/[matchId]/view)と列構成・略称・並び順を揃えている。
 export const GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "pts", abbr: "PTS" },
   { key: "fgPct", abbr: "FG%" },
   { key: "ftPct", abbr: "FT%" },
   { key: "ast", abbr: "AST" },
-  { key: "rebOff", abbr: "OREB" },
-  { key: "rebDef", abbr: "DREB" },
-  { key: "stl", abbr: "STL" },
+  { key: "rebOff", abbr: "OFF" },
+  { key: "rebDef", abbr: "DEF" },
   { key: "blk", abbr: "BLK" },
+  { key: "stl", abbr: "ST" },
   { key: "tov", abbr: "TO" },
+  { key: "fouls", abbr: "FOULS" },
   { key: "eff", abbr: "EFF" },
 ];
 
-// バスケットボール(usesThreePointScoring(sport)がtrue)のチームだけ、GAME_COLUMNSに
-// 追加で連結して表示する列。
+// バスケットボール(usesThreePointScoring(sport)がtrue)のチームだけ、FG%の直後に
+// 差し込んで表示する列(buildGameColumns参照)。
 export const THREE_POINT_GAME_COLUMNS: { key: keyof SeasonStatAverages; abbr: string }[] = [
   { key: "twoPct", abbr: "2P%" },
   { key: "threePct", abbr: "3P%" },
 ];
+
+// GAME_COLUMNSのFG%の直後に2P%/3P%を差し込んだ列一覧を返す(ボックススコアの
+// PTS→FG%→2P%→3P%→FT%という並びと揃えるため、末尾連結ではなく挿入する)。
+export function buildGameColumns(showThreePoint: boolean): { key: keyof SeasonStatAverages; abbr: string }[] {
+  if (!showThreePoint) return GAME_COLUMNS;
+  const [pts, fgPct, ...rest] = GAME_COLUMNS;
+  return [pts, fgPct, ...THREE_POINT_GAME_COLUMNS, ...rest];
+}
 
 export interface GameStatCellParts {
   primary: string;

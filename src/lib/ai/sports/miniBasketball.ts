@@ -16,7 +16,7 @@ export const MINI_BASKETBALL_CONTEXT: SportContext = {
   importantStatCategories: [
     "PTS(得点)は参考値の一つに留め、得点だけで評価しない",
     "AST(アシスト)・TO(ターンオーバー)はボール管理・判断の指標として重視する",
-    "OREB/DREB・STL/BLKは技術・判断の発達を見る材料として使う",
+    "OFF/DEF・ST/BLKは技術・判断の発達を見る材料として使う",
   ],
   statInterpretations: [
     "得点が高いことだけを強みとせず、AST/TOやリバウンドとあわせて総合的なプレーへの関わり方を見る",
