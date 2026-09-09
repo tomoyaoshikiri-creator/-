@@ -155,14 +155,21 @@ export default function HomePage() {
       const playerIds = (links ?? []).map((l) => l.player_id);
       const { data: players, error: playersError } =
         playerIds.length > 0
-          ? await supabase.from("players").select("id, grade, sei, mei, birthday").in("id", playerIds).eq("status", "在籍")
+          ? await supabase
+              .from("players")
+              .select("id, grade, sei, mei, birthday, birthday_visible")
+              .in("id", playerIds)
+              .eq("status", "在籍")
           : { data: [], error: null };
       if (playersError) throw playersError;
       const myPlayerList: MyPlayer[] = (players ?? []).map((p) => ({
         id: p.id,
         grade: p.grade,
         name: playerFullName(p),
-        birthday: p.birthday,
+        // 出欠関連の集計(computeAttendanceActionItems)には誕生日非公開の選手も含める必要があるため、
+        // クエリ自体は絞り込まず、誕生日カード用のbirthdayフィールドだけをここでマスクする
+        // (list_roster_players()のcase whenと同じ考え方)。
+        birthday: p.birthday_visible ? p.birthday : null,
       }));
 
       const scheduleIds = (schedules ?? []).map((s) => s.id);
@@ -273,7 +280,8 @@ export default function HomePage() {
         .from("players")
         .select("id, sei, mei, birthday")
         .eq("team_id", teamId)
-        .eq("status", "在籍");
+        .eq("status", "在籍")
+        .eq("birthday_visible", true);
       if (error) throw error;
       setStaffBirthdays(
         computeTodayBirthdays((data ?? []).map((p) => ({ id: p.id, name: playerFullName(p), birthday: p.birthday })), todayStr),
