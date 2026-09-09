@@ -82,7 +82,7 @@ function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: 
     } else {
       if (scope === "team") {
         lines.push(
-          "(PTS/AST/OREB/DREB/STL/BLK/TO/EFFは出場した各選手自身の平均を単純平均したチーム平均です。FG%/FT%/2P%/3P%はチーム全体の成功数合計÷試投数合計から算出した正確な値です。両者は算出方法が異なります)",
+          "(PTS/AST/OFF/DEF/BLK/ST/TO/FOULS/EFFは出場した各選手自身の平均を単純平均したチーム平均です。FG%/FT%/2P%/3P%はチーム全体の成功数合計÷試投数合計から算出した正確な値です。両者は算出方法が異なります)",
         );
       }
       Object.entries(stats.seasonAverages).forEach(([k, v]) => lines.push(`${k}: ${fmt(v)}`));

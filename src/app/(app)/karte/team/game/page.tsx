@@ -16,8 +16,7 @@ import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
   computeTeamAverages,
-  GAME_COLUMNS,
-  THREE_POINT_GAME_COLUMNS,
+  buildGameColumns,
   type SeasonStatAverages,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
@@ -83,11 +82,11 @@ function GameStatLegend({ showThreePoint }: { showThreePoint: boolean }) {
       )}
       <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
       <li>AST:アシスト</li>
-      <li>OREB:オフェンスリバウンド</li>
-      <li>DREB:ディフェンスリバウンド</li>
-      <li>STL:スティール</li>
+      <li>REB:リバウンド(下段左はオフェンス(OFF)、右はディフェンス(DEF))</li>
       <li>BLK:ブロック</li>
+      <li>ST:スティール</li>
       <li>TO:ターンオーバー</li>
+      <li>FOULS:ファウル</li>
       <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
     </ul>
   );
@@ -98,7 +97,7 @@ export default function KarteTeamGamePage() {
   const { role, plan, sport } = useSession();
   const isStaff = canViewKarte(role);
   const showThreePoint = usesThreePointScoring(sport);
-  const columns = showThreePoint ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
+  const columns = buildGameColumns(showThreePoint);
 
   useEffect(() => {
     if (!hasKarteTabAccess(plan)) router.replace("/team");
@@ -204,14 +203,29 @@ export default function KarteTeamGamePage() {
               <div className="text-xs text-ink-soft">この年度の出場記録はありません</div>
             ) : (
               <div className="grid grid-cols-5 gap-y-3 text-center">
-                {columns.map((c) => (
-                  <div key={c.key}>
-                    <div className="text-[10px] text-ink-soft font-bold">{c.abbr}</div>
-                    <div className="font-mono font-bold text-[13px] mt-0.5">
-                      <StatCell statKey={c.key} averages={toSeasonStatAverages(teamAverageRow)} />
+                {columns.map((c) => {
+                  if (c.key === "rebDef") return null;
+                  if (c.key === "rebOff") {
+                    const a = toSeasonStatAverages(teamAverageRow);
+                    return (
+                      <div key="reb">
+                        <div className="text-[10px] text-ink-soft font-bold">REB</div>
+                        <div className="font-mono font-bold text-[13px] mt-0.5">{a.rebOff + a.rebDef}</div>
+                        <div className="text-ink-soft text-[10px]">
+                          {a.rebOff} - {a.rebDef}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={c.key}>
+                      <div className="text-[10px] text-ink-soft font-bold">{c.abbr}</div>
+                      <div className="font-mono font-bold text-[13px] mt-0.5">
+                        <StatCell statKey={c.key} averages={toSeasonStatAverages(teamAverageRow)} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>
@@ -230,23 +244,59 @@ export default function KarteTeamGamePage() {
                   <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                     選手
                   </th>
-                  {columns.map((c) => (
-                    <th
-                      key={c.key}
-                      onClick={() => rankingMode && setSortKey(c.key)}
-                      className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center ${
-                        rankingMode ? "cursor-pointer" : ""
-                      } ${rankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
-                    >
-                      {c.abbr}
-                    </th>
-                  ))}
+                  {columns.map((c) => {
+                    if (c.key === "rebDef") return null;
+                    if (c.key === "rebOff") {
+                      return (
+                        <th
+                          key="reb"
+                          colSpan={2}
+                          onClick={() => rankingMode && setSortKey("reb")}
+                          className={`sticky top-0 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                            rankingMode ? "cursor-pointer" : ""
+                          } ${rankingMode && sortKey === "reb" ? "text-orange" : "text-ink-soft"}`}
+                        >
+                          <div>REB</div>
+                          <div className="flex justify-center gap-2 text-[8px] leading-none font-bold">
+                            <span>OFF</span>
+                            <span>DEF</span>
+                          </div>
+                        </th>
+                      );
+                    }
+                    return (
+                      <th
+                        key={c.key}
+                        onClick={() => rankingMode && setSortKey(c.key)}
+                        className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center ${
+                          rankingMode ? "cursor-pointer" : ""
+                        } ${rankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
+                      >
+                        {c.abbr}
+                      </th>
+                    );
+                  })}
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     チーム平均
                   </th>
                   {columns.map((c) => {
+                    if (c.key === "rebDef") return null;
+                    if (c.key === "rebOff") {
+                      return (
+                        <th
+                          key="reb"
+                          colSpan={2}
+                          className="sticky top-9 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                        >
+                          <div>{teamAverages.reb}</div>
+                          <div className="text-ink-soft text-[9.5px] font-normal">
+                            {teamAverages.rebOff} - {teamAverages.rebDef}
+                          </div>
+                        </th>
+                      );
+                    }
                     const v = teamAverages[c.key] as number | null;
                     return (
                       <th
@@ -270,6 +320,21 @@ export default function KarteTeamGamePage() {
                       </Link>
                     </td>
                     {columns.map((c) => {
+                      if (c.key === "rebDef") return null;
+                      if (c.key === "rebOff") {
+                        return (
+                          <td
+                            key="reb"
+                            colSpan={2}
+                            className="w-[100px] min-w-[100px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
+                          >
+                            <div className="font-bold">{averages.reb}</div>
+                            <div className="text-ink-soft text-[10px]">
+                              {averages.rebOff} - {averages.rebDef}
+                            </div>
+                          </td>
+                        );
+                      }
                       const v = averages[c.key] as number | null;
                       return (
                         <td

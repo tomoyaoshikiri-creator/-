@@ -18,7 +18,7 @@ import {
   computeSeasonTotals,
   pctString,
   GAME_COLUMNS,
-  THREE_POINT_GAME_COLUMNS,
+  buildGameColumns,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
 import type { GamePlayerStatEntry, GamePlayerStatLine, Player, TeamStatCategory } from "@/lib/database.types";
@@ -47,7 +47,7 @@ export default function PlayerStatsPage() {
   const router = useRouter();
   const { role, userId, plan, sport } = useSession();
   const isStaff = canManagePlayers(role);
-  const columns = usesThreePointScoring(sport) ? [...GAME_COLUMNS, ...THREE_POINT_GAME_COLUMNS] : GAME_COLUMNS;
+  const columns = buildGameColumns(usesThreePointScoring(sport));
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -199,8 +199,8 @@ export default function PlayerStatsPage() {
                             >
                               <div>REB</div>
                               <div className="flex justify-center gap-2 text-[8px] leading-none font-bold">
-                                <span>OFR</span>
-                                <span>DFR</span>
+                                <span>OFF</span>
+                                <span>DEF</span>
                               </div>
                             </th>
                           );
@@ -431,10 +431,11 @@ export default function PlayerStatsPage() {
               )}
               <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
               <li>AST:アシスト</li>
-              <li>REB:リバウンド(下段左はオフェンス(OFR)、右はディフェンス(DFR))</li>
-              <li>STL:スティール</li>
+              <li>REB:リバウンド(下段左はオフェンス(OFF)、右はディフェンス(DEF))</li>
               <li>BLK:ブロック</li>
+              <li>ST:スティール</li>
               <li>TO:ターンオーバー</li>
+              <li>FOULS:ファウル</li>
               <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
             </ul>
           )}
