@@ -15,6 +15,8 @@ import { StatCell } from "@/components/karte/StatCell";
 import {
   computeCustomSeasonAverages,
   computeSeasonAverages,
+  computeSeasonTotals,
+  pctString,
   GAME_COLUMNS,
   THREE_POINT_GAME_COLUMNS,
 } from "@/lib/karteAggregate";
@@ -118,6 +120,7 @@ export default function PlayerStatsPage() {
     })
     .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
   const seasonAverages = computeSeasonAverages(seasonLines);
+  const seasonTotals = computeSeasonTotals(seasonLines);
   const gameRows = seasonLines.map((l) => ({
     label: `${formatDateLabel(l.game_matches?.schedules?.date ?? "")} vs ${l.game_matches?.opponent ?? "-"}`,
     averages: computeSeasonAverages([l]),
@@ -185,25 +188,128 @@ export default function PlayerStatsPage() {
                       <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                         試合
                       </th>
-                      {columns.map((c) => (
-                        <th
-                          key={c.key}
-                          className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft`}
-                        >
-                          {c.abbr}
-                        </th>
-                      ))}
+                      {columns.map((c) => {
+                        if (c.key === "rebDef") return null;
+                        if (c.key === "rebOff") {
+                          return (
+                            <th
+                              key="reb"
+                              colSpan={2}
+                              className="sticky top-0 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
+                            >
+                              <div>REB</div>
+                              <div className="flex justify-center gap-2 text-[8px] leading-none font-bold">
+                                <span>OFR</span>
+                                <span>DFR</span>
+                              </div>
+                            </th>
+                          );
+                        }
+                        return (
+                          <th
+                            key={c.key}
+                            className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft`}
+                          >
+                            {c.abbr}
+                          </th>
+                        );
+                      })}
                     </tr>
                     <tr className="bg-paper">
                       <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                        シーズン合計
+                      </th>
+                      {columns.map((c) => {
+                        if (c.key === "rebDef") return null;
+                        if (c.key === "rebOff") {
+                          return (
+                            <th
+                              key="reb"
+                              colSpan={2}
+                              className="sticky top-9 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                            >
+                              <div>{seasonTotals.reb}</div>
+                              <div className="text-ink-soft text-[9.5px] font-normal">
+                                {seasonTotals.rebOff} - {seasonTotals.rebDef}
+                              </div>
+                            </th>
+                          );
+                        }
+                        if (c.key === "eff") {
+                          return (
+                            <th
+                              key={c.key}
+                              className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
+                            >
+                              -
+                            </th>
+                          );
+                        }
+                        if (c.key === "fgPct" || c.key === "ftPct" || c.key === "twoPct" || c.key === "threePct") {
+                          const made =
+                            c.key === "fgPct"
+                              ? seasonTotals.fgMade
+                              : c.key === "ftPct"
+                                ? seasonTotals.ftMade
+                                : c.key === "twoPct"
+                                  ? seasonTotals.twoMade
+                                  : seasonTotals.threeMade;
+                          const att =
+                            c.key === "fgPct"
+                              ? seasonTotals.fgAtt
+                              : c.key === "ftPct"
+                                ? seasonTotals.ftAtt
+                                : c.key === "twoPct"
+                                  ? seasonTotals.twoAtt
+                                  : seasonTotals.threeAtt;
+                          return (
+                            <th
+                              key={c.key}
+                              className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                            >
+                              <div className="leading-tight">
+                                <div>{att > 0 ? `${made}/${att}` : "-"}</div>
+                                <div className="text-[9.5px] text-ink-soft font-normal">{pctString(made, att)}</div>
+                              </div>
+                            </th>
+                          );
+                        }
+                        const v = seasonTotals[c.key as keyof typeof seasonTotals] as number;
+                        return (
+                          <th
+                            key={c.key}
+                            className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                          >
+                            {v}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                    <tr className="bg-paper">
+                      <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                         シーズン平均
                       </th>
                       {columns.map((c) => {
+                        if (c.key === "rebDef") return null;
+                        if (c.key === "rebOff") {
+                          return (
+                            <th
+                              key="reb"
+                              colSpan={2}
+                              className="sticky top-[72px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                            >
+                              <div>{seasonAverages.reb}</div>
+                              <div className="text-ink-soft text-[9.5px] font-normal">
+                                {seasonAverages.rebOff} - {seasonAverages.rebDef}
+                              </div>
+                            </th>
+                          );
+                        }
                         const v = seasonAverages[c.key] as number | null;
                         return (
                           <th
                             key={c.key}
-                            className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                            className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
                               c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                             }`}
                           >
@@ -220,6 +326,21 @@ export default function PlayerStatsPage() {
                           {row.label}
                         </td>
                         {columns.map((c) => {
+                          if (c.key === "rebDef") return null;
+                          if (c.key === "rebOff") {
+                            return (
+                              <td
+                                key="reb"
+                                colSpan={2}
+                                className="w-[100px] min-w-[100px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
+                              >
+                                <div className="font-bold">{row.averages.reb}</div>
+                                <div className="text-ink-soft text-[10px]">
+                                  {row.averages.rebOff} - {row.averages.rebDef}
+                                </div>
+                              </td>
+                            );
+                          }
                           const v = row.averages[c.key] as number | null;
                           return (
                             <td
@@ -310,8 +431,7 @@ export default function PlayerStatsPage() {
               )}
               <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
               <li>AST:アシスト</li>
-              <li>OREB:オフェンスリバウンド</li>
-              <li>DREB:ディフェンスリバウンド</li>
+              <li>REB:リバウンド(下段左はオフェンス(OFR)、右はディフェンス(DFR))</li>
               <li>STL:スティール</li>
               <li>BLK:ブロック</li>
               <li>TO:ターンオーバー</li>
