@@ -352,7 +352,21 @@ export default function CoachNoteDetailPage() {
         </>
       ) : (
         <>
-          <SectionLabel>内容</SectionLabel>
+          <SectionLabel
+            action={
+              canWriteCoachNote(role) && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                >
+                  編集する
+                </button>
+              )
+            }
+          >
+            内容
+          </SectionLabel>
           <Card>
             <div className="text-[14.5px] leading-relaxed whitespace-pre-wrap">{report.body}</div>
             {attachments.length > 0 && (
@@ -374,18 +388,6 @@ export default function CoachNoteDetailPage() {
             <div className="text-xs text-ink-soft mt-2.5">{report.author_id ? (profiles[report.author_id] ?? "") : ""}</div>
             <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
           </Card>
-
-          {canWriteCoachNote(role) && (
-            <div className="flex gap-2 mb-3.5">
-              <button
-                type="button"
-                onClick={startEdit}
-                className="flex-1 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line text-ink-soft bg-white"
-              >
-                編集する
-              </button>
-            </div>
-          )}
 
           <SectionLabel>コメント</SectionLabel>
           <Card>
