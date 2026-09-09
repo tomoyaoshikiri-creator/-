@@ -69,6 +69,9 @@ function sumLines(rows: BoxScoreRow[]): StatTotals {
 
 function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: BoxScoreRow[]; showThreePoint: boolean }) {
   const total = sumLines(rows);
+  const count = rows.length;
+  // 選手ごとの平均(小数第1位)。EFFは合計を出す意味が薄いため、合計行では表示せず平均のみ出す。
+  const avg = (n: number) => (count > 0 ? (n / count).toFixed(1) : "0.0");
   return (
     <div className="mt-4">
       <SectionLabel>{title}</SectionLabel>
@@ -159,7 +162,29 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.blk}</td>
                 <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.tov}</td>
                 <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.fouls}</td>
-                <td className="px-2 py-1.5 text-center bg-paper font-mono">{total.eff}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono text-ink-soft">-</td>
+              </tr>
+              <tr>
+                <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">平均</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono font-bold text-orange">{avg(total.pts)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                  {avg(total.fg_made)}/{avg(total.fg_att)}
+                </td>
+                {showThreePoint && (
+                  <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                    {avg(total.three_made)}/{avg(total.three_att)}
+                  </td>
+                )}
+                <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
+                  {avg(total.ft_made)}/{avg(total.ft_att)}
+                </td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.reb)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.ast)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.stl)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.blk)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.tov)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.fouls)}</td>
+                <td className="px-2 py-1.5 text-center bg-paper font-mono">{avg(total.eff)}</td>
               </tr>
             </tbody>
           </table>
