@@ -620,6 +620,7 @@ export interface Database {
           positions: Position[];
           status: PlayerStatus;
           birthday: string | null;
+          birthday_visible: boolean;
           created_at: string;
         };
         Insert: {
@@ -634,6 +635,7 @@ export interface Database {
           positions?: Position[];
           status?: PlayerStatus;
           birthday?: string | null;
+          birthday_visible?: boolean;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["players"]["Insert"], "grade">> & {
           // 編集画面からOB・OGの経過年数(6超)を直接入力できるようUpdateだけ広げる
