@@ -47,8 +47,8 @@ export function GameStatLog({
   return (
     <div className="mt-4">
       <SectionLabel>{title}</SectionLabel>
-      <Card>
-        {events.slice(0, 20).map((e) => {
+      <Card className="max-h-[220px] overflow-y-auto">
+        {events.slice(0, 100).map((e) => {
           const isTimeout = e.event === "timeout";
           const pts = e.event === "timeout" ? 0 : statEventPoints(e.event, e.delta);
           const label = e.event === "timeout" ? "タイムアウト" : statEventLabel(e.event);
