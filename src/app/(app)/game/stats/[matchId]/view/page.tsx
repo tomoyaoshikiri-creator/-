@@ -99,7 +99,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 ))}
                 <th
                   colSpan={2}
-                  className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] font-bold whitespace-nowrap text-center text-ink-soft"
+                  className="sticky top-0 h-9 bg-paper z-20 px-2 pb-0 min-w-[76px] align-bottom font-bold whitespace-nowrap text-center text-ink-soft"
                 >
                   REB
                 </th>
@@ -114,10 +114,10 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 ))}
               </tr>
               <tr>
-                <th className="sticky top-9 h-[18px] bg-paper z-20 px-0.5 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[9.5px] leading-none">
+                <th className="sticky top-9 h-[14px] bg-paper z-20 px-0.5 pt-0 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[8.5px] leading-none align-top">
                   OFR
                 </th>
-                <th className="sticky top-9 h-[18px] bg-paper z-20 px-0.5 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[9.5px] leading-none">
+                <th className="sticky top-9 h-[14px] bg-paper z-20 px-0.5 pt-0 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[8.5px] leading-none align-top">
                   DFR
                 </th>
               </tr>
