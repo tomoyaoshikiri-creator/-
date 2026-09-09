@@ -251,6 +251,9 @@ export function NewScheduleModal({
         <SegButton active={type === "event"} onClick={() => setType("event")}>
           イベント
         </SegButton>
+        <SegButton active={type === "other"} onClick={() => setType("other")}>
+          その他
+        </SegButton>
       </div>
 
       {type === "game" && (

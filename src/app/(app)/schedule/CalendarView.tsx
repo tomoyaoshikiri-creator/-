@@ -164,7 +164,7 @@ export function CalendarView({
           const hasEvent = events.length > 0;
           const holiday = holidayKind(c.date, i % 7);
           const hasBirthday = birthdaysByMonthDay.has(c.date.slice(5, 10));
-          // 同じ日に複数種別があれば 試合(danger) > イベント(sky) > 練習(orange) の優先度でマスの色を決める。
+          // 同じ日に複数種別があれば 試合(danger) > イベント(sky) > 練習(orange) > その他(ink-soft) の優先度でマスの色を決める。
           const dayColors = new Set(events.map((e) => scheduleTypeColor(e.type)));
           const dayColor = dayColors.has("danger")
             ? "danger"
@@ -172,7 +172,9 @@ export function CalendarView({
               ? "sky"
               : dayColors.has("orange")
                 ? "orange"
-                : null;
+                : dayColors.has("ink-soft")
+                  ? "ink-soft"
+                  : null;
           const isSelected = selectedDate === c.date;
           const isToday = c.date === todayStr;
           // 月全体を1枚の四角として枠を持たせ、各マスは区切り線(divide)だけで分ける。
@@ -185,9 +187,19 @@ export function CalendarView({
                 ? "bg-sky/18 font-bold"
                 : dayColor === "orange"
                   ? "bg-orange/18 font-bold"
-                  : "bg-white";
+                  : dayColor === "ink-soft"
+                    ? "bg-ink-soft/18 font-bold"
+                    : "bg-white";
           const dotCls =
-            dayColor === "danger" ? "bg-danger" : dayColor === "sky" ? "bg-sky" : dayColor === "orange" ? "bg-orange" : "";
+            dayColor === "danger"
+              ? "bg-danger"
+              : dayColor === "sky"
+                ? "bg-sky"
+                : dayColor === "orange"
+                  ? "bg-orange"
+                  : dayColor === "ink-soft"
+                    ? "bg-ink-soft"
+                    : "";
           return (
             <button
               key={c.date}

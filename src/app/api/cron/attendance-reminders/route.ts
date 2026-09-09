@@ -198,13 +198,13 @@ export async function GET(request: Request) {
     supabase
       .from("schedules")
       .select("*")
-      .in("type", ["game", "event"])
+      .in("type", ["game", "event", "other"])
       .eq("attendance_deadline", todayStr)
       .eq("send_attendance_reminders", true),
     supabase
       .from("schedules")
       .select("*")
-      .in("type", ["game", "event"])
+      .in("type", ["game", "event", "other"])
       .eq("date", in7DaysStr)
       .not("attendance_deadline", "is", null)
       .lt("attendance_deadline", todayStr)
