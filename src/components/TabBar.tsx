@@ -44,7 +44,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
             <span aria-hidden className="absolute -inset-y-[6px] inset-x-0" />
             <span
-              className={`relative inline-flex items-center justify-center rounded-lg px-2.5 py-2 ${
+              className={`relative inline-flex items-center justify-center rounded-lg px-2.5 pt-1 pb-1.5 ${
                 isActive ? "bg-orange/12" : ""
               }`}
             >
