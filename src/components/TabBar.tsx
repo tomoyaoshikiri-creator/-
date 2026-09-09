@@ -43,10 +43,14 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
             {/* 視覚サイズを変えずにタップ領域だけを広げる透明ヒットエリア。position:absoluteで
                 通常のflexレイアウトから外れるため、TabBar自体の高さには影響しない。 */}
             <span aria-hidden className="absolute -inset-y-[6px] inset-x-0" />
-            <span className="relative inline-flex">
+            <span
+              className={`relative inline-flex items-center justify-center rounded-lg px-2.5 py-1 ${
+                isActive ? "bg-orange/12" : ""
+              }`}
+            >
               <Icon className="w-[23px] h-[23px]" />
               {badges[tab] && (
-                <span className="absolute -top-0.5 -right-0.5 w-[8.5px] h-[8.5px] rounded-full bg-danger border border-white" />
+                <span className="absolute top-0 right-1 w-[8.5px] h-[8.5px] rounded-full bg-danger border border-white" />
               )}
             </span>
             <span className="whitespace-nowrap leading-none">{TAB_LABELS[tab]}</span>
