@@ -473,7 +473,7 @@ export default function PlayerDetailPage() {
                 {skillTests.length === 0 ? (
                   <div className="text-xs text-ink-soft">まだ検定がありません</div>
                 ) : (
-                  <div className="text-[13px]">
+                  <div className="text-[13.5px]">
                     {skillTests.map((test) => {
                       const current = skillProgress.find((row) => row.skill_test_id === test.id);
                       return (
