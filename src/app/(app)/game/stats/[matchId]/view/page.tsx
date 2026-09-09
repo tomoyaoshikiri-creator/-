@@ -82,16 +82,12 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
           <table className="border-collapse text-[12px] w-full">
             <thead>
               <tr>
-                <th
-                  rowSpan={2}
-                  className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap"
-                >
+                <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                   選手
                 </th>
                 {["PTS", "FG", ...(showThreePoint ? ["3P"] : []), "FT"].map((h) => (
                   <th
                     key={h}
-                    rowSpan={2}
                     className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
                   >
                     {h}
@@ -99,27 +95,22 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 ))}
                 <th
                   colSpan={2}
-                  className="sticky top-0 h-9 bg-paper z-20 px-2 pb-0 min-w-[76px] align-bottom font-bold whitespace-nowrap text-center text-ink-soft"
+                  className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
                 >
-                  REB
+                  <div>REB</div>
+                  <div className="flex justify-center gap-3 text-[8.5px] leading-none font-bold">
+                    <span>OFR</span>
+                    <span>DFR</span>
+                  </div>
                 </th>
                 {["AST", "STL", "BLK", "TOV", "PF", "EFF"].map((h) => (
                   <th
                     key={h}
-                    rowSpan={2}
                     className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] border-b border-line font-bold whitespace-nowrap text-center text-ink-soft"
                   >
                     {h}
                   </th>
                 ))}
-              </tr>
-              <tr>
-                <th className="sticky top-9 h-[14px] bg-paper z-20 px-0.5 pt-0 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[8.5px] leading-none align-top">
-                  OFR
-                </th>
-                <th className="sticky top-9 h-[14px] bg-paper z-20 px-0.5 pt-0 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[8.5px] leading-none align-top">
-                  DFR
-                </th>
               </tr>
             </thead>
             <tbody>
