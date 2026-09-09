@@ -97,7 +97,10 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                     {h}
                   </th>
                 ))}
-                <th colSpan={2} className="sticky top-0 h-9 bg-paper z-20 px-2 font-bold whitespace-nowrap text-center text-ink-soft">
+                <th
+                  colSpan={2}
+                  className="sticky top-0 h-9 bg-paper z-20 px-2 min-w-[76px] font-bold whitespace-nowrap text-center text-ink-soft"
+                >
                   REB
                 </th>
                 {["AST", "STL", "BLK", "TOV", "PF", "EFF"].map((h) => (
@@ -112,10 +115,10 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
               </tr>
               <tr>
                 <th className="sticky top-9 h-6 bg-paper z-20 px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[9.5px]">
-                  OFF
+                  OFR
                 </th>
                 <th className="sticky top-9 h-6 bg-paper z-20 px-1 border-b border-line font-bold whitespace-nowrap text-center text-ink-soft text-[9.5px]">
-                  DEF
+                  DFR
                 </th>
               </tr>
             </thead>
@@ -142,7 +145,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                     {r.line.ft_made}/{r.line.ft_att}
                     <span className="text-ink-soft"> ({ftPct(r.line)})</span>
                   </td>
-                  <td colSpan={2} className="px-2 py-1 text-center border-b border-line last:border-b-0 font-mono">
+                  <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">
                     <div className="font-bold">{r.line.reb}</div>
                     <div className="text-ink-soft text-[10px]">
                       {r.line.reb_off} - {r.line.reb_def}
@@ -173,7 +176,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                   {total.ft_made}/{total.ft_att}
                   <span className="text-ink-soft"> ({ftPct(total)})</span>
                 </td>
-                <td colSpan={2} className="px-2 py-1 text-center bg-paper font-mono">
+                <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
                   <div className="font-bold">{total.reb}</div>
                   <div className="text-ink-soft text-[10px]">
                     {total.reb_off} - {total.reb_def}
@@ -200,7 +203,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 <td className="px-2 py-1.5 text-center bg-paper font-mono whitespace-nowrap">
                   {avg(total.ft_made)}/{avg(total.ft_att)}
                 </td>
-                <td colSpan={2} className="px-2 py-1 text-center bg-paper font-mono">
+                <td colSpan={2} className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
                   <div className="font-bold">{avg(total.reb)}</div>
                   <div className="text-ink-soft text-[10px]">
                     {avg(total.reb_off)} - {avg(total.reb_def)}
