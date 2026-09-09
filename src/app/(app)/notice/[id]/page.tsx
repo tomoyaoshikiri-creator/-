@@ -551,14 +551,26 @@ export default function NoticeDetailPage() {
               </Card>
             </>
           )}
-          <SectionLabel>本文</SectionLabel>
+          <SectionLabel
+            action={
+              canWriteNotice(role) && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                >
+                  編集する
+                </button>
+              )
+            }
+          >
+            本文
+          </SectionLabel>
           <Card>
             <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
           </Card>
 
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
-
-          {canWriteNotice(role) && <SubmitButton onClick={startEdit}>編集する</SubmitButton>}
         </>
       )}
     </PageShell>
