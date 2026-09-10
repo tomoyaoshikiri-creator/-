@@ -12,7 +12,6 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { canManageSettings } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { teamLogoUrl } from "@/lib/teamLogo";
-import { safeExt } from "@/lib/storagePath";
 
 export default function SettingsLogoPage() {
   const router = useRouter();
@@ -85,21 +84,17 @@ export default function SettingsLogoPage() {
       return;
     }
     setUploading(true);
-    const supabase = createClient();
-    const path = `${teamId}/logo-${Date.now()}.${safeExt(file.name)}`;
-    const { error: uploadError } = await supabase.storage.from("team-logos").upload(path, file);
-    if (uploadError) {
-      setUploading(false);
-      toast(`アップロードに失敗しました: ${uploadError.message}`);
-      return;
-    }
-    const { error } = await supabase.from("teams").update({ logo_path: path }).eq("id", teamId);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/team/logo", { method: "POST", body: formData });
+    const data = await res.json();
     setUploading(false);
-    if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+    if (!res.ok) {
+      toast(`アップロードに失敗しました: ${data.error ?? ""}`);
       return;
     }
-    setLogoUrl(teamLogoUrl(supabase, path));
+    const supabase = createClient();
+    setLogoUrl(teamLogoUrl(supabase, data.path));
     toast("ロゴを更新しました");
     router.refresh();
   }
@@ -146,7 +141,7 @@ export default function SettingsLogoPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(e) => handleLogoChange(e.target.files?.[0])}
               />
