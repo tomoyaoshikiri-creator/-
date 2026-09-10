@@ -53,6 +53,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "PNG・JPEG・WebP形式の画像のみアップロードできます" }, { status: 400 });
   }
 
+  // ストレージ容量チェック(A-10)。DB側にも同じ判定のトリガー(storage.objects向け)を
+  // 用意しているため、ここでの判定漏れがあってもStorageへの実際の保存はブロックされる。
+  // ここでの事前チェックは、その場合よりも分かりやすいエラーメッセージを返すためのもの。
+  const [{ data: team }, { data: usedBytes }] = await Promise.all([
+    supabase.from("teams").select("storage_limit_bytes").eq("id", teamId).maybeSingle(),
+    supabase.rpc("team_storage_usage_bytes"),
+  ]);
+  const limitBytes = team?.storage_limit_bytes ?? 0;
+  if (limitBytes > 0 && (usedBytes ?? 0) + bytes.length > limitBytes) {
+    return NextResponse.json(
+      { error: "ストレージ容量の上限を超えるためアップロードできません。既存のファイルを削除するか、プランをアップグレードしてください" },
+      { status: 400 },
+    );
+  }
+
   const path = `${teamId}/logo-${Date.now()}.${extensionForImageMimeType(mimeType)}`;
   const { error: uploadError } = await supabase.storage
     .from("team-logos")
