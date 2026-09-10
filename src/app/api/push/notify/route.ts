@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient, type SupabaseClient } from "@su
 import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
 import { playerFullName } from "@/lib/format";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 // チーム内の自分以外の購読者にWeb Pushを送る。鍵が未設定の環境(このリポジトリの
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     p_max_count: 20,
   });
   if (rateLimitError) {
-    console.error("[push/notify] rate limit check failed", rateLimitError);
+    logError("[push/notify] rate limit check failed", rateLimitError);
     return NextResponse.json({ error: rateLimitError.message }, { status: 500 });
   }
   if (!allowed) {
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
         p_notice_id: notice.id,
       });
       if (recError) {
-        console.error("[push/notify] failed to resolve notice audience", recError);
+        logError("[push/notify] failed to resolve notice audience", recError);
         return NextResponse.json({ error: recError.message }, { status: 500 });
       }
       memberIds = recipientIds ?? [];
@@ -185,7 +186,7 @@ export async function POST(request: Request) {
     .in("user_id", memberIds);
 
   if (subsError) {
-    console.error("[push/notify] failed to load subscriptions", subsError);
+    logError("[push/notify] failed to load subscriptions", subsError);
     return NextResponse.json({ ok: false, error: subsError.message }, { status: 500 });
   }
 
@@ -202,7 +203,7 @@ export async function POST(request: Request) {
         // 端末側で解除済み/期限切れの購読は410 Goneや404で返るので、DBからも掃除しておく。
         const statusCode = (err as { statusCode?: number } | null)?.statusCode;
         const message = err instanceof Error ? err.message : String(err);
-        console.error(`[push/notify] send failed (subscription ${s.id}, status ${statusCode})`, message);
+        logError(`[push/notify] send failed (subscription ${s.id}, status ${statusCode})`, message);
         failures.push(`${statusCode ?? "?"}: ${message}`);
         if (statusCode === 404 || statusCode === 410) {
           await adminClient.from("push_subscriptions").delete().eq("id", s.id);

@@ -9,6 +9,7 @@ import { hasSportContext } from "@/lib/ai/sports";
 import { collectPlayerAnalysisData, collectTeamAnalysisData } from "@/lib/ai/collect";
 import { buildPlayerAnalysisPrompt, buildTeamAnalysisPrompt } from "@/lib/ai/buildPrompt";
 import { fiscalYearOf, todayDateStr } from "@/lib/format";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 // VercelプロジェクトのFunction Max Duration(300秒/Hobby+Fluid Compute)を
@@ -47,7 +48,7 @@ async function resolveUsage(
     p_reservation_id: reservationId,
     p_succeeded: succeeded,
   });
-  if (error) console.error("[api/ai-analysis] failed to resolve usage reservation", error);
+  if (error) logError("[api/ai-analysis] failed to resolve usage reservation", error);
 }
 
 // AI分析用のデータ収集(collectPlayerAnalysisData/collectTeamAnalysisData)・プロンプト構築
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
         { status: 429 },
       );
     }
-    console.error("[api/ai-analysis] failed to reserve usage", reserveError);
+    logError("[api/ai-analysis] failed to reserve usage", reserveError);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 500 });
   }
   const usage = reservation?.[0];
@@ -162,7 +163,7 @@ export async function POST(request: Request) {
       ({ system, user: userContent } = buildTeamAnalysisPrompt(data));
     }
   } catch (err) {
-    console.error("[api/ai-analysis] failed to collect analysis data", err);
+    logError("[api/ai-analysis] failed to collect analysis data", err);
     await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "分析用データの取得に失敗しました" }, { status: 500 });
   }
@@ -191,7 +192,7 @@ export async function POST(request: Request) {
       outputTokens: response.usage.output_tokens,
     });
   } catch (err) {
-    console.error("[api/ai-analysis] Anthropic call failed", err);
+    logError("[api/ai-analysis] Anthropic call failed", err);
     await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "AI分析の生成に失敗しました" }, { status: 502 });
   }
@@ -209,7 +210,7 @@ export async function POST(request: Request) {
           .from("team_analysis_notes")
           .insert({ team_id: teamId, author_id: user.id, body, source: "ai" });
   if (insertError) {
-    console.error("[api/ai-analysis] failed to save result", insertError);
+    logError("[api/ai-analysis] failed to save result", insertError);
     await resolveUsage(adminClient, teamId, reservationId, false);
     return NextResponse.json({ error: "AI分析の保存に失敗しました" }, { status: 500 });
   }
@@ -249,7 +250,7 @@ export async function GET() {
 
   const { data: usedThisMonth, error } = await supabase.rpc("get_ai_analysis_usage");
   if (error) {
-    console.error("[api/ai-analysis] failed to get usage", error);
+    logError("[api/ai-analysis] failed to get usage", error);
     return NextResponse.json({ error: "利用状況の取得に失敗しました" }, { status: 500 });
   }
 

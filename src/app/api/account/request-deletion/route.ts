@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 // 「このサービスから退会する」= auth.usersごとアカウントを完全に削除する(A-7)。
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
         try {
           await stripe.subscriptions.cancel(team.stripe_subscription_id);
         } catch (err) {
-          console.error("[api/account/request-deletion] failed to cancel Stripe subscription", err);
+          logError("[api/account/request-deletion] failed to cancel Stripe subscription", err);
           return NextResponse.json(
             { error: "サブスクリプションの解約に失敗しました。時間をおいて再度お試しください。" },
             { status: 502 },

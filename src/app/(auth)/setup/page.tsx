@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AuthHeading } from "../AuthHeading";
 import { SetupForm } from "./SetupForm";
 import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
+import { logError } from "@/lib/logger";
 
 export default async function SetupPage() {
   const supabase = await createClient();
@@ -21,7 +22,7 @@ export default async function SetupPage() {
   const { data: memberships, error: membershipsError } = await supabase.rpc("list_my_team_memberships");
 
   if (membershipsError) {
-    console.error("list_my_team_memberships failed", membershipsError);
+    logError("list_my_team_memberships failed", membershipsError);
     return <ActiveTeamErrorScreen />;
   }
 
