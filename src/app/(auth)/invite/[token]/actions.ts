@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 export interface FormState {
   error?: string;
@@ -25,9 +26,22 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   if (password.length < 8) {
     return { error: "パスワードは8文字以上で入力してください" };
   }
+  if (!formData.get("agreedTerms")) {
+    return { error: "利用規約とプライバシーポリシーへの同意が必要です" };
+  }
+  const agreedTermsAt = new Date().toISOString();
 
   const origin = await getRequestOrigin();
-  const completeParams = new URLSearchParams({ kind: "invite", token, name });
+  // メール確認が必要な場合、実際のaccept_invite()呼び出しは/auth/completeまで
+  // 遅延する(下のimmediate-session分岐を参照)。そのため同意バージョン/日時も
+  // name・playerIdsと同じくクエリパラメータで/auth/completeまで引き継ぐ。
+  const completeParams = new URLSearchParams({
+    kind: "invite",
+    token,
+    name,
+    agreedTermsVersion: CURRENT_TERMS_VERSION,
+    agreedTermsAt,
+  });
   if (playerIds.length > 0) completeParams.set("playerIds", playerIds.join(","));
   const next = `/auth/complete?${completeParams.toString()}`;
   const emailRedirectTo = `${origin}/auth/confirm?next=${encodeURIComponent(next)}`;
@@ -51,6 +65,8 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
     invite_token: token,
     member_name: name,
     player_ids: playerIds,
+    agreed_terms_version: CURRENT_TERMS_VERSION,
+    agreed_terms_at: agreedTermsAt,
   });
   if (rpcError) return { error: rpcError.message };
 

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 export interface FormState {
   error?: string;
@@ -24,6 +25,9 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   if (password.length < 8) {
     return { error: "パスワードは8文字以上で入力してください" };
   }
+  if (!formData.get("agreedTerms")) {
+    return { error: "利用規約とプライバシーポリシーへの同意が必要です" };
+  }
 
   const origin = await getRequestOrigin();
   const emailRedirectTo = `${origin}/auth/confirm?next=${encodeURIComponent("/setup")}`;
@@ -32,7 +36,14 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo },
+    options: {
+      emailRedirectTo,
+      // profilesはこの時点では未作成(/setupで作成)のため、同意記録は
+      // まずauth.usersのuser_metadataに載せる(email確認の有無に関わらず
+      // signUp()呼び出しと同時に確定するため、/setupへの遷移経路に依存しない)。
+      // profiles側への実際の記録は/setup(completeSetup)で改めて行う。
+      data: { agreed_terms_version: CURRENT_TERMS_VERSION, agreed_terms_at: new Date().toISOString() },
+    },
   });
   if (error) return { error: error.message };
   if (!data.user) return { error: "アカウントの作成に失敗しました" };
