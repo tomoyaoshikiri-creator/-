@@ -18,3 +18,10 @@ export function shouldUseBillingPortal(subscriptionStatus: string | null | undef
   if (subscriptionStatus == null) return false;
   return !NO_ACTIVE_SUBSCRIPTION_STATUSES.has(subscriptionStatus);
 }
+
+// 「支払い確認中」バナーを出すべきか。カード期限切れ等で直近の請求が失敗し、
+// Stripe側のdunning(再試行)が進行中の状態。機能アクセス自体は制限しない
+// (機能制限の具体仕様はA-5で扱う。ここはUI上の注意喚起のみ)。
+export function isSubscriptionPastDue(subscriptionStatus: string | null | undefined): boolean {
+  return subscriptionStatus === "past_due" || subscriptionStatus === "unpaid";
+}
