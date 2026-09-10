@@ -10,6 +10,7 @@ import { collectPlayerAnalysisData, collectTeamAnalysisData } from "@/lib/ai/col
 import { buildPlayerAnalysisPrompt, buildTeamAnalysisPrompt } from "@/lib/ai/buildPrompt";
 import { fiscalYearOf, todayDateStr } from "@/lib/format";
 import { logError } from "@/lib/logger";
+import { recordAuditEvent } from "@/lib/auditLog";
 import type { Database } from "@/lib/database.types";
 
 // VercelプロジェクトのFunction Max Duration(300秒/Hobby+Fluid Compute)を
@@ -216,6 +217,14 @@ export async function POST(request: Request) {
   }
 
   await resolveUsage(adminClient, teamId, reservationId, true);
+  await recordAuditEvent(adminClient, {
+    teamId,
+    actorId: user.id,
+    action: "ai_analysis_generated",
+    targetType: scope === "player" ? "player_analysis_note" : "team_analysis_note",
+    targetId: scope === "player" ? playerId : undefined,
+    detail: { scope },
+  });
 
   return NextResponse.json({ body, usedThisMonth: usage.used_count, monthlyLimit: MONTHLY_LIMIT });
 }

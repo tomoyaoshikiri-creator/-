@@ -4,6 +4,7 @@ import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { getStripeClient, planForPriceId } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
+import { recordAuditEvent } from "@/lib/auditLog";
 import type { Database } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -78,13 +79,24 @@ export async function POST(request: Request) {
       logError(`[webhooks/stripe] unknown price id ${priceId} for customer ${customerId}`);
       return false;
     }
-    const { error } = await adminClient
+    const { data, error } = await adminClient
       .from("teams")
       .update({ plan, stripe_subscription_id: subscription.id, subscription_status: subscription.status })
-      .eq("stripe_customer_id", customerId);
+      .eq("stripe_customer_id", customerId)
+      .select("id");
     if (error) {
       logError("[webhooks/stripe] failed to sync subscription", error);
       return false;
+    }
+    for (const team of data ?? []) {
+      await recordAuditEvent(adminClient, {
+        teamId: team.id,
+        actorId: null,
+        action: "billing_plan_changed",
+        targetType: "team",
+        targetId: team.id,
+        detail: { plan, subscription_status: subscription.status },
+      });
     }
     return true;
   }
@@ -109,13 +121,24 @@ export async function POST(request: Request) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-      const { error } = await adminClient
+      const { data, error } = await adminClient
         .from("teams")
         .update({ plan: "お試し", stripe_subscription_id: null, subscription_status: "canceled" })
-        .eq("stripe_customer_id", customerId);
+        .eq("stripe_customer_id", customerId)
+        .select("id");
       if (error) {
         logError("[webhooks/stripe] failed to downgrade canceled subscription", error);
         ok = false;
+      } else {
+        for (const team of data ?? []) {
+          await recordAuditEvent(adminClient, {
+            teamId: team.id,
+            actorId: null,
+            action: "billing_subscription_canceled",
+            targetType: "team",
+            targetId: team.id,
+          });
+        }
       }
       break;
     }
