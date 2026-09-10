@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
+import { recordAuditEvent } from "@/lib/auditLog";
 import type { Database } from "@/lib/database.types";
 
 // 「このサービスから退会する」= auth.usersごとアカウントを完全に削除する(A-7)。
@@ -82,6 +83,13 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: `チーム脱退処理に失敗しました: ${error.message}` }, { status: 500 });
     }
+    await recordAuditEvent(adminClient, {
+      teamId,
+      actorId: user.id,
+      action: "team_leave",
+      targetType: "team_membership",
+      targetId: user.id,
+    });
   }
 
   // 最後の管理者であるチームは、既存のチーム退会(7日猶予)と同じ手続きをトリガーする。
@@ -118,6 +126,13 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: `チーム退会手続きの登録に失敗しました: ${error.message}` }, { status: 500 });
     }
+    await recordAuditEvent(adminClient, {
+      teamId,
+      actorId: user.id,
+      action: "team_deletion_requested",
+      targetType: "team",
+      targetId: teamId,
+    });
     pendingTeamNames.push(team.name);
   }
 

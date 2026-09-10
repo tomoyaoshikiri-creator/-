@@ -81,6 +81,7 @@ const state = {
   teams: new Map<string, TeamRow>(),
   accountDeletionRequests: new Map<string, { user_id: string; requested_at: string }>(),
   deletedUserIds: new Set<string>(),
+  auditLogs: [] as Array<{ team_id: string; actor_id: string | null; action: string }>,
 };
 
 function resetState() {
@@ -89,6 +90,7 @@ function resetState() {
   state.teams = new Map();
   state.accountDeletionRequests = new Map();
   state.deletedUserIds = new Set();
+  state.auditLogs = [];
 }
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -139,6 +141,14 @@ vi.mock("@supabase/supabase-js", () => ({
         return {
           upsert(row: { user_id: string; requested_at: string }) {
             state.accountDeletionRequests.set(row.user_id, row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
+      if (table === "audit_logs") {
+        return {
+          insert(row: { team_id: string; actor_id: string | null; action: string }) {
+            state.auditLogs.push(row);
             return Promise.resolve({ error: null });
           },
         };
@@ -217,6 +227,9 @@ describe("POST /api/account/request-deletion", () => {
     expect(state.teamMemberships.some((m) => m.user_id === USER_ID)).toBe(false);
     expect(state.playerGuardians.some((g) => g.profile_id === USER_ID)).toBe(false);
     expect(state.deletedUserIds.has(USER_ID)).toBe(true);
+    expect(state.auditLogs).toContainEqual(
+      expect.objectContaining({ team_id: "team-1", actor_id: USER_ID, action: "team_leave" }),
+    );
   });
 
   it("最後の管理者であるチームは7日猶予のチーム退会をトリガーし、アカウント自体はまだ削除しない", async () => {
@@ -239,6 +252,9 @@ describe("POST /api/account/request-deletion", () => {
     expect(state.accountDeletionRequests.has(USER_ID)).toBe(true);
     // 猶予期間中はteamDeletionJob.tsが完全削除した後に呼ばれる想定のため、この時点ではまだ削除しない。
     expect(state.deletedUserIds.has(USER_ID)).toBe(false);
+    expect(state.auditLogs).toContainEqual(
+      expect.objectContaining({ team_id: "team-2", actor_id: USER_ID, action: "team_deletion_requested" }),
+    );
   });
 
   it("Stripe解約が失敗した場合は502を返し、チーム退会手続きも進めない", async () => {

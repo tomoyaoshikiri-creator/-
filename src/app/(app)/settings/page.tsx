@@ -29,6 +29,7 @@ export default function SettingsPage() {
           <SectionLabel>チーム</SectionLabel>
           <Card>
             <SettingsRow href="/settings/team" label="チーム設定" />
+            <SettingsRow href="/settings/audit-log" label="監査ログ" />
           </Card>
         </>
       )}

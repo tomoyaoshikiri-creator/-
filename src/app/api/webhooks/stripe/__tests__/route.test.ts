@@ -10,15 +10,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type FakeWebhookEventRow = { id: string; type: string; status: string };
 type FakeTeamRow = {
+  id: string;
   stripe_customer_id: string;
   plan: string;
   stripe_subscription_id: string | null;
   subscription_status: string | null;
 };
+type FakeAuditLogRow = { team_id: string; actor_id: string | null; action: string; detail: unknown };
 
-const { webhookEvents, teams, constructEvent, subscriptionsRetrieve } = vi.hoisted(() => ({
+const { webhookEvents, teams, auditLogs, constructEvent, subscriptionsRetrieve } = vi.hoisted(() => ({
   webhookEvents: new Map<string, FakeWebhookEventRow>(),
   teams: new Map<string, FakeTeamRow>(),
+  auditLogs: [] as FakeAuditLogRow[],
   constructEvent: vi.fn(),
   subscriptionsRetrieve: vi.fn(),
 }));
@@ -26,10 +29,12 @@ const { webhookEvents, teams, constructEvent, subscriptionsRetrieve } = vi.hoist
 function resetFakeDb() {
   webhookEvents.clear();
   teams.clear();
+  auditLogs.length = 0;
 }
 
 function seedTeam(customerId: string, overrides: Partial<FakeTeamRow> = {}) {
   teams.set(customerId, {
+    id: `team-${customerId}`,
     stripe_customer_id: customerId,
     plan: "お試し",
     stripe_subscription_id: null,
@@ -86,11 +91,24 @@ vi.mock("@supabase/supabase-js", () => ({
           update(patch: Partial<FakeTeamRow>) {
             return {
               eq(_col: string, customerId: string) {
-                const existing = teams.get(customerId);
-                if (existing) teams.set(customerId, { ...existing, ...patch });
-                return Promise.resolve({ error: existing ? null : { message: "team not found" } });
+                return {
+                  select() {
+                    const existing = teams.get(customerId);
+                    if (!existing) return Promise.resolve({ data: [], error: null });
+                    teams.set(customerId, { ...existing, ...patch });
+                    return Promise.resolve({ data: [{ id: existing.id }], error: null });
+                  },
+                };
               },
             };
+          },
+        };
+      }
+      if (table === "audit_logs") {
+        return {
+          insert(row: FakeAuditLogRow) {
+            auditLogs.push(row);
+            return Promise.resolve({ error: null });
           },
         };
       }
@@ -156,6 +174,9 @@ describe("POST /api/webhooks/stripe", () => {
     expect(res.status).toBe(200);
     expect(teams.get("cus_1")).toMatchObject({ plan: "中間", subscription_status: "active" });
     expect(webhookEvents.get("evt_1")?.status).toBe("succeeded");
+    expect(auditLogs).toContainEqual(
+      expect.objectContaining({ team_id: "team-cus_1", actor_id: null, action: "billing_plan_changed" }),
+    );
   });
 
   it("past_dueへの遷移もそのままsubscription_statusへ反映する(機能制限はlib/planの別ロジックが担う)", async () => {
@@ -190,6 +211,9 @@ describe("POST /api/webhooks/stripe", () => {
       stripe_subscription_id: null,
       subscription_status: "canceled",
     });
+    expect(auditLogs).toContainEqual(
+      expect.objectContaining({ team_id: "team-cus_3", action: "billing_subscription_canceled" }),
+    );
   });
 
   it("未知のPrice IDのときは5xxを返しStripeに再送させる(黙って200を返さない)", async () => {
