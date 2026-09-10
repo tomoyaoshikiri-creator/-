@@ -26,7 +26,7 @@ export default function GameDetailPage() {
   const gameId = params.id;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userId, teamId, role, sport, name } = useSession();
+  const { userId, teamId, role, sport } = useSession();
   const toast = useToast();
   const [game, setGame] = useState<Schedule | null>(null);
   const [matches, setMatches] = useState<GameMatch[]>([]);
@@ -203,12 +203,7 @@ export default function GameDetailPage() {
       }
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
       if (authorId && authorId !== userId) {
-        sendPushNotification({
-          title: "リアクションがつきました",
-          body: `${name}さんがコーチメモにリアクションしました`,
-          url: `/game/${gameId}`,
-          targetUserIds: [authorId],
-        });
+        sendPushNotification("game_note_reaction", noteId);
       }
     }
     loadNoteReactions();
@@ -222,27 +217,25 @@ export default function GameDetailPage() {
     }
     setSavingNote(true);
     const supabase = createClient();
-    const { error } = await supabase.from("game_match_notes").insert({
-      team_id: teamId,
-      game_match_id: selectedMatchId,
-      author_id: userId,
-      body: noteBody.trim(),
-    });
+    const { data: note, error } = await supabase
+      .from("game_match_notes")
+      .insert({
+        team_id: teamId,
+        game_match_id: selectedMatchId,
+        author_id: userId,
+        body: noteBody.trim(),
+      })
+      .select()
+      .single();
     setSavingNote(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+    if (error || !note) {
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setNoteBody("");
     setShowAddNote(false);
     toast("コーチメモを登録しました");
-    const match = matches.find((m) => m.id === selectedMatchId);
-    sendPushNotification({
-      title: "📝 コーチメモが登録されました",
-      body: match?.opponent ? `vs ${match.opponent} のコーチメモが登録されました` : "コーチメモが登録されました",
-      url: `/game/${gameId}`,
-      targetRoles: ["指導者", "管理者"],
-    });
+    sendPushNotification("game_note_created", note.id);
     loadNotes(selectedMatchId);
   }
 
