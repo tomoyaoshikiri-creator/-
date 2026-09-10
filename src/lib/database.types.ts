@@ -148,6 +148,8 @@ export interface Database {
           status: UserStatus;
           email: string | null;
           created_at: string;
+          agreed_terms_version: string | null;
+          agreed_terms_at: string | null;
         };
         Insert: {
           id: string;
@@ -157,6 +159,8 @@ export interface Database {
           status?: UserStatus;
           email?: string | null;
           created_at?: string;
+          agreed_terms_version?: string | null;
+          agreed_terms_at?: string | null;
         };
         Update: Partial<{
           name: string;
@@ -1446,7 +1450,14 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       create_team_and_admin: {
-        Args: { team_name: string; admin_name: string; team_sport?: TeamSport; team_category?: TeamCategory };
+        Args: {
+          team_name: string;
+          admin_name: string;
+          team_sport?: TeamSport;
+          team_category?: TeamCategory;
+          agreed_terms_version?: string | null;
+          agreed_terms_at?: string | null;
+        };
         Returns: string;
       };
       get_invite_info: {
@@ -1458,7 +1469,13 @@ export interface Database {
         Returns: { id: string; sei: string; mei: string; grade: string | null; number: string | null }[];
       };
       accept_invite: {
-        Args: { invite_token: string; member_name: string; player_ids?: string[] };
+        Args: {
+          invite_token: string;
+          member_name: string;
+          player_ids?: string[];
+          agreed_terms_version?: string | null;
+          agreed_terms_at?: string | null;
+        };
         Returns: string;
       };
       advance_academic_year: {

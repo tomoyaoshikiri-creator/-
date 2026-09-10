@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { completeSetup, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
 import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 import { CATEGORIES, CATEGORY_DISPLAY_LABELS, isMiniBasketballAllowed } from "@/lib/category";
 import type { TeamCategory } from "@/lib/database.types";
@@ -63,6 +64,8 @@ export function SetupForm() {
           <input name="adminMei" className={inputClass()} placeholder="名:太郎" required />
         </div>
       </div>
+
+      <TermsAgreementCheckbox />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
 

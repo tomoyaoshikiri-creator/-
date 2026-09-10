@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { signUpTeam, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
 
 const initialState: FormState = {};
 
@@ -31,6 +32,8 @@ export function SignupForm() {
         <FieldLabel>パスワード(8文字以上)</FieldLabel>
         <input name="password" type="password" minLength={8} className={inputClass()} required />
       </div>
+
+      <TermsAgreementCheckbox />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
 
