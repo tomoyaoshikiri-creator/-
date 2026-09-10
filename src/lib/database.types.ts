@@ -38,6 +38,20 @@ export type AttendanceStatus = "出席" | "欠席" | "遅刻早退" | "見学";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
 export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
+// 監査ログ(audit_logs)の記録対象イベント種別(B-3)。data_exportは将来のデータ
+// エクスポート機能(B-6)向けに予約済みだが、現時点では発行箇所がない。
+export type AuditAction =
+  | "role_changed"
+  | "invite_issued"
+  | "invite_revoked"
+  | "member_removed"
+  | "team_leave"
+  | "team_deletion_requested"
+  | "ai_analysis_generated"
+  | "billing_plan_changed"
+  | "billing_subscription_canceled"
+  | "data_export";
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 // 選手登録時に選べる学年(在籍中の選手のみ)。絶対値の17段階スケール
 // (0=未就学,1-6=小学1-6年,7-9=中学1-3年,10-12=高校1-3年,13-16=大学1-4年、
 // src/lib/category.ts参照)。OB・OGは年度更新のたびに卒団からの経過年数として
@@ -159,6 +173,32 @@ export interface Database {
         Update: Partial<{
           status: "processing" | "succeeded" | "failed";
           processed_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          team_id: string;
+          actor_id: string | null;
+          action: AuditAction;
+          target_type: string | null;
+          target_id: string | null;
+          detail: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          actor_id?: string | null;
+          action: AuditAction;
+          target_type?: string | null;
+          target_id?: string | null;
+          detail?: Json;
+          created_at?: string;
+        };
+        Update: Partial<{
+          detail: Json;
         }>;
         Relationships: [];
       };

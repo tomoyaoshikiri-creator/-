@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
+import { recordAuditEvent } from "@/lib/auditLog";
 import type { Database } from "@/lib/database.types";
 
 // 管理者がチームの退会(完全削除)を申請する。即座には削除せず、deletion_requested_at
@@ -75,6 +76,14 @@ export async function POST() {
   if (updateError) {
     return NextResponse.json({ error: `退会手続きの登録に失敗しました: ${updateError.message}` }, { status: 500 });
   }
+
+  await recordAuditEvent(adminClient, {
+    teamId: team.id,
+    actorId: user.id,
+    action: "team_deletion_requested",
+    targetType: "team",
+    targetId: team.id,
+  });
 
   return NextResponse.json({ ok: true, deletionRequestedAt });
 }
