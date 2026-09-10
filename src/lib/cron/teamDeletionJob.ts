@@ -26,7 +26,7 @@ export async function runTeamDeletionSweep(
 
   const { data: dueTeams } = await supabase
     .from("teams")
-    .select("id")
+    .select("id, deletion_requested_by")
     .not("deletion_requested_at", "is", null)
     .lte("deletion_requested_at", cutoff);
 
@@ -41,6 +41,13 @@ export async function runTeamDeletionSweep(
       const { error } = await supabase.from("teams").delete().eq("id", team.id);
       if (error) throw error;
       deleted.push(team.id);
+
+      // このチームがサービス退会(A-7)経由で削除申請されていた場合、申請者が
+      // 「最後の管理者」として管理していた他のチームがもう残っていなければ
+      // (account_deletion_requestsが記録している通り)、ここでアカウント自体を削除する。
+      if (team.deletion_requested_by) {
+        await finalizeAccountDeletionIfReady(supabase, team.deletion_requested_by);
+      }
     } catch (err) {
       // Storage一覧・削除いずれかの失敗もここに伝播する(下のremoveFolderRecursiveが
       // エラーをthrowするため)。このチームは削除完了にせず、次回のcron実行で
@@ -52,6 +59,35 @@ export async function runTeamDeletionSweep(
   }
 
   return { deleted, failed };
+}
+
+// account_deletion_requestsに記録が残っているユーザーについて、猶予中だった
+// (=最後の管理者として)管理していたチームが他に残っていないか確認し、残っていなければ
+// auth.admin.deleteUser()でアカウントを削除する。ここでの失敗はチーム削除自体の成否とは
+// 無関係(teams行は既に削除済み)のため、runTeamDeletionSweep側のfailedには含めず、
+// ログのみ残す(次にこのユーザーの別のチームが削除されたタイミングで再度試みられるが、
+// 該当チームがもう無い場合は次の機会が来ないため、恒久的に残る可能性がある。
+// B-1の可観測性整備でアラート対象にする想定)。
+async function finalizeAccountDeletionIfReady(supabase: SupabaseClient<Database>, userId: string): Promise<void> {
+  try {
+    const { data: pending } = await supabase
+      .from("account_deletion_requests")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!pending) return;
+
+    const { count } = await supabase
+      .from("team_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if ((count ?? 0) > 0) return; // まだ他に猶予中のチームが残っている
+
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    if (error) throw error;
+  } catch (err) {
+    console.error(`[cron/team-deletion] failed to finalize account deletion for user ${userId}`, err);
+  }
 }
 
 // Supabase Storageのlist()はフォルダをid:nullのプレースホルダーエントリとして返すため、
