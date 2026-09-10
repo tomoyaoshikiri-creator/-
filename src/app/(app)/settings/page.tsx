@@ -30,6 +30,7 @@ export default function SettingsPage() {
           <Card>
             <SettingsRow href="/settings/team" label="チーム設定" />
             <SettingsRow href="/settings/audit-log" label="監査ログ" />
+            <SettingsRow href="/settings/export" label="データをエクスポート" />
           </Card>
         </>
       )}

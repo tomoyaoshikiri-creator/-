@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
@@ -53,6 +54,9 @@ export default function CloseAccountPage() {
           <li>7日以内であれば「設定」からいつでも取り消せます(データは復元されます)</li>
           <li>7日を過ぎると、いかなる理由でも元に戻せません</li>
         </ul>
+        <Link href="/settings/export" className="block mt-3 text-[12.5px] text-orange font-bold underline">
+          退会前にデータをエクスポートする ›
+        </Link>
       </Card>
 
       <Card>
