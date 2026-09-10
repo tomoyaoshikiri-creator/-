@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { runTeamDeletionSweep } from "@/lib/cron/teamDeletionJob";
+import { logError, withCronCheckIn } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
-    console.error("[cron/team-deletion] missing SUPABASE_SERVICE_ROLE_KEY");
+    logError("[cron/team-deletion] missing SUPABASE_SERVICE_ROLE_KEY");
     return NextResponse.json({ error: "server not configured" }, { status: 500 });
   }
 
@@ -31,6 +32,6 @@ export async function GET(request: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const result = await runTeamDeletionSweep(supabase);
+  const result = await withCronCheckIn("team-deletion", "30 23 * * *", () => runTeamDeletionSweep(supabase));
   return NextResponse.json({ ok: true, ...result });
 }

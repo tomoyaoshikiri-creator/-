@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AuthHeading } from "../AuthHeading";
 import { SignupForm } from "./SignupForm";
+import { logError } from "@/lib/logger";
 
 export default async function SignupPage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function SignupPage() {
     const { data: memberships, error: membershipsError } = await supabase.rpc("list_my_team_memberships");
 
     if (membershipsError) {
-      console.error("list_my_team_memberships failed on signup", membershipsError);
+      logError("list_my_team_memberships failed on signup", membershipsError);
       redirect("/setup");
     }
 

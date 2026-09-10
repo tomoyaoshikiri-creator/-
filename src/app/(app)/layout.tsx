@@ -10,6 +10,7 @@ import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
 import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
 import { headerThemeStyle, teamThemeStyle } from "@/lib/theme";
+import { logError } from "@/lib/logger";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -28,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: bootstrap, error: bootstrapError } = await supabase.rpc("initialize_active_team").single();
 
   if (bootstrapError) {
-    console.error("initialize_active_team failed", bootstrapError);
+    logError("initialize_active_team failed", bootstrapError);
     return <ActiveTeamErrorScreen />;
   }
 
@@ -69,13 +70,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
 
   if (membershipsError || !profile) {
-    console.error("failed to load membership/profile", membershipsError);
+    logError("failed to load membership/profile", membershipsError);
     return <ActiveTeamErrorScreen />;
   }
 
   const membership = (memberships ?? []).find((m) => m.team_id === bootstrap.team_id);
   if (!membership) {
-    console.error("no team_memberships row matches bootstrap.team_id");
+    logError("no team_memberships row matches bootstrap.team_id");
     return <ActiveTeamErrorScreen />;
   }
   const role = membership.role as SessionInfo["role"];

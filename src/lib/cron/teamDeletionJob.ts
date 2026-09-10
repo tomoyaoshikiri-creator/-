@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 // team_id配下にファイルを置く規約の全Storageバケット(src全体でsupabase.storage.from("...")
@@ -54,7 +55,7 @@ export async function runTeamDeletionSweep(
       // deletion_requested_atが変わらないままdueTeamsに再度含まれ、リトライされる。
       const message = err instanceof Error ? err.message : String(err);
       failed.push({ teamId: team.id, error: message });
-      console.error(`[cron/team-deletion] failed to delete team ${team.id}`, err);
+      logError(`[cron/team-deletion] failed to delete team ${team.id}`, err);
     }
   }
 
@@ -86,7 +87,7 @@ async function finalizeAccountDeletionIfReady(supabase: SupabaseClient<Database>
     const { error } = await supabase.auth.admin.deleteUser(userId);
     if (error) throw error;
   } catch (err) {
-    console.error(`[cron/team-deletion] failed to finalize account deletion for user ${userId}`, err);
+    logError(`[cron/team-deletion] failed to finalize account deletion for user ${userId}`, err);
   }
 }
 

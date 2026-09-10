@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import { playerFullName } from "@/lib/format";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 // 選手の誕生日プッシュ通知。全チーム横断で、今日が誕生日の在籍選手を洗い出し、
@@ -57,7 +58,7 @@ export async function runBirthdayReminders(
           sent += 1;
         } catch (err) {
           const statusCode = (err as { statusCode?: number } | null)?.statusCode;
-          console.error(`[cron/birthdays] send failed (subscription ${s.id}, status ${statusCode})`, err);
+          logError(`[cron/birthdays] send failed (subscription ${s.id}, status ${statusCode})`, err);
           if (statusCode === 404 || statusCode === 410) {
             await supabase.from("push_subscriptions").delete().eq("id", s.id);
           }

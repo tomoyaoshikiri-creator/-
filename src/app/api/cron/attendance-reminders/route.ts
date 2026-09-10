@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient, type SupabaseClient } from "@su
 import webpush from "web-push";
 import { formatDateLabel, isTargetEligible, playerFullName } from "@/lib/format";
 import { runBirthdayReminders } from "@/lib/cron/birthdayJob";
+import { logError, withCronCheckIn } from "@/lib/logger";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -153,7 +154,7 @@ async function sendToRecipients(
         sent += 1;
       } catch (err) {
         const statusCode = (err as { statusCode?: number } | null)?.statusCode;
-        console.error(`[cron/attendance-reminders] send failed (subscription ${s.id}, status ${statusCode})`, err);
+        logError(`[cron/attendance-reminders] send failed (subscription ${s.id}, status ${statusCode})`, err);
         if (statusCode === 404 || statusCode === 410) {
           await supabase.from("push_subscriptions").delete().eq("id", s.id);
         }
@@ -185,71 +186,73 @@ export async function GET(request: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const today = jstToday();
-  const todayStr = toDateStr(today);
-  const in2DaysStr = toDateStr(addDays(today, 2));
-  const in7DaysStr = toDateStr(addDays(today, 7));
+  return withCronCheckIn("attendance-reminders", "0 23 * * *", async () => {
+    const today = jstToday();
+    const todayStr = toDateStr(today);
+    const in2DaysStr = toDateStr(addDays(today, 2));
+    const in7DaysStr = toDateStr(addDays(today, 7));
 
-  const birthdayResult = await runBirthdayReminders(supabase, todayStr);
+    const birthdayResult = await runBirthdayReminders(supabase, todayStr);
 
-  const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
-    supabase.from("schedules").select("*").eq("date", in2DaysStr).eq("send_attendance_reminders", true),
-    supabase
-      .from("schedules")
-      .select("*")
-      .in("type", ["game", "event", "other"])
-      .eq("attendance_deadline", todayStr)
-      .eq("send_attendance_reminders", true),
-    supabase
-      .from("schedules")
-      .select("*")
-      .in("type", ["game", "event", "other"])
-      .eq("date", in7DaysStr)
-      .not("attendance_deadline", "is", null)
-      .lt("attendance_deadline", todayStr)
-      .eq("send_attendance_reminders", true),
-  ]);
+    const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
+      supabase.from("schedules").select("*").eq("date", in2DaysStr).eq("send_attendance_reminders", true),
+      supabase
+        .from("schedules")
+        .select("*")
+        .in("type", ["game", "event", "other"])
+        .eq("attendance_deadline", todayStr)
+        .eq("send_attendance_reminders", true),
+      supabase
+        .from("schedules")
+        .select("*")
+        .in("type", ["game", "event", "other"])
+        .eq("date", in7DaysStr)
+        .not("attendance_deadline", "is", null)
+        .lt("attendance_deadline", todayStr)
+        .eq("send_attendance_reminders", true),
+    ]);
 
-  const jobs: { schedule: Schedule; reminderType: ReminderType }[] = [
-    ...(baseline ?? []).map((schedule) => ({ schedule, reminderType: "baseline_2days" as const })),
-    ...(deadlineDay ?? []).map((schedule) => ({ schedule, reminderType: "deadline_day" as const })),
-    ...(weekBefore ?? []).map((schedule) => ({ schedule, reminderType: "week_before" as const })),
-  ];
+    const jobs: { schedule: Schedule; reminderType: ReminderType }[] = [
+      ...(baseline ?? []).map((schedule) => ({ schedule, reminderType: "baseline_2days" as const })),
+      ...(deadlineDay ?? []).map((schedule) => ({ schedule, reminderType: "deadline_day" as const })),
+      ...(weekBefore ?? []).map((schedule) => ({ schedule, reminderType: "week_before" as const })),
+    ];
 
-  if (jobs.length === 0) {
-    return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult });
-  }
-
-  const { data: existingLogs } = await supabase
-    .from("attendance_reminder_log")
-    .select("schedule_id, reminder_type")
-    .in(
-      "schedule_id",
-      jobs.map((j) => j.schedule.id),
-    );
-  const sentSet = new Set((existingLogs ?? []).map((l) => `${l.schedule_id}:${l.reminder_type}`));
-  const pendingJobs = jobs.filter((j) => !sentSet.has(`${j.schedule.id}:${j.reminderType}`));
-
-  const results: { scheduleId: string; reminderType: ReminderType; recipients: number; sent: number }[] = [];
-
-  for (const job of pendingJobs) {
-    const recipients = await computeUnregisteredRecipients(supabase, job.schedule);
-    let sent = 0;
-    if (recipients.size > 0) {
-      const { title, body } = buildMessage(job.schedule, job.reminderType);
-      sent = await sendToRecipients(supabase, recipients, title, body, `/schedule/${job.schedule.id}`);
+    if (jobs.length === 0) {
+      return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult });
     }
-    results.push({ scheduleId: job.schedule.id, reminderType: job.reminderType, recipients: recipients.size, sent });
-    await supabase
-      .from("attendance_reminder_log")
-      .insert({ schedule_id: job.schedule.id, reminder_type: job.reminderType });
-  }
 
-  return NextResponse.json({
-    ok: true,
-    jobs: jobs.length,
-    processed: pendingJobs.length,
-    results,
-    birthdays: birthdayResult,
+    const { data: existingLogs } = await supabase
+      .from("attendance_reminder_log")
+      .select("schedule_id, reminder_type")
+      .in(
+        "schedule_id",
+        jobs.map((j) => j.schedule.id),
+      );
+    const sentSet = new Set((existingLogs ?? []).map((l) => `${l.schedule_id}:${l.reminder_type}`));
+    const pendingJobs = jobs.filter((j) => !sentSet.has(`${j.schedule.id}:${j.reminderType}`));
+
+    const results: { scheduleId: string; reminderType: ReminderType; recipients: number; sent: number }[] = [];
+
+    for (const job of pendingJobs) {
+      const recipients = await computeUnregisteredRecipients(supabase, job.schedule);
+      let sent = 0;
+      if (recipients.size > 0) {
+        const { title, body } = buildMessage(job.schedule, job.reminderType);
+        sent = await sendToRecipients(supabase, recipients, title, body, `/schedule/${job.schedule.id}`);
+      }
+      results.push({ scheduleId: job.schedule.id, reminderType: job.reminderType, recipients: recipients.size, sent });
+      await supabase
+        .from("attendance_reminder_log")
+        .insert({ schedule_id: job.schedule.id, reminder_type: job.reminderType });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      jobs: jobs.length,
+      processed: pendingJobs.length,
+      results,
+      birthdays: birthdayResult,
+    });
   });
 }

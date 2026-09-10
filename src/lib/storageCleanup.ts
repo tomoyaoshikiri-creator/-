@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 export type UploadedObjectRef = { bucket: string; path: string };
@@ -23,11 +24,11 @@ export async function cleanupUploadedObjects(
       const { error } = await supabase.storage.from(bucket).remove(paths);
       if (error) {
         allOk = false;
-        console.error(`[storageCleanup] failed to remove orphaned objects (${bucket})`, error, paths);
+        logError(`[storageCleanup] failed to remove orphaned objects (${bucket})`, error, { paths });
       }
     } catch (err) {
       allOk = false;
-      console.error(`[storageCleanup] unexpected error removing orphaned objects (${bucket})`, err, paths);
+      logError(`[storageCleanup] unexpected error removing orphaned objects (${bucket})`, err, { paths });
     }
   }
   return allOk;
@@ -52,17 +53,11 @@ export async function rollbackParentAndObjects(
     const { error } = await supabase.from(params.parentTable).delete().eq("id", params.parentId);
     if (error) {
       parentOk = false;
-      console.error(
-        `[storageCleanup] failed to rollback parent row (${params.parentTable}/${params.parentId})`,
-        error,
-      );
+      logError(`[storageCleanup] failed to rollback parent row (${params.parentTable}/${params.parentId})`, error);
     }
   } catch (err) {
     parentOk = false;
-    console.error(
-      `[storageCleanup] unexpected error rolling back parent row (${params.parentTable}/${params.parentId})`,
-      err,
-    );
+    logError(`[storageCleanup] unexpected error rolling back parent row (${params.parentTable}/${params.parentId})`, err);
   }
   const objectsOk = await cleanupUploadedObjects(supabase, params.uploadedObjects);
   return parentOk && objectsOk;
