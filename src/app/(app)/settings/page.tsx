@@ -21,6 +21,7 @@ export default function SettingsPage() {
         <SettingsRow href="/settings/teams/new" label="新しいチームを作成" />
         {hasMultipleTeams && <SettingsRow href="/select-team" label="所属チームを切り替える" />}
         <PushNotificationToggle />
+        <SettingsRow href="/settings/leave-service" label="このサービスから退会する" />
       </Card>
 
       {canManageTeam && (

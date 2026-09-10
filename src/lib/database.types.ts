@@ -162,6 +162,20 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      account_deletion_requests: {
+        Row: {
+          user_id: string;
+          requested_at: string;
+        };
+        Insert: {
+          user_id: string;
+          requested_at?: string;
+        };
+        Update: Partial<{
+          requested_at: string;
+        }>;
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
