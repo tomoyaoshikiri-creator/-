@@ -70,7 +70,7 @@ function sumLines(rows: BoxScoreRow[]): StatTotals {
 function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: BoxScoreRow[]; showThreePoint: boolean }) {
   const total = sumLines(rows);
   const count = rows.length;
-  // 選手ごとの平均(小数第1位)。EFFは合計を出す意味が薄いため、合計行では表示せず平均のみ出す。
+  // 選手ごとの平均(小数第1位)。
   const avg = (n: number) => (count > 0 ? (n / count).toFixed(1) : "0.0");
   return (
     <div className="mt-4">
@@ -212,7 +212,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                 <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.stl}</td>
                 <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.tov}</td>
                 <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono">{total.fouls}</td>
-                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono text-ink-soft">-</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold">{total.eff}</td>
               </tr>
               <tr>
                 <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">平均</td>
