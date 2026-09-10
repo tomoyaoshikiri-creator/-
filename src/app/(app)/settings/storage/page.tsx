@@ -63,7 +63,7 @@ export default function SettingsStoragePage() {
             />
           </div>
           <div className="text-xs text-ink-soft mt-2">
-            ライブラリ・お知らせ・チーム日報・コーチ日報に添付された画像・資料の合計サイズです。
+            ライブラリ・お知らせ・チーム日報・コーチ日報の添付、チームロゴ、試合スコア写真の合計サイズです。
           </div>
         </Card>
       )}
