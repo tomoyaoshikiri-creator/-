@@ -176,6 +176,23 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      push_notify_rate_limits: {
+        Row: {
+          user_id: string;
+          window_started_at: string;
+          count: number;
+        };
+        Insert: {
+          user_id: string;
+          window_started_at?: string;
+          count?: number;
+        };
+        Update: Partial<{
+          window_started_at: string;
+          count: number;
+        }>;
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -1533,6 +1550,14 @@ export interface Database {
       };
       is_current_team_member: {
         Args: { p_profile_id: string };
+        Returns: boolean;
+      };
+      notice_audience_recipient_ids: {
+        Args: { p_notice_id: string };
+        Returns: string[];
+      };
+      check_and_increment_push_notify_rate_limit: {
+        Args: { p_user_id: string; p_window_seconds: number; p_max_count: number };
         Returns: boolean;
       };
       update_team_member: {

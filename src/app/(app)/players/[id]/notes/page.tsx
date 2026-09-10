@@ -23,7 +23,7 @@ import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib
 export default function PlayerNotesPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { role, userId, name } = useSession();
+  const { role, userId } = useSession();
   const toast = useToast();
   const [player, setPlayer] = useState<Player | null>(null);
   const [prevId, setPrevId] = useState<string | null>(null);
@@ -116,12 +116,7 @@ export default function PlayerNotesPage() {
       }
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
       if (authorId && authorId !== userId) {
-        sendPushNotification({
-          title: "リアクションがつきました",
-          body: `${name}さんが${playerFullName(player)}のメモにリアクションしました`,
-          url: `/players/${player.id}/notes`,
-          targetUserIds: [authorId],
-        });
+        sendPushNotification("player_note_reaction", noteId);
       }
     }
     loadReactions();
@@ -153,28 +148,23 @@ export default function PlayerNotesPage() {
       author_id: userId,
       body: noteBody.trim(),
     };
-    let { error } = await supabase.from("player_notes").insert(payload);
+    let { data: note, error } = await supabase.from("player_notes").insert(payload).select().single();
     if (error) {
       // アプリをバックグラウンドから復帰した直後などは認証トークンが失効直後で
       // 一度目の書き込みだけ失敗し、すぐ再送信すると成功することがある。
       // getSession()でトークンを最新化してから1回だけ自動的に再試行する。
       await supabase.auth.getSession();
-      ({ error } = await supabase.from("player_notes").insert(payload));
+      ({ data: note, error } = await supabase.from("player_notes").insert(payload).select().single());
     }
     setSavingNote(false);
-    if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+    if (error || !note) {
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setNoteBody("");
     setModalOpen(false);
     toast("メモを登録しました");
-    sendPushNotification({
-      title: "📝 選手メモが登録されました",
-      body: `${playerFullName(player)}のメモが登録されました`,
-      url: `/players/${player.id}/notes`,
-      targetRoles: ["指導者", "管理者"],
-    });
+    sendPushNotification("player_note_created", note.id);
     load();
   }
 
