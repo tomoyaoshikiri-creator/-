@@ -14,7 +14,7 @@ function redirectWithCookies(url: URL, supabaseResponse: NextResponse): NextResp
   return redirectResponse;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -48,7 +48,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/auth") ||
     path.startsWith("/forgot-password") ||
     path.startsWith("/privacy") ||
-    path.startsWith("/terms");
+    path.startsWith("/terms") ||
+    path.startsWith("/tokushoho");
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
