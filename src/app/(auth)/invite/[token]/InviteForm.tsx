@@ -6,6 +6,7 @@ import { acceptInvite, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InvitePlayerPicker, type InvitePlayer } from "./InvitePlayerPicker";
 import type { TeamCategory } from "@/lib/database.types";
+import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
 
 const initialState: FormState = {};
 
@@ -55,6 +56,8 @@ export function InviteForm({
         </div>
 
         <InvitePlayerPicker players={players} category={category} selectedIds={selectedIds} onChange={setSelectedIds} />
+
+        <TermsAgreementCheckbox />
 
         {state.error && (
           <div className="mt-3 text-[12.5px] text-danger">

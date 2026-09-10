@@ -21,10 +21,14 @@ export async function GET(request: Request) {
     const token = searchParams.get("token") ?? "";
     const name = searchParams.get("name") ?? "";
     const playerIds = (searchParams.get("playerIds") ?? "").split(",").filter((id) => id !== "");
+    const agreedTermsVersion = searchParams.get("agreedTermsVersion");
+    const agreedTermsAt = searchParams.get("agreedTermsAt");
     const { error } = await supabase.rpc("accept_invite", {
       invite_token: token,
       member_name: name,
       player_ids: playerIds,
+      agreed_terms_version: agreedTermsVersion,
+      agreed_terms_at: agreedTermsAt,
     });
     if (error && !error.message.includes("既にチームに所属")) {
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);

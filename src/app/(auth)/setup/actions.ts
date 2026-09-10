@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SPORTS } from "@/lib/sport";
 import { CATEGORIES, isMiniBasketballAllowed } from "@/lib/category";
 import type { TeamCategory, TeamSport } from "@/lib/database.types";
+import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 export interface FormState {
   error?: string;
@@ -30,6 +31,9 @@ export async function completeSetup(_prev: FormState, formData: FormData): Promi
   if (!SPORTS.includes(sport) || (sport === "ミニバスケットボール" && !isMiniBasketballAllowed(category))) {
     return { error: "競技を選択してください" };
   }
+  if (!formData.get("agreedTerms")) {
+    return { error: "利用規約とプライバシーポリシーへの同意が必要です" };
+  }
 
   const supabase = await createClient();
   const {
@@ -42,6 +46,8 @@ export async function completeSetup(_prev: FormState, formData: FormData): Promi
     admin_name: adminName,
     team_sport: sport,
     team_category: category,
+    agreed_terms_version: CURRENT_TERMS_VERSION,
+    agreed_terms_at: new Date().toISOString(),
   });
   if (error) return { error: error.message };
 
