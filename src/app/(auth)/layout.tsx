@@ -10,6 +10,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <a href="/terms" className="underline">
             利用規約
           </a>
+          <a href="/tokushoho" className="underline">
+            特定商取引法に基づく表記
+          </a>
         </div>
         Powered by FAITH CREATION
       </div>
