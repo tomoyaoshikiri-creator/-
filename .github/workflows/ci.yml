@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      # tsc --noEmitがNext.js 16のルート型(.next/types)に依存しているため、
+      # 先にtypegenだけ走らせておく(next buildは後段のジョブでフルビルドする)。
+      - run: npx next typegen
+
+      - run: npx tsc --noEmit
+
+      - run: npm run lint
+
+      - run: npm run test
+
+      - run: npm run build
+
+  rls-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # supabase startはDockerでローカルPostgres/Auth等一式を起動し、supabase/migrations配下を
+      # 自動適用する。supabase test dbは、そのDBに対してsupabase/tests/database配下の
+      # pgTAPテスト(*.sql)を実行する(RLS越境テストの土台、B-2)。
+      - run: supabase start
+
+      - run: supabase test db
