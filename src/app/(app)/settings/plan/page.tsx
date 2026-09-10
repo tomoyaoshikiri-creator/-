@@ -11,7 +11,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { SegButton, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { isInquiryPlan, isPublicPlan } from "@/lib/plan";
-import { shouldUseBillingPortal } from "@/lib/billing";
+import { shouldUseBillingPortal, isSubscriptionPastDue } from "@/lib/billing";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
 import type { BillingInterval } from "@/lib/stripe";
 import type { TeamPlan } from "@/lib/database.types";
@@ -23,6 +23,7 @@ export default function SettingsPlanPage() {
   const { role, teamId } = useSession();
   const [plan, setPlan] = useState<TeamPlan | null>(null);
   const [useBillingPortal, setUseBillingPortal] = useState(false);
+  const [pastDue, setPastDue] = useState(false);
   const [loading, setLoading] = useState(true);
   const [billingLoading, setBillingLoading] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
@@ -49,6 +50,7 @@ export default function SettingsPlanPage() {
         .single();
       setPlan(team?.plan ?? null);
       setUseBillingPortal(shouldUseBillingPortal(team?.subscription_status));
+      setPastDue(isSubscriptionPastDue(team?.subscription_status));
       setLoading(false);
     })();
   }, [teamId]);
@@ -100,6 +102,11 @@ export default function SettingsPlanPage() {
               {plan === "お試し" && (
                 <div className="text-[11px] text-ink-soft mt-0.5">まずはCIRCLE LINESを試してみたいチーム向け・¥0</div>
               )}
+            </div>
+          )}
+          {pastDue && (
+            <div className="text-[11.5px] text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-2.5">
+              お支払いの確認が取れていません。カード情報をご確認のうえ、お支払い管理ページから更新してください。
             </div>
           )}
           {plan && isInquiryPlan(plan) ? (
