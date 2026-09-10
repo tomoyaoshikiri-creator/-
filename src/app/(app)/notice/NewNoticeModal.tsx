@@ -198,7 +198,7 @@ export function NewNoticeModal({
 
     setSaving(false);
     reset();
-    sendPushNotification({ title: "📢 新しいお知らせ", body: notice.title, url: `/notice/${notice.id}` });
+    sendPushNotification("notice_created", notice.id);
     onCreated();
   }
 
