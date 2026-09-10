@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { getStripeClient, planForPriceId } from "@/lib/stripe";
+import { logError } from "@/lib/logger";
 import type { Database } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!stripe || !webhookSecret || !serviceRoleKey) {
-    console.error("[webhooks/stripe] missing STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET/SUPABASE_SERVICE_ROLE_KEY");
+    logError("[webhooks/stripe] missing STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET/SUPABASE_SERVICE_ROLE_KEY");
     return NextResponse.json({ error: "server not configured" }, { status: 500 });
   }
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err) {
-    console.error("[webhooks/stripe] signature verification failed", err);
+    logError("[webhooks/stripe] signature verification failed", err);
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
       // processing/failed(前回の試行が失敗した、または処理中にクラッシュした)の場合は
       // 再処理を許可する。以降の処理成功時にstatus=succeededへ更新する。
     } else {
-      console.error("[webhooks/stripe] failed to claim event", claimError);
+      logError("[webhooks/stripe] failed to claim event", claimError);
       return NextResponse.json({ error: "failed to record event" }, { status: 500 });
     }
   }
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     const priceId = subscription.items.data[0]?.price.id ?? null;
     const plan = planForPriceId(priceId);
     if (!plan) {
-      console.error(`[webhooks/stripe] unknown price id ${priceId} for customer ${customerId}`);
+      logError(`[webhooks/stripe] unknown price id ${priceId} for customer ${customerId}`);
       return false;
     }
     const { error } = await adminClient
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
       .update({ plan, stripe_subscription_id: subscription.id, subscription_status: subscription.status })
       .eq("stripe_customer_id", customerId);
     if (error) {
-      console.error("[webhooks/stripe] failed to sync subscription", error);
+      logError("[webhooks/stripe] failed to sync subscription", error);
       return false;
     }
     return true;
@@ -113,7 +114,7 @@ export async function POST(request: Request) {
         .update({ plan: "お試し", stripe_subscription_id: null, subscription_status: "canceled" })
         .eq("stripe_customer_id", customerId);
       if (error) {
-        console.error("[webhooks/stripe] failed to downgrade canceled subscription", error);
+        logError("[webhooks/stripe] failed to downgrade canceled subscription", error);
         ok = false;
       }
       break;

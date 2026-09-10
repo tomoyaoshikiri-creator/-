@@ -4,6 +4,7 @@ import { AuthHeading } from "../AuthHeading";
 import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { SelectTeamList } from "./SelectTeamList";
 import { selectTeam } from "./actions";
+import { logError } from "@/lib/logger";
 
 // (app)/layout.tsxのinitialize_active_team()がneeds_selection(このsessionに
 // まだactive teamが選ばれていない、かつ複数membershipを持つ)を返した際に
@@ -21,7 +22,7 @@ export default async function SelectTeamPage() {
 
   const { data: memberships, error } = await supabase.rpc("list_my_team_memberships");
   if (error) {
-    console.error("list_my_team_memberships failed", error);
+    logError("list_my_team_memberships failed", error);
     return <ActiveTeamErrorScreen />;
   }
 
@@ -37,7 +38,7 @@ export default async function SelectTeamPage() {
     // そのままswitch_active_team()して/scheduleへ進める。
     const result = await selectTeam(memberships[0].team_id);
     if (result?.error) {
-      console.error("switch_active_team failed (auto-select)", result.error);
+      logError("switch_active_team failed (auto-select)", result.error);
       return <ActiveTeamErrorScreen />;
     }
     return null;
