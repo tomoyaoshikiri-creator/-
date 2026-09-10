@@ -13,6 +13,7 @@ import { canManageSettings } from "@/lib/permissions";
 import { isInquiryPlan, isPublicPlan } from "@/lib/plan";
 import { shouldUseBillingPortal, isSubscriptionPastDue } from "@/lib/billing";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
+import { PLAN_PRICING_OPTIONS } from "@/lib/planPricing";
 import type { BillingInterval } from "@/lib/stripe";
 import type { TeamPlan } from "@/lib/database.types";
 
@@ -137,7 +138,7 @@ export default function SettingsPlanPage() {
                   年払い(10%オフ)
                 </SegButton>
               </div>
-              {PLAN_OPTIONS.map((opt) => (
+              {PLAN_PRICING_OPTIONS.map((opt) => (
                 <div
                   key={opt.plan}
                   className={`rounded-lg p-3 mb-2.5 border ${opt.highlight ? "border-orange bg-orange/5" : "border-line bg-paper"}`}
@@ -172,15 +173,3 @@ export default function SettingsPlanPage() {
     </PageShell>
   );
 }
-
-const PLAN_OPTIONS: {
-  plan: "中間" | "フル" | "フルプラス";
-  price: string;
-  yearlyPrice: string;
-  desc: string;
-  highlight?: boolean;
-}[] = [
-  { plan: "中間", price: "¥1,280", yearlyPrice: "¥13,824", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
-  { plan: "フル", price: "¥2,480", yearlyPrice: "¥26,784", desc: "選手・チームの成長をデータで管理したいチーム向け" },
-  { plan: "フルプラス", price: "¥3,280", yearlyPrice: "¥35,424", desc: "データ分析までAIに任せたいチーム向け" },
-];

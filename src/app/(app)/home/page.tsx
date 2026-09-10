@@ -23,6 +23,7 @@ import {
 } from "@/lib/homeData";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { PlanLimitBanner } from "@/components/PlanLimitBanner";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import type { GameMatch, Schedule } from "@/lib/database.types";
 
 type LoadStatus = "loading" | "success" | "error";
@@ -414,6 +415,7 @@ export default function HomePage() {
   return (
     <PageShell header={<AppHeader title="ホーム" />}>
       <PlanLimitBanner />
+      <OnboardingChecklist />
 
       {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。
           他のカードは白背景・グレー見出しの一覧の中に埋もれてしまうため、常設のバナー的な

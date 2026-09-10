@@ -42,6 +42,8 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isAuthRoute =
+    path === "/" ||
+    path.startsWith("/pricing") ||
     path.startsWith("/login") ||
     path.startsWith("/signup") ||
     path.startsWith("/invite") ||
