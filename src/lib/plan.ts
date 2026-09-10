@@ -139,6 +139,20 @@ export function playerLimitForPlan(plan: TeamPlan): number | null {
   return plan === "お試し" ? FREE_PLAYER_LIMIT : null;
 }
 
+// 有料→無料化(ダウングレード)等で、既存データが新プランの上限を超えている状態かどうか。
+// 新規作成をブロックする判定(既存のenforce_player_limit_trigger・NewLibraryFileModal等)
+// とは別に、ホーム画面の案内バナー表示にも同じ基準を使うためのヘルパー(A-5)。
+// 上限を下回っている(null=無制限を含む)場合は false。既存データを削除・非表示にする
+// 処理は行わない(docs/plan-downgrade-policy.md参照)。
+export function isOverPlayerLimit(activePlayerCount: number, plan: TeamPlan): boolean {
+  const limit = playerLimitForPlan(plan);
+  return limit !== null && activePlayerCount > limit;
+}
+
+export function isOverStorageLimit(usedBytes: number, limitBytes: number): boolean {
+  return limitBytes > 0 && usedBytes > limitBytes;
+}
+
 // お試しプランはチーム日報を直近30日分、試合結果を直近5件のみ閲覧可能(データ自体は
 // 削除しない。中間プラン以上に上げれば同じデータがそのまま全件見えるようになる)。
 export const FREE_REPORT_WINDOW_DAYS = 30;

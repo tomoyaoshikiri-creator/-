@@ -22,6 +22,7 @@ import {
   type DigestItem,
 } from "@/lib/homeData";
 import { LockedFeatureCard } from "@/components/PlanLock";
+import { PlanLimitBanner } from "@/components/PlanLimitBanner";
 import type { GameMatch, Schedule } from "@/lib/database.types";
 
 type LoadStatus = "loading" | "success" | "error";
@@ -412,6 +413,8 @@ export default function HomePage() {
 
   return (
     <PageShell header={<AppHeader title="ホーム" />}>
+      <PlanLimitBanner />
+
       {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。
           他のカードは白背景・グレー見出しの一覧の中に埋もれてしまうため、常設のバナー的な
           役割を意図してアクセントカラー(--orange、チームごとの基調色)で縁取り・背景を
