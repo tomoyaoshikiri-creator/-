@@ -33,6 +33,9 @@ jobs:
 
   rls-tests:
     runs-on: ubuntu-latest
+    env:
+      PGPASSWORD: postgres
+      DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
 
@@ -40,9 +43,39 @@ jobs:
         with:
           version: latest
 
-      # supabase startはDockerでローカルPostgres/Auth等一式を起動し、supabase/migrations配下を
-      # 自動適用する。supabase test dbは、そのDBに対してsupabase/tests/database配下の
-      # pgTAPテスト(*.sql)を実行する(RLS越境テストの土台、B-2)。
+      # supabase/migrations配下には、本番の実データ(「都賀ビクトリーズ」という名前の
+      # チームが1件存在すること)を前提にした箇所が2つある:
+      #   - 0104: そのチームが一意に存在することをmigration自体がraise exceptionでチェックする
+      #     (存在しないと即座に中断する)。
+      #   - 0113: 0022で作成済みのpolicyを本番にのみ欠落していたため再作成するmigrationで、
+      #     フレッシュなDBでは0022の時点で既に存在し重複エラーになる。
+      # CI(このジョブ)は空のDBから全履歴を再生するため、このステップでdb.migrations.enabled
+      # だけをこの実行に限定してfalseへ上書きし(コミットはしない)、supabase startには
+      # Supabase自体のベーススキーマ(auth/storage/extensions等)だけを用意させる。
+      # migrationの実際の適用は次のステップで、上記2箇所を回避しながら自前で行う。
+      - name: Disable auto-migration for this CI run only
+        run: sed -i '/^\[db\.migrations\]/,/^\[/{s/^enabled = true$/enabled = false/}' supabase/config.toml
+
       - run: supabase start
 
+      - name: Apply migrations (fresh-replay workaround for production-only assumptions)
+        run: |
+          set -eu
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            base=$(basename "$f")
+            if [ "$base" = "0113_game_records_delete_policy_fix.sql" ]; then
+              echo "skip $base (フレッシュ再生時のみ: 0022で作成済みのpolicyと重複するため)"
+              continue
+            fi
+            if [ "$base" = "0104_plan_tier_redesign.sql" ]; then
+              echo "seeding placeholder team before $base (signature_edition保護が対象チームの実在を要求するため)"
+              psql "$DB_URL" -v ON_ERROR_STOP=1 -c "insert into public.teams (name) values ('都賀ビクトリーズ');"
+            fi
+            echo "applying $base"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      # supabase test dbは、既に起動済みのDBに対してsupabase/tests/database配下の
+      # pgTAPテスト(*.sql)を実行する(RLS越境テストの土台、B-2)。migrationの再適用は行わない。
       - run: supabase test db

@@ -10,6 +10,9 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
+-- role=authenticatedに切り替えた後もis()/finish()等のpgTAP関数を呼べるようにする。
+grant usage on schema extensions to authenticated;
+grant execute on all functions in schema extensions to authenticated;
 
 select plan(6);
 
@@ -31,6 +34,11 @@ begin
   perform set_config('role', 'authenticated', true);
 end;
 $$;
+-- authenticate_as()を呼んだ後(role=authenticatedに切り替わった後)も、逆方向の
+-- 認証しなおし(次のauthenticate_as呼び出し)ができるよう、tests関数自体へのアクセスを
+-- authenticatedロールにも許可しておく(与えていないとschema tests自体が見えなくなる)。
+grant usage on schema tests to authenticated;
+grant execute on function tests.authenticate_as(uuid, uuid) to authenticated;
 
 -- テストデータ投入(postgresロールのまま、RLSを経由せず直接insertする)。
 do $$
@@ -46,9 +54,10 @@ begin
 
   insert into auth.users (id, email) values (alice, 'rls-test-alice@example.test'), (bob, 'rls-test-bob@example.test');
 
-  insert into public.profiles (id, team_id, name, role) values
-    (alice, team_a, 'Alice', '管理者'),
-    (bob, team_b, 'Bob', '管理者');
+  -- profiles.team_idは0120で廃止済み(チーム所属はteam_membershipsが正本)。
+  insert into public.profiles (id, name, role) values
+    (alice, 'Alice', '管理者'),
+    (bob, 'Bob', '管理者');
 
   insert into public.team_memberships (user_id, team_id, role) values
     (alice, team_a, '管理者'),
