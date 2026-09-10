@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/auditLog";
+import { notifyTeamDeletionWarning } from "@/lib/emailNotify";
 import type { Database } from "@/lib/database.types";
 
 // 「このサービスから退会する」= auth.usersごとアカウントを完全に削除する(A-7)。
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
       targetType: "team",
       targetId: teamId,
     });
+    await notifyTeamDeletionWarning(adminClient, { teamId, teamName: team.name });
     pendingTeamNames.push(team.name);
   }
 

@@ -37,6 +37,8 @@ export default function UsersPage() {
   const [generating, setGenerating] = useState<"一般" | "指導者" | null>(null);
   const [revokeConfirmId, setRevokeConfirmId] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
+  const [emailDrafts, setEmailDrafts] = useState<Record<string, string>>({});
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -184,6 +186,33 @@ export default function UsersPage() {
     toast(copied ? "リンクをコピーしました" : "コピーに失敗しました。上の欄を長押しして手動でコピーしてください");
   }
 
+  // 招待リンクをメールで送る(B-4)。リンク自体は複数人が使い回せる共有リンクのため、
+  // 送信してもinvites側の状態は変わらない(コピーして手動共有する既存の導線と並存する)。
+  async function sendInviteEmail(inviteId: string, token: string) {
+    const email = (emailDrafts[inviteId] ?? "").trim();
+    if (!email) {
+      toast("メールアドレスを入力してください");
+      return;
+    }
+    setSendingEmailId(inviteId);
+    try {
+      const res = await fetch("/api/invite/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(data.error ?? "送信に失敗しました");
+        return;
+      }
+      toast("招待メールを送信しました");
+      setEmailDrafts((d) => ({ ...d, [inviteId]: "" }));
+    } finally {
+      setSendingEmailId(null);
+    }
+  }
+
   async function handleRevoke(id: string) {
     if (revokeConfirmId !== id) {
       setRevokeConfirmId(id);
@@ -243,6 +272,23 @@ export default function UsersPage() {
               </div>
               <div className="text-[10.5px] text-ink-soft mt-1">
                 有効期限: {formatDateLabel(inv.expires_at.slice(0, 10))}まで(このリンクは複数人が登録に使えます)
+              </div>
+              <div className="flex items-center gap-2 mt-1.5">
+                <input
+                  type="email"
+                  placeholder="メールで送る(任意)"
+                  className={inputClass("text-[11px]")}
+                  value={emailDrafts[inv.id] ?? ""}
+                  onChange={(e) => setEmailDrafts((d) => ({ ...d, [inv.id]: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => sendInviteEmail(inv.id, inv.token)}
+                  disabled={sendingEmailId === inv.id}
+                  className="flex-none text-orange font-bold text-xs"
+                >
+                  送信
+                </button>
               </div>
               {isAdmin && (
                 <button

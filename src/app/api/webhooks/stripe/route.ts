@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 import { getStripeClient, planForPriceId } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/auditLog";
+import { sendTrackedEmail } from "@/lib/emailNotify";
 import type { Database } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -101,6 +102,30 @@ export async function POST(request: Request) {
     return true;
   }
 
+  // 請求失敗を各チームの管理者へメールで知らせる(B-4)。プラン反映自体は
+  // syncSubscriptionが担うため、こちらは通知専用で失敗してもwebhook処理自体は失敗させない。
+  async function notifyAdminsOfPaymentFailure(customerId: string): Promise<void> {
+    const { data: team } = await adminClient.from("teams").select("id, name").eq("stripe_customer_id", customerId).maybeSingle();
+    if (!team) return;
+    const { data: admins } = await adminClient.from("team_memberships").select("user_id").eq("team_id", team.id).eq("role", "管理者");
+    const adminIds = (admins ?? []).map((a) => a.user_id);
+    if (adminIds.length === 0) return;
+    const { data: adminProfiles } = await adminClient.from("profiles").select("id, email").in("id", adminIds);
+    await Promise.all(
+      (adminProfiles ?? [])
+        .filter((p): p is { id: string; email: string } => !!p.email)
+        .map((p) =>
+          sendTrackedEmail(adminClient, {
+            teamId: team.id,
+            recipientEmail: p.email,
+            eventType: "billing_payment_failed",
+            subject: "【CIRCLE LINES】お支払いに失敗しました",
+            html: `<p>チーム「${team.name}」のお支払いに失敗しました。カード情報をご確認のうえ、設定画面の「プラン」からお支払い方法を更新してください。</p>`,
+          }),
+        ),
+    );
+  }
+
   let ok = true;
   switch (event.type) {
     case "checkout.session.completed": {
@@ -153,6 +178,11 @@ export async function POST(request: Request) {
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         ok = await syncSubscription(subscription);
+        if (ok) {
+          const customerId =
+            typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+          await notifyAdminsOfPaymentFailure(customerId);
+        }
       }
       break;
     }

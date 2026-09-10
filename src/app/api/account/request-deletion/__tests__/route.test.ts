@@ -82,6 +82,8 @@ const state = {
   accountDeletionRequests: new Map<string, { user_id: string; requested_at: string }>(),
   deletedUserIds: new Set<string>(),
   auditLogs: [] as Array<{ team_id: string; actor_id: string | null; action: string }>,
+  profiles: [] as Array<{ id: string; email: string | null }>,
+  emailNotifications: [] as Array<{ team_id: string; recipient_email: string; event_type: string }>,
 };
 
 function resetState() {
@@ -91,6 +93,8 @@ function resetState() {
   state.accountDeletionRequests = new Map();
   state.deletedUserIds = new Set();
   state.auditLogs = [];
+  state.profiles = [];
+  state.emailNotifications = [];
 }
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -149,6 +153,25 @@ vi.mock("@supabase/supabase-js", () => ({
         return {
           insert(row: { team_id: string; actor_id: string | null; action: string }) {
             state.auditLogs.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
+      if (table === "profiles") {
+        return {
+          select() {
+            return {
+              in(_col: string, ids: string[]) {
+                return Promise.resolve({ data: state.profiles.filter((p) => ids.includes(p.id)), error: null });
+              },
+            };
+          },
+        };
+      }
+      if (table === "email_notifications") {
+        return {
+          insert(row: { team_id: string; recipient_email: string; event_type: string }) {
+            state.emailNotifications.push(row);
             return Promise.resolve({ error: null });
           },
         };
@@ -240,6 +263,7 @@ describe("POST /api/account/request-deletion", () => {
       stripe_subscription_id: "sub_123",
       deletion_requested_at: null,
     });
+    state.profiles = [{ id: USER_ID, email: "user1@example.test" }];
     stripeSubscriptionsCancel.mockResolvedValue({});
 
     const res = await postRequestDeletion("correct-password");
@@ -254,6 +278,13 @@ describe("POST /api/account/request-deletion", () => {
     expect(state.deletedUserIds.has(USER_ID)).toBe(false);
     expect(state.auditLogs).toContainEqual(
       expect.objectContaining({ team_id: "team-2", actor_id: USER_ID, action: "team_deletion_requested" }),
+    );
+    expect(state.emailNotifications).toContainEqual(
+      expect.objectContaining({
+        team_id: "team-2",
+        recipient_email: "user1@example.test",
+        event_type: "team_deletion_warning",
+      }),
     );
   });
 
