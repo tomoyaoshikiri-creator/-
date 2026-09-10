@@ -6,6 +6,8 @@ import {
   hasSkillTestAccess,
   hasSportsTestAccess,
   isInquiryPlan,
+  isOverPlayerLimit,
+  isOverStorageLimit,
   isPublicPlan,
 } from "../plan";
 import { planKindFor } from "../ai/types";
@@ -161,5 +163,31 @@ describe("plan回帰テスト", () => {
     expect(isPublicPlan("Max")).toBe(true);
     expect(isInquiryPlan("Max")).toBe(true);
     expect(canSelfCheckout("Max")).toBe(false);
+  });
+});
+
+// PLAN-01: プランダウングレード時の超過判定(A-5)。ホーム画面の案内バナー表示に使う。
+describe("isOverPlayerLimit", () => {
+  it("お試しプランで上限(15人)ちょうどはfalse、1人でも超えるとtrue", () => {
+    expect(isOverPlayerLimit(15, "お試し")).toBe(false);
+    expect(isOverPlayerLimit(16, "お試し")).toBe(true);
+  });
+
+  it.each(["中間", "フル", "フルプラス", "Max", "max_partner", "signature_edition"] as TeamPlan[])(
+    "%s(上限なし)は何人でもfalse",
+    (plan) => {
+      expect(isOverPlayerLimit(1000, plan)).toBe(false);
+    },
+  );
+});
+
+describe("isOverStorageLimit", () => {
+  it("使用量が上限ちょうどはfalse、1バイトでも超えるとtrue", () => {
+    expect(isOverStorageLimit(100, 100)).toBe(false);
+    expect(isOverStorageLimit(101, 100)).toBe(true);
+  });
+
+  it("上限が0(未設定)のときは常にfalse", () => {
+    expect(isOverStorageLimit(100, 0)).toBe(false);
   });
 });
