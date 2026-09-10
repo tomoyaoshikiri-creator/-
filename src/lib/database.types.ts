@@ -139,6 +139,29 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      stripe_webhook_events: {
+        Row: {
+          id: string;
+          type: string;
+          payload_hash: string;
+          status: "processing" | "succeeded" | "failed";
+          created_at: string;
+          processed_at: string | null;
+        };
+        Insert: {
+          id: string;
+          type: string;
+          payload_hash: string;
+          status?: "processing" | "succeeded" | "failed";
+          created_at?: string;
+          processed_at?: string | null;
+        };
+        Update: Partial<{
+          status: "processing" | "succeeded" | "failed";
+          processed_at: string | null;
+        }>;
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
