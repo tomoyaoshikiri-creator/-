@@ -38,6 +38,12 @@ export type AttendanceStatus = "出席" | "欠席" | "遅刻早退" | "見学";
 export type YesNo = "あり" | "なし";
 export type CarStatus = "可" | "不可";
 export type PlayerStatus = "在籍" | "休部" | "退団" | "OB・OG";
+// 重要通知のメールフォールバック(email_notifications、B-4)の記録対象イベント種別。
+export type EmailNotificationEvent =
+  | "invite_issued"
+  | "attendance_deadline"
+  | "billing_payment_failed"
+  | "team_deletion_warning";
 // 監査ログ(audit_logs)の記録対象イベント種別(B-3)。data_exportは将来のデータ
 // エクスポート機能(B-6)向けに予約済みだが、現時点では発行箇所がない。
 export type AuditAction =
@@ -199,6 +205,44 @@ export interface Database {
         };
         Update: Partial<{
           detail: Json;
+        }>;
+        Relationships: [];
+      };
+      email_notifications: {
+        Row: {
+          id: string;
+          team_id: string;
+          recipient_email: string;
+          event_type: EmailNotificationEvent;
+          subject: string;
+          html_body: string;
+          status: "sent" | "failed";
+          resend_message_id: string | null;
+          last_error: string | null;
+          attempt_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          recipient_email: string;
+          event_type: EmailNotificationEvent;
+          subject: string;
+          html_body: string;
+          status: "sent" | "failed";
+          resend_message_id?: string | null;
+          last_error?: string | null;
+          attempt_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          status: "sent" | "failed";
+          resend_message_id: string | null;
+          last_error: string | null;
+          attempt_count: number;
+          updated_at: string;
         }>;
         Relationships: [];
       };

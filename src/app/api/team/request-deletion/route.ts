@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStripeClient } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/auditLog";
+import { notifyTeamDeletionWarning } from "@/lib/emailNotify";
 import type { Database } from "@/lib/database.types";
 
 // 管理者がチームの退会(完全削除)を申請する。即座には削除せず、deletion_requested_at
@@ -43,7 +44,7 @@ export async function POST() {
 
   const { data: team } = await adminClient
     .from("teams")
-    .select("id, stripe_subscription_id, deletion_requested_at")
+    .select("id, name, stripe_subscription_id, deletion_requested_at")
     .eq("id", teamId)
     .single();
   if (!team) {
@@ -84,6 +85,7 @@ export async function POST() {
     targetType: "team",
     targetId: team.id,
   });
+  await notifyTeamDeletionWarning(adminClient, { teamId: team.id, teamName: team.name });
 
   return NextResponse.json({ ok: true, deletionRequestedAt });
 }
