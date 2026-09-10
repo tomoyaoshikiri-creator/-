@@ -4,6 +4,7 @@ import webpush from "web-push";
 import { formatDateLabel, isTargetEligible, playerFullName } from "@/lib/format";
 import { runBirthdayReminders } from "@/lib/cron/birthdayJob";
 import { logError, withCronCheckIn } from "@/lib/logger";
+import { sendTrackedEmail, retryFailedEmailNotifications } from "@/lib/emailNotify";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -133,6 +134,7 @@ async function computeUnregisteredRecipients(
 
 async function sendToRecipients(
   supabase: SupabaseClient<Database>,
+  teamId: string,
   recipients: Map<string, string[]>,
   title: string,
   bodyBase: string,
@@ -161,6 +163,32 @@ async function sendToRecipients(
       }
     }),
   );
+
+  // メールフォールバック(B-4)。push購読を1件も持たないユーザーにだけ送る
+  // (Pushが届く環境では二重通知にしない)。
+  const pushedUserIds = new Set((subs ?? []).map((s) => s.user_id));
+  const fallbackUserIds = [...recipients.keys()].filter((id) => !pushedUserIds.has(id));
+  if (fallbackUserIds.length > 0) {
+    const { data: profiles } = await supabase.from("profiles").select("id, email").in("id", fallbackUserIds);
+    const siteUrl = process.env.SITE_URL;
+    await Promise.all(
+      (profiles ?? [])
+        .filter((p): p is { id: string; email: string } => !!p.email)
+        .map((p) => {
+          const labels = recipients.get(p.id) ?? [];
+          const body = labels.length > 0 ? `${bodyBase}(対象: ${labels.join("・")})` : bodyBase;
+          const link = siteUrl ? `<p><a href="${siteUrl}${url}">アプリを開く</a></p>` : "";
+          return sendTrackedEmail(supabase, {
+            teamId,
+            recipientEmail: p.email,
+            eventType: "attendance_deadline",
+            subject: `【CIRCLE LINES】${title}`,
+            html: `<p>${body}</p>${link}`,
+          });
+        }),
+    );
+  }
+
   return sent;
 }
 
@@ -239,7 +267,7 @@ export async function GET(request: Request) {
       let sent = 0;
       if (recipients.size > 0) {
         const { title, body } = buildMessage(job.schedule, job.reminderType);
-        sent = await sendToRecipients(supabase, recipients, title, body, `/schedule/${job.schedule.id}`);
+        sent = await sendToRecipients(supabase, job.schedule.team_id, recipients, title, body, `/schedule/${job.schedule.id}`);
       }
       results.push({ scheduleId: job.schedule.id, reminderType: job.reminderType, recipients: recipients.size, sent });
       await supabase
@@ -247,12 +275,16 @@ export async function GET(request: Request) {
         .insert({ schedule_id: job.schedule.id, reminder_type: job.reminderType });
     }
 
+    // 失敗したメール通知の再送(B-4)。専用cronを増やさず、この日次バッチに相乗りさせる。
+    const emailsRecovered = await retryFailedEmailNotifications(supabase);
+
     return NextResponse.json({
       ok: true,
       jobs: jobs.length,
       processed: pendingJobs.length,
       results,
       birthdays: birthdayResult,
+      emailsRecovered,
     });
   });
 }

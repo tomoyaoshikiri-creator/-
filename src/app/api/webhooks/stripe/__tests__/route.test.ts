@@ -11,30 +11,40 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 type FakeWebhookEventRow = { id: string; type: string; status: string };
 type FakeTeamRow = {
   id: string;
+  name: string;
   stripe_customer_id: string;
   plan: string;
   stripe_subscription_id: string | null;
   subscription_status: string | null;
 };
 type FakeAuditLogRow = { team_id: string; actor_id: string | null; action: string; detail: unknown };
+type FakeEmailNotificationRow = { team_id: string; recipient_email: string; event_type: string };
 
-const { webhookEvents, teams, auditLogs, constructEvent, subscriptionsRetrieve } = vi.hoisted(() => ({
-  webhookEvents: new Map<string, FakeWebhookEventRow>(),
-  teams: new Map<string, FakeTeamRow>(),
-  auditLogs: [] as FakeAuditLogRow[],
-  constructEvent: vi.fn(),
-  subscriptionsRetrieve: vi.fn(),
-}));
+const { webhookEvents, teams, auditLogs, teamMemberships, profiles, emailNotifications, constructEvent, subscriptionsRetrieve } =
+  vi.hoisted(() => ({
+    webhookEvents: new Map<string, FakeWebhookEventRow>(),
+    teams: new Map<string, FakeTeamRow>(),
+    auditLogs: [] as FakeAuditLogRow[],
+    teamMemberships: [] as Array<{ user_id: string; team_id: string; role: string }>,
+    profiles: [] as Array<{ id: string; email: string | null }>,
+    emailNotifications: [] as FakeEmailNotificationRow[],
+    constructEvent: vi.fn(),
+    subscriptionsRetrieve: vi.fn(),
+  }));
 
 function resetFakeDb() {
   webhookEvents.clear();
   teams.clear();
   auditLogs.length = 0;
+  teamMemberships.length = 0;
+  profiles.length = 0;
+  emailNotifications.length = 0;
 }
 
 function seedTeam(customerId: string, overrides: Partial<FakeTeamRow> = {}) {
   teams.set(customerId, {
     id: `team-${customerId}`,
+    name: `Team ${customerId}`,
     stripe_customer_id: customerId,
     plan: "お試し",
     stripe_subscription_id: null,
@@ -102,12 +112,58 @@ vi.mock("@supabase/supabase-js", () => ({
               },
             };
           },
+          select() {
+            return {
+              eq(_col: string, customerId: string) {
+                return {
+                  maybeSingle: () => Promise.resolve({ data: teams.get(customerId) ?? null, error: null }),
+                };
+              },
+            };
+          },
         };
       }
       if (table === "audit_logs") {
         return {
           insert(row: FakeAuditLogRow) {
             auditLogs.push(row);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
+      if (table === "team_memberships") {
+        return {
+          select() {
+            return {
+              eq(_col1: string, teamId: string) {
+                return {
+                  eq(_col2: string, role: string) {
+                    return Promise.resolve({
+                      data: teamMemberships.filter((m) => m.team_id === teamId && m.role === role),
+                      error: null,
+                    });
+                  },
+                };
+              },
+            };
+          },
+        };
+      }
+      if (table === "profiles") {
+        return {
+          select() {
+            return {
+              in(_col: string, ids: string[]) {
+                return Promise.resolve({ data: profiles.filter((p) => ids.includes(p.id)), error: null });
+              },
+            };
+          },
+        };
+      }
+      if (table === "email_notifications") {
+        return {
+          insert(row: FakeEmailNotificationRow) {
+            emailNotifications.push(row);
             return Promise.resolve({ error: null });
           },
         };
@@ -257,6 +313,8 @@ describe("POST /api/webhooks/stripe", () => {
 
   it("invoice.payment_failedはparent.subscription_detailsからsubscriptionを解決して同期する", async () => {
     seedTeam("cus_6", { plan: "中間", subscription_status: "active" });
+    teamMemberships.push({ user_id: "admin-6", team_id: "team-cus_6", role: "管理者" });
+    profiles.push({ id: "admin-6", email: "admin6@example.test" });
     subscriptionsRetrieve.mockResolvedValue({
       id: "sub_6",
       customer: "cus_6",
@@ -279,6 +337,13 @@ describe("POST /api/webhooks/stripe", () => {
     expect(res.status).toBe(200);
     expect(subscriptionsRetrieve).toHaveBeenCalledWith("sub_6");
     expect(teams.get("cus_6")?.subscription_status).toBe("past_due");
+    expect(emailNotifications).toContainEqual(
+      expect.objectContaining({
+        team_id: "team-cus_6",
+        recipient_email: "admin6@example.test",
+        event_type: "billing_payment_failed",
+      }),
+    );
   });
 
   it("必須環境変数が欠けている場合は500を返す(黙ってスキップしない)", async () => {
