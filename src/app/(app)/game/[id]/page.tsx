@@ -18,7 +18,8 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { isImageFile, safeExt } from "@/lib/storagePath";
-import { formatDateLabel, scheduleMeta } from "@/lib/format";
+import { formatDateLabel, formatBytes, scheduleMeta } from "@/lib/format";
+import { useUpgradePrompt } from "@/components/PlanLock";
 import type { GameMatch, GameMatchNote, GameMatchNoteReaction, ReactionType, Schedule } from "@/lib/database.types";
 
 export default function GameDetailPage() {
@@ -28,6 +29,7 @@ export default function GameDetailPage() {
   const searchParams = useSearchParams();
   const { userId, teamId, role, sport } = useSession();
   const toast = useToast();
+  const promptUpgrade = useUpgradePrompt();
   const [game, setGame] = useState<Schedule | null>(null);
   const [matches, setMatches] = useState<GameMatch[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState("");
@@ -347,9 +349,25 @@ export default function GameDetailPage() {
       toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
       return;
     }
-    setUploadingScorePhoto(true);
     const supabase = createClient();
     const uploadFile = await resizeImageFile(file);
+
+    // ストレージ容量チェック(A-10)。DB側にも同じ判定のトリガーがあるため、この事前
+    // チェックが漏れても実際の保存はブロックされる(ここでのチェックはより分かりやすい
+    // エラーメッセージを出すためのもの、NewLibraryFileModal.tsxと同じ考え方)。
+    const [{ data: team }, { data: usedBytes }] = await Promise.all([
+      supabase.from("teams").select("storage_limit_bytes").eq("id", teamId).maybeSingle(),
+      supabase.rpc("team_storage_usage_bytes"),
+    ]);
+    const limitBytes = team?.storage_limit_bytes ?? 0;
+    if (limitBytes > 0 && (usedBytes ?? 0) + uploadFile.size > limitBytes) {
+      promptUpgrade(
+        `ストレージ容量(${formatBytes(limitBytes)})の上限を超えるためアップロードできません。既存のファイルを削除するか、プランをアップグレードしてください`,
+      );
+      return;
+    }
+
+    setUploadingScorePhoto(true);
     const path = `${teamId}/${selectedMatchId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
     const { error: uploadError } = await supabase.storage.from("game-score-photos").upload(path, uploadFile);
     if (uploadError) {
