@@ -29,6 +29,7 @@ import {
   computeCustomSeasonAverages,
   computeSeasonAverages,
   computeSeasonTotals,
+  compareGameDesc,
   pctString,
   GAME_COLUMNS,
   buildGameColumns,
@@ -84,17 +85,6 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
     game_number: number;
     schedules: { date: string; fiscal_year_override: number | null } | null;
   } | null;
-}
-
-// 試合スタッツ一覧の並び順: 日付は新しい順、同日に複数試合がある場合は
-// 試合番号(第◯試合)が新しい(遅い)方を上、早い試合を下に表示する。
-function compareGameDesc(
-  a: { date: string | undefined; gameNumber: number | undefined },
-  b: { date: string | undefined; gameNumber: number | undefined },
-): number {
-  const dateCompare = (b.date ?? "").localeCompare(a.date ?? "");
-  if (dateCompare !== 0) return dateCompare;
-  return (b.gameNumber ?? 0) - (a.gameNumber ?? 0);
 }
 
 export default function KartePlayerPage() {
