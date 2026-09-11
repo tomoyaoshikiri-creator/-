@@ -16,6 +16,7 @@ import {
   computeCustomSeasonAverages,
   computeSeasonAverages,
   computeSeasonTotals,
+  compareGameDesc,
   pctString,
   GAME_COLUMNS,
   buildGameColumns,
@@ -33,11 +34,19 @@ const colWidthClass = (key: (typeof GAME_COLUMNS)[number]["key"]) =>
     : "w-[50px] min-w-[50px]";
 
 interface StatLineWithDate extends GamePlayerStatLine {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: {
+    opponent: string | null;
+    game_number: number;
+    schedules: { date: string; fiscal_year_override: number | null } | null;
+  } | null;
 }
 
 interface StatEntryWithDate extends GamePlayerStatEntry {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: {
+    opponent: string | null;
+    game_number: number;
+    schedules: { date: string; fiscal_year_override: number | null } | null;
+  } | null;
 }
 
 // 指導者・管理者専用の「カルテ」画面の試合スタッツ表と同じ内容を、選手一覧経由でも
@@ -91,13 +100,13 @@ export default function PlayerStatsPage() {
       supabase.from("players").select("*").eq("id", params.id).single(),
       supabase
         .from("game_player_stat_lines")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+        .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
         .eq("player_id", params.id)
         .returns<StatLineWithDate[]>(),
       supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
       supabase
         .from("game_player_stat_entries")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+        .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
         .eq("player_id", params.id)
         .returns<StatEntryWithDate[]>(),
     ]);
@@ -118,7 +127,12 @@ export default function PlayerStatsPage() {
       if (!date) return false;
       return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     })
-    .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
+    .sort((a, b) =>
+      compareGameDesc(
+        { date: a.game_matches?.schedules?.date, gameNumber: a.game_matches?.game_number },
+        { date: b.game_matches?.schedules?.date, gameNumber: b.game_matches?.game_number },
+      ),
+    );
   const seasonAverages = computeSeasonAverages(seasonLines);
   const seasonTotals = computeSeasonTotals(seasonLines);
   const gameRows = seasonLines.map((l) => ({
@@ -138,11 +152,12 @@ export default function PlayerStatsPage() {
       const first = matchEntries[0];
       return {
         date: first.game_matches?.schedules?.date ?? "",
+        gameNumber: first.game_matches?.game_number,
         label: `${formatDateLabel(first.game_matches?.schedules?.date ?? "")} vs ${first.game_matches?.opponent ?? "-"}`,
         averages: computeCustomSeasonAverages(matchEntries, statCategories),
       };
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareGameDesc(a, b));
 
   const showBasketballStats = usesDetailedBasketballStats(sport);
 

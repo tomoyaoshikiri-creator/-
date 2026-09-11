@@ -323,6 +323,18 @@ export function pctString(made: number, att: number): string {
   return att > 0 ? `${Math.round((made / att) * 100)}%` : "-";
 }
 
+// 試合スタッツ一覧(選手カルテ・選手一覧経由の保護者向け閲覧ページの両方で使う)の
+// 並び順: 日付が新しい方を上、同日に複数試合がある場合は試合番号(第◯試合)が
+// 新しい(遅い)方を上、早い試合を下に表示する。
+export function compareGameDesc(
+  a: { date: string | undefined; gameNumber: number | undefined },
+  b: { date: string | undefined; gameNumber: number | undefined },
+): number {
+  const dateCompare = (b.date ?? "").localeCompare(a.date ?? "");
+  if (dateCompare !== 0) return dateCompare;
+  return (b.gameNumber ?? 0) - (a.gameNumber ?? 0);
+}
+
 // ここから下は、バスケットボール・ミニバスケットボール以外の競技向けの
 // カスタムスタッツ(チームが自由に定義する項目)の集計。上のGAME_COLUMNS/
 // computeSeasonAverages/computeTeamAveragesとは別の、汎用的な集計ロジック。
