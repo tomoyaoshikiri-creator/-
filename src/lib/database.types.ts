@@ -277,6 +277,22 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      rate_limit_events: {
+        Row: {
+          id: number;
+          event_type: string;
+          key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          event_type: string;
+          key: string;
+          created_at?: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -1642,6 +1658,10 @@ export interface Database {
       };
       check_and_increment_push_notify_rate_limit: {
         Args: { p_user_id: string; p_window_seconds: number; p_max_count: number };
+        Returns: boolean;
+      };
+      check_and_increment_rate_limit: {
+        Args: { p_event_type: string; p_key: string; p_window_seconds: number; p_max_count: number };
         Returns: boolean;
       };
       update_team_member: {
