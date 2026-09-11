@@ -12,6 +12,7 @@ import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile } from "@/lib/storagePath";
 import { formatBytes, formatDateLabel } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
+import { canManageLibrary } from "@/lib/permissions";
 import { markTabSeen } from "@/lib/tabBadges";
 import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
@@ -21,7 +22,7 @@ type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
 
 export default function LibraryPage() {
   const toast = useToast();
-  const { teamId, userId } = useSession();
+  const { teamId, userId, role } = useSession();
   const [items, setItems] = useState<ItemWithFiles[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
@@ -225,14 +226,16 @@ export default function LibraryPage() {
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => handleDelete(item)}
-                className="mt-2.5 w-full text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-              >
-                {deleteConfirmId === item.id ? "もう一度タップで削除確定" : "削除"}
-              </button>
+              {(item.uploader_id === userId || canManageLibrary(role)) && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(item)}
+                  className="mt-2.5 w-full text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white"
+                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                >
+                  {deleteConfirmId === item.id ? "もう一度タップで削除確定" : "削除"}
+                </button>
+              )}
             </Card>
           );
         })

@@ -148,6 +148,12 @@ export function canManageSportsTests(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// ライブラリの他人のアップロードファイルも削除できるロール(スタッフ)。
+// アップロード本人は自分の分のみ、それ以外の一般・運営は削除ボタン自体を出さない。
+export function canManageLibrary(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 // バスケットボール・ミニバスケットボール以外の競技向けカスタムスタッツ項目の管理ができるロール。
 export function canManageStatCategories(role: Role): boolean {
   return role === "指導者" || role === "管理者";
