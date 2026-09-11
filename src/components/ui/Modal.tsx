@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef } from "react";
 import { CONFIRM_CLOSE_MESSAGE, useNavigationGuard } from "@/lib/navigationGuard";
 
 export function Modal({
@@ -19,13 +20,42 @@ export function Modal({
   // モーダルを閉じる操作(背景タップなど)はページ遷移を伴わないため<GuardedLink>では捕まえられない。
   // ここで直接、未保存の変更が無いか確認してから閉じる。
   const { isDirty } = useNavigationGuard();
-
-  if (!open) return null;
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 開く直前にフォーカスしていた要素を覚えておき、閉じたときに戻す(スクリーンリーダー
+  // ユーザーが元の操作位置を見失わないようにするため)。
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   function handleClose() {
     if (isDirty && !window.confirm(CONFIRM_CLOSE_MESSAGE)) return;
     onClose();
   }
+
+  // Escキーのイベントリスナーは開いている間ずっと同じ関数を使い回す(毎レンダー
+  // 付け外ししない)。そのためhandleCloseを直接クロージャに閉じ込めず、
+  // 常に最新のisDirty/onCloseを読めるようrefで橋渡しする(refへの書き込みは
+  // レンダー中に行えないため、毎レンダー走るeffectで更新する)。
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") handleCloseRef.current();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [open]);
+
+  if (!open) return null;
 
   return (
     <div
@@ -34,8 +64,17 @@ export function Modal({
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div className={`bg-white w-full ${maxWidthClass} rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto`}>
-        <div className="font-display font-extrabold text-lg text-heading mb-3">{title}</div>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={`bg-white w-full ${maxWidthClass} rounded-t-[20px] p-4.5 pb-5.5 max-h-[85%] overflow-y-auto outline-none`}
+      >
+        <div id={titleId} className="font-display font-extrabold text-lg text-heading mb-3">
+          {title}
+        </div>
         {children}
       </div>
     </div>
