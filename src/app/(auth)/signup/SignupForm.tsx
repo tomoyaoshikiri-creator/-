@@ -5,8 +5,10 @@ import Link from "next/link";
 import { signUpTeam, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 const initialState: FormState = {};
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpTeam, initialState);
@@ -34,6 +36,8 @@ export function SignupForm() {
       </div>
 
       <TermsAgreementCheckbox />
+
+      {turnstileSiteKey && <TurnstileWidget siteKey={turnstileSiteKey} />}
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
 
