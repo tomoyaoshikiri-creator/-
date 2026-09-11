@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { getClientIp } from "@/lib/clientIp";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 export interface FormState {
@@ -27,6 +30,21 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
   }
   if (!formData.get("agreedTerms")) {
     return { error: "利用規約とプライバシーポリシーへの同意が必要です" };
+  }
+
+  const clientIp = await getClientIp();
+  const allowed = await checkRateLimit({ eventType: "signup", key: clientIp, windowSeconds: 600, maxCount: 10 });
+  if (!allowed) {
+    return { error: "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。" };
+  }
+
+  const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+  if (turnstileSecret) {
+    const token = String(formData.get("cf-turnstile-response") ?? "");
+    const verified = await verifyTurnstileToken(token, turnstileSecret);
+    if (!verified) {
+      return { error: "認証に失敗しました。もう一度お試しください。" };
+    }
   }
 
   const origin = await getRequestOrigin();

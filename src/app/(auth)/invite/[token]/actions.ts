@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { getClientIp } from "@/lib/clientIp";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 
 export interface FormState {
@@ -29,6 +31,18 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   if (!formData.get("agreedTerms")) {
     return { error: "利用規約とプライバシーポリシーへの同意が必要です" };
   }
+
+  const clientIp = await getClientIp();
+  const allowed = await checkRateLimit({
+    eventType: "invite_accept",
+    key: clientIp,
+    windowSeconds: 600,
+    maxCount: 10,
+  });
+  if (!allowed) {
+    return { error: "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。" };
+  }
+
   const agreedTermsAt = new Date().toISOString();
 
   const origin = await getRequestOrigin();

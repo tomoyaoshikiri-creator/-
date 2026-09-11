@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getRequestOrigin } from "@/lib/origin";
+import { getClientIp } from "@/lib/clientIp";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export interface FormState {
   error?: string;
@@ -12,6 +14,17 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
   const email = String(formData.get("email") ?? "").trim();
   if (!email) {
     return { error: "メールアドレスを入力してください" };
+  }
+
+  const clientIp = await getClientIp();
+  const allowed = await checkRateLimit({
+    eventType: "forgot_password",
+    key: clientIp,
+    windowSeconds: 600,
+    maxCount: 10,
+  });
+  if (!allowed) {
+    return { error: "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。" };
   }
 
   const origin = await getRequestOrigin();

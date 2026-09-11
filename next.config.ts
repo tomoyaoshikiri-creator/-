@@ -21,13 +21,19 @@ const supabaseOrigin = (() => {
 // (本番ビルドではReact/Next.jsともにeval()を使わない)。
 const isDev = process.env.NODE_ENV === "development";
 
+// Cloudflare Turnstile(CAPTCHA、C-2)はNEXT_PUBLIC_TURNSTILE_SITE_KEY未設定なら
+// ウィジェット自体を描画しないため、CSPも鍵が設定されている時だけ許可ドメインを足す
+// (未設定時はB-7時点の最小構成のまま)。
+const turnstileEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""};
+  script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${turnstileEnabled ? " https://challenges.cloudflare.com" : ""};
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data:${supabaseOrigin ? ` ${supabaseOrigin}` : ""};
   font-src 'self';
   connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""};
+  frame-src 'self'${turnstileEnabled ? " https://challenges.cloudflare.com" : ""};
   object-src 'none';
   base-uri 'self';
   form-action 'self';
