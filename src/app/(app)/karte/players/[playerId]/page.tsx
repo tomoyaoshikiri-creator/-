@@ -71,11 +71,30 @@ const colWidthClass = (key: (typeof GAME_COLUMNS)[number]["key"]) =>
     : "w-[50px] min-w-[50px]";
 
 interface StatLineWithDate extends GamePlayerStatLine {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: {
+    opponent: string | null;
+    game_number: number;
+    schedules: { date: string; fiscal_year_override: number | null } | null;
+  } | null;
 }
 
 interface StatEntryWithDate extends GamePlayerStatEntry {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: {
+    opponent: string | null;
+    game_number: number;
+    schedules: { date: string; fiscal_year_override: number | null } | null;
+  } | null;
+}
+
+// 試合スタッツ一覧の並び順: 日付は新しい順、同日に複数試合がある場合は
+// 試合番号(第◯試合)が新しい(遅い)方を上、早い試合を下に表示する。
+function compareGameDesc(
+  a: { date: string | undefined; gameNumber: number | undefined },
+  b: { date: string | undefined; gameNumber: number | undefined },
+): number {
+  const dateCompare = (b.date ?? "").localeCompare(a.date ?? "");
+  if (dateCompare !== 0) return dateCompare;
+  return (b.gameNumber ?? 0) - (a.gameNumber ?? 0);
 }
 
 export default function KartePlayerPage() {
@@ -139,13 +158,13 @@ export default function KartePlayerPage() {
         supabase.from("players").select("*").eq("id", params.playerId).single(),
         supabase
           .from("game_player_stat_lines")
-          .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+          .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
           .eq("player_id", params.playerId)
           .returns<StatLineWithDate[]>(),
         supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
         supabase
           .from("game_player_stat_entries")
-          .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+          .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
           .eq("player_id", params.playerId)
           .returns<StatEntryWithDate[]>(),
         supabase
@@ -213,7 +232,12 @@ export default function KartePlayerPage() {
       if (!date) return false;
       return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     })
-    .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""));
+    .sort((a, b) =>
+      compareGameDesc(
+        { date: a.game_matches?.schedules?.date, gameNumber: a.game_matches?.game_number },
+        { date: b.game_matches?.schedules?.date, gameNumber: b.game_matches?.game_number },
+      ),
+    );
   const seasonAverages = computeSeasonAverages(seasonLines);
   const seasonTotals = computeSeasonTotals(seasonLines);
   const gameRows = seasonLines.map((l) => ({
@@ -234,11 +258,12 @@ export default function KartePlayerPage() {
       const first = matchEntries[0];
       return {
         date: first.game_matches?.schedules?.date ?? "",
+        gameNumber: first.game_matches?.game_number,
         label: `${formatDateLabel(first.game_matches?.schedules?.date ?? "")} vs ${first.game_matches?.opponent ?? "-"}`,
         averages: computeCustomSeasonAverages(matchEntries, statCategories),
       };
     })
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .sort((a, b) => compareGameDesc(a, b));
 
   const sportsTestRecordsForYear = sportsTestRecords.filter((r) => r.fiscal_year === fiscalYear);
 
