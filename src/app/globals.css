@@ -175,6 +175,18 @@ textarea {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /*
+    上下(top/bottom)のSafe AreaはAppHeader/TabBarがそれぞれ自前のpaddingで
+    個別に処理している(ヘッダーのグラデーション等を物理エッジまで届かせつつ、
+    中身だけ内側に逃がすため)。左右(left/right)はそのような「背景だけbleed
+    させたい」要件が無く、横向き(iPhone Duo・ランドスケープ表示のスタッツ入力画面
+    GameStatsLandscape等、min-width:700px以上でapp-shell自体がmax-width:100%に
+    広がるケース)ではノッチ・ラウンド角の直下に操作要素が来かねないため、
+    app-shell自体にpaddingとして一括で効かせる。ポートレート時(app-shellが480px
+    centeredで既に左右に余白がある)ではenv()の値がほぼ常に0のため無害。
+  */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /*
