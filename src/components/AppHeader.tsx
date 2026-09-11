@@ -106,13 +106,14 @@ export function AppHeader({
           className="rounded-lg px-3 py-0 flex items-center gap-1"
           style={{ background: "var(--header-search-surface)", color: "var(--header-search-on)" }}
         >
-          <SearchIcon className="w-3 h-3 opacity-80 flex-shrink-0" />
+          <SearchIcon className="w-3 h-3 opacity-80 flex-shrink-0" aria-hidden />
           <input
             type="text"
             value={searchValue ?? ""}
             onChange={(e) => onSearchChange?.(e.target.value)}
             placeholder={searchPlaceholder}
-            className="app-header-search-input flex-1 min-w-0 bg-transparent text-[12.5px] leading-none outline-none"
+            aria-label={searchPlaceholder}
+            className="app-header-search-input flex-1 min-w-0 bg-transparent text-[12.5px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded"
           />
         </div>
       )}
