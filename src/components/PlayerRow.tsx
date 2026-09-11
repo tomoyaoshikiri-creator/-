@@ -25,9 +25,26 @@ export function PlayerRow({
   const { category } = useSession();
   const isObog = player.status === "OB・OG";
   const hasNotes = noteCount > 0;
+
+  function navigate() {
+    router.push(`/players/${player.id}`);
+  }
+
   return (
     <div
-      onClick={selectable ? () => router.push(`/players/${player.id}`) : undefined}
+      onClick={selectable ? navigate : undefined}
+      role={selectable ? "button" : undefined}
+      tabIndex={selectable ? 0 : undefined}
+      onKeyDown={
+        selectable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate();
+              }
+            }
+          : undefined
+      }
       className={`flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 ${
         selectable ? "cursor-pointer" : "opacity-40"
       }`}
