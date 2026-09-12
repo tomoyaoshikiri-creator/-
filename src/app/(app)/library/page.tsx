@@ -97,6 +97,13 @@ export default function LibraryPage() {
     markTabSeen(userId, "library");
   }, [userId]);
 
+  // 選択中のカテゴリーが削除されると絞り込みが空振りし続けるため、「すべて」に戻す。
+  useEffect(() => {
+    if (selectedCategoryId !== "all" && !categories.some((c) => c.id === selectedCategoryId)) {
+      setSelectedCategoryId("all");
+    }
+  }, [categories, selectedCategoryId]);
+
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
 
   return (
