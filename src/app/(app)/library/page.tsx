@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
@@ -35,6 +35,10 @@ export default function LibraryPage() {
   const [limitBytes, setLimitBytes] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // 添付ファイルがちょうど1件の資料は、タイトルをタップした瞬間にその資料(ファイル)を
+  // 直接開けるようにする(詳細ページを経由しない)。0件・複数件の資料は従来通り
+  // 詳細ページ(/library/[id])を開く。ここにはその「唯一のファイル」の署名付きURLだけを持つ。
+  const [singleFileUrlByItem, setSingleFileUrlByItem] = useState<Record<string, string>>({});
 
   const loadUsage = useCallback(async () => {
     const supabase = createClient();
@@ -52,6 +56,39 @@ export default function LibraryPage() {
     setCategories(cats ?? []);
   }, []);
 
+  // 読み込んだ資料(items)のうち、添付ファイルがちょうど1件のものについてだけ
+  // 署名付きURLをまとめて取得する(createSignedUrlsで1回のAPI呼び出しに集約)。
+  async function loadSingleFileUrls(
+    supabase: ReturnType<typeof createClient>,
+    itemIds: string[],
+  ): Promise<Record<string, string>> {
+    if (itemIds.length === 0) return {};
+    const { data: files } = await supabase
+      .from("library_files")
+      .select("library_item_id, storage_path")
+      .in("library_item_id", itemIds);
+    const pathsByItem: Record<string, string[]> = {};
+    (files ?? []).forEach((f) => {
+      (pathsByItem[f.library_item_id] ??= []).push(f.storage_path);
+    });
+    const singleFilePaths = Object.values(pathsByItem)
+      .filter((paths) => paths.length === 1)
+      .map((paths) => paths[0]);
+    if (singleFilePaths.length === 0) return {};
+    const { data: signed } = await supabase.storage.from("library-files").createSignedUrls(singleFilePaths, 60 * 60);
+    const urlByPath: Record<string, string> = {};
+    (signed ?? []).forEach((s) => {
+      if (s.signedUrl && s.path) urlByPath[s.path] = s.signedUrl;
+    });
+    const result: Record<string, string> = {};
+    Object.entries(pathsByItem).forEach(([itemId, paths]) => {
+      if (paths.length === 1 && urlByPath[paths[0]]) {
+        result[itemId] = urlByPath[paths[0]];
+      }
+    });
+    return result;
+  }
+
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
@@ -63,6 +100,7 @@ export default function LibraryPage() {
     const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
     setItems(page);
+    setSingleFileUrlByItem(await loadSingleFileUrls(supabase, page.map((i) => i.id)));
     setLoading(false);
   }, []);
 
@@ -81,6 +119,8 @@ export default function LibraryPage() {
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
     if (page.length > 0) {
       setItems((prev) => [...prev, ...page]);
+      const newUrls = await loadSingleFileUrls(supabase, page.map((i) => i.id));
+      setSingleFileUrlByItem((prev) => ({ ...prev, ...newUrls }));
     }
     setLoadingMore(false);
   }
@@ -201,22 +241,36 @@ export default function LibraryPage() {
         <>
           {visibleItems.map((item) => {
             const category = categories.find((c) => c.id === item.category_id);
+            const fileUrl = singleFileUrlByItem[item.id];
+            const titleContent = (
+              <div className="font-bold text-[14.5px] truncate">
+                {category && (
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
+                    {category.name}
+                  </span>
+                )}
+                {item.title}
+              </div>
+            );
             return (
-              <Link key={item.id} href={`/library/${item.id}`}>
-                <Card className="cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-[14.5px] truncate">
-                      {category && (
-                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
-                          {category.name}
-                        </span>
-                      )}
-                      {item.title}
-                    </div>
-                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                  </div>
-                </Card>
-              </Link>
+              <div key={item.id} className="bg-white border border-line rounded-lg mb-2.5 flex items-stretch">
+                {fileUrl ? (
+                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-0 px-4 py-3.5">
+                    {titleContent}
+                  </a>
+                ) : (
+                  <Link href={`/library/${item.id}`} className="flex-1 min-w-0 px-4 py-3.5">
+                    {titleContent}
+                  </Link>
+                )}
+                <Link
+                  href={`/library/${item.id}`}
+                  aria-label="資料の詳細を開く"
+                  className="flex-none flex items-center px-3 border-l border-line"
+                >
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                </Link>
+              </div>
             );
           })}
           {hasMore && (
