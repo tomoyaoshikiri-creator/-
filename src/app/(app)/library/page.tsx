@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
@@ -8,17 +9,14 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { Fab } from "@/components/ui/Modal";
-import { loadProfilesMap } from "@/lib/profiles";
-import { isImageFile } from "@/lib/storagePath";
-import { formatBytes, formatDateLabel } from "@/lib/format";
+import { ChevronRightIcon } from "@/components/icons";
+import { formatBytes } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
 import { canManageLibrary } from "@/lib/permissions";
 import { markTabSeen } from "@/lib/tabBadges";
-import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
+import type { LibraryCategory, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
-
-type FileWithUrl = LibraryFile & { url: string | null };
-type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
+import { EditCategoriesModal } from "./EditCategoriesModal";
 
 // 1回のDB取得件数の上限。従来は範囲を絞らず全件取得しており、チームの活動年数が
 // 長くなるほど取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
@@ -27,13 +25,12 @@ const LIBRARY_PAGE_SIZE = 30;
 export default function LibraryPage() {
   const toast = useToast();
   const { teamId, userId, role } = useSession();
-  const [items, setItems] = useState<ItemWithFiles[]>([]);
+  const [items, setItems] = useState<LibraryItem[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
-  const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editCategoriesOpen, setEditCategoriesOpen] = useState(false);
   const [usedBytes, setUsedBytes] = useState(0);
   const [limitBytes, setLimitBytes] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -49,48 +46,23 @@ export default function LibraryPage() {
     setUsedBytes(usage ?? 0);
   }, [teamId]);
 
-  // library_items一覧に添付ファイルの署名付きURLを付与する。load()/loadMore()で
-  // 取得ページ分だけを対象にするため共通化している。
-  async function attachFiles(
-    supabase: ReturnType<typeof createClient>,
-    libItems: LibraryItem[],
-  ): Promise<ItemWithFiles[]> {
-    const itemIds = libItems.map((i) => i.id);
-    let filesByItem: Record<string, FileWithUrl[]> = {};
-    if (itemIds.length > 0) {
-      const { data: files } = await supabase.from("library_files").select("*").in("library_item_id", itemIds);
-      const entries = await Promise.all(
-        (files ?? []).map(async (f) => {
-          const { data: signed } = await supabase.storage.from("library-files").createSignedUrl(f.storage_path, 60 * 60);
-          return { ...f, url: signed?.signedUrl ?? null };
-        }),
-      );
-      filesByItem = {};
-      entries.forEach((f) => {
-        (filesByItem[f.library_item_id] ??= []).push(f);
-      });
-    }
-    return libItems.map((i) => ({ ...i, files: filesByItem[i.id] ?? [] }));
-  }
+  const loadCategories = useCallback(async () => {
+    const supabase = createClient();
+    const { data: cats } = await supabase.from("library_categories").select("*").order("name", { ascending: true });
+    setCategories(cats ?? []);
+  }, []);
 
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: cats }, { data: libItems }, profMap] = await Promise.all([
-      supabase.from("library_categories").select("*").order("name", { ascending: true }),
-      supabase
-        .from("library_items")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(LIBRARY_PAGE_SIZE + 1),
-      loadProfilesMap(supabase),
-    ]);
-    setCategories(cats ?? []);
-    setProfiles(profMap);
-
+    const { data: libItems } = await supabase
+      .from("library_items")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(LIBRARY_PAGE_SIZE + 1);
     const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
-    setItems(await attachFiles(supabase, page));
+    setItems(page);
     setLoading(false);
   }, []);
 
@@ -108,49 +80,22 @@ export default function LibraryPage() {
     const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
     if (page.length > 0) {
-      const withFiles = await attachFiles(supabase, page);
-      setItems((prev) => [...prev, ...withFiles]);
+      setItems((prev) => [...prev, ...page]);
     }
     setLoadingMore(false);
   }
 
   useEffect(() => {
     load();
+    loadCategories();
     loadUsage();
-  }, [load, loadUsage]);
+  }, [load, loadCategories, loadUsage]);
 
   // ナビ再設計v3で「チーム」タブの赤丸に配下(ライブラリ含む)の未読を集約するようになったため、
   // notice/report/coach-noteと同じ既読記録パターンをここにも追加する(タブの表示内容自体は変更なし)。
   useEffect(() => {
     markTabSeen(userId, "library");
   }, [userId]);
-
-  async function handleDelete(item: ItemWithFiles) {
-    if (deleteConfirmId !== item.id) {
-      setDeleteConfirmId(item.id);
-      setTimeout(() => setDeleteConfirmId((cur) => (cur === item.id ? null : cur)), 3000);
-      return;
-    }
-    setDeleteConfirmId(null);
-    const supabase = createClient();
-    if (item.files.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from("library-files")
-        .remove(item.files.map((f) => f.storage_path));
-      if (storageError) {
-        toast(`削除に失敗しました: ${storageError.message}`);
-        return;
-      }
-    }
-    const { error } = await supabase.from("library_items").delete().eq("id", item.id);
-    if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    toast("削除しました");
-    loadUsage();
-  }
 
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
 
@@ -166,6 +111,7 @@ export default function LibraryPage() {
             onCreated={() => {
               setModalOpen(false);
               load();
+              loadCategories();
               loadUsage();
               toast("ファイルを追加しました");
             }}
@@ -217,7 +163,29 @@ export default function LibraryPage() {
         </div>
       )}
 
-      <SectionLabel>共有ファイル</SectionLabel>
+      <SectionLabel
+        action={
+          canManageLibrary(role) &&
+          categories.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setEditCategoriesOpen(true)}
+              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            >
+              カテゴリーを編集
+            </button>
+          )
+        }
+      >
+        共有ファイル
+      </SectionLabel>
+      <EditCategoriesModal
+        open={editCategoriesOpen}
+        categories={categories}
+        onClose={() => setEditCategoriesOpen(false)}
+        onUpdated={loadCategories}
+      />
+
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : visibleItems.length === 0 ? (
@@ -225,71 +193,35 @@ export default function LibraryPage() {
       ) : (
         <>
           {visibleItems.map((item) => {
-          const category = categories.find((c) => c.id === item.category_id);
-          return (
-            <Card key={item.id}>
-              <div className="font-bold text-[14.5px]">
-                {category && (
-                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
-                    {category.name}
-                  </span>
-                )}
-                {item.title}
-              </div>
-              <div className="text-[11px] text-ink-soft mt-1">
-                {item.uploader_id ? (profiles[item.uploader_id] ?? "") : ""} ・ {formatDateLabel(item.created_at.slice(0, 10))}
-              </div>
-
-              {item.files.length > 0 && (
-                <div className="mt-2 space-y-1.5">
-                  {item.files.map((f) =>
-                    f.url && isImageFile(f.file_name) ? (
-                      <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={f.url}
-                          alt={f.file_name}
-                          className="w-full rounded-lg border border-line object-contain"
-                        />
-                      </a>
-                    ) : f.url ? (
-                      <a
-                        key={f.id}
-                        href={f.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block text-orange font-bold text-xs"
-                      >
-                        📎 {f.file_name}
-                      </a>
-                    ) : null,
-                  )}
-                </div>
-              )}
-
-              {(item.uploader_id === userId || canManageLibrary(role)) && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(item)}
-                  className="mt-2.5 w-full text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
-                >
-                  {deleteConfirmId === item.id ? "もう一度タップで削除確定" : "削除"}
-                </button>
-              )}
-            </Card>
-          );
-        })}
-        {hasMore && (
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
-          >
-            {loadingMore ? "読み込み中…" : "さらに読み込む"}
-          </button>
-        )}
+            const category = categories.find((c) => c.id === item.category_id);
+            return (
+              <Link key={item.id} href={`/library/${item.id}`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[14.5px] truncate">
+                      {category && (
+                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
+                          {category.name}
+                        </span>
+                      )}
+                      {item.title}
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
+          )}
         </>
       )}
     </PageShell>
