@@ -260,10 +260,11 @@ export default function PlayerStatsPage() {
                     </tr>
                     <tr className="bg-paper">
                       <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                        シーズン合計
+                        チーム平均
                       </th>
                       {columns.map((c) => {
                         if (c.key === "rebDef") return null;
+                        const teamAverages = teamAverageRow ? toSeasonStatAverages(teamAverageRow) : null;
                         if (c.key === "rebOff") {
                           return (
                             <th
@@ -271,59 +272,28 @@ export default function PlayerStatsPage() {
                               colSpan={2}
                               className="sticky top-9 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                             >
-                              <div>{seasonTotals.reb}</div>
-                              <div className="text-ink-soft text-[9.5px] font-normal">
-                                {seasonTotals.rebOff} - {seasonTotals.rebDef}
-                              </div>
+                              {teamAverages ? (
+                                <>
+                                  <div>{teamAverages.rebOff + teamAverages.rebDef}</div>
+                                  <div className="text-ink-soft text-[9.5px] font-normal">
+                                    {teamAverages.rebOff} - {teamAverages.rebDef}
+                                  </div>
+                                </>
+                              ) : (
+                                "-"
+                              )}
                             </th>
                           );
                         }
-                        if (c.key === "eff") {
-                          return (
-                            <th
-                              key={c.key}
-                              className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
-                            >
-                              -
-                            </th>
-                          );
-                        }
-                        if (c.key === "fgPct" || c.key === "ftPct" || c.key === "twoPct" || c.key === "threePct") {
-                          const made =
-                            c.key === "fgPct"
-                              ? seasonTotals.fgMade
-                              : c.key === "ftPct"
-                                ? seasonTotals.ftMade
-                                : c.key === "twoPct"
-                                  ? seasonTotals.twoMade
-                                  : seasonTotals.threeMade;
-                          const att =
-                            c.key === "fgPct"
-                              ? seasonTotals.fgAtt
-                              : c.key === "ftPct"
-                                ? seasonTotals.ftAtt
-                                : c.key === "twoPct"
-                                  ? seasonTotals.twoAtt
-                                  : seasonTotals.threeAtt;
-                          return (
-                            <th
-                              key={c.key}
-                              className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
-                            >
-                              <div className="leading-tight">
-                                <div>{att > 0 ? `${made}/${att}` : "-"}</div>
-                                <div className="text-[9.5px] text-ink-soft font-normal">{pctString(made, att)}</div>
-                              </div>
-                            </th>
-                          );
-                        }
-                        const v = seasonTotals[c.key as keyof typeof seasonTotals] as number;
+                        const v = teamAverages ? (teamAverages[c.key] as number | null) : null;
                         return (
                           <th
                             key={c.key}
-                            className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                            className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            }`}
                           >
-                            {v}
+                            {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
                           </th>
                         );
                       })}
@@ -363,11 +333,10 @@ export default function PlayerStatsPage() {
                     </tr>
                     <tr className="bg-paper">
                       <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                        チーム平均
+                        シーズン合計
                       </th>
                       {columns.map((c) => {
                         if (c.key === "rebDef") return null;
-                        const teamAverages = teamAverageRow ? toSeasonStatAverages(teamAverageRow) : null;
                         if (c.key === "rebOff") {
                           return (
                             <th
@@ -375,28 +344,59 @@ export default function PlayerStatsPage() {
                               colSpan={2}
                               className="sticky top-[108px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                             >
-                              {teamAverages ? (
-                                <>
-                                  <div>{teamAverages.rebOff + teamAverages.rebDef}</div>
-                                  <div className="text-ink-soft text-[9.5px] font-normal">
-                                    {teamAverages.rebOff} - {teamAverages.rebDef}
-                                  </div>
-                                </>
-                              ) : (
-                                "-"
-                              )}
+                              <div>{seasonTotals.reb}</div>
+                              <div className="text-ink-soft text-[9.5px] font-normal">
+                                {seasonTotals.rebOff} - {seasonTotals.rebDef}
+                              </div>
                             </th>
                           );
                         }
-                        const v = teamAverages ? (teamAverages[c.key] as number | null) : null;
+                        if (c.key === "eff") {
+                          return (
+                            <th
+                              key={c.key}
+                              className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
+                            >
+                              -
+                            </th>
+                          );
+                        }
+                        if (c.key === "fgPct" || c.key === "ftPct" || c.key === "twoPct" || c.key === "threePct") {
+                          const made =
+                            c.key === "fgPct"
+                              ? seasonTotals.fgMade
+                              : c.key === "ftPct"
+                                ? seasonTotals.ftMade
+                                : c.key === "twoPct"
+                                  ? seasonTotals.twoMade
+                                  : seasonTotals.threeMade;
+                          const att =
+                            c.key === "fgPct"
+                              ? seasonTotals.fgAtt
+                              : c.key === "ftPct"
+                                ? seasonTotals.ftAtt
+                                : c.key === "twoPct"
+                                  ? seasonTotals.twoAtt
+                                  : seasonTotals.threeAtt;
+                          return (
+                            <th
+                              key={c.key}
+                              className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                            >
+                              <div className="leading-tight">
+                                <div>{att > 0 ? `${made}/${att}` : "-"}</div>
+                                <div className="text-[9.5px] text-ink-soft font-normal">{pctString(made, att)}</div>
+                              </div>
+                            </th>
+                          );
+                        }
+                        const v = seasonTotals[c.key as keyof typeof seasonTotals] as number;
                         return (
                           <th
                             key={c.key}
-                            className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
-                            }`}
+                            className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
                           >
-                            {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
+                            {v}
                           </th>
                         );
                       })}
@@ -469,19 +469,6 @@ export default function PlayerStatsPage() {
                   </tr>
                   <tr className="bg-paper">
                     <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                      シーズン平均
-                    </th>
-                    {statCategories.map((c) => (
-                      <th
-                        key={c.id}
-                        className="sticky top-9 h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
-                      >
-                        {customSeasonAverages.averages[c.id] ?? 0}
-                      </th>
-                    ))}
-                  </tr>
-                  <tr className="bg-paper">
-                    <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                       チーム平均
                     </th>
                     {statCategories.map((c) => {
@@ -489,12 +476,25 @@ export default function PlayerStatsPage() {
                       return (
                         <th
                           key={c.id}
-                          className="sticky top-[72px] h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                          className="sticky top-9 h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                         >
                           {!row || row.player_count === 0 ? "-" : row.avg_value}
                         </th>
                       );
                     })}
+                  </tr>
+                  <tr className="bg-paper">
+                    <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                      シーズン平均
+                    </th>
+                    {statCategories.map((c) => (
+                      <th
+                        key={c.id}
+                        className="sticky top-[72px] h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                      >
+                        {customSeasonAverages.averages[c.id] ?? 0}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
