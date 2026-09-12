@@ -553,7 +553,9 @@ export interface Database {
           team_id: string;
           name: string;
         };
-        Update: Record<string, never>;
+        Update: Partial<{
+          name: string;
+        }>;
         Relationships: [];
       };
       library_items: {
@@ -572,7 +574,10 @@ export interface Database {
           category_id?: string | null;
           title: string;
         };
-        Update: Record<string, never>;
+        Update: Partial<{
+          category_id: string | null;
+          title: string;
+        }>;
         Relationships: [];
       };
       library_files: {
