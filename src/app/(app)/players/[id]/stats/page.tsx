@@ -18,11 +18,21 @@ import {
   computeSeasonTotals,
   compareGameDesc,
   pctString,
+  toSeasonStatAverages,
   GAME_COLUMNS,
   buildGameColumns,
+  type TeamGameStatAveragesRow,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
-import type { GamePlayerStatEntry, GamePlayerStatLine, Player, TeamStatCategory } from "@/lib/database.types";
+import type {
+  Database,
+  GamePlayerStatEntry,
+  GamePlayerStatLine,
+  Player,
+  TeamStatCategory,
+} from "@/lib/database.types";
+
+type TeamCustomAverageRow = Database["public"]["Functions"]["team_stat_category_averages"]["Returns"][number];
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -63,6 +73,8 @@ export default function PlayerStatsPage() {
   const [statLines, setStatLines] = useState<StatLineWithDate[]>([]);
   const [statCategories, setStatCategories] = useState<TeamStatCategory[]>([]);
   const [statEntries, setStatEntries] = useState<StatEntryWithDate[]>([]);
+  const [teamAverageRow, setTeamAverageRow] = useState<TeamGameStatAveragesRow | null>(null);
+  const [teamAverageRows, setTeamAverageRows] = useState<TeamCustomAverageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
 
@@ -120,6 +132,22 @@ export default function PlayerStatsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // チーム平均は、個人スタッツと違って他選手の生データ(RLSで一般・運営には非公開)に
+  // 触れずに済むよう、集計だけを返す専用RPC(保護者向けチーム画面と同じもの)を使う。
+  // スタッフでも同じ値になるため、ロールで分岐せず常にこちらを使う。
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      if (usesDetailedBasketballStats(sport)) {
+        const { data } = await supabase.rpc("team_game_stat_averages", { p_fiscal_year: fiscalYear });
+        setTeamAverageRow(data?.[0] ?? null);
+      } else {
+        const { data } = await supabase.rpc("team_stat_category_averages", { p_fiscal_year: fiscalYear });
+        setTeamAverageRows(data ?? []);
+      }
+    })();
+  }, [fiscalYear, sport]);
 
   const seasonLines = statLines
     .filter((l) => {
@@ -333,6 +361,46 @@ export default function PlayerStatsPage() {
                         );
                       })}
                     </tr>
+                    <tr className="bg-paper">
+                      <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                        チーム平均
+                      </th>
+                      {columns.map((c) => {
+                        if (c.key === "rebDef") return null;
+                        const teamAverages = teamAverageRow ? toSeasonStatAverages(teamAverageRow) : null;
+                        if (c.key === "rebOff") {
+                          return (
+                            <th
+                              key="reb"
+                              colSpan={2}
+                              className="sticky top-[108px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                            >
+                              {teamAverages ? (
+                                <>
+                                  <div>{teamAverages.rebOff + teamAverages.rebDef}</div>
+                                  <div className="text-ink-soft text-[9.5px] font-normal">
+                                    {teamAverages.rebOff} - {teamAverages.rebDef}
+                                  </div>
+                                </>
+                              ) : (
+                                "-"
+                              )}
+                            </th>
+                          );
+                        }
+                        const v = teamAverages ? (teamAverages[c.key] as number | null) : null;
+                        return (
+                          <th
+                            key={c.key}
+                            className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            }`}
+                          >
+                            {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
+                          </th>
+                        );
+                      })}
+                    </tr>
                   </thead>
                   <tbody>
                     {gameRows.map((row, i) => (
@@ -411,6 +479,22 @@ export default function PlayerStatsPage() {
                         {customSeasonAverages.averages[c.id] ?? 0}
                       </th>
                     ))}
+                  </tr>
+                  <tr className="bg-paper">
+                    <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                      チーム平均
+                    </th>
+                    {statCategories.map((c) => {
+                      const row = teamAverageRows.find((r) => r.category_id === c.id);
+                      return (
+                        <th
+                          key={c.id}
+                          className="sticky top-[72px] h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                        >
+                          {!row || row.player_count === 0 ? "-" : row.avg_value}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>

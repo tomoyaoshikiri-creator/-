@@ -16,11 +16,13 @@ import { StatCell } from "@/components/karte/StatCell";
 import {
   computeSeasonAverages,
   computeTeamAverages,
+  toSeasonStatAverages,
   buildGameColumns,
   type SeasonStatAverages,
+  type TeamGameStatAveragesRow,
 } from "@/lib/karteAggregate";
 import { effectiveFiscalYear, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
-import type { Database, GamePlayerStatLine, Player } from "@/lib/database.types";
+import type { GamePlayerStatLine, Player } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -29,39 +31,7 @@ interface StatLineWithDate extends GamePlayerStatLine {
   game_matches: { schedules: { date: string; fiscal_year_override: number | null } | null } | null;
 }
 
-type TeamAverageRow = Database["public"]["Functions"]["team_game_stat_averages"]["Returns"][number];
-
-function toSeasonStatAverages(row: TeamAverageRow): SeasonStatAverages {
-  const twoMadeTotal = row.fg_made_total - row.three_made_total;
-  const twoAttTotal = row.fg_att_total - row.three_att_total;
-  return {
-    gp: 0,
-    pts: row.pts ?? 0,
-    fgMade: 0,
-    ftMade: 0,
-    reb: 0,
-    rebOff: row.reb_off ?? 0,
-    rebDef: row.reb_def ?? 0,
-    ast: row.ast ?? 0,
-    stl: row.stl ?? 0,
-    blk: row.blk ?? 0,
-    tov: row.tov ?? 0,
-    fouls: 0,
-    eff: row.eff ?? 0,
-    fgPct: row.fg_pct,
-    ftPct: row.ft_pct,
-    fgMadeTotal: row.fg_made_total,
-    fgAttTotal: row.fg_att_total,
-    ftMadeTotal: row.ft_made_total,
-    ftAttTotal: row.ft_att_total,
-    twoPct: twoAttTotal > 0 ? Math.round((twoMadeTotal / twoAttTotal) * 1000) / 10 : null,
-    threePct: row.three_att_total > 0 ? Math.round((row.three_made_total / row.three_att_total) * 1000) / 10 : null,
-    twoMadeTotal,
-    twoAttTotal,
-    threeMadeTotal: row.three_made_total,
-    threeAttTotal: row.three_att_total,
-  };
-}
+type TeamAverageRow = TeamGameStatAveragesRow;
 
 // FG/FTは「成功数/試投数」の分数表示になるため、他の列より少し幅を広げる。
 const colWidthClass = (key: keyof SeasonStatAverages) =>
