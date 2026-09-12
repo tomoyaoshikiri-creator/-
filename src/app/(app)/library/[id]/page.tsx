@@ -10,13 +10,13 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { loadProfilesMap } from "@/lib/profiles";
-import { isImageFile } from "@/lib/storagePath";
+import { isImageFile, isPdfFile } from "@/lib/storagePath";
 import { formatDateLabel } from "@/lib/format";
 import { canManageLibrary } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
 
-type FileWithUrl = LibraryFile & { url: string | null };
+type FileWithUrl = LibraryFile & { url: string | null; thumbUrl: string | null };
 
 export default function LibraryItemDetailPage() {
   const params = useParams<{ id: string }>();
@@ -59,7 +59,10 @@ export default function LibraryItemDetailPage() {
       const entries = await Promise.all(
         (libFiles ?? []).map(async (f) => {
           const { data: signed } = await supabase.storage.from("library-files").createSignedUrl(f.storage_path, 60 * 60);
-          return { ...f, url: signed?.signedUrl ?? null };
+          const { data: signedThumb } = f.thumbnail_path
+            ? await supabase.storage.from("library-files").createSignedUrl(f.thumbnail_path, 60 * 60)
+            : { data: null };
+          return { ...f, url: signed?.signedUrl ?? null, thumbUrl: signedThumb?.signedUrl ?? null };
         }),
       );
       setFiles(entries);
@@ -111,10 +114,9 @@ export default function LibraryItemDetailPage() {
       return;
     }
     const supabase = createClient();
-    if (files.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from("library-files")
-        .remove(files.map((f) => f.storage_path));
+    const pathsToRemove = files.flatMap((f) => (f.thumbnail_path ? [f.storage_path, f.thumbnail_path] : [f.storage_path]));
+    if (pathsToRemove.length > 0) {
+      const { error: storageError } = await supabase.storage.from("library-files").remove(pathsToRemove);
       if (storageError) {
         toast(`削除に失敗しました: ${storageError.message}`);
         return;
@@ -213,28 +215,50 @@ export default function LibraryItemDetailPage() {
 
             {files.length > 0 && (
               <div className="mt-2.5 space-y-1.5">
-                {files.map((f) =>
-                  f.url && isImageFile(f.file_name) ? (
-                    <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={f.url}
-                        alt={f.file_name}
-                        className="w-full rounded-lg border border-line object-contain"
-                      />
-                    </a>
-                  ) : f.url ? (
-                    <a
-                      key={f.id}
-                      href={f.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block text-orange font-bold text-xs"
-                    >
-                      📎 {f.file_name}
-                    </a>
-                  ) : null,
-                )}
+                {files.map((f) => {
+                  if (f.url && isImageFile(f.file_name)) {
+                    return (
+                      <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={f.url}
+                          alt={f.file_name}
+                          className="w-full rounded-lg border border-line object-contain"
+                        />
+                      </a>
+                    );
+                  }
+                  // PDFは1ページ目のサムネイル画像(生成済みの場合)を画像と同様に
+                  // インラインプレビュー表示する。タップすると原本(f.url)を新しいタブで開く。
+                  // サムネイル生成に失敗している旧データ・エラー時はテキストリンクにフォールバックする。
+                  if (f.url && isPdfFile(f.file_name) && f.thumbUrl) {
+                    return (
+                      <a key={f.id} href={f.url} target="_blank" rel="noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={f.thumbUrl}
+                          alt={f.file_name}
+                          className="w-full rounded-lg border border-line object-contain"
+                        />
+                        <div className="text-orange font-bold text-xs mt-1">📄 {f.file_name}</div>
+                      </a>
+                    );
+                  }
+                  if (f.url) {
+                    return (
+                      <a
+                        key={f.id}
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-orange font-bold text-xs"
+                      >
+                        {isPdfFile(f.file_name) ? "📄" : "📎"} {f.file_name}
+                      </a>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             )}
           </Card>

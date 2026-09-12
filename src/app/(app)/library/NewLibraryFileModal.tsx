@@ -7,10 +7,11 @@ import { useToast } from "@/components/ui/Toast";
 import { useUpgradePrompt } from "@/components/PlanLock";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { safeExt } from "@/lib/storagePath";
-import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
+import { isPdfFile, safeExt } from "@/lib/storagePath";
+import { cleanupUploadedObjects, rollbackParentAndObjects, type UploadedObjectRef } from "@/lib/storageCleanup";
 import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
 import type { LibraryCategory } from "@/lib/database.types";
 
 const NEW_CATEGORY_VALUE = "__new__";
@@ -125,16 +126,26 @@ export function NewLibraryFileModal({
 
     // 1) 全ファイルをStorageへアップロードしきってから本体行を作る(1件でも失敗したら
     // 本体行自体を作らず、それまでにアップロード済みの分だけ後始末する)。
-    const uploaded: { path: string; file: File; uploadFile: File }[] = [];
+    // PDFは1ページ目のサムネイル画像も生成し、原本と並べてアップロードしておく
+    // (お知らせ添付と同じパターン。生成失敗時はthumbnailPath: nullのままとし、
+    // 表示側は汎用アイコンにフォールバックする)。
+    const uploaded: { path: string; file: File; uploadFile: File; thumbnailPath: string | null }[] = [];
+    function uploadedObjectRefs(): UploadedObjectRef[] {
+      return uploaded.flatMap((u) =>
+        u.thumbnailPath
+          ? [
+              { bucket: "library-files", path: u.path },
+              { bucket: "library-files", path: u.thumbnailPath },
+            ]
+          : [{ bucket: "library-files", path: u.path }],
+      );
+    }
     for (const file of files) {
       const uploadFile = await resizeImageFile(file);
       const path = `${teamId}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt(uploadFile.name)}`;
       const { error: uploadError } = await supabase.storage.from("library-files").upload(path, uploadFile);
       if (uploadError) {
-        const cleanupOk = await cleanupUploadedObjects(
-          supabase,
-          uploaded.map((u) => ({ bucket: "library-files", path: u.path })),
-        );
+        const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
         setSaving(false);
         toast(
           `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
@@ -142,7 +153,18 @@ export function NewLibraryFileModal({
         );
         return;
       }
-      uploaded.push({ path, file, uploadFile });
+
+      let thumbnailPath: string | null = null;
+      if (isPdfFile(uploadFile.name)) {
+        const thumb = await generatePdfThumbnail(uploadFile);
+        if (thumb) {
+          const thumbPath = `${teamId}/${itemId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-thumb.jpg`;
+          const { error: thumbError } = await supabase.storage.from("library-files").upload(thumbPath, thumb);
+          if (!thumbError) thumbnailPath = thumbPath;
+        }
+      }
+
+      uploaded.push({ path, file, uploadFile, thumbnailPath });
     }
 
     const { data: item, error } = await supabase
@@ -157,10 +179,7 @@ export function NewLibraryFileModal({
       .select()
       .single();
     if (error || !item) {
-      const cleanupOk = await cleanupUploadedObjects(
-        supabase,
-        uploaded.map((u) => ({ bucket: "library-files", path: u.path })),
-      );
+      const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
       setSaving(false);
       toast(
         `登録に失敗しました: ${error?.message ?? ""}` +
@@ -177,12 +196,13 @@ export function NewLibraryFileModal({
         storage_path: u.path,
         file_name: u.file.name,
         size_bytes: u.uploadFile.size,
+        thumbnail_path: u.thumbnailPath,
       });
       if (insertError) {
         const rollbackOk = await rollbackParentAndObjects(supabase, {
           parentTable: "library_items",
           parentId: item.id,
-          uploadedObjects: uploaded.map((x) => ({ bucket: "library-files", path: x.path })),
+          uploadedObjects: uploadedObjectRefs(),
         });
         setSaving(false);
         toast(
