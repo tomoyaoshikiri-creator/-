@@ -21,6 +21,12 @@ import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/forma
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
+// 1回のDB取得件数の上限。従来は月内の全件を無制限に取得していたため、
+// 投稿数が多い月では取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
+// CollapsibleListによる「もっと見る」(読み込み済み分を5件ずつ表示)とは別に、
+// 読み込み済み分をすべて表示し終えてもまだ月内に残りがある場合はDBへ追加取得しにいく。
+const NOTICE_PAGE_SIZE = 30;
+
 export default function NoticePage() {
   const router = useRouter();
   const { role, teamId, userId } = useSession();
@@ -39,6 +45,8 @@ export default function NoticePage() {
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
+  const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -50,13 +58,16 @@ export default function NoticePage() {
         .select("*")
         .gte("created_at", start)
         .lt("created_at", end)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(NOTICE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
-    setNotices(n ?? []);
+    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
+    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
+    setNotices(page);
     setProfiles(profMap);
-    if (n && n.length > 0) {
-      const noticeIds = n.map((x) => x.id);
+    if (page.length > 0) {
+      const noticeIds = page.map((x) => x.id);
       const [{ data: atts }, { data: r }] = await Promise.all([
         supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
         supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
@@ -72,7 +83,41 @@ export default function NoticePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions]);
+  }, [monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setHasMore]);
+
+  async function loadMore() {
+    if (notices.length === 0 || loadingMore) return;
+    setLoadingMore(true);
+    const supabase = createClient();
+    const { start } = monthRangeBounds(monthValue);
+    const cursor = notices[notices.length - 1].created_at;
+    const { data: n } = await supabase
+      .from("notices")
+      .select("*")
+      .gte("created_at", start)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(NOTICE_PAGE_SIZE + 1);
+    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
+    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
+    if (page.length > 0) {
+      setNotices((prev) => [...prev, ...page]);
+      const noticeIds = page.map((x) => x.id);
+      const [{ data: atts }, { data: r }] = await Promise.all([
+        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
+        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
+      ]);
+      setAttachmentsByNotice((prev) => {
+        const merged: Record<string, NoticeAttachment[]> = { ...prev };
+        (atts ?? []).forEach((a) => {
+          merged[a.notice_id] = [...(merged[a.notice_id] ?? []), a];
+        });
+        return merged;
+      });
+      setReactions((prev) => [...prev, ...(r ?? [])]);
+    }
+    setLoadingMore(false);
+  }
 
   useEffect(() => {
     load();
@@ -212,7 +257,19 @@ export default function NoticePage() {
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
-        <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
+        <>
+          <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
+          {showAll && hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
+          )}
+        </>
       )}
     </PageShell>
   );
