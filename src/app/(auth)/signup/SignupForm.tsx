@@ -31,8 +31,9 @@ export function SignupForm() {
 
         <form action={verifyFormAction}>
           <input type="hidden" name="email" value={email} />
-          <FieldLabel>確認コード(6桁)</FieldLabel>
+          <FieldLabel htmlFor="code">確認コード(6桁)</FieldLabel>
           <input
+            id="code"
             name="code"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -79,12 +80,12 @@ export function SignupForm() {
         新しくチームを立ち上げます。メールアドレスの確認後、チーム名など詳細を入力していただきます。
       </div>
 
-      <FieldLabel>メールアドレス</FieldLabel>
-      <input name="email" type="email" className={inputClass()} required />
+      <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
+      <input id="email" name="email" type="email" className={inputClass()} required />
 
       <div className="mt-3">
-        <FieldLabel>パスワード(8文字以上)</FieldLabel>
-        <input name="password" type="password" minLength={8} className={inputClass()} required />
+        <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
+        <input id="password" name="password" type="password" minLength={8} className={inputClass()} required />
       </div>
 
       <TermsAgreementCheckbox />
