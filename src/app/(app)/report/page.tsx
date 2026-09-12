@@ -23,6 +23,13 @@ import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan"
 import type { DailyReport, DailyReportReaction } from "@/lib/database.types";
 import { NewDailyReportModal } from "./NewDailyReportModal";
 
+// 1回のDB取得件数の上限。従来は月内(またはお試しプランの閲覧可能期間内)の
+// 全件を無制限に取得していたため、投稿数が多い月では取得件数が際限なく
+// 伸びる問題があった(docs/load-handling-todo.md)。CollapsibleListによる
+// 「もっと見る」(読み込み済み分を5件ずつ表示)とは別に、読み込み済み分を
+// すべて表示し終えてもまだ範囲内に残りがある場合はDBへ追加取得する。
+const REPORT_PAGE_SIZE = 30;
+
 export default function ReportPage() {
   const router = useRouter();
   const { userId, role, plan } = useSession();
@@ -38,6 +45,8 @@ export default function ReportPage() {
   const [reactions, setReactions] = useCachedState<DailyReportReaction[]>(cacheKey("reactions"), []);
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("report:unseenIds", new Set());
+  const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -49,9 +58,12 @@ export default function ReportPage() {
       .select("*")
       .gte("date", effectiveStart)
       .lt("date", end)
-      .order("created_at", { ascending: false });
-    setReports(r ?? []);
-    const reportIds = (r ?? []).map((x) => x.id);
+      .order("created_at", { ascending: false })
+      .limit(REPORT_PAGE_SIZE + 1);
+    const page = (r ?? []).slice(0, REPORT_PAGE_SIZE);
+    setHasMore((r?.length ?? 0) > REPORT_PAGE_SIZE);
+    setReports(page);
+    const reportIds = page.map((x) => x.id);
     if (reportIds.length > 0) {
       const { data: rc } = await supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds);
       setReactions(rc ?? []);
@@ -59,7 +71,33 @@ export default function ReportPage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue, earliestAllowedDate, cacheKey, setReports, setReactions]);
+  }, [monthValue, earliestAllowedDate, cacheKey, setReports, setReactions, setHasMore]);
+
+  async function loadMore() {
+    if (reports.length === 0 || loadingMore) return;
+    setLoadingMore(true);
+    const supabase = createClient();
+    const { start, end } = monthRangeBounds(monthValue);
+    const effectiveStart = earliestAllowedDate && earliestAllowedDate > start ? earliestAllowedDate : start;
+    const cursor = reports[reports.length - 1].created_at;
+    const { data: r } = await supabase
+      .from("daily_reports")
+      .select("*")
+      .gte("date", effectiveStart)
+      .lt("date", end)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(REPORT_PAGE_SIZE + 1);
+    const page = (r ?? []).slice(0, REPORT_PAGE_SIZE);
+    setHasMore((r?.length ?? 0) > REPORT_PAGE_SIZE);
+    if (page.length > 0) {
+      setReports((prev) => [...prev, ...page]);
+      const reportIds = page.map((x) => x.id);
+      const { data: rc } = await supabase.from("daily_report_reactions").select("*").in("daily_report_id", reportIds);
+      setReactions((prev) => [...prev, ...(rc ?? [])]);
+    }
+    setLoadingMore(false);
+  }
 
   useEffect(() => {
     load();
@@ -111,29 +149,41 @@ export default function ReportPage() {
       ) : reports.length === 0 ? (
         <EmptyState>この月のチーム日報はありません</EmptyState>
       ) : (
-        <CollapsibleList
-          items={reports}
-          showAll={showAll}
-          onShowAll={() => setShowAll(true)}
-          renderItem={(r) => (
-            <Link key={r.id} href={`/report/${r.id}`}>
-              <Card className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-[14.5px] flex items-center gap-1.5">
-                    {unseenIds.has(r.id) && (
-                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger">
-                        NEW
-                      </span>
-                    )}
-                    {formatFullDateLabel(r.date)}
+        <>
+          <CollapsibleList
+            items={reports}
+            showAll={showAll}
+            onShowAll={() => setShowAll(true)}
+            renderItem={(r) => (
+              <Link key={r.id} href={`/report/${r.id}`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[14.5px] flex items-center gap-1.5">
+                      {unseenIds.has(r.id) && (
+                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger">
+                          NEW
+                        </span>
+                      )}
+                      {formatFullDateLabel(r.date)}
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                   </div>
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                </div>
-                <ReactionSummary reactions={reactions.filter((rc) => rc.daily_report_id === r.id)} />
-              </Card>
-            </Link>
+                  <ReactionSummary reactions={reactions.filter((rc) => rc.daily_report_id === r.id)} />
+                </Card>
+              </Link>
+            )}
+          />
+          {showAll && hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
           )}
-        />
+        </>
       )}
     </PageShell>
   );
