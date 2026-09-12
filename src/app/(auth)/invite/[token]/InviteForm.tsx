@@ -40,8 +40,11 @@ export function InviteForm({
 
     return (
       <div className="bg-white border border-line rounded-lg p-5">
-        <div className="text-[12.5px] text-ink-soft mb-4">
+        <div className="text-[12.5px] text-ink-soft mb-1">
           {email} 宛に確認コードを送信しました。メールに記載の6桁のコードを入力してください。
+        </div>
+        <div className="text-[11px] text-ink-soft mb-4">
+          メールが届かない場合は、迷惑メールフォルダもご確認ください。
         </div>
 
         <form action={verifyFormAction}>
