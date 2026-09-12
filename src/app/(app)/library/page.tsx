@@ -20,6 +20,10 @@ import { NewLibraryFileModal } from "./NewLibraryFileModal";
 type FileWithUrl = LibraryFile & { url: string | null };
 type ItemWithFiles = LibraryItem & { files: FileWithUrl[] };
 
+// 1回のDB取得件数の上限。従来は範囲を絞らず全件取得しており、チームの活動年数が
+// 長くなるほど取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
+const LIBRARY_PAGE_SIZE = 30;
+
 export default function LibraryPage() {
   const toast = useToast();
   const { teamId, userId, role } = useSession();
@@ -32,6 +36,8 @@ export default function LibraryPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [usedBytes, setUsedBytes] = useState(0);
   const [limitBytes, setLimitBytes] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadUsage = useCallback(async () => {
     const supabase = createClient();
@@ -43,18 +49,13 @@ export default function LibraryPage() {
     setUsedBytes(usage ?? 0);
   }, [teamId]);
 
-  const load = useCallback(async () => {
-    const supabase = createClient();
-    setLoading(true);
-    const [{ data: cats }, { data: libItems }, profMap] = await Promise.all([
-      supabase.from("library_categories").select("*").order("name", { ascending: true }),
-      supabase.from("library_items").select("*").order("created_at", { ascending: false }),
-      loadProfilesMap(supabase),
-    ]);
-    setCategories(cats ?? []);
-    setProfiles(profMap);
-
-    const itemIds = (libItems ?? []).map((i) => i.id);
+  // library_items一覧に添付ファイルの署名付きURLを付与する。load()/loadMore()で
+  // 取得ページ分だけを対象にするため共通化している。
+  async function attachFiles(
+    supabase: ReturnType<typeof createClient>,
+    libItems: LibraryItem[],
+  ): Promise<ItemWithFiles[]> {
+    const itemIds = libItems.map((i) => i.id);
     let filesByItem: Record<string, FileWithUrl[]> = {};
     if (itemIds.length > 0) {
       const { data: files } = await supabase.from("library_files").select("*").in("library_item_id", itemIds);
@@ -69,10 +70,49 @@ export default function LibraryPage() {
         (filesByItem[f.library_item_id] ??= []).push(f);
       });
     }
+    return libItems.map((i) => ({ ...i, files: filesByItem[i.id] ?? [] }));
+  }
 
-    setItems((libItems ?? []).map((i) => ({ ...i, files: filesByItem[i.id] ?? [] })));
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    setLoading(true);
+    const [{ data: cats }, { data: libItems }, profMap] = await Promise.all([
+      supabase.from("library_categories").select("*").order("name", { ascending: true }),
+      supabase
+        .from("library_items")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(LIBRARY_PAGE_SIZE + 1),
+      loadProfilesMap(supabase),
+    ]);
+    setCategories(cats ?? []);
+    setProfiles(profMap);
+
+    const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
+    setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
+    setItems(await attachFiles(supabase, page));
     setLoading(false);
   }, []);
+
+  async function loadMore() {
+    if (items.length === 0 || loadingMore) return;
+    setLoadingMore(true);
+    const supabase = createClient();
+    const cursor = items[items.length - 1].created_at;
+    const { data: libItems } = await supabase
+      .from("library_items")
+      .select("*")
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(LIBRARY_PAGE_SIZE + 1);
+    const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
+    setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
+    if (page.length > 0) {
+      const withFiles = await attachFiles(supabase, page);
+      setItems((prev) => [...prev, ...withFiles]);
+    }
+    setLoadingMore(false);
+  }
 
   useEffect(() => {
     load();
@@ -183,7 +223,8 @@ export default function LibraryPage() {
       ) : visibleItems.length === 0 ? (
         <EmptyState>まだファイルがありません</EmptyState>
       ) : (
-        visibleItems.map((item) => {
+        <>
+          {visibleItems.map((item) => {
           const category = categories.find((c) => c.id === item.category_id);
           return (
             <Card key={item.id}>
@@ -238,7 +279,18 @@ export default function LibraryPage() {
               )}
             </Card>
           );
-        })
+        })}
+        {hasMore && (
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+          >
+            {loadingMore ? "読み込み中…" : "さらに読み込む"}
+          </button>
+        )}
+        </>
       )}
     </PageShell>
   );
