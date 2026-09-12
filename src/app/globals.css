@@ -139,6 +139,21 @@ body {
 }
 
 /*
+  キーボード操作時のフォーカス表示。inputClass()はinput/select/textarea向けに
+  focus:ring-*で既に独自のフォーカス表示を持つが、それ以外の要素(button・a・
+  その他クリック可能要素)にはブラウザ標準以外のフォーカス表示がなかった。
+  :focus-visible(マウスクリックでは発火せず、キーボード操作時のみ発火)で
+  アプリ全体に統一したフォーカスリングを敷く。@layer utilities(Tailwindの
+  focus:outline-none等)より前に書くことで、inputClass()の独自リングは
+  そのまま優先される。
+*/
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
   iOS Safariは入力欄の文字が16px未満だとフォーカス時に自動でズームし、
   戻らなくなることがあるため、フォーム要素は常に16px以上にする。
 */

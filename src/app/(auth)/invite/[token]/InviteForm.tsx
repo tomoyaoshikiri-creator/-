@@ -54,8 +54,9 @@ export function InviteForm({
           <input type="hidden" name="playerIds" value={playerIds} />
           <input type="hidden" name="agreedTermsVersion" value={agreedTermsVersion} />
           <input type="hidden" name="agreedTermsAt" value={agreedTermsAt} />
-          <FieldLabel>確認コード(6桁)</FieldLabel>
+          <FieldLabel htmlFor="code">確認コード(6桁)</FieldLabel>
           <input
+            id="code"
             name="code"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -110,13 +111,13 @@ export function InviteForm({
         </div>
 
         <div className="mt-3">
-          <FieldLabel>メールアドレス</FieldLabel>
-          <input name="email" type="email" className={inputClass()} required />
+          <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
+          <input id="email" name="email" type="email" className={inputClass()} required />
         </div>
 
         <div className="mt-3">
-          <FieldLabel>パスワード(8文字以上)</FieldLabel>
-          <input name="password" type="password" minLength={8} className={inputClass()} required />
+          <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
+          <input id="password" name="password" type="password" minLength={8} className={inputClass()} required />
         </div>
 
         <InvitePlayerPicker players={players} category={category} selectedIds={selectedIds} onChange={setSelectedIds} />

@@ -29,8 +29,9 @@ export function ForgotPasswordForm() {
 
         <form action={verifyFormAction}>
           <input type="hidden" name="email" value={email} />
-          <FieldLabel>確認コード(6桁)</FieldLabel>
+          <FieldLabel htmlFor="code">確認コード(6桁)</FieldLabel>
           <input
+            id="code"
             name="code"
             inputMode="numeric"
             autoComplete="one-time-code"
@@ -76,8 +77,8 @@ export function ForgotPasswordForm() {
       <div className="text-[12.5px] text-ink-soft mb-4">
         登録済みのメールアドレスを入力してください。パスワード再設定用のコードをお送りします。
       </div>
-      <FieldLabel>メールアドレス</FieldLabel>
-      <input name="email" type="email" className={inputClass()} required />
+      <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
+      <input id="email" name="email" type="email" className={inputClass()} required />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
 

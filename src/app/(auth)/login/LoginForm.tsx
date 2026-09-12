@@ -13,12 +13,12 @@ export function LoginForm({ next }: { next?: string }) {
   return (
     <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <input type="hidden" name="next" value={next ?? ""} />
-      <FieldLabel>メールアドレス</FieldLabel>
-      <input name="email" type="email" className={inputClass()} required />
+      <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
+      <input id="email" name="email" type="email" className={inputClass()} required />
 
       <div className="mt-3">
-        <FieldLabel>パスワード</FieldLabel>
-        <input name="password" type="password" className={inputClass()} required />
+        <FieldLabel htmlFor="password">パスワード</FieldLabel>
+        <input id="password" name="password" type="password" className={inputClass()} required />
       </div>
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}

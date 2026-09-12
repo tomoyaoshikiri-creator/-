@@ -11,11 +11,15 @@ export function SegButton({ active = false, variant = "default", className = "",
     <button
       type="button"
       className={`flex-1 text-center rounded-lg font-bold border transition-colors ${size} ${
-        active ? "text-white border-orange" : "bg-paper text-ink-soft border-line"
+        active ? "border-orange" : "bg-paper text-ink-soft border-line"
       } ${className}`}
       style={
         active
           ? {
+              // 文字色は任意のteamPrimaryでも可読性を確保するため、teamThemeStyle()が
+              // 算出したコントラスト安全な--on-team-primaryを使う(固定text-whiteだと
+              // 明るいteamPrimaryの場合に文字が読めなくなるため、Modal.tsxのFabと同じ方式)。
+              color: "var(--on-team-primary)",
               // SubmitButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
               // 薄い方は黒を混ぜず、白を混ぜて明るくする。
               background:
@@ -57,8 +61,12 @@ export function SubmitButton({
   return (
     <button
       type="button"
-      className={`mt-3.5 w-full py-2.5 rounded-lg border border-orange text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50 ${className}`}
+      className={`mt-3.5 w-full py-2.5 rounded-lg border border-orange font-bold text-[13px] active:opacity-85 disabled:opacity-50 ${className}`}
       style={{
+        // 文字色は任意のteamPrimaryでも可読性を確保するため、teamThemeStyle()が算出した
+        // コントラスト安全な--on-team-primaryを使う(固定text-whiteだと明るいteamPrimaryの
+        // 場合に文字が読めなくなるため、Modal.tsxのFabと同じ方式)。
+        color: "var(--on-team-primary)",
         // 濃い色(左上)→薄い色(右下)のグラデーション。薄い方は黒を混ぜず、白を混ぜて明るくする。
         background: "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
         ...style,
@@ -68,7 +76,18 @@ export function SubmitButton({
   );
 }
 
-export function FieldLabel({ children }: { children: React.ReactNode }) {
+// htmlForを渡すと<label>としてレンダリングし、対応するinput(id={htmlFor})と
+// スクリーンリーダー・ラベルクリックでのフォーカス移動を紐付ける。1つのFieldLabelに
+// 複数input(氏/名など)が続く箇所や、inputを伴わない箇所(読み取り専用表示・ボタン群の
+// 見出し等)ではhtmlForを渡さず、従来通り<div>のまま(視覚的には同一)にする。
+export function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
+  if (htmlFor) {
+    return (
+      <label htmlFor={htmlFor} className="block text-[11.5px] text-ink-soft mb-1.5 font-bold">
+        {children}
+      </label>
+    );
+  }
   return <div className="text-[11.5px] text-ink-soft mb-1.5 font-bold">{children}</div>;
 }
 
