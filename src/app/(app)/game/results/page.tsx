@@ -27,6 +27,15 @@ const CATEGORY_TABS: { label: string; value: GameCategory | "all" }[] = [
   { label: "公式戦", value: "公式戦" },
 ];
 
+// この画面はnotice/report/library/schedule-historyと違い、勝敗数・勝率・年度選択肢を
+// 常に「絞り込み後の全件」から算出する必要があるため、単純な「もっと見る」方式の
+// ページングは(読み込み済み分だけで集計がずれてしまうため)適用できない。
+// 代わりに、際限のない全件取得(docs/load-handling-todo.md)への対策として、
+// 直近の試合を優先して保持する形で取得件数に上限を設ける。学校チームの実運用では
+// 何年分蓄積しても数百件程度で収まる想定のため、この上限に達することは基本的に
+// 想定していない(達した場合は集計をサーバー側に移す等、別途対応が必要)。
+const GAME_RESULTS_FETCH_LIMIT = 500;
+
 export default function GameResultsPage() {
   const router = useRouter();
   const { role, plan } = useSession();
@@ -45,6 +54,8 @@ export default function GameResultsPage() {
         .select("*, schedules(date, game_category, fiscal_year_override)")
         .not("team_score", "is", null)
         .not("opponent_score", "is", null)
+        .order("date", { referencedTable: "schedules", ascending: false })
+        .limit(GAME_RESULTS_FETCH_LIMIT)
         .returns<MatchWithDate[]>();
       const sorted = (data ?? []).slice().sort((a, b) => {
         const dateDiff = (b.schedules?.date ?? "").localeCompare(a.schedules?.date ?? "");
