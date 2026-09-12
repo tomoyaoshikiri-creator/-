@@ -11,6 +11,16 @@ import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 export interface FormState {
   error?: string;
   message?: string;
+  // メール確認待ち(確認コード入力)の状態に入っているかどうか。trueの間は
+  // InviteFormがコード入力フォームを表示し続ける(accept_invite()呼び出しに
+  // 必要な情報一式の保持のため必須)。
+  awaitingCode?: boolean;
+  email?: string;
+  token?: string;
+  name?: string;
+  playerIds?: string;
+  agreedTermsVersion?: string;
+  agreedTermsAt?: string;
 }
 
 export async function acceptInvite(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -46,9 +56,10 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   const agreedTermsAt = new Date().toISOString();
 
   const origin = await getRequestOrigin();
-  // メール確認が必要な場合、実際のaccept_invite()呼び出しは/auth/completeまで
-  // 遅延する(下のimmediate-session分岐を参照)。そのため同意バージョン/日時も
-  // name・playerIdsと同じくクエリパラメータで/auth/completeまで引き継ぐ。
+  // メール内リンク経由(/auth/confirm→/auth/complete)で確認する場合に備え、
+  // 従来通りaccept_invite()に必要な情報一式をクエリパラメータで引き継ぐ。
+  // リンクとコードのどちらを使っても確認が完了する(先着した方が有効、
+  // 後発は/auth/completeまたは下のverifyInviteCode内で無害なエラーになる)。
   const completeParams = new URLSearchParams({
     kind: "invite",
     token,
@@ -71,7 +82,14 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
 
   if (!data.session) {
     return {
-      message: "確認メールを送信しました。メール内のリンクを開いて認証を完了してください。",
+      message: "確認メールを送信しました。メールに記載の6桁のコードを入力してください。",
+      awaitingCode: true,
+      email,
+      token,
+      name,
+      playerIds: playerIds.join(","),
+      agreedTermsVersion: CURRENT_TERMS_VERSION,
+      agreedTermsAt,
     };
   }
 
@@ -85,6 +103,65 @@ export async function acceptInvite(_prev: FormState, formData: FormData): Promis
   if (rpcError) return { error: rpcError.message };
 
   redirect("/home");
+}
+
+// メール内のリンクではなく、メールに記載された6桁の確認コードをその場で入力して
+// 完了させる経路(ネイティブアプリ化時のディープリンク依存を避けるため)。
+// /auth/completeが行っていたaccept_invite()呼び出しを、verifyOtp()でセッションが
+// 確立された直後にここで直接実行する。
+export async function verifyInviteCode(prev: FormState, formData: FormData): Promise<FormState> {
+  const email = String(formData.get("email") ?? prev.email ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim();
+  const token = String(formData.get("token") ?? prev.token ?? "");
+  const name = String(formData.get("name") ?? prev.name ?? "");
+  const playerIds = String(formData.get("playerIds") ?? prev.playerIds ?? "");
+  const agreedTermsVersion = String(formData.get("agreedTermsVersion") ?? prev.agreedTermsVersion ?? "");
+  const agreedTermsAt = String(formData.get("agreedTermsAt") ?? prev.agreedTermsAt ?? "");
+
+  const carried = { awaitingCode: true as const, email, token, name, playerIds, agreedTermsVersion, agreedTermsAt };
+
+  if (!code) {
+    return { ...carried, error: "確認コードを入力してください" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+  if (error) {
+    return { ...carried, error: "コードが正しくないか、有効期限が切れています" };
+  }
+
+  const { error: rpcError } = await supabase.rpc("accept_invite", {
+    invite_token: token,
+    member_name: name,
+    player_ids: playerIds.split(",").filter((id) => id !== ""),
+    agreed_terms_version: agreedTermsVersion,
+    agreed_terms_at: agreedTermsAt,
+  });
+  if (rpcError && !rpcError.message.includes("既にチームに所属")) {
+    return { ...carried, error: rpcError.message };
+  }
+
+  redirect("/home");
+}
+
+export async function resendInviteCode(prev: FormState, formData: FormData): Promise<FormState> {
+  const email = String(formData.get("email") ?? prev.email ?? "").trim();
+  const carried = {
+    awaitingCode: true as const,
+    email,
+    token: prev.token,
+    name: prev.name,
+    playerIds: prev.playerIds,
+    agreedTermsVersion: prev.agreedTermsVersion,
+    agreedTermsAt: prev.agreedTermsAt,
+  };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) {
+    return { ...carried, error: `再送に失敗しました: ${error.message}` };
+  }
+  return { ...carried, message: "確認コードを再送しました。" };
 }
 
 export interface AcceptInviteAsExistingUserState {
