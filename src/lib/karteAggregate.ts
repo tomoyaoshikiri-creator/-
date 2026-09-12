@@ -1,4 +1,10 @@
-import type { GamePlayerStatEntry, GamePlayerStatLine, SportsTestRecord, TeamStatCategory } from "@/lib/database.types";
+import type {
+  Database,
+  GamePlayerStatEntry,
+  GamePlayerStatLine,
+  SportsTestRecord,
+  TeamStatCategory,
+} from "@/lib/database.types";
 
 export interface SeasonStatAverages {
   gp: number;
@@ -250,6 +256,43 @@ export function computeTeamAverages(
     twoAttTotal: twoAtt,
     threeMadeTotal: totals.threeMade,
     threeAttTotal: totals.threeAtt,
+  };
+}
+
+export type TeamGameStatAveragesRow = Database["public"]["Functions"]["team_game_stat_averages"]["Returns"][number];
+
+// team_game_stat_averages RPC(生のgame_player_stat_linesをRLSで見られないロール向けに、
+// 集計だけを返す専用エンドポイント)の返り値を、computeTeamAverages/computeSeasonAveragesと
+// 同じSeasonStatAverages形式に変換する(StatCell等の表示コンポーネントを共通で使うため)。
+export function toSeasonStatAverages(row: TeamGameStatAveragesRow): SeasonStatAverages {
+  const twoMadeTotal = row.fg_made_total - row.three_made_total;
+  const twoAttTotal = row.fg_att_total - row.three_att_total;
+  return {
+    gp: 0,
+    pts: row.pts ?? 0,
+    fgMade: 0,
+    ftMade: 0,
+    reb: 0,
+    rebOff: row.reb_off ?? 0,
+    rebDef: row.reb_def ?? 0,
+    ast: row.ast ?? 0,
+    stl: row.stl ?? 0,
+    blk: row.blk ?? 0,
+    tov: row.tov ?? 0,
+    fouls: 0,
+    eff: row.eff ?? 0,
+    fgPct: row.fg_pct,
+    ftPct: row.ft_pct,
+    fgMadeTotal: row.fg_made_total,
+    fgAttTotal: row.fg_att_total,
+    ftMadeTotal: row.ft_made_total,
+    ftAttTotal: row.ft_att_total,
+    twoPct: twoAttTotal > 0 ? Math.round((twoMadeTotal / twoAttTotal) * 1000) / 10 : null,
+    threePct: row.three_att_total > 0 ? Math.round((row.three_made_total / row.three_att_total) * 1000) / 10 : null,
+    twoMadeTotal,
+    twoAttTotal,
+    threeMadeTotal: row.three_made_total,
+    threeAttTotal: row.three_att_total,
   };
 }
 
