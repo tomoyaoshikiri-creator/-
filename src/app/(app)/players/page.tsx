@@ -20,13 +20,18 @@ import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 import { NewPlayerModal } from "./NewPlayerModal";
 
+// 在籍選手数の防御的な上限。Free/有料プランを問わずチームの実在籍人数で自然に
+// 頭打ちになるため、通常はこの上限に到達しない(docs/load-handling-todo.md対策)。
+const ACTIVE_PLAYERS_FETCH_LIMIT = 1000;
+
 export default function PlayersPage() {
   const { role, userId, plan } = useSession();
   const isStaff = canManagePlayers(role);
   const toast = useToast();
   const promptUpgrade = useUpgradePrompt();
   const cacheKey = useCallback((field: string) => `players:${userId}:${field}`, [userId]);
-  const [players, setPlayers] = useCachedState<Player[]>(cacheKey("players"), []);
+  const [activeList, setActiveList] = useCachedState<Player[]>(cacheKey("players"), []);
+  const [obogCount, setObogCount] = useCachedState<number>(cacheKey("obogCount"), 0);
   const [noteCounts, setNoteCounts] = useCachedState<Record<string, number>>(cacheKey("noteCounts"), {});
   const [unseenNoteIds, setUnseenNoteIds] = useCachedState<Set<string>>(cacheKey("unseenNoteIds"), new Set());
   const [ownPlayerIds, setOwnPlayerIds] = useCachedState<Set<string>>(cacheKey("ownPlayerIds"), new Set());
@@ -38,9 +43,15 @@ export default function PlayersPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("players"))) setLoading(true);
-    const { data: p } = await supabase.from("players").select("*");
+    // OB・OGはこの画面では件数(リンクのバッジ)しか使わないため、全行を取得せず
+    // count専用クエリにする(実データは/players/obogが別途取得する)。
+    const [{ data: p }, { count: obog }] = await Promise.all([
+      supabase.from("players").select("*").neq("status", "OB・OG").limit(ACTIVE_PLAYERS_FETCH_LIMIT),
+      supabase.from("players").select("id", { count: "exact", head: true }).eq("status", "OB・OG"),
+    ]);
     const list = sortPlayers(p ?? []);
-    setPlayers(list);
+    setActiveList(list);
+    setObogCount(obog ?? 0);
     // メモは指導者・管理者専用の情報なので、それ以外のロール(保護者)では取得しない。
     if (list.length > 0 && isStaff) {
       const { data: notes } = await supabase.from("player_notes").select("player_id");
@@ -66,14 +77,12 @@ export default function PlayersPage() {
       setUnseenNoteIds(new Set());
     }
     setLoading(false);
-  }, [isStaff, userId, cacheKey, setPlayers, setNoteCounts, setOwnPlayerIds, setUnseenNoteIds]);
+  }, [isStaff, userId, cacheKey, setActiveList, setObogCount, setNoteCounts, setOwnPlayerIds, setUnseenNoteIds]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const activeList = players.filter((p) => p.status !== "OB・OG");
-  const obogList = players.filter((p) => p.status === "OB・OG");
   const playerLimit = playerLimitForPlan(plan);
   const atLimit = playerLimit !== null && activeList.length >= playerLimit;
 
@@ -158,11 +167,11 @@ export default function PlayersPage() {
         )}
       </Card>
 
-      {!loading && obogList.length > 0 && (
+      {!loading && obogCount > 0 && (
         <Link href="/players/obog">
           <Card className="cursor-pointer">
             <div className="flex items-center justify-between">
-              <div className="font-bold text-[13.5px]">OB・OG({obogList.length}名)</div>
+              <div className="font-bold text-[13.5px]">OB・OG({obogCount}名)</div>
               <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
           </Card>
