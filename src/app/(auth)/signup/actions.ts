@@ -11,6 +11,10 @@ import { CURRENT_TERMS_VERSION } from "@/lib/legal";
 export interface FormState {
   error?: string;
   message?: string;
+  // メール確認待ち(確認コード入力)の状態に入っているかどうか。trueの間は
+  // SignupFormがコード入力フォームを表示し続ける(email保持のため必須)。
+  awaitingCode?: boolean;
+  email?: string;
 }
 
 // チーム名・氏名・競技等はここでは聞かず、メール確認後に/setup(既存の
@@ -68,9 +72,41 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
 
   if (!data.session) {
     return {
-      message: "確認メールを送信しました。メール内のリンクを開いて認証を完了してください。",
+      message: "確認メールを送信しました。メールに記載の6桁のコードを入力してください。",
+      awaitingCode: true,
+      email,
     };
   }
 
   redirect("/setup");
+}
+
+// メール内のリンクではなく、メールに記載された6桁の確認コードをその場で入力して
+// 完了させる経路(ネイティブアプリ化時のディープリンク依存を避けるため)。
+// リンク経由(/auth/confirm)も引き続き有効なまま残しており、どちらか先着した方で
+// 確認が完了する(両方試しても2回目は「既に確認済み」エラーになるだけで無害)。
+export async function verifySignupCode(prev: FormState, formData: FormData): Promise<FormState> {
+  const email = String(formData.get("email") ?? prev.email ?? "").trim();
+  const code = String(formData.get("code") ?? "").trim();
+  if (!code) {
+    return { awaitingCode: true, email, error: "確認コードを入力してください" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+  if (error) {
+    return { awaitingCode: true, email, error: "コードが正しくないか、有効期限が切れています" };
+  }
+
+  redirect("/setup");
+}
+
+export async function resendSignupCode(prev: FormState, formData: FormData): Promise<FormState> {
+  const email = String(formData.get("email") ?? prev.email ?? "").trim();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  if (error) {
+    return { awaitingCode: true, email, error: `再送に失敗しました: ${error.message}` };
+  }
+  return { awaitingCode: true, email, message: "確認コードを再送しました。" };
 }
