@@ -87,6 +87,9 @@ export default async function Home() {
           <a href="/tokushoho" className="underline">
             特定商取引法に基づく表記
           </a>
+          <a href="/contact" className="underline">
+            お問い合わせ
+          </a>
         </div>
         <div className="text-[10px] text-ink-soft mt-2">Powered by FAITH CREATION</div>
       </div>
