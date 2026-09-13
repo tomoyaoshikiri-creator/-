@@ -50,7 +50,11 @@ export default function PricingPage() {
           <div className="font-bold text-[14px] mb-0.5">{PLAN_DISPLAY_LABELS["Max"]}</div>
           <div className="text-[13px] font-bold text-ink mb-1">個別見積もり</div>
           <div className="text-[11.5px] text-ink-soft">
-            スポーツテスト・各種検定など、大規模チーム向けの機能を含みます。お問い合わせください。
+            スポーツテスト・各種検定など、大規模チーム向けの機能を含みます。
+            <Link href="/contact" className="underline font-bold text-ink">
+              お問い合わせください
+            </Link>
+            。
           </div>
         </div>
 
@@ -63,9 +67,12 @@ export default function PricingPage() {
           </Link>
         </div>
 
-        <div className="text-center mt-6">
-          <a href="/tokushoho" target="_blank" className="text-[11px] text-ink-soft underline">
+        <div className="flex items-center justify-center gap-3 text-[11px] text-ink-soft mt-6">
+          <a href="/tokushoho" target="_blank" className="underline">
             特定商取引法に基づく表記
+          </a>
+          <a href="/contact" className="underline">
+            お問い合わせ
           </a>
         </div>
       </div>
