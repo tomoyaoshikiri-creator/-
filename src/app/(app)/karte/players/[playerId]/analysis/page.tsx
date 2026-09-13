@@ -262,17 +262,6 @@ export default function PlayerAnalysisPage() {
         </>
       )}
 
-      {role === "管理者" && hasAiAnalysisAccess(plan) && (
-        <button
-          type="button"
-          onClick={() => setAnalysisOpen(true)}
-          className="w-full text-left bg-orange/8 border border-orange rounded-lg px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
-        >
-          <div className="font-bold text-[12.5px] text-orange">分析用抽出</div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
-        </button>
-      )}
-
       <SectionLabel>選手AI分析</SectionLabel>
 
       {notesLoading ? (
@@ -384,6 +373,17 @@ export default function PlayerAnalysisPage() {
             </Card>
           ),
         )
+      )}
+
+      {role === "管理者" && hasAiAnalysisAccess(plan) && (
+        <button
+          type="button"
+          onClick={() => setAnalysisOpen(true)}
+          className="w-full text-left bg-orange/8 border border-orange rounded-lg px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
+        >
+          <div className="font-bold text-[12.5px] text-orange">分析用抽出</div>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
+        </button>
       )}
 
       {canManagePlayers(role) && (
