@@ -274,7 +274,7 @@ export default function PlayerStatsPage() {
                             >
                               {teamAverages ? (
                                 <>
-                                  <div>{teamAverages.rebOff + teamAverages.rebDef}</div>
+                                  <div>{teamAverages.reb}</div>
                                   <div className="text-ink-soft text-[9.5px] font-normal">
                                     {teamAverages.rebOff} - {teamAverages.rebDef}
                                   </div>

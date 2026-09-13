@@ -180,7 +180,7 @@ export default function KarteTeamGamePage() {
                     return (
                       <div key="reb">
                         <div className="text-[10px] text-ink-soft font-bold">REB</div>
-                        <div className="font-mono font-bold text-[13px] mt-0.5">{a.rebOff + a.rebDef}</div>
+                        <div className="font-mono font-bold text-[13px] mt-0.5">{a.reb}</div>
                         <div className="text-ink-soft text-[10px]">
                           {a.rebOff} - {a.rebDef}
                         </div>
