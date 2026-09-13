@@ -267,14 +267,20 @@ export type TeamGameStatAveragesRow = Database["public"]["Functions"]["team_game
 export function toSeasonStatAverages(row: TeamGameStatAveragesRow): SeasonStatAverages {
   const twoMadeTotal = row.fg_made_total - row.three_made_total;
   const twoAttTotal = row.fg_att_total - row.three_att_total;
+  const rebOff = row.reb_off ?? 0;
+  const rebDef = row.reb_def ?? 0;
   return {
     gp: 0,
     pts: row.pts ?? 0,
     fgMade: 0,
     ftMade: 0,
-    reb: 0,
-    rebOff: row.reb_off ?? 0,
-    rebDef: row.reb_def ?? 0,
+    // rebOff/rebDefはSQL側で既に小数第1位に丸め済みのため、単純に足し合わせると
+    // 浮動小数点誤差(例: 1.2 + 1.4 = 2.5999999999999996)が表示されてしまう。
+    // round1で丸め直すことでそれを防ぐ(computeSeasonAverages/computeTeamAveragesの
+    // reb算出と同じ考え方)。
+    reb: round1(rebOff + rebDef),
+    rebOff,
+    rebDef,
     ast: row.ast ?? 0,
     stl: row.stl ?? 0,
     blk: row.blk ?? 0,
