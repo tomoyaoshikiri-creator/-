@@ -122,12 +122,12 @@ export default function TeamAnalysisNoteDetailPage() {
       return;
     }
     toast("メモを削除しました");
-    router.replace("/karte/team");
+    router.replace("/karte/team/analysis");
   }
 
   if (loading) {
     return (
-      <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team" accessBadge="coach" />}>
+      <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team/analysis" accessBadge="coach" />}>
         <EmptyState>読み込み中…</EmptyState>
       </PageShell>
     );
@@ -135,14 +135,14 @@ export default function TeamAnalysisNoteDetailPage() {
 
   if (!note) {
     return (
-      <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team" accessBadge="coach" />}>
+      <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team/analysis" accessBadge="coach" />}>
         <EmptyState>見つかりません</EmptyState>
       </PageShell>
     );
   }
 
   return (
-    <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team/analysis" accessBadge="coach" />}>
       <Card>
         <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
           <span>

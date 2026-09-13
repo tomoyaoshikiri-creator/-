@@ -31,7 +31,7 @@ export default function PlayerAnalysisNoteDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const backHref = `/karte/players/${params.playerId}`;
+  const backHref = `/karte/players/${params.playerId}/analysis`;
 
   useUnsavedChangesGuard(editing && note !== null && editBody !== note.body);
 
