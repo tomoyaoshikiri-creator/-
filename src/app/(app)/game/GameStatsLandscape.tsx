@@ -184,7 +184,7 @@ export function GameStatsLandscape({
   possession: "own" | "opponent" | null;
   onSetPossession: (side: "own" | "opponent") => void;
 }) {
-  const { sport } = useSession();
+  const { sport, teamName } = useSession();
   const gridCells = buildGridCells(usesThreePointScoring(sport));
   const [selected, setSelected] = useState<{ side: Side; id: string } | null>(null);
   const [ftModalOpen, setFtModalOpen] = useState(false);
@@ -288,7 +288,7 @@ export function GameStatsLandscape({
     setCorrecting(null);
   }
 
-  const ownName = schedule?.title ?? "自チーム";
+  const ownName = teamName || "自チーム";
   const oppName = match.opponent || "相手";
 
   return (
