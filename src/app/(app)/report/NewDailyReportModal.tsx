@@ -10,6 +10,7 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { safeExt } from "@/lib/storagePath";
 import { cleanupUploadedObjects, rollbackParentAndObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { DateSelect, DATE_OPTIONS } from "./DateSelect";
 
 export function NewDailyReportModal({
@@ -135,6 +136,7 @@ export function NewDailyReportModal({
 
     setSaving(false);
     reset();
+    sendPushNotification("daily_report_created", report.id);
     onCreated();
   }
 
