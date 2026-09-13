@@ -13,8 +13,9 @@ import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
-import { ReactionButtons } from "@/components/ReactionButtons";
+import { ReactionButtons, ReactionSummary } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
+import { CollapsibleList } from "@/components/CollapsibleList";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
@@ -58,6 +59,7 @@ export default function KarteTeamPage() {
   const [noteProfiles, setNoteProfiles] = useCachedState<Record<string, string>>("karteTeam:noteProfiles", {});
   const [notesLoading, setNotesLoading] = useState(() => !hasCachedValue("karteTeam:notes"));
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
+  const [showAllAiNotes, setShowAllAiNotes] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteBody, setEditNoteBody] = useState("");
@@ -66,6 +68,10 @@ export default function KarteTeamPage() {
 
   const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
+  // AI分析(自動生成)とスタッフの手動コメントは別々のセクションとして見せる
+  // (AI分析はカード表示+タップで詳細ページへ、スタッフコメントは従来通り本文をその場に表示)。
+  const aiNotes = analysisNotes.filter((n) => n.source === "ai");
+  const staffNotes = analysisNotes.filter((n) => n.source !== "ai");
 
   const loadNotes = useCallback(async () => {
     if (!hasCachedValue("karteTeam:notes")) setNotesLoading(true);
@@ -309,16 +315,48 @@ export default function KarteTeamPage() {
 
       {isStaff && hasAiAnalysisAccess(plan) && (
         <>
-          <SectionLabel>チームAI分析フィードバック</SectionLabel>
+          <SectionLabel>チームAI分析</SectionLabel>
 
           {notesLoading ? (
             <EmptyState>読み込み中…</EmptyState>
-          ) : analysisNotes.length === 0 ? (
+          ) : aiNotes.length === 0 ? (
+            <Card>
+              <div className="text-xs text-ink-soft">まだAI分析がありません</div>
+            </Card>
+          ) : (
+            <CollapsibleList
+              items={aiNotes}
+              showAll={showAllAiNotes}
+              onShowAll={() => setShowAllAiNotes(true)}
+              renderItem={(n) => (
+                <Link key={n.id} href={`/karte/team/notes/${n.id}`}>
+                  <Card className="cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-[11px] font-bold text-ink-soft tracking-wide">
+                          {formatDateLabel(n.created_at.slice(0, 10))}
+                        </span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+                          AI分析
+                        </span>
+                      </div>
+                      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                    </div>
+                    <ReactionSummary reactions={noteReactions.filter((r) => r.note_id === n.id)} />
+                  </Card>
+                </Link>
+              )}
+            />
+          )}
+
+          <SectionLabel>スタッフコメント</SectionLabel>
+
+          {notesLoading ? null : staffNotes.length === 0 ? (
             <Card>
               <div className="text-xs text-ink-soft">まだコメントがありません</div>
             </Card>
           ) : (
-            analysisNotes.map((n) =>
+            staffNotes.map((n) =>
               editingNoteId === n.id ? (
                 <Card key={n.id}>
                   <textarea
@@ -359,11 +397,6 @@ export default function KarteTeamPage() {
                       {formatDateLabel(n.created_at.slice(0, 10))}
                       {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
                     </span>
-                    {n.source === "ai" && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
-                        AI分析
-                      </span>
-                    )}
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   <ReactionButtons

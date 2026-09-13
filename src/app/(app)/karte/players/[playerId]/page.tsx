@@ -14,8 +14,9 @@ import { FieldLabel, SubmitButton, TextTab, inputClass } from "@/components/ui/S
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
-import { ReactionButtons } from "@/components/ReactionButtons";
+import { ReactionButtons, ReactionSummary } from "@/components/ReactionButtons";
 import { AiUsageIndicator } from "@/components/AiUsageIndicator";
+import { CollapsibleList } from "@/components/CollapsibleList";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
@@ -119,6 +120,7 @@ export default function KartePlayerPage() {
   const [noteReactions, setNoteReactions] = useState<PlayerAnalysisNoteReaction[]>([]);
   const [noteProfiles, setNoteProfiles] = useState<Record<string, string>>({});
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
+  const [showAllAiNotes, setShowAllAiNotes] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editNoteBody, setEditNoteBody] = useState("");
@@ -127,6 +129,10 @@ export default function KartePlayerPage() {
 
   const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
+  // AI分析(自動生成)とスタッフの手動コメントは別々のセクションとして見せる
+  // (AI分析はカード表示+タップで詳細ページへ、スタッフコメントは従来通り本文をその場に表示)。
+  const aiNotes = analysisNotes.filter((n) => n.source === "ai");
+  const staffNotes = analysisNotes.filter((n) => n.source !== "ai");
 
   useEffect(() => {
     if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
@@ -917,87 +923,114 @@ export default function KartePlayerPage() {
         </>
       )}
 
-      {hasAiAnalysisAccess(plan) && <SectionLabel>選手AI分析フィードバック</SectionLabel>}
-      {hasAiAnalysisAccess(plan) && (
-        analysisNotes.length === 0 ? (
-        <Card>
-          <div className="text-xs text-ink-soft">まだコメントがありません</div>
-        </Card>
-      ) : (
-        analysisNotes.map((n) =>
-          editingNoteId === n.id ? (
-            <Card key={n.id}>
-              <textarea
-                rows={3}
-                className={inputClass()}
-                value={editNoteBody}
-                onChange={(e) => setEditNoteBody(e.target.value)}
-              />
-              <div className="flex gap-2 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSaveNoteEdit(n.id)}
-                  disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
-                >
-                  {savingNoteEdit ? "保存中…" : "保存"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingNoteId(null)}
-                  disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
-                >
-                  キャンセル
-                </button>
-              </div>
-            </Card>
-          ) : (
-            <Card
-              key={n.id}
-              className={canManagePlayers(role) ? "cursor-pointer" : ""}
-              onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
-            >
-              <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                <span>
-                  {formatDateLabel(n.created_at.slice(0, 10))}
-                  {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
-                </span>
-                {n.source === "ai" && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
-                    AI分析
-                  </span>
-                )}
-              </div>
-              <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
-              <ReactionButtons
-                reactions={noteReactions.filter((r) => r.note_id === n.id)}
-                onToggle={(type) => toggleNoteReaction(n.id, type)}
-                profiles={noteProfiles}
-              />
-              {canManagePlayers(role) && expandedNoteId === n.id && (
-                <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+      {hasAiAnalysisAccess(plan) && <SectionLabel>選手AI分析</SectionLabel>}
+      {hasAiAnalysisAccess(plan) &&
+        (aiNotes.length === 0 ? (
+          <Card>
+            <div className="text-xs text-ink-soft">まだAI分析がありません</div>
+          </Card>
+        ) : (
+          <CollapsibleList
+            items={aiNotes}
+            showAll={showAllAiNotes}
+            onShowAll={() => setShowAllAiNotes(true)}
+            renderItem={(n) => (
+              <Link key={n.id} href={`/karte/players/${player.id}/notes/${n.id}`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-[11px] font-bold text-ink-soft tracking-wide">
+                        {formatDateLabel(n.created_at.slice(0, 10))}
+                      </span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+                        AI分析
+                      </span>
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </div>
+                  <ReactionSummary reactions={noteReactions.filter((r) => r.note_id === n.id)} />
+                </Card>
+              </Link>
+            )}
+          />
+        ))}
+
+      {hasAiAnalysisAccess(plan) && <SectionLabel>スタッフコメント</SectionLabel>}
+      {hasAiAnalysisAccess(plan) &&
+        (staffNotes.length === 0 ? (
+          <Card>
+            <div className="text-xs text-ink-soft">まだコメントがありません</div>
+          </Card>
+        ) : (
+          staffNotes.map((n) =>
+            editingNoteId === n.id ? (
+              <Card key={n.id}>
+                <textarea
+                  rows={3}
+                  className={inputClass()}
+                  value={editNoteBody}
+                  onChange={(e) => setEditNoteBody(e.target.value)}
+                />
+                <div className="flex gap-2 mt-1.5">
                   <button
                     type="button"
-                    onClick={() => startEditNote(n)}
-                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                    onClick={() => handleSaveNoteEdit(n.id)}
+                    disabled={savingNoteEdit}
+                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
                   >
-                    編集
+                    {savingNoteEdit ? "保存中…" : "保存"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDeleteNote(n.id)}
-                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    onClick={() => setEditingNoteId(null)}
+                    disabled={savingNoteEdit}
+                    className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-white"
                   >
-                    {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
+                    キャンセル
                   </button>
                 </div>
-              )}
-            </Card>
-          ),
-        )
-      ))}
+              </Card>
+            ) : (
+              <Card
+                key={n.id}
+                className={canManagePlayers(role) ? "cursor-pointer" : ""}
+                onClick={canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined}
+              >
+                <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                  <span>
+                    {formatDateLabel(n.created_at.slice(0, 10))}
+                    {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                  </span>
+                </div>
+                <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
+                <ReactionButtons
+                  reactions={noteReactions.filter((r) => r.note_id === n.id)}
+                  onToggle={(type) => toggleNoteReaction(n.id, type)}
+                  profiles={noteProfiles}
+                />
+                {canManagePlayers(role) && expandedNoteId === n.id && (
+                  <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => startEditNote(n)}
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-line text-ink-soft bg-paper"
+                    >
+                      編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteNote(n.id)}
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
+                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    >
+                      {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
+                    </button>
+                  </div>
+                )}
+              </Card>
+            ),
+          )
+        ))}
 
       {canManagePlayers(role) && hasAiAnalysisAccess(plan) && (
         <>
