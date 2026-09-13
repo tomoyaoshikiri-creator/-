@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from "react";
+import { InboxIcon } from "@/components/icons";
 
 export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
@@ -42,5 +43,13 @@ export function SectionLabel({
 }
 
 export function EmptyState({ children }: { children: React.ReactNode }) {
-  return <div className="text-[12.5px] text-ink-soft text-center py-5">{children}</div>;
+  // 「読み込み中…」は読み込み中であって空データではないため、アイコンは出さない
+  // (アプリ全体でこの文言はEmptyStateのloading表示として一貫して使われている)。
+  const isLoading = children === "読み込み中…";
+  return (
+    <div className="text-[12.5px] text-ink-soft text-center py-5">
+      {!isLoading && <InboxIcon className="w-7 h-7 mx-auto mb-2 opacity-40" />}
+      {children}
+    </div>
+  );
 }
