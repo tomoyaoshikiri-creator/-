@@ -95,6 +95,12 @@ export async function POST(request: Request) {
     {
       mode: "subscription",
       customer: customerId,
+      // Stripeの住所ベース自動税額計算を有効にする。既存customerを渡す場合、
+      // Stripe側は「請求先住所が確定するまで課税額を計算できない」ため、
+      // Checkout上で入力された住所をcustomerへ保存する許可(customer_update.address)を
+      // あわせて渡す必要がある(渡さないとautomatic_tax有効時にセッション作成が失敗する)。
+      automatic_tax: { enabled: true },
+      customer_update: { address: "auto" },
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/settings/plan?checkout=success`,
       cancel_url: `${origin}/settings/plan?checkout=cancel`,
