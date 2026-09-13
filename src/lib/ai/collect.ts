@@ -46,6 +46,13 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
 // GAME_COLUMNS/THREE_POINT_GAME_COLUMNSのkeyから読める値だけを、AIに渡す
 // プレーンなRecord<string, number|null>に変換する(SeasonStatAveragesの内部表現を
 // そのまま渡さず、abbr(PTS等)をキーにして意味が伝わりやすくする)。
+//
+// FG%/FT%だけでは母数(成功数・試投数)が分からず、少数試行による極端な%を実際より
+// 重視してしまう恐れがあるため、成功数・試投数(FGM/FGA/FTM/FTA)も渡す
+// (COMMON_ANALYSIS_CONTEXTの「少数試行の割合表現」判断に使わせる)。これらは
+// averagesの集計対象(渡されたlinesが1試合分ならその試合、シーズン全体ならシーズン
+// 合計)に応じた正確な値になる。またGAME_COLUMNSにはOFF/DEF(内訳)しかないため、
+// その合計本数(REB)も追加する。
 function basketballAveragesToRecord(
   averages: SeasonStatAverages,
   includeThreePoint: boolean,
@@ -55,6 +62,11 @@ function basketballAveragesToRecord(
   cols.forEach((c) => {
     out[c.abbr] = averages[c.key] as number | null;
   });
+  out["FGM"] = averages.fgMadeTotal;
+  out["FGA"] = averages.fgAttTotal;
+  out["FTM"] = averages.ftMadeTotal;
+  out["FTA"] = averages.ftAttTotal;
+  out["REB"] = averages.reb;
   return out;
 }
 
