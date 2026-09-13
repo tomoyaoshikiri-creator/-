@@ -11,7 +11,11 @@ export type PushEventType =
   | "game_note_created"
   | "game_note_reaction"
   | "player_note_created"
-  | "player_note_reaction";
+  | "player_note_reaction"
+  | "daily_report_created"
+  | "daily_report_comment_created"
+  | "coach_note_created"
+  | "coach_note_comment_created";
 
 export function sendPushNotification(eventType: PushEventType, refId: string) {
   fetch("/api/push/notify", {

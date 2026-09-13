@@ -17,6 +17,7 @@ import { formatFullDateLabel } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
 import { isImageFile } from "@/lib/storagePath";
+import { sendPushNotification } from "@/lib/pushNotify";
 import type {
   Report,
   ReportAttachment,
@@ -193,6 +194,12 @@ export default function CoachNoteDetailPage() {
       return;
     }
     setCommentDraft("");
+    // コメントの追加は日報本体の行自体を更新しないため、このままだとホームの新着・
+    // 各種未読バッジ(いずれもreportsのcreated_at/updated_atを見ている)に反映されない。
+    // 日報本体のupdated_atを更新して拾われるようにする(失敗してもコメント投稿自体は
+    // 成功しているため、ベストエフォートでエラー表示はしない)。
+    await supabase.from("reports").update({ updated_at: new Date().toISOString() }).eq("id", report.id);
+    sendPushNotification("coach_note_comment_created", report.id);
     const { data } = await supabase
       .from("report_comments")
       .select("*")

@@ -17,6 +17,7 @@ import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan"
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
 import { isImageFile } from "@/lib/storagePath";
+import { sendPushNotification } from "@/lib/pushNotify";
 import type {
   DailyReport,
   DailyReportAttachment,
@@ -202,6 +203,12 @@ export default function DailyReportDetailPage() {
       return;
     }
     setCommentDraft("");
+    // コメントの追加は日報本体の行自体を更新しないため、このままだとホームの新着・
+    // 各種未読バッジ(いずれもdaily_reportsのcreated_at/updated_atを見ている)に
+    // 反映されない。日報本体のupdated_atを更新して拾われるようにする(失敗しても
+    // コメント投稿自体は成功しているため、ベストエフォートでエラー表示はしない)。
+    await supabase.from("daily_reports").update({ updated_at: new Date().toISOString() }).eq("id", report.id);
+    sendPushNotification("daily_report_comment_created", report.id);
     const { data } = await supabase
       .from("daily_report_comments")
       .select("*")
