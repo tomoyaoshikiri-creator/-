@@ -59,7 +59,15 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 bg-heading/50 flex items-end justify-center px-3 z-40"
+      className="fixed inset-0 bg-heading/50 flex items-end justify-center z-40"
+      style={{
+        // position:fixedは.app-shell(env(safe-area-inset-left/right)をpaddingで
+        // 吸収している)の外側、実際の画面物理端を基準に配置されるため、ここでも
+        // 同様にenv()を足しておかないと横向き時にノッチ・ラウンド角の直下に
+        // モーダルが来かねない(px-3固定値だけでは不足するケースがある)。
+        paddingLeft: "calc(0.75rem + env(safe-area-inset-left))",
+        paddingRight: "calc(0.75rem + env(safe-area-inset-right))",
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
