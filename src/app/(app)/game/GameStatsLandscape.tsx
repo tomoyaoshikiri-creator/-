@@ -566,7 +566,7 @@ function LogColumn({
         {title}
       </div>
       <div className="flex-1 overflow-y-auto flex flex-col gap-0.5">
-        {entries.map((e) => (
+        {entries.slice(0, 10).map((e) => (
           <div key={e.id}>
             <button
               type="button"
