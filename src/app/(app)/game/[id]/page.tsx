@@ -503,8 +503,12 @@ export default function GameDetailPage() {
                       : `/game/custom-stats/${selectedMatch.id}`,
                   )
                 }
-                className="flex-[2] py-2.5 rounded-lg border border-orange text-white font-bold text-[13px] active:opacity-85"
+                className="flex-[2] py-2.5 rounded-lg border border-orange font-bold text-[13px] active:opacity-85"
                 style={{
+                  // 文字色は任意のteamPrimaryでも可読性を確保するため、SubmitButton/SegButtonと
+                  // 同じくコントラスト安全な--on-team-primaryを使う(固定text-whiteだと明るい
+                  // teamPrimaryの場合に文字が読めなくなる)。
+                  color: "var(--on-team-primary)",
                   background:
                     "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
                 }}

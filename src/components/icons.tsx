@@ -197,3 +197,14 @@ export function SettingsIcon(props: IconProps) {
     </svg>
   );
 }
+
+// EmptyState(データなし・見つかりません等)用の空き箱アイコン。
+export function InboxIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 12l2.5-7h11L20 12" />
+      <path d="M4 12v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6" />
+      <path d="M4 12h4.5a.5.5 0 0 1 .47.33A2.5 2.5 0 0 0 11.35 14h1.3a2.5 2.5 0 0 0 2.38-1.67.5.5 0 0 1 .47-.33H20" />
+    </svg>
+  );
+}
