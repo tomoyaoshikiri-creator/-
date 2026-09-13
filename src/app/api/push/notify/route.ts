@@ -170,6 +170,67 @@ export async function POST(request: Request) {
       memberIds = await staffMemberIds(adminClient, teamId);
       break;
     }
+    case "daily_report_created": {
+      const { data: report } = await supabase
+        .from("daily_reports")
+        .select("id, author_id")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!report || report.author_id !== user.id) {
+        return NextResponse.json({ error: "日報が見つかりません" }, { status: 404 });
+      }
+      title = "📝 チーム日報が登録されました";
+      body = "チーム日報が登録されました";
+      url = `/report/${report.id}`;
+      // チーム日報は全ロールが書けるが、通知対象は指導者・管理者のみ(ユーザー指定)。
+      memberIds = await staffMemberIds(adminClient, teamId);
+      break;
+    }
+    case "daily_report_comment_created": {
+      const { data: report } = await supabase
+        .from("daily_reports")
+        .select("id, author_id")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!report?.author_id || report.author_id === user.id) {
+        return NextResponse.json({ ok: true, target: 0, sent: 0, failures: [] });
+      }
+      title = "コメントがつきました";
+      body = `${await getActorName(supabase, user.id)}さんがチーム日報にコメントしました`;
+      url = `/report/${report.id}`;
+      memberIds = [report.author_id];
+      break;
+    }
+    case "coach_note_created": {
+      const { data: report } = await supabase
+        .from("reports")
+        .select("id, author_id")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!report || report.author_id !== user.id) {
+        return NextResponse.json({ error: "コーチ日報が見つかりません" }, { status: 404 });
+      }
+      title = "📝 コーチ日報が登録されました";
+      body = "コーチ日報が登録されました";
+      url = `/coach-note/${report.id}`;
+      memberIds = await staffMemberIds(adminClient, teamId);
+      break;
+    }
+    case "coach_note_comment_created": {
+      const { data: report } = await supabase
+        .from("reports")
+        .select("id, author_id")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!report?.author_id || report.author_id === user.id) {
+        return NextResponse.json({ ok: true, target: 0, sent: 0, failures: [] });
+      }
+      title = "コメントがつきました";
+      body = `${await getActorName(supabase, user.id)}さんがコーチ日報にコメントしました`;
+      url = `/coach-note/${report.id}`;
+      memberIds = [report.author_id];
+      break;
+    }
     default:
       return NextResponse.json({ error: "unknown eventType" }, { status: 400 });
   }
