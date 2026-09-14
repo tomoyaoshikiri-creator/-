@@ -93,12 +93,13 @@ export async function computeUnseenNoticeIds(userId: string): Promise<Set<string
   const supabase = createClient();
   const [seenMap, { data: notices }] = await Promise.all([
     loadSeenMap(userId, "notice"),
-    supabase.from("notices").select("id, sender_id, created_at"),
+    supabase.from("notices").select("id, sender_id, created_at, updated_at"),
   ]);
   const unseen = new Set<string>();
   (notices ?? []).forEach((n) => {
     if (n.sender_id === userId) return;
-    if (isNewer(n.created_at, seenMap.get(n.id))) unseen.add(n.id);
+    const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
+    if (isNewer(latest, seenMap.get(n.id))) unseen.add(n.id);
   });
   return unseen;
 }

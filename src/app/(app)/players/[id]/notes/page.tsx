@@ -116,6 +116,11 @@ export default function PlayerNotesPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
+      // リアクションはplayer_notes自体を更新しないため、そのままだと一覧のNEW表示
+      // (created_at/updated_atを見ている)に反映されない。updated_atを更新して拾われる
+      // ようにする(失敗してもリアクション自体は成功しているため、ベストエフォートで
+      // エラー表示はしない)。
+      await supabase.from("player_notes").update({ updated_at: new Date().toISOString() }).eq("id", noteId);
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
       if (authorId && authorId !== userId) {
         sendPushNotification("player_note_reaction", noteId);

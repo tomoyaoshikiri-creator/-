@@ -226,10 +226,10 @@ export default function HomePage() {
       const [noticesRes, reportsRes, coachRes] = await Promise.all([
         supabase
           .from("notices")
-          .select("id, title, created_at, sender_id")
-          .gt("created_at", noticeSeen)
+          .select("id, title, created_at, updated_at, sender_id")
+          .or(`created_at.gt.${noticeSeen},updated_at.gt.${noticeSeen}`)
           .neq("sender_id", userId)
-          .order("created_at", { ascending: false })
+          .order("updated_at", { ascending: false })
           .limit(20),
         supabase
           .from("daily_reports")
