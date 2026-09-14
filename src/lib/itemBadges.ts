@@ -14,6 +14,37 @@ export async function markItemSeen(userId: string, itemType: ItemType, itemId: s
   );
 }
 
+// markItemSeenと違い、更新前の既読日時(previous)を返してから既読状態を更新する。
+// コンテナ(日報・選手・チーム等)を開いた瞬間にitem_last_seenが更新されてしまうため、
+// 開いた後に一覧の中の個別項目(コメント・メモ等)へ「NEW」表示を出すには、更新前の
+// 既読日時を先に読んでおく必要がある。
+export async function markItemSeenAndGetPrevious(
+  userId: string,
+  itemType: ItemType,
+  itemId: string,
+): Promise<string | null> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("item_last_seen")
+    .select("seen_at")
+    .eq("user_id", userId)
+    .eq("item_type", itemType)
+    .eq("item_id", itemId)
+    .maybeSingle();
+  const previous = data?.seen_at ?? null;
+  await markItemSeen(userId, itemType, itemId);
+  return previous;
+}
+
+// candidate(項目の作成日時・更新日時のうち新しい方)が、前回そのコンテナを開いた日時
+// (previous)より後かどうかを判定する。previousがnull(そのコンテナを一度も開いたことが
+// ない)の場合は、一覧内の全項目が「初めて見る」だけであり「前回から新しく増えた」
+// わけではないため、falseを返す(この場合は一覧内の個別NEW表示をせず、コンテナ自体の
+// 「NEW」バッジ〈一覧画面のカード側〉だけで新着であることを示す)。
+export function isNewSincePrevious(previous: string | null, candidate: string): boolean {
+  return previous !== null && candidate > previous;
+}
+
 async function loadSeenMap(userId: string, itemType: ItemType): Promise<Map<string, string>> {
   const supabase = createClient();
   const { data } = await supabase
