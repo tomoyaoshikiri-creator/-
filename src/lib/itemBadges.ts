@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/client";
 
 // タブ単位のtab_last_seen(tabBadges.ts)とは別に、一覧の中の「どの項目が新着か」を
 // 個別に判定するための仕組み。項目の種類ごとに1件、最後に見た日時を記録する。
-export type ItemType = "player_notes" | "player_analysis" | "team_analysis" | "notice" | "daily_report" | "coach_note";
+export type ItemType =
+  | "player_notes"
+  | "player_analysis"
+  | "team_analysis"
+  | "notice"
+  | "daily_report"
+  | "coach_note"
+  | "game_match_note";
 
 export async function markItemSeen(userId: string, itemType: ItemType, itemId: string) {
   const supabase = createClient();
@@ -85,6 +92,23 @@ export async function computeUnseenPlayerAnalysisIds(userId: string): Promise<Se
     if (n.author_id === userId) return;
     const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
     if (isNewer(latest, seenMap.get(n.player_id))) unseen.add(n.player_id);
+  });
+  return unseen;
+}
+
+// コーチメモは選手メモ(player_notes)と同じ構造(1試合=1コンテナに複数のメモ)なので、
+// 対象IDはgame_match_id(試合)。
+export async function computeUnseenGameMatchNoteIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const [seenMap, { data: notes }] = await Promise.all([
+    loadSeenMap(userId, "game_match_note"),
+    supabase.from("game_match_notes").select("game_match_id, author_id, created_at, updated_at"),
+  ]);
+  const unseen = new Set<string>();
+  (notes ?? []).forEach((n) => {
+    if (n.author_id === userId) return;
+    const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
+    if (isNewer(latest, seenMap.get(n.game_match_id))) unseen.add(n.game_match_id);
   });
   return unseen;
 }
