@@ -13,6 +13,7 @@ import { SegButton } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { VideoIcon } from "@/components/icons";
 import { canAccessTab, canRecordGames } from "@/lib/permissions";
+import { computeUnseenGameMatchNoteIds } from "@/lib/itemBadges";
 import { FREE_GAME_RESULT_LIMIT, hasFullGameHistoryAccess } from "@/lib/plan";
 import { formatDateLabel, effectiveFiscalYear, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
@@ -38,13 +39,14 @@ const GAME_RESULTS_FETCH_LIMIT = 500;
 
 export default function GameResultsPage() {
   const router = useRouter();
-  const { role, plan } = useSession();
+  const { userId, role, plan } = useSession();
   const hasFullHistory = hasFullGameHistoryAccess(plan);
   const [allMatches, setAllMatches] = useState<MatchWithDate[]>([]);
   const [category, setCategory] = useState<GameCategory | "all">("all");
   const [fiscalYear, setFiscalYear] = useState<number | "all">("all");
   const [yearInitialized, setYearInitialized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [unseenNoteMatchIds, setUnseenNoteMatchIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     (async () => {
@@ -76,6 +78,13 @@ export default function GameResultsPage() {
   useEffect(() => {
     if (!canAccessTab(role, "game")) router.replace("/home");
   }, [role, router]);
+
+  // コーチメモは試合記録を操作できるロール(指導者・管理者)のみ閲覧できるため、
+  // それ以外のロールでは新着判定自体を行わない。
+  useEffect(() => {
+    if (!canRecordGames(role)) return;
+    computeUnseenGameMatchNoteIds(userId).then(setUnseenNoteMatchIds);
+  }, [role, userId]);
 
   const availableYears = Array.from(
     new Set(
@@ -175,8 +184,11 @@ export default function GameResultsPage() {
                     {m.schedules.game_category}
                   </span>
                 )}
-                <div className="font-bold text-[12.5px] flex-1 min-w-0 truncate">
-                  {m.opponent || "(対戦相手未設定)"}
+                <div className="font-bold text-[12.5px] flex-1 min-w-0 flex items-center gap-1">
+                  {unseenNoteMatchIds.has(m.id) && (
+                    <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" aria-label="コーチメモに新着あり" />
+                  )}
+                  <span className="truncate">{m.opponent || "(対戦相手未設定)"}</span>
                 </div>
                 <div className="font-mono font-bold text-[13px] text-ink flex-shrink-0 mx-1">
                   {teamScore}-{opponentScore}
