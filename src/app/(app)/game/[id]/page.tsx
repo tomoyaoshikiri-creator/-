@@ -16,6 +16,8 @@ import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
+import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
+import { NewBadge } from "@/components/ui/Pill";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { isImageFile, safeExt } from "@/lib/storagePath";
 import { formatDateLabel, formatBytes, scheduleMeta } from "@/lib/format";
@@ -60,6 +62,7 @@ export default function GameDetailPage() {
   const [editNoteBody, setEditNoteBody] = useState("");
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+  const [prevSeenAt, setPrevSeenAt] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -167,7 +170,12 @@ export default function GameDetailPage() {
     setEditingNoteId(null);
     setExpandedNoteId(null);
     loadNotes(selectedMatchId);
-  }, [selectedMatchId, loadNotes]);
+    if (selectedMatchId) {
+      markItemSeenAndGetPrevious(userId, "game_match_note", selectedMatchId).then(setPrevSeenAt);
+    } else {
+      setPrevSeenAt(null);
+    }
+  }, [selectedMatchId, loadNotes, userId]);
 
   useUnsavedChangesGuard(noteBody.trim() !== "");
   const editingNote = notes.find((n) => n.id === editingNoteId);
@@ -203,6 +211,11 @@ export default function GameDetailPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
+      // リアクションはgame_match_notes自体を更新しないため、そのままだと一覧のNEW表示
+      // (created_at/updated_atを見ている)に反映されない。updated_atを更新して拾われる
+      // ようにする(失敗してもリアクション自体は成功しているため、ベストエフォートで
+      // エラー表示はしない)。
+      await supabase.from("game_match_notes").update({ updated_at: new Date().toISOString() }).eq("id", noteId);
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
       if (authorId && authorId !== userId) {
         sendPushNotification("game_note_reaction", noteId);
@@ -705,9 +718,15 @@ export default function GameDetailPage() {
                       className="cursor-pointer"
                       onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
                     >
-                      <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                        {formatDateLabel(n.created_at.slice(0, 10))}
-                        {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                      <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                        {n.author_id !== userId &&
+                          isNewSincePrevious(prevSeenAt, n.updated_at > n.created_at ? n.updated_at : n.created_at) && (
+                            <NewBadge />
+                          )}
+                        <span>
+                          {formatDateLabel(n.created_at.slice(0, 10))}
+                          {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}
+                        </span>
                       </div>
                       <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                       <ReactionButtons
