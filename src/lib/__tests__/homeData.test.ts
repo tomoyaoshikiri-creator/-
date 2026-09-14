@@ -205,9 +205,9 @@ describe("buildDigestItems", () => {
   it("未読かつ自分の投稿でないものだけを新しい順に返す", () => {
     const items = buildDigestItems({
       notices: [
-        { id: "n1", title: "遠征のお知らせ", created_at: "2026-09-05T10:00:00Z", sender_id: "other" },
-        { id: "n2", title: "既読済みのお知らせ", created_at: "2026-09-01T10:00:00Z", sender_id: "other" },
-        { id: "n3", title: "自分の投稿", created_at: "2026-09-06T10:00:00Z", sender_id: "me" },
+        { id: "n1", title: "遠征のお知らせ", created_at: "2026-09-05T10:00:00Z", updated_at: "2026-09-05T10:00:00Z", sender_id: "other" },
+        { id: "n2", title: "既読済みのお知らせ", created_at: "2026-09-01T10:00:00Z", updated_at: "2026-09-01T10:00:00Z", sender_id: "other" },
+        { id: "n3", title: "自分の投稿", created_at: "2026-09-06T10:00:00Z", updated_at: "2026-09-06T10:00:00Z", sender_id: "me" },
       ],
       dailyReports: [
         {

@@ -460,6 +460,7 @@ export interface Database {
           body: string | null;
           sender_id: string | null;
           created_at: string;
+          updated_at: string;
           audience: NoticeAudience;
           target_grade_min: string | null;
         };
@@ -477,6 +478,7 @@ export interface Database {
           body: string | null;
           audience: NoticeAudience;
           target_grade_min: string | null;
+          updated_at: string;
         }>;
         Relationships: [];
       };
