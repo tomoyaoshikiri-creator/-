@@ -20,7 +20,8 @@ import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markItemSeen } from "@/lib/itemBadges";
+import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
+import { NewBadge } from "@/components/ui/Pill";
 import { fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { PlayerAnalysisNote, PlayerAnalysisNoteReaction, ReactionType } from "@/lib/database.types";
 import { buildPlayerCopyText } from "@/lib/ai/buildCopyText";
@@ -61,6 +62,7 @@ export default function PlayerAnalysisPage() {
   const [editNoteBody, setEditNoteBody] = useState("");
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+  const [prevSeenAt, setPrevSeenAt] = useState<string | null>(null);
 
   const editingNote = analysisNotes.find((n) => n.id === editingNoteId);
   useUnsavedChangesGuard(editingNote !== undefined && editNoteBody !== editingNote.body);
@@ -95,7 +97,7 @@ export default function PlayerAnalysisPage() {
   }, [loadNotes]);
 
   useEffect(() => {
-    markItemSeen(userId, "player_analysis", params.playerId);
+    markItemSeenAndGetPrevious(userId, "player_analysis", params.playerId).then(setPrevSeenAt);
   }, [userId, params.playerId]);
 
   async function loadNoteReactions() {
@@ -280,6 +282,10 @@ export default function PlayerAnalysisPage() {
               <Card className="cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
+                    {n.author_id !== userId &&
+                      isNewSincePrevious(prevSeenAt, n.updated_at > n.created_at ? n.updated_at : n.created_at) && (
+                        <NewBadge />
+                      )}
                     <span className="font-mono text-[11px] font-bold text-ink-soft tracking-wide">
                       {formatDateLabel(n.created_at.slice(0, 10))}
                     </span>
@@ -340,6 +346,10 @@ export default function PlayerAnalysisPage() {
               }
             >
               <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                {n.author_id !== userId &&
+                  isNewSincePrevious(prevSeenAt, n.updated_at > n.created_at ? n.updated_at : n.created_at) && (
+                    <NewBadge />
+                  )}
                 <span>
                   {formatDateLabel(n.created_at.slice(0, 10))}
                   {n.author_id && noteProfiles[n.author_id] ? ` ・ ${noteProfiles[n.author_id]}` : ""}

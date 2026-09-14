@@ -17,7 +17,8 @@ import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePlayers } from "@/lib/permissions";
 import { formatDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markItemSeen } from "@/lib/itemBadges";
+import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
+import { NewBadge } from "@/components/ui/Pill";
 import type { Player, PlayerNote, PlayerNoteReaction, ReactionType } from "@/lib/database.types";
 
 export default function PlayerNotesPage() {
@@ -40,6 +41,7 @@ export default function PlayerNotesPage() {
   const [editNoteBody, setEditNoteBody] = useState("");
   const [savingNoteEdit, setSavingNoteEdit] = useState(false);
   const [deleteNoteConfirmId, setDeleteNoteConfirmId] = useState<string | null>(null);
+  const [prevSeenAt, setPrevSeenAt] = useState<string | null>(null);
 
   useUnsavedChangesGuard(modalOpen && noteBody.trim() !== "");
   const editingNote = notes.find((n) => n.id === editingNoteId);
@@ -127,7 +129,7 @@ export default function PlayerNotesPage() {
   }, [load]);
 
   useEffect(() => {
-    markItemSeen(userId, "player_notes", params.id);
+    markItemSeenAndGetPrevious(userId, "player_notes", params.id).then(setPrevSeenAt);
   }, [userId, params.id]);
 
   useEffect(() => {
@@ -318,9 +320,15 @@ export default function PlayerNotesPage() {
                   className="cursor-pointer"
                   onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
                 >
-                  <div className="font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
-                    {formatDateLabel(n.created_at.slice(0, 10))}
-                    {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
+                  <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
+                    {n.author_id !== userId &&
+                      isNewSincePrevious(prevSeenAt, n.updated_at > n.created_at ? n.updated_at : n.created_at) && (
+                        <NewBadge />
+                      )}
+                    <span>
+                      {formatDateLabel(n.created_at.slice(0, 10))}
+                      {n.author_id && profiles[n.author_id] ? ` ・ ${profiles[n.author_id]}` : ""}
+                    </span>
                   </div>
                   <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap">{n.body}</div>
                   <ReactionButtons

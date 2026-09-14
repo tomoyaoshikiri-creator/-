@@ -47,6 +47,15 @@ export function TypeTag({
   );
 }
 
+// 一覧の中の個別項目(コメント・メモ等)が新着であることを示す小さなバッジ。
+export function NewBadge({ className = "" }: { className?: string }) {
+  return (
+    <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger ${className}`}>
+      NEW
+    </span>
+  );
+}
+
 export function NumChip({ num, muted = false }: { num: string; muted?: boolean }) {
   return (
     <div

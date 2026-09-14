@@ -15,7 +15,8 @@ import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
 import { hasCoachNoteAccess } from "@/lib/plan";
 import { formatFullDateLabel } from "@/lib/format";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markItemSeen } from "@/lib/itemBadges";
+import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
+import { NewBadge } from "@/components/ui/Pill";
 import { isImageFile } from "@/lib/storagePath";
 import { sendPushNotification } from "@/lib/pushNotify";
 import type {
@@ -43,6 +44,7 @@ export default function CoachNoteDetailPage() {
   const [commentReactions, setCommentReactions] = useState<ReportCommentReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [prevSeenAt, setPrevSeenAt] = useState<string | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [editDateValue, setEditDateValue] = useState("");
@@ -76,7 +78,7 @@ export default function CoachNoteDetailPage() {
     setProfiles(profMap);
     setReport(r ?? null);
     if (r) {
-      markItemSeen(userId, "coach_note", r.id);
+      setPrevSeenAt(await markItemSeenAndGetPrevious(userId, "coach_note", r.id));
       const [{ data: atts }, { data: rc }, { data: cm }] = await Promise.all([
         supabase.from("report_attachments").select("*").eq("report_id", r.id),
         supabase.from("report_reactions").select("*").eq("report_id", r.id),
@@ -434,6 +436,10 @@ export default function CoachNoteDetailPage() {
                       className={`text-[12.5px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}
                       onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
                     >
+                      {c.profile_id !== userId &&
+                        isNewSincePrevious(prevSeenAt, c.updated_at > c.created_at ? c.updated_at : c.created_at) && (
+                          <NewBadge className="mr-1" />
+                        )}
                       <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
                       <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
                     </div>

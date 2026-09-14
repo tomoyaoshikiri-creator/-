@@ -15,7 +15,8 @@ import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { dateDaysAgoStr, formatFullDateLabel } from "@/lib/format";
 import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markItemSeen } from "@/lib/itemBadges";
+import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
+import { NewBadge } from "@/components/ui/Pill";
 import { isImageFile } from "@/lib/storagePath";
 import { sendPushNotification } from "@/lib/pushNotify";
 import type {
@@ -45,6 +46,7 @@ export default function DailyReportDetailPage() {
   const [commentReactions, setCommentReactions] = useState<DailyReportCommentReaction[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [prevSeenAt, setPrevSeenAt] = useState<string | null>(null);
 
   const [editing, setEditing] = useState(false);
   const [editDateValue, setEditDateValue] = useState("");
@@ -85,7 +87,7 @@ export default function DailyReportDetailPage() {
     }
     setReport(r ?? null);
     if (r) {
-      markItemSeen(userId, "daily_report", r.id);
+      setPrevSeenAt(await markItemSeenAndGetPrevious(userId, "daily_report", r.id));
       const [{ data: atts }, { data: rc }, { data: cm }] = await Promise.all([
         supabase.from("daily_report_attachments").select("*").eq("daily_report_id", r.id),
         supabase.from("daily_report_reactions").select("*").eq("daily_report_id", r.id),
@@ -442,6 +444,10 @@ export default function DailyReportDetailPage() {
                       className={`text-[12.5px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}
                       onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
                     >
+                      {c.profile_id !== userId &&
+                        isNewSincePrevious(prevSeenAt, c.updated_at > c.created_at ? c.updated_at : c.created_at) && (
+                          <NewBadge className="mr-1" />
+                        )}
                       <span className="text-ink-soft whitespace-pre-wrap">{c.body}</span>
                       <span className="font-bold ml-1">{profiles[c.profile_id] ?? ""}</span>
                     </div>
