@@ -142,11 +142,6 @@ export default function CoachNoteDetailPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
-      // リアクションはコーチ日報本体を更新しないため、そのままだと一覧・タブのNEW表示
-      // (created_at/updated_atを見ている)に反映されない。updated_atを更新して拾われる
-      // ようにする(失敗してもリアクション自体は成功しているため、ベストエフォートで
-      // エラー表示はしない)。
-      await supabase.from("reports").update({ updated_at: new Date().toISOString() }).eq("id", report.id);
     }
     loadReactions();
   }
@@ -181,15 +176,6 @@ export default function CoachNoteDetailPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
-      // リアクションはコメント自体・コーチ日報本体のどちらも更新しないため、そのままだと
-      // コメント個別のNEW表示・一覧/タブのNEW表示のどちらにも反映されない。両方の
-      // updated_atを更新して拾われるようにする(失敗してもリアクション自体は成功して
-      // いるため、ベストエフォートでエラー表示はしない)。
-      const now = new Date().toISOString();
-      await Promise.all([
-        supabase.from("report_comments").update({ updated_at: now }).eq("id", commentId),
-        report ? supabase.from("reports").update({ updated_at: now }).eq("id", report.id) : Promise.resolve(),
-      ]);
     }
     loadCommentReactions();
   }

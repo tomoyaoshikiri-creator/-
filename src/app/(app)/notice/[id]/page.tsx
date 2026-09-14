@@ -137,11 +137,6 @@ export default function NoticeDetailPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
-      // リアクションはお知らせ本体を更新しないため、そのままだと一覧・タブ・ホームの
-      // 新着表示(created_at/updated_atを見ている)に反映されない。updated_atを更新して
-      // 拾われるようにする(失敗してもリアクション自体は成功しているため、ベスト
-      // エフォートでエラー表示はしない)。
-      await supabase.from("notices").update({ updated_at: new Date().toISOString() }).eq("id", notice.id);
       if (notice.sender_id && notice.sender_id !== userId) {
         sendPushNotification("notice_reaction", notice.id);
       }
