@@ -76,13 +76,18 @@ function categorySummaryLines(c: CustomStatCategoryInfo, scope: "player" | "team
 function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: number): string[] {
   const lines: string[] = [];
   if (stats.kind === "basketball") {
-    lines.push(`■ 試合スタッツ(シーズン平均、試合数: ${stats.gameCount})`);
+    const seasonLabel = scope === "player" ? "シーズン合計" : "シーズン平均";
+    lines.push(`■ 試合スタッツ(${seasonLabel}、試合数: ${stats.gameCount})`);
     if (stats.gameCount === 0) {
       lines.push("この年度の出場記録はありません");
     } else {
       if (scope === "team") {
         lines.push(
           "(PTS/AST/OFF/DEF/BLK/ST/TO/FOULS/EFFは出場した各選手自身の平均を単純平均したチーム平均です。FG%/FT%/2P%/3P%はチーム全体の成功数合計÷試投数合計から算出した正確な値です。両者は算出方法が異なります)",
+        );
+      } else {
+        lines.push(
+          "(PTS/AST/OFF/DEF/REB/BLK/ST/TO/FOULSはシーズン全体の合計値、FGM/FGA/FTM/FTAはその成功数・試投数、FG%/FT%/2P%/3P%はその合計から算出した割合です。EFFは合計に意味がないため算出していません。下記の「試合ごとの記録」は各値とも1試合単体の実数値です)",
         );
       }
       Object.entries(stats.seasonAverages).forEach(([k, v]) => lines.push(`${k}: ${fmt(v)}`));
