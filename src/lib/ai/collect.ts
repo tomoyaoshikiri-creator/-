@@ -11,9 +11,11 @@ import {
   GAME_COLUMNS,
   THREE_POINT_GAME_COLUMNS,
   computeSeasonAverages,
+  computeSeasonTotals,
   computeTeamAverages,
   SPORTS_TEST_RANKING_METRICS,
   type SeasonStatAverages,
+  type SeasonStatTotals,
 } from "@/lib/karteAggregate";
 import { assessPlayerDataQuality, assessTeamDataQuality } from "./dataQuality";
 import { aggregateCategorySeasonForAi, aggregateCategoryMatchForAi } from "./customStatAggregation";
@@ -45,7 +47,9 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
 
 // GAME_COLUMNS/THREE_POINT_GAME_COLUMNSのkeyから読める値だけを、AIに渡す
 // プレーンなRecord<string, number|null>に変換する(SeasonStatAveragesの内部表現を
-// そのまま渡さず、abbr(PTS等)をキーにして意味が伝わりやすくする)。
+// そのまま渡さず、abbr(PTS等)をキーにして意味が伝わりやすくする)。試合ごとの行
+// (1試合分のcomputeSeasonAverages)と、チームのシーズン集計(チーム平均)で使う。
+// 選手のシーズン集計はbasketballSeasonTotalsToRecord()(下記)を使う。
 //
 // FG%/FT%だけでは母数(成功数・試投数)が分からず、少数試行による極端な%を実際より
 // 重視してしまう恐れがあるため、成功数・試投数(FGM/FGA/FTM/FTA)も渡す
@@ -67,6 +71,40 @@ function basketballAveragesToRecord(
   out["FTM"] = averages.ftMadeTotal;
   out["FTA"] = averages.ftAttTotal;
   out["REB"] = averages.reb;
+  return out;
+}
+
+// アプリの選手個人スタッツ画面の「シーズン合計」行(computeSeasonTotals)と同じ値を
+// AIに渡すためのRecord変換。選手個人のシーズン集計は、1試合あたりの平均ではなく
+// アプリに実際に表示されている合計値をそのまま渡す(FGについては「今シーズン何本
+// 試投して何本成功したか」がそのまま分かる)。EFFはアプリのシーズン合計行と同様、
+// 合計しても意味を持たない値のため出力しない。
+function basketballSeasonTotalsToRecord(
+  totals: SeasonStatTotals,
+  includeThreePoint: boolean,
+): Record<string, number | null> {
+  const pct = (made: number, att: number) => (att > 0 ? Math.round((made / att) * 1000) / 10 : null);
+  const out: Record<string, number | null> = {
+    PTS: totals.pts,
+    "FG%": pct(totals.fgMade, totals.fgAtt),
+    "FT%": pct(totals.ftMade, totals.ftAtt),
+    AST: totals.ast,
+    OFF: totals.rebOff,
+    DEF: totals.rebDef,
+    BLK: totals.blk,
+    ST: totals.stl,
+    TO: totals.tov,
+    FOULS: totals.fouls,
+  };
+  if (includeThreePoint) {
+    out["2P%"] = pct(totals.twoMade, totals.twoAtt);
+    out["3P%"] = pct(totals.threeMade, totals.threeAtt);
+  }
+  out["FGM"] = totals.fgMade;
+  out["FGA"] = totals.fgAtt;
+  out["FTM"] = totals.ftMade;
+  out["FTA"] = totals.ftAtt;
+  out["REB"] = totals.reb;
   return out;
 }
 
@@ -147,12 +185,11 @@ export async function collectPlayerAnalysisData(
       if (!date) return false;
       return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     });
-    const seasonAverages = computeSeasonAverages(seasonLines);
-    gameCount = seasonAverages.gp;
+    gameCount = seasonLines.length;
     stats = {
       kind: "basketball",
       gameCount,
-      seasonAverages: basketballAveragesToRecord(seasonAverages, includeThreePoint),
+      seasonAverages: basketballSeasonTotalsToRecord(computeSeasonTotals(seasonLines), includeThreePoint),
       games: seasonLines
         .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""))
         .map((l) => ({
