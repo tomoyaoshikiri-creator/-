@@ -62,7 +62,7 @@ export default function TeamHubPage() {
         ))}
 
       <SectionLabel>選手・成長</SectionLabel>
-      <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" />
+      <HubRow href="/players" label="選手一覧" description="選手の基本情報・成長記録・メモを見る" unseen={badges.playersUnseen} />
       {/* スポーツテスト・検定管理は一般・運営にも開放している(見られるのは自分に紐づく
           選手の記録+チーム平均のみ、スタッフは全選手を見る・編集できる)ため、
           isStaffで囲わずロールを問わず表示する。 */}
@@ -88,8 +88,8 @@ export default function TeamHubPage() {
       )}
       {isStaff && (
         <>
-          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.karte} />
-          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.karte} />
+          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.playerKarteUnseen} />
+          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
         </>
       )}
 
