@@ -46,7 +46,7 @@ function HubRow({
 
 export default function TeamHubPage() {
   const { role, plan, userId, teamId } = useSession();
-  const badges = useTabBadges(userId, teamId);
+  const badges = useTabBadges(userId, teamId, role);
   const isStaff = canViewKarte(role);
   const canCoachNote = canWriteCoachNote(role);
 

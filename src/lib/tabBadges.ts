@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { TabKey } from "@/lib/permissions";
-import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
+import type { Role } from "@/lib/database.types";
+import { canRecordGames, type TabKey } from "@/lib/permissions";
+import {
+  computeTeamAnalysisUnseen,
+  computeUnseenGameMatchNoteIds,
+  computeUnseenPlayerAnalysisIds,
+  computeUnseenPlayerNoteIds,
+} from "@/lib/itemBadges";
 
 // タブアイコンの新着通知(赤丸)。
 // お知らせ・日報・コーチノートは一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
@@ -12,7 +18,7 @@ import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnsee
 // 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
 export type BadgeTab = "notice" | "report" | "coachNote" | "library";
 
-export function useTabBadges(userId: string, teamId: string): Partial<Record<TabKey, boolean>> {
+export function useTabBadges(userId: string, teamId: string, role: Role): Partial<Record<TabKey, boolean>> {
   // AppNavはレイアウト側で1回しかマウントされず、タブ間の遷移では再マウントされない。
   // そのため素朴にuseEffect(..., [userId, teamId])だけだと初回にしか判定されず、
   // 既読にした後もタブの赤丸が消えないままになる。pathnameを依存に加え、画面遷移の
@@ -43,6 +49,7 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       unseenPlayerNotes,
       unseenPlayerAnalysis,
       teamAnalysisUnseen,
+      unseenGameMatchNotes,
     ] = await Promise.all([
       supabase
         .from("notices")
@@ -67,12 +74,16 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       computeUnseenPlayerNoteIds(userId),
       computeUnseenPlayerAnalysisIds(userId),
       computeTeamAnalysisUnseen(userId, teamId),
+      // コーチメモは試合記録を操作できるロール(指導者・管理者)のみ閲覧できるため、
+      // それ以外のロールでは新着判定自体を行わない。
+      canRecordGames(role) ? computeUnseenGameMatchNoteIds(userId) : Promise.resolve(new Set<string>()),
     ]);
 
     const reportUnseen = (reportCount ?? 0) > 0;
     const coachNoteUnseen = (coachNoteCount ?? 0) > 0;
     const libraryUnseen = (libraryCount ?? 0) > 0;
     const karteUnseen = unseenPlayerNotes.size > 0 || unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen;
+    const gameUnseen = unseenGameMatchNotes.size > 0;
 
     setBadges({
       notice: (noticeCount ?? 0) > 0,
@@ -82,11 +93,12 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       // 選手メモの未読もカルテタブの赤丸に合流させる。
       karte: karteUnseen,
       library: libraryUnseen,
+      game: gameUnseen,
       // 「チーム」hub配下(チーム日報・コーチ日報・カルテ・ライブラリ)の未読を、
       // ボトムナビの「チーム」タブに件数ではなく単純ドットで集約する。
       team: reportUnseen || coachNoteUnseen || karteUnseen || libraryUnseen,
     });
-  }, [userId, teamId]);
+  }, [userId, teamId, role]);
 
   useEffect(() => {
     load();
