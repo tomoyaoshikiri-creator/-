@@ -116,7 +116,7 @@ function truncate(text: string, max: number): string {
 }
 
 export function buildDigestItems(params: {
-  notices: { id: string; title: string; created_at: string; sender_id: string | null }[];
+  notices: { id: string; title: string; created_at: string; updated_at: string; sender_id: string | null }[];
   dailyReports: { id: string; body: string; created_at: string; updated_at: string; author_id: string | null }[];
   coachNotes: { id: string; body: string; created_at: string; updated_at: string; author_id: string | null }[];
   userId: string;
@@ -131,8 +131,9 @@ export function buildDigestItems(params: {
 
   notices.forEach((n) => {
     if (n.sender_id === userId) return;
-    if (n.created_at <= noticeSeen) return;
-    items.push({ id: n.id, source: "notice", label: n.title, timestamp: n.created_at, href: `/notice/${n.id}` });
+    const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
+    if (latest <= noticeSeen) return;
+    items.push({ id: n.id, source: "notice", label: n.title, timestamp: latest, href: `/notice/${n.id}` });
   });
 
   dailyReports.forEach((r) => {

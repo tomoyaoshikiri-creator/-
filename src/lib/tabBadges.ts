@@ -47,7 +47,7 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       supabase
         .from("notices")
         .select("id", { count: "exact", head: true })
-        .gt("created_at", noticeSeen)
+        .or(`created_at.gt.${noticeSeen},updated_at.gt.${noticeSeen}`)
         .neq("sender_id", userId),
       supabase
         .from("daily_reports")
