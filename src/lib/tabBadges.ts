@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { TabKey } from "@/lib/permissions";
-import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
+import type { Role } from "@/lib/database.types";
+import { canRecordGames, type TabKey } from "@/lib/permissions";
+import {
+  computeTeamAnalysisUnseen,
+  computeUnseenGameMatchNoteIds,
+  computeUnseenPlayerAnalysisIds,
+  computeUnseenPlayerNoteIds,
+} from "@/lib/itemBadges";
 
 // タブアイコンの新着通知(赤丸)。
 // お知らせ・日報・コーチノートは一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
@@ -12,13 +18,24 @@ import { computeTeamAnalysisUnseen, computeUnseenPlayerAnalysisIds, computeUnsee
 // 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
 export type BadgeTab = "notice" | "report" | "coachNote" | "library";
 
-export function useTabBadges(userId: string, teamId: string): Partial<Record<TabKey, boolean>> {
+// karte(TabKeyとしてのバッジ)は「チーム」hub配下の3つのカード(選手一覧・選手カルテ・
+// チームカルテ)すべての未読を合流させた粗い値で、タブバー自体は廃止済み
+// (/karte→/teamへリダイレクト)。「どのカードに新着があるか」を画面側で見分けられるよう、
+// 内訳を別途持たせる: playersUnseen=選手メモ(/players)、playerKarteUnseen=選手分析
+// (/karte/players)、teamKarteUnseen=チーム分析(/karte/team)。
+export interface TabBadges extends Partial<Record<TabKey, boolean>> {
+  playersUnseen?: boolean;
+  playerKarteUnseen?: boolean;
+  teamKarteUnseen?: boolean;
+}
+
+export function useTabBadges(userId: string, teamId: string, role: Role): TabBadges {
   // AppNavはレイアウト側で1回しかマウントされず、タブ間の遷移では再マウントされない。
   // そのため素朴にuseEffect(..., [userId, teamId])だけだと初回にしか判定されず、
   // 既読にした後もタブの赤丸が消えないままになる。pathnameを依存に加え、画面遷移の
   // たびに再判定させることで、タブを開いて既読にした結果を反映させる。
   const pathname = usePathname();
-  const [badges, setBadges] = useState<Partial<Record<TabKey, boolean>>>({});
+  const [badges, setBadges] = useState<TabBadges>({});
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -43,6 +60,7 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       unseenPlayerNotes,
       unseenPlayerAnalysis,
       teamAnalysisUnseen,
+      unseenGameMatchNotes,
     ] = await Promise.all([
       supabase
         .from("notices")
@@ -67,12 +85,21 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       computeUnseenPlayerNoteIds(userId),
       computeUnseenPlayerAnalysisIds(userId),
       computeTeamAnalysisUnseen(userId, teamId),
+      // コーチメモは試合記録を操作できるロール(指導者・管理者)のみ閲覧できるため、
+      // それ以外のロールでは新着判定自体を行わない。
+      canRecordGames(role) ? computeUnseenGameMatchNoteIds(userId) : Promise.resolve(new Set<string>()),
     ]);
 
     const reportUnseen = (reportCount ?? 0) > 0;
     const coachNoteUnseen = (coachNoteCount ?? 0) > 0;
     const libraryUnseen = (libraryCount ?? 0) > 0;
-    const karteUnseen = unseenPlayerNotes.size > 0 || unseenPlayerAnalysis.size > 0 || teamAnalysisUnseen;
+    const playersUnseen = unseenPlayerNotes.size > 0;
+    const playerKarteUnseen = unseenPlayerAnalysis.size > 0;
+    // 「チーム」タブ・カルテ全体の粗い集約(playersUnseen: 選手メモ、playerKarteUnseen:
+    // 選手分析、teamAnalysisUnseen: チーム分析のいずれか)。個別カードにはこの粗い値では
+    // なく、それぞれの内訳(playersUnseen/playerKarteUnseen/teamKarteUnseen)を使うこと。
+    const karteUnseen = playersUnseen || playerKarteUnseen || teamAnalysisUnseen;
+    const gameUnseen = unseenGameMatchNotes.size > 0;
 
     setBadges({
       notice: (noticeCount ?? 0) > 0,
@@ -81,12 +108,16 @@ export function useTabBadges(userId: string, teamId: string): Partial<Record<Tab
       // 「選手一覧」は専用タブを廃止しカルテタブ内のカードに統合したため、
       // 選手メモの未読もカルテタブの赤丸に合流させる。
       karte: karteUnseen,
+      playersUnseen,
+      playerKarteUnseen,
+      teamKarteUnseen: teamAnalysisUnseen,
       library: libraryUnseen,
+      game: gameUnseen,
       // 「チーム」hub配下(チーム日報・コーチ日報・カルテ・ライブラリ)の未読を、
       // ボトムナビの「チーム」タブに件数ではなく単純ドットで集約する。
       team: reportUnseen || coachNoteUnseen || karteUnseen || libraryUnseen,
     });
-  }, [userId, teamId]);
+  }, [userId, teamId, role]);
 
   useEffect(() => {
     load();
