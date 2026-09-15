@@ -17,6 +17,7 @@ import { ReactionSummary } from "@/components/ReactionButtons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab } from "@/lib/permissions";
 import { hasCoachNoteAccess } from "@/lib/plan";
+import { loadProfilesMap } from "@/lib/profiles";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenCoachNoteIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
@@ -33,6 +34,7 @@ export default function CoachNotePage() {
   const cacheKey = useCallback((field: string) => `coachNote:${monthValue}:${field}`, [monthValue]);
   const [reports, setReports] = useCachedState<Report[]>(cacheKey("reports"), []);
   const [reactions, setReactions] = useCachedState<ReportReaction[]>(cacheKey("reactions"), []);
+  const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("coachNote:unseenIds", new Set());
 
@@ -40,13 +42,17 @@ export default function CoachNotePage() {
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("reports"))) setLoading(true);
     const { start, end } = monthRangeBounds(monthValue);
-    const { data: r } = await supabase
-      .from("reports")
-      .select("*")
-      .gte("date", start)
-      .lt("date", end)
-      .order("created_at", { ascending: false });
+    const [{ data: r }, profMap] = await Promise.all([
+      supabase
+        .from("reports")
+        .select("*")
+        .gte("date", start)
+        .lt("date", end)
+        .order("created_at", { ascending: false }),
+      loadProfilesMap(supabase),
+    ]);
     setReports(r ?? []);
+    setProfiles(profMap);
     const reportIds = (r ?? []).map((x) => x.id);
     if (reportIds.length > 0) {
       const { data: rc } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
@@ -55,7 +61,7 @@ export default function CoachNotePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setReports, setReactions]);
+  }, [monthValue, cacheKey, setReports, setProfiles, setReactions]);
 
   useEffect(() => {
     load();
@@ -120,6 +126,9 @@ export default function CoachNotePage() {
                   </div>
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
+                {r.author_id && profiles[r.author_id] && (
+                  <div className="text-xs text-ink-soft mt-0.5">{profiles[r.author_id]}</div>
+                )}
                 <ReactionSummary reactions={reactions.filter((rc) => rc.report_id === r.id)} />
               </Card>
             </Link>
