@@ -120,11 +120,6 @@ export default function TeamAnalysisPage() {
         toast(`スタンプに失敗しました: ${error.message}`);
         return;
       }
-      // リアクションはteam_analysis_notes自体を更新しないため、そのままだと一覧の
-      // NEW表示(created_at/updated_atを見ている)に反映されない。updated_atを更新して
-      // 拾われるようにする(失敗してもリアクション自体は成功しているため、ベスト
-      // エフォートでエラー表示はしない)。
-      await supabase.from("team_analysis_notes").update({ updated_at: new Date().toISOString() }).eq("id", noteId);
     }
     loadNoteReactions();
   }
