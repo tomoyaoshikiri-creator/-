@@ -29,8 +29,6 @@
 `/api/webhooks/stripe`)・`/tokushoho`記載の3プラン(Standard/Pro/Pro AI Plus)は既に実装・提示済みだった
 ため、現在形に修正し、利用規約 第6条にもStripe, Inc.への言及を追加、プライバシーポリシーの第5条委託先
 一覧のStripe, Inc.も確定事項の書きぶりに修正した(`src/app/terms/page.tsx` / `src/app/privacy/page.tsx`)。
-なお`/tokushoho`のプラン名(Standard/Pro/Pro AI Plus)と、アプリ内の実際のプラン名(中間/フル/
-フルプラス)が異なっている点は、今回のスコープ外の別問題として未着手(要確認)。
 
 ### 3. プライバシーポリシー: AI分析機能・Anthropicへの送信が未開示(対応済み・要弁護士確認)
 
