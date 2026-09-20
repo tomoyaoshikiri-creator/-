@@ -24,6 +24,10 @@ import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/f
 import type { Report, ReportReaction } from "@/lib/database.types";
 import { NewCoachNoteModal } from "./NewCoachNoteModal";
 
+// 1回のDB取得件数の上限(notice/report等の他の一覧画面と同じ考え方、
+// docs/load-handling-todo.md参照)。
+const COACH_NOTE_PAGE_SIZE = 30;
+
 export default function CoachNotePage() {
   const router = useRouter();
   const { userId, role, plan } = useSession();
@@ -37,6 +41,8 @@ export default function CoachNotePage() {
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("reports")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("coachNote:unseenIds", new Set());
+  const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -48,12 +54,15 @@ export default function CoachNotePage() {
         .select("*")
         .gte("date", start)
         .lt("date", end)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(COACH_NOTE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
-    setReports(r ?? []);
+    const page = (r ?? []).slice(0, COACH_NOTE_PAGE_SIZE);
+    setHasMore((r?.length ?? 0) > COACH_NOTE_PAGE_SIZE);
+    setReports(page);
     setProfiles(profMap);
-    const reportIds = (r ?? []).map((x) => x.id);
+    const reportIds = page.map((x) => x.id);
     if (reportIds.length > 0) {
       const { data: rc } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
       setReactions(rc ?? []);
@@ -61,7 +70,32 @@ export default function CoachNotePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setReports, setProfiles, setReactions]);
+  }, [monthValue, cacheKey, setReports, setProfiles, setReactions, setHasMore]);
+
+  async function loadMore() {
+    if (reports.length === 0 || loadingMore) return;
+    setLoadingMore(true);
+    const supabase = createClient();
+    const { start, end } = monthRangeBounds(monthValue);
+    const cursor = reports[reports.length - 1].created_at;
+    const { data: r } = await supabase
+      .from("reports")
+      .select("*")
+      .gte("date", start)
+      .lt("date", end)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(COACH_NOTE_PAGE_SIZE + 1);
+    const page = (r ?? []).slice(0, COACH_NOTE_PAGE_SIZE);
+    setHasMore((r?.length ?? 0) > COACH_NOTE_PAGE_SIZE);
+    if (page.length > 0) {
+      setReports((prev) => [...prev, ...page]);
+      const reportIds = page.map((x) => x.id);
+      const { data: rc } = await supabase.from("report_reactions").select("*").in("report_id", reportIds);
+      setReactions((prev) => [...prev, ...(rc ?? [])]);
+    }
+    setLoadingMore(false);
+  }
 
   useEffect(() => {
     load();
@@ -108,32 +142,44 @@ export default function CoachNotePage() {
       ) : reports.length === 0 ? (
         <EmptyState>この月のコーチ日報はありません</EmptyState>
       ) : (
-        <CollapsibleList
-          items={reports}
-          showAll={showAll}
-          onShowAll={() => setShowAll(true)}
-          renderItem={(r) => (
-            <Link key={r.id} href={`/coach-note/${r.id}`}>
-              <Card className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-[14.5px] flex items-center gap-1.5">
-                    {unseenIds.has(r.id) && (
-                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger">
-                        NEW
-                      </span>
-                    )}
-                    {formatFullDateLabel(r.date)}
+        <>
+          <CollapsibleList
+            items={reports}
+            showAll={showAll}
+            onShowAll={() => setShowAll(true)}
+            renderItem={(r) => (
+              <Link key={r.id} href={`/coach-note/${r.id}`}>
+                <Card className="cursor-pointer">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[14.5px] flex items-center gap-1.5">
+                      {unseenIds.has(r.id) && (
+                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger">
+                          NEW
+                        </span>
+                      )}
+                      {formatFullDateLabel(r.date)}
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                   </div>
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                </div>
-                {r.author_id && profiles[r.author_id] && (
-                  <div className="text-xs text-ink-soft mt-0.5">{profiles[r.author_id]}</div>
-                )}
-                <ReactionSummary reactions={reactions.filter((rc) => rc.report_id === r.id)} />
-              </Card>
-            </Link>
+                  {r.author_id && profiles[r.author_id] && (
+                    <div className="text-xs text-ink-soft mt-0.5">{profiles[r.author_id]}</div>
+                  )}
+                  <ReactionSummary reactions={reactions.filter((rc) => rc.report_id === r.id)} />
+                </Card>
+              </Link>
+            )}
+          />
+          {showAll && hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
           )}
-        />
+        </>
       )}
     </PageShell>
   );
