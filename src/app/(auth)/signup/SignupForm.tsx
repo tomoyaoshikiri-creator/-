@@ -79,12 +79,21 @@ export function SignupForm() {
         新しくチームを立ち上げます。メールアドレスの確認後、チーム名など詳細を入力していただきます。
       </div>
 
+      {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-      <input id="email" name="email" type="email" className={inputClass()} required />
+      <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
       <div className="mt-3">
         <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
-        <input id="password" name="password" type="password" minLength={8} className={inputClass()} required />
+        <input
+          id="password"
+          name="password"
+          type="password"
+          minLength={8}
+          autoComplete="new-password"
+          className={inputClass()}
+          required
+        />
       </div>
 
       {turnstileSiteKey && <TurnstileWidget siteKey={turnstileSiteKey} />}

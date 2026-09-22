@@ -12,12 +12,27 @@ export function ResetPasswordForm() {
   return (
     <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <div className="text-[12.5px] text-ink-soft mb-4">新しいパスワードを設定してください。</div>
+      {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
       <FieldLabel htmlFor="password">新しいパスワード</FieldLabel>
-      <input id="password" name="password" type="password" className={inputClass()} required />
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        className={inputClass()}
+        required
+      />
 
       <div className="mt-3">
         <FieldLabel htmlFor="confirm">新しいパスワード(確認)</FieldLabel>
-        <input id="confirm" name="confirm" type="password" className={inputClass()} required />
+        <input
+          id="confirm"
+          name="confirm"
+          type="password"
+          autoComplete="new-password"
+          className={inputClass()}
+          required
+        />
       </div>
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}

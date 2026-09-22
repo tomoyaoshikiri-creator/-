@@ -110,14 +110,23 @@ export function InviteForm({
           <input name="mei" className={inputClass()} placeholder="名:太郎" required />
         </div>
 
+        {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
         <div className="mt-3">
           <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-          <input id="email" name="email" type="email" className={inputClass()} required />
+          <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
         </div>
 
         <div className="mt-3">
           <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
-          <input id="password" name="password" type="password" minLength={8} className={inputClass()} required />
+          <input
+            id="password"
+            name="password"
+            type="password"
+            minLength={8}
+            autoComplete="new-password"
+            className={inputClass()}
+            required
+          />
         </div>
 
         <InvitePlayerPicker players={players} category={category} selectedIds={selectedIds} onChange={setSelectedIds} />
