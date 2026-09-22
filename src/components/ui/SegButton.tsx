@@ -98,5 +98,12 @@ export function inputClass(extra = "") {
   // 編集可能欄と視覚的に区別できるよう--paper(中立surface token)を背景に使う。
   // disabledは操作不可を示すため文字色も--ink-softへ落とし、readOnlyは内容の可読性を
   // 保つため文字色は--ink(通常色)のまま background だけを変える。
-  return `w-full border border-line rounded-lg px-2.5 py-2 font-sans text-[13px] bg-white text-ink transition-colors focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:bg-paper disabled:text-ink-soft read-only:bg-paper ${extra}`;
+  //
+  // font-sizeは16px未満にしないこと: viewport meta(src/app/layout.tsx)がmaximum-scale
+  // 等でズーム無効化していないため(アクセシビリティ上、意図的に無効化していない)、
+  // 16px未満のinput/textarea/selectをフォーカスするとiOS Safariが自動的にページを
+  // ズームする。以前13pxだったため、ログイン画面のメールアドレス欄をタップした瞬間に
+  // 自動ズームでレイアウトが乱れ「タップすると画面が真っ白になって進めない」という
+  // 不具合報告につながった。
+  return `w-full border border-line rounded-lg px-2.5 py-2 font-sans text-[16px] bg-white text-ink transition-colors focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:bg-paper disabled:text-ink-soft read-only:bg-paper ${extra}`;
 }
