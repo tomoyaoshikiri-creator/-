@@ -53,7 +53,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/terms") ||
     path.startsWith("/tokushoho") ||
     // ログイン画面クラッシュの切り分け用一時ページ。原因特定後にこの行ごと削除する。
-    path.startsWith("/debug-bare-input");
+    path.startsWith("/debug-bare-input") ||
+    path.startsWith("/debug-clone");
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();

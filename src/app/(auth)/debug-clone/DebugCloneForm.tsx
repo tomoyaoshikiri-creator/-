@@ -3,20 +3,20 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { debugNoopAction } from "../form/actions";
+import { debugNoopAction } from "../../debug-bare-input/form/actions";
 
-// 切り分け用テストページ5: 実際のLoginForm.tsxとほぼ完全に同じ構成(本物のコンポーネント
-// FieldLabel/inputClass/SubmitButton、next/linkを含む)を、dummy actionに差し替えて
-// 再現する。ここでも再現しない場合、AuthHeading(ロゴ画像)やページ全体の構成差分を
-// 疑う。原因特定後に削除する。
+// 切り分け用テストページ6: (auth)ルートグループの中に置くことで、(auth)/layout.tsxの
+// footer等も含めて本物のログイン画面と完全に同じレイアウトを継承させる。
+// LoginForm.tsxの構成をdummy actionに差し替えてほぼそのまま複製。
+// 原因特定後に削除する。
 const initialState = {};
 
-export function DebugCloneForm() {
+export function DebugCloneForm({ next }: { next?: string }) {
   const [, formAction, pending] = useActionState(debugNoopAction, initialState);
 
   return (
     <form action={formAction} className="bg-white border border-line rounded-lg p-5">
-      <input type="hidden" name="next" value="" />
+      <input type="hidden" name="next" value={next ?? ""} />
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
       <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
