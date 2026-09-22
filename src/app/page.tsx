@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { brandGradientStops, gradientCss } from "@/lib/theme";
+import { BRAND_NAVY } from "@/lib/theme";
 
 export const metadata = { title: "CIRCLE LINES | チーム運営をシンプルに" };
 
@@ -28,22 +28,15 @@ export default async function Home() {
     redirect("/home");
   }
 
-  const brandGradient = gradientCss(brandGradientStops());
-
   return (
     <div className="min-h-full bg-paper text-ink">
       <div className="max-w-[720px] mx-auto px-6 py-16 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/circle-lines-logo.png" alt="CIRCLE LINES" className="w-24 h-auto mx-auto mb-5" />
+        {/* background-clip:textを撤去した理由はsrc/app/(auth)/AuthHeading.tsx参照。 */}
         <h1
           className="font-medium text-[26px] tracking-wide mb-3"
-          style={{
-            fontFamily: FONT_JP,
-            backgroundImage: brandGradient,
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-          }}
+          style={{ fontFamily: FONT_JP, color: BRAND_NAVY }}
         >
           CIRCLE LINES
         </h1>
