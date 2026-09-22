@@ -181,9 +181,21 @@ textarea {
   最下端まで覆うinset:0とし、Home Indicator分の追加の余白は確保しない(TabBar側の
   padding-bottomを理論上の下限にすることで対応する)。
 */
+/*
+  top/heightはinset:0の代わりに個別指定し、--vv-top/--vv-height(ViewportFix.tsx、
+  window.visualViewportの実測値)を優先させる。iOS/iPadOSのstandalone PWAで
+  ソフトウェアキーボード表示時にWebKitがinset:0の自動再計算を誤り、.app-shellが
+  真っ白/操作不能になる既知の不具合への対策(ログイン画面のメールアドレス欄タップ時に
+  発生、という形で報告された)。CSS変数が未設定(JS未実行・非対応環境)の場合は
+  フォールバック値(top:0/height:100%)により、右記変更前のinset:0と同じ結果になる。
+*/
 .app-shell {
   position: fixed;
-  inset: 0;
+  top: var(--vv-top, 0px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--vv-height, 100%);
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
@@ -235,7 +247,10 @@ textarea {
 @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
   .app-shell {
     position: relative;
-    inset: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
     height: calc(100dvh - 48px);
     margin-block: 24px;
     border-radius: 28px;
