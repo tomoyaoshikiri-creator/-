@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant, Noto_Sans_JP, Roboto_Mono } from "next/font/google";
-import { ViewportFix } from "@/components/ViewportFix";
 import "./globals.css";
 
 const cormorant = Cormorant({
@@ -63,10 +62,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${cormorant.variable} ${notoSansJP.variable} ${robotoMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
-        <ViewportFix />
-        {children}
-      </body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
