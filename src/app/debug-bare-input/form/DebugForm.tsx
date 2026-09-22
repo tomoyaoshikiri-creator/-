@@ -10,7 +10,7 @@ export function DebugForm() {
   return (
     <form action={formAction}>
       <p>Server Actionのformの中の入力欄です。下のメール欄をタップしてください。</p>
-      <input type="email" name="email" />
+      <input type="email" name="email" style={{ border: "2px solid black", padding: 8, fontSize: 16 }} />
     </form>
   );
 }

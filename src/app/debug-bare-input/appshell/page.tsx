@@ -5,7 +5,7 @@ export default function DebugBareInputAppShellPage() {
     <div className="app-shell auth-shell">
       <div style={{ padding: 24 }}>
         <p>app-shellの中の入力欄です。下のメール欄をタップしてください。</p>
-        <input type="email" name="email" />
+        <input type="email" name="email" style={{ border: "2px solid black", padding: 8, fontSize: 16 }} />
       </div>
     </div>
   );

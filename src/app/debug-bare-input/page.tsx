@@ -5,7 +5,7 @@ export default function DebugBareInputPage() {
   return (
     <div>
       <p>これは入力欄1つだけのテストページです。下のメール欄をタップしてください。</p>
-      <input type="email" name="email" />
+      <input type="email" name="email" style={{ border: "2px solid black", padding: 8, fontSize: 16 }} />
     </div>
   );
 }
