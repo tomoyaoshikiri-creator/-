@@ -77,8 +77,9 @@ export function ForgotPasswordForm() {
       <div className="text-[12.5px] text-ink-soft mb-4">
         登録済みのメールアドレスを入力してください。パスワード再設定用のコードをお送りします。
       </div>
+      {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-      <input id="email" name="email" type="email" className={inputClass()} required />
+      <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
 

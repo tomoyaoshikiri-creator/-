@@ -13,12 +13,28 @@ export function LoginForm({ next }: { next?: string }) {
   return (
     <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <input type="hidden" name="next" value={next ?? ""} />
+      {/*
+        autoCompleteを明示するのは、iPadOS Safariでこのフォームをタップした際に
+        Safari側のAutoFill(パスワード提案)処理内でクラッシュする不具合の対策。
+        autoComplete未指定だとSafariが「既存ログインか新規パスワード作成か」を
+        自前で推測しようとし、その判定処理(requiresStrongPasswordAssistance)の
+        先でUIKitのAuto Layout関連のクラッシュ(NSException→abort)を引き起こす
+        実機クラッシュログを確認した。既存ログインであることを明示することで
+        この推測処理自体を避ける狙い。
+      */}
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-      <input id="email" name="email" type="email" className={inputClass()} required />
+      <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
       <div className="mt-3">
         <FieldLabel htmlFor="password">パスワード</FieldLabel>
-        <input id="password" name="password" type="password" className={inputClass()} required />
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          className={inputClass()}
+          required
+        />
       </div>
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
