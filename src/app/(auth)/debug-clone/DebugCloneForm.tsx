@@ -3,15 +3,11 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { debugNoopAction } from "./actions";
 
 // 切り分け用テストページ(再掲): 実際のLoginForm.tsxとほぼ完全に同じ構成
 // (本物のコンポーネントFieldLabel/inputClass/SubmitButton、next/linkを含む)を、
 // dummy actionに差し替えて再現する。原因特定後に削除する。
-async function debugNoopAction(_prev: { ok?: boolean }, _formData: FormData): Promise<{ ok?: boolean }> {
-  "use server";
-  return { ok: true };
-}
-
 const initialState = {};
 
 export function DebugCloneForm() {
