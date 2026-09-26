@@ -257,6 +257,46 @@ describe("buildDigestItems", () => {
     });
     expect(items).toEqual([]);
   });
+
+  it("検定の承認待ち申請を含める(既読管理はせず自分の申請は除く)", () => {
+    const items = buildDigestItems({
+      notices: [],
+      dailyReports: [],
+      coachNotes: [],
+      skillTestRequests: [
+        {
+          id: "req1",
+          playerName: "山田太郎",
+          targetLevelLabel: "3級",
+          skillTestId: "test1",
+          createdAt: "2026-09-05T09:00:00Z",
+          requestedBy: "other",
+        },
+        {
+          id: "req2",
+          playerName: "自分が申請した選手",
+          targetLevelLabel: "初段",
+          skillTestId: "test1",
+          createdAt: "2026-09-06T09:00:00Z",
+          requestedBy: "me",
+        },
+      ],
+      userId: "me",
+      noticeSeen: "2026-09-01T00:00:00Z",
+      reportSeen: "2026-09-01T00:00:00Z",
+      coachNoteSeen: "2026-09-01T00:00:00Z",
+      includeCoachNotes: true,
+    });
+    expect(items).toEqual([
+      {
+        id: "req1",
+        source: "skillTestRequest",
+        label: "検定申請: 山田太郎 → 3級",
+        timestamp: "2026-09-05T09:00:00Z",
+        href: "/karte/team/skill-tests/test1",
+      },
+    ]);
+  });
 });
 
 describe("computeTodayBirthdays", () => {

@@ -101,10 +101,10 @@ export function computeAttendanceActionItems(params: {
   });
 }
 
-// 「新着」カードの1件。お知らせ・チーム日報・コーチ日報を時系列統合するための共通形。
+// 「新着」カードの1件。お知らせ・チーム日報・コーチ日報・検定の承認待ちを時系列統合するための共通形。
 export interface DigestItem {
   id: string;
-  source: "notice" | "report" | "coachNote";
+  source: "notice" | "report" | "coachNote" | "skillTestRequest";
   label: string;
   timestamp: string;
   href: string;
@@ -119,14 +119,33 @@ export function buildDigestItems(params: {
   notices: { id: string; title: string; created_at: string; updated_at: string; sender_id: string | null }[];
   dailyReports: { id: string; body: string; created_at: string; updated_at: string; author_id: string | null }[];
   coachNotes: { id: string; body: string; created_at: string; updated_at: string; author_id: string | null }[];
+  // 検定の承認待ち申請(指導者・管理者向け)。既読管理はせず、pendingの間はずっと表示し続ける
+  // (承認・却下されるとこの一覧から自然に消える)。
+  skillTestRequests?: {
+    id: string;
+    playerName: string;
+    targetLevelLabel: string;
+    skillTestId: string;
+    createdAt: string;
+    requestedBy: string;
+  }[];
   userId: string;
   noticeSeen: string;
   reportSeen: string;
   coachNoteSeen: string;
   includeCoachNotes: boolean;
 }): DigestItem[] {
-  const { notices, dailyReports, coachNotes, userId, noticeSeen, reportSeen, coachNoteSeen, includeCoachNotes } =
-    params;
+  const {
+    notices,
+    dailyReports,
+    coachNotes,
+    skillTestRequests = [],
+    userId,
+    noticeSeen,
+    reportSeen,
+    coachNoteSeen,
+    includeCoachNotes,
+  } = params;
   const items: DigestItem[] = [];
 
   notices.forEach((n) => {
@@ -163,6 +182,17 @@ export function buildDigestItems(params: {
       });
     });
   }
+
+  skillTestRequests.forEach((r) => {
+    if (r.requestedBy === userId) return;
+    items.push({
+      id: r.id,
+      source: "skillTestRequest",
+      label: `検定申請: ${r.playerName} → ${r.targetLevelLabel}`,
+      timestamp: r.createdAt,
+      href: `/karte/team/skill-tests/${r.skillTestId}`,
+    });
+  });
 
   return items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 }

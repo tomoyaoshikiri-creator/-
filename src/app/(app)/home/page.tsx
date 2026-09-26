@@ -33,6 +33,15 @@ interface MatchWithSchedule extends Pick<GameMatch, "id" | "opponent" | "team_sc
   schedules: { date: string; end_time: string | null } | null;
 }
 
+interface PendingSkillTestRequestRow {
+  id: string;
+  skill_test_id: string;
+  target_level_label: string;
+  created_at: string;
+  requested_by: string;
+  players: { sei: string; mei: string } | null;
+}
+
 function addDaysStr(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + days);
@@ -222,8 +231,11 @@ export default function HomePage() {
       const noticeSeen = seenMap.notice ?? now;
       const reportSeen = seenMap.report ?? now;
       const coachNoteSeen = seenMap.coachNote ?? now;
+      // 検定の承認待ちキューは、指導者・管理者なら誰でも承認できるため、指導者・管理者全員の
+      // ダッシュボードに合流させる(既読管理はせず、承認・却下されるまで表示し続ける)。
+      const includeSkillTestRequests = isStaff && hasSkillTestAccess(plan);
 
-      const [noticesRes, reportsRes, coachRes] = await Promise.all([
+      const [noticesRes, reportsRes, coachRes, skillTestRes] = await Promise.all([
         supabase
           .from("notices")
           .select("id, title, created_at, updated_at, sender_id")
@@ -247,16 +259,34 @@ export default function HomePage() {
               .order("updated_at", { ascending: false })
               .limit(20)
           : Promise.resolve({ data: [], error: null }),
+        includeSkillTestRequests
+          ? supabase
+              .from("skill_test_promotion_requests")
+              .select("id, skill_test_id, target_level_label, created_at, requested_by, players(sei, mei)")
+              .eq("status", "pending")
+              .order("created_at", { ascending: false })
+              .limit(20)
+              .returns<PendingSkillTestRequestRow[]>()
+          : Promise.resolve({ data: [] as PendingSkillTestRequestRow[], error: null }),
       ]);
       if (noticesRes.error) throw noticesRes.error;
       if (reportsRes.error) throw reportsRes.error;
       if (coachRes.error) throw coachRes.error;
+      if (skillTestRes.error) throw skillTestRes.error;
 
       setDigestItems(
         buildDigestItems({
           notices: noticesRes.data ?? [],
           dailyReports: reportsRes.data ?? [],
           coachNotes: coachRes.data ?? [],
+          skillTestRequests: (skillTestRes.data ?? []).map((r) => ({
+            id: r.id,
+            playerName: r.players ? playerFullName(r.players) : "選手",
+            targetLevelLabel: r.target_level_label,
+            skillTestId: r.skill_test_id,
+            createdAt: r.created_at,
+            requestedBy: r.requested_by,
+          })),
           userId,
           noticeSeen,
           reportSeen,
@@ -268,7 +298,7 @@ export default function HomePage() {
     } catch {
       setDigestStatus("error");
     }
-  }, [userId, isStaff]);
+  }, [userId, isStaff, plan]);
 
   const loadStaffBirthdays = useCallback(async () => {
     if (!isStaff) {
