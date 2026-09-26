@@ -682,7 +682,7 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン合計
+                    シーズン平均
                   </th>
                   {columns.map((c) => {
                     if (c.key === "rebDef") return null;
@@ -692,6 +692,39 @@ export default function KartePlayerPage() {
                           key="reb"
                           colSpan={2}
                           className="sticky top-[72px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                        >
+                          <div>{seasonAverages.reb}</div>
+                          <div className="text-ink-soft text-[9.5px] font-normal">
+                            {seasonAverages.rebOff} - {seasonAverages.rebDef}
+                          </div>
+                        </th>
+                      );
+                    }
+                    const v = seasonAverages[c.key] as number | null;
+                    return (
+                      <th
+                        key={c.key}
+                        className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                        }`}
+                      >
+                        <StatCell statKey={c.key} averages={seasonAverages} />
+                      </th>
+                    );
+                  })}
+                </tr>
+                <tr className="bg-paper">
+                  <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                    シーズン合計
+                  </th>
+                  {columns.map((c) => {
+                    if (c.key === "rebDef") return null;
+                    if (c.key === "rebOff") {
+                      return (
+                        <th
+                          key="reb"
+                          colSpan={2}
+                          className="sticky top-[108px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                         >
                           <div>{seasonTotals.reb}</div>
                           <div className="text-ink-soft text-[9.5px] font-normal">
@@ -704,7 +737,7 @@ export default function KartePlayerPage() {
                       return (
                         <th
                           key={c.key}
-                          className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
+                          className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
                         >
                           -
                         </th>
@@ -730,7 +763,7 @@ export default function KartePlayerPage() {
                       return (
                         <th
                           key={c.key}
-                          className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                          className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
                         >
                           <div className="leading-tight">
                             <div>{att > 0 ? `${made}/${att}` : "-"}</div>
@@ -743,42 +776,9 @@ export default function KartePlayerPage() {
                     return (
                       <th
                         key={c.key}
-                        className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                        className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
                       >
                         {v}
-                      </th>
-                    );
-                  })}
-                </tr>
-                <tr className="bg-paper">
-                  <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン平均
-                  </th>
-                  {columns.map((c) => {
-                    if (c.key === "rebDef") return null;
-                    if (c.key === "rebOff") {
-                      return (
-                        <th
-                          key="reb"
-                          colSpan={2}
-                          className="sticky top-[108px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
-                        >
-                          <div>{seasonAverages.reb}</div>
-                          <div className="text-ink-soft text-[9.5px] font-normal">
-                            {seasonAverages.rebOff} - {seasonAverages.rebDef}
-                          </div>
-                        </th>
-                      );
-                    }
-                    const v = seasonAverages[c.key] as number | null;
-                    return (
-                      <th
-                        key={c.key}
-                        className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
-                        }`}
-                      >
-                        <StatCell statKey={c.key} averages={seasonAverages} />
                       </th>
                     );
                   })}
