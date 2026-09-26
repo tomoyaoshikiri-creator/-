@@ -11,7 +11,7 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { PlayerRow } from "@/components/PlayerRow";
 import { canManagePlayers } from "@/lib/permissions";
 import { fiscalYearOf, obogGraduationFiscalYear, sortPlayers, todayDateStr } from "@/lib/format";
-import { computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
+import { computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import type { Player } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
@@ -22,6 +22,7 @@ export default function ObogPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
   const [unseenNoteIds, setUnseenNoteIds] = useState<Set<string>>(new Set());
+  const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -42,9 +43,11 @@ export default function ObogPage() {
         });
         setNoteCounts(counts);
         computeUnseenPlayerNoteIds(userId).then(setUnseenNoteIds);
+        computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
       } else {
         setNoteCounts({});
         setUnseenNoteIds(new Set());
+        setUnseenAnalysisIds(new Set());
       }
       // 保護者(一般・運営)は一覧にチーム全OB・OGが出るが、自分の子ども以外は選べないようにする。
       if (!isStaff) {
@@ -94,6 +97,7 @@ export default function ObogPage() {
                   showNotes={isStaff}
                   selectable={isStaff || ownPlayerIds.has(p.id)}
                   hasUnseenNotes={unseenNoteIds.has(p.id)}
+                  hasUnseenAnalysis={unseenAnalysisIds.has(p.id)}
                 />
               ))
             )}
