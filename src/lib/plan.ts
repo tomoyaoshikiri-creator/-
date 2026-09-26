@@ -63,7 +63,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     tier: 2,
     aiAnalysis: false,
     sportsTest: false,
-    skillTest: false,
+    skillTest: true,
     earlyAccess: false,
     experimentalAccess: false,
     developerAccess: false,
@@ -76,7 +76,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     tier: 3,
     aiAnalysis: true,
     sportsTest: false,
-    skillTest: false,
+    skillTest: true,
     earlyAccess: false,
     experimentalAccess: false,
     developerAccess: false,
@@ -133,7 +133,7 @@ function tierOf(plan: TeamPlan): number {
   return PLAN_CONFIG[plan].tier;
 }
 
-export const FREE_PLAYER_LIMIT = 15;
+export const FREE_PLAYER_LIMIT = 20;
 
 export function playerLimitForPlan(plan: TeamPlan): number | null {
   return plan === "お試し" ? FREE_PLAYER_LIMIT : null;
@@ -153,10 +153,11 @@ export function isOverStorageLimit(usedBytes: number, limitBytes: number): boole
   return limitBytes > 0 && usedBytes > limitBytes;
 }
 
-// お試しプランはチーム日報を直近30日分、試合結果を直近5件のみ閲覧可能(データ自体は
+// お試しプランはチーム日報・試合結果ともに直近90日分のみ閲覧可能(データ自体は
 // 削除しない。中間プラン以上に上げれば同じデータがそのまま全件見えるようになる)。
-export const FREE_REPORT_WINDOW_DAYS = 30;
-export const FREE_GAME_RESULT_LIMIT = 5;
+// 2026-09料金改定で「日報30日/試合5件」から両方「直近90日」に統一した
+// (試合は試合日基準)。
+export const FREE_HISTORY_WINDOW_DAYS = 90;
 
 export function hasFullReportHistoryAccess(plan: TeamPlan): boolean {
   return tierOf(plan) >= tierOf("中間");
@@ -187,7 +188,7 @@ export function hasSportsTestAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].sportsTest;
 }
 
-// 検定(ドリブル検定等)もスポーツテストと同じくMax/Max Partner/Signature Edition限定。
+// 検定(ドリブル検定等)はフル(Pro)プラン以上で利用可能(2026-09料金改定でMax限定から変更)。
 export function hasSkillTestAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].skillTest;
 }

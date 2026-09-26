@@ -14,8 +14,8 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { VideoIcon } from "@/components/icons";
 import { canAccessTab, canRecordGames } from "@/lib/permissions";
 import { computeUnseenGameMatchNoteIds } from "@/lib/itemBadges";
-import { FREE_GAME_RESULT_LIMIT, hasFullGameHistoryAccess } from "@/lib/plan";
-import { formatDateLabel, effectiveFiscalYear, fiscalYearLabel } from "@/lib/format";
+import { FREE_HISTORY_WINDOW_DAYS, hasFullGameHistoryAccess } from "@/lib/plan";
+import { dateDaysAgoStr, formatDateLabel, effectiveFiscalYear, fiscalYearLabel } from "@/lib/format";
 import type { GameCategory, GameMatch } from "@/lib/database.types";
 
 interface MatchWithDate extends GameMatch {
@@ -41,6 +41,8 @@ export default function GameResultsPage() {
   const router = useRouter();
   const { userId, role, plan } = useSession();
   const hasFullHistory = hasFullGameHistoryAccess(plan);
+  // お試しプランは直近90日(試合日基準)のみ閲覧可能(データ自体は削除しない)。
+  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_HISTORY_WINDOW_DAYS - 1);
   const [allMatches, setAllMatches] = useState<MatchWithDate[]>([]);
   const [category, setCategory] = useState<GameCategory | "all">("all");
   const [fiscalYear, setFiscalYear] = useState<number | "all">("all");
@@ -64,8 +66,11 @@ export default function GameResultsPage() {
         if (dateDiff !== 0) return dateDiff;
         return b.game_number - a.game_number;
       });
-      // お試しプランは直近5試合分のみ閲覧可能(データ自体は削除しない)。
-      setAllMatches(hasFullHistory ? sorted : sorted.slice(0, FREE_GAME_RESULT_LIMIT));
+      setAllMatches(
+        hasFullHistory || !earliestAllowedDate
+          ? sorted
+          : sorted.filter((m) => (m.schedules?.date ?? "") >= earliestAllowedDate),
+      );
       setLoading(false);
       if (!yearInitialized && sorted.length > 0 && sorted[0].schedules?.date) {
         setFiscalYear(effectiveFiscalYear(sorted[0].schedules.date, sorted[0].schedules.fiscal_year_override));
@@ -129,7 +134,7 @@ export default function GameResultsPage() {
 
       {!hasFullHistory && (
         <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-lg px-3 py-2 mb-3">
-          お試しプランでは直近{FREE_GAME_RESULT_LIMIT}試合分のみ閲覧できます。中間プラン以上で全試合が見られるようになります。
+          お試しプランでは直近{FREE_HISTORY_WINDOW_DAYS}日分のみ閲覧できます。中間プラン以上で全試合が見られるようになります。
         </div>
       )}
 

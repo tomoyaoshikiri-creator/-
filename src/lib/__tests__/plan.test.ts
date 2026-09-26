@@ -48,7 +48,7 @@ describe("PLAN_CONFIG", () => {
       tier: 2,
       aiAnalysis: false,
       sportsTest: false,
-      skillTest: false,
+      skillTest: true,
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
@@ -61,7 +61,7 @@ describe("PLAN_CONFIG", () => {
       tier: 3,
       aiAnalysis: true,
       sportsTest: false,
-      skillTest: false,
+      skillTest: true,
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
@@ -135,21 +135,28 @@ describe("plan回帰テスト", () => {
     expect(selfCheckoutPlans.sort()).toEqual(["フル", "フルプラス", "中間"].sort());
   });
 
-  it("スポーツテスト・検定はMax/Max Partner/Signature Editionのみ利用可能", () => {
+  it("スポーツテストはMax/Max Partner/Signature Editionのみ利用可能", () => {
     for (const plan of ["Max", "max_partner", "signature_edition"] as TeamPlan[]) {
       expect(hasSportsTestAccess(plan)).toBe(true);
-      expect(hasSkillTestAccess(plan)).toBe(true);
     }
     for (const plan of ["お試し", "中間", "フル", "フルプラス"] as TeamPlan[]) {
       expect(hasSportsTestAccess(plan)).toBe(false);
+    }
+  });
+
+  it("検定は2026-09料金改定でフル(Pro)プラン以上に開放(Max限定から変更)", () => {
+    for (const plan of ["フル", "フルプラス", "Max", "max_partner", "signature_edition"] as TeamPlan[]) {
+      expect(hasSkillTestAccess(plan)).toBe(true);
+    }
+    for (const plan of ["お試し", "中間"] as TeamPlan[]) {
       expect(hasSkillTestAccess(plan)).toBe(false);
     }
   });
 
-  it("Pro AI Plus(フルプラス)はAI分析のみ利用可能で、スポーツテスト・検定は利用不可", () => {
+  it("Pro AI Plus(フルプラス)はAI分析・検定を利用可能で、スポーツテストは利用不可", () => {
     expect(hasAiAnalysisAccess("フルプラス")).toBe(true);
     expect(hasSportsTestAccess("フルプラス")).toBe(false);
-    expect(hasSkillTestAccess("フルプラス")).toBe(false);
+    expect(hasSkillTestAccess("フルプラス")).toBe(true);
   });
 
   it("Max Partner/Signature Editionは一般UIに非公開かつ問い合わせプランでもない(現在のプランとしてのみ表示される)", () => {
@@ -168,9 +175,9 @@ describe("plan回帰テスト", () => {
 
 // PLAN-01: プランダウングレード時の超過判定(A-5)。ホーム画面の案内バナー表示に使う。
 describe("isOverPlayerLimit", () => {
-  it("お試しプランで上限(15人)ちょうどはfalse、1人でも超えるとtrue", () => {
-    expect(isOverPlayerLimit(15, "お試し")).toBe(false);
-    expect(isOverPlayerLimit(16, "お試し")).toBe(true);
+  it("お試しプランで上限(20人)ちょうどはfalse、1人でも超えるとtrue", () => {
+    expect(isOverPlayerLimit(20, "お試し")).toBe(false);
+    expect(isOverPlayerLimit(21, "お試し")).toBe(true);
   });
 
   it.each(["中間", "フル", "フルプラス", "Max", "max_partner", "signature_edition"] as TeamPlan[])(

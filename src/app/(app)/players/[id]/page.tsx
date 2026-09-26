@@ -16,7 +16,7 @@ import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/pl
 import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
 import { formatFullDateLabel, gradeLabel, obogCohortLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManagePlayers } from "@/lib/permissions";
-import { hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { BirthdaySelect } from "../BirthdaySelect";
@@ -453,9 +453,10 @@ export default function PlayerDetailPage() {
             </Card>
           </Link>
 
-          {/* スポーツテスト・検定はMax/Max Partner/Signature Editionで常に同時に利用可能なため、
-              1つのガードでまとめて表示する(hasSportsTestAccess/hasSkillTestAccessは
-              現状常に同じ結果を返すが、意味の近いhasSportsTestAccessを代表として使う)。 */}
+          {/* スポーツテストはMax/Max Partner/Signature Edition限定のまま。検定は
+              2026-09料金改定でフル(Pro)プラン以上に開放されたため、別々のガードにした
+              (以前はhasSportsTestAccessを両方の代表として使っていたが、この改定で
+              両者の結果が食い違うようになった)。 */}
           {hasSportsTestAccess(plan) && (
             <>
               <SectionLabel>スポーツテスト</SectionLabel>
@@ -467,7 +468,11 @@ export default function PlayerDetailPage() {
                   </div>
                 </Card>
               </Link>
+            </>
+          )}
 
+          {hasSkillTestAccess(plan) && (
+            <>
               <SectionLabel>検定</SectionLabel>
               <Card>
                 {skillTests.length === 0 ? (

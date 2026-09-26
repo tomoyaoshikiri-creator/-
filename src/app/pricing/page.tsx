@@ -23,7 +23,7 @@ export default function PricingPage() {
           <div className="text-[13px] font-bold text-ink mb-1">
             ¥0<span className="text-[10.5px] font-normal text-ink-soft">/ずっと無料</span>
           </div>
-          <div className="text-[11.5px] text-ink-soft">選手登録15人まで・容量100MBまで。基本機能はすべて利用できます。</div>
+          <div className="text-[11.5px] text-ink-soft">選手登録20人まで・容量100MBまで。基本機能はすべて利用できます。</div>
         </div>
 
         {PLAN_PRICING_OPTIONS.map((opt) => (
