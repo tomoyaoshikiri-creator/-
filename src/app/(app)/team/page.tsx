@@ -8,7 +8,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasCoachNoteAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
 // ナビ再設計v3の「チーム」hub。既存画面(選手カルテ・チームカルテ・チーム日報・
@@ -49,6 +49,7 @@ export default function TeamHubPage() {
   const badges = useTabBadges(userId, teamId, role);
   const isStaff = canViewKarte(role);
   const canCoachNote = canWriteCoachNote(role);
+  const isPro = hasKarteTabAccess(plan);
 
   return (
     <PageShell header={<AppHeader title="チーム" />}>
@@ -65,11 +66,21 @@ export default function TeamHubPage() {
       {/* 選手カルテは保護者(一般・運営)にも開放している(見られるのは自分に紐づく
           選手のみ)ため、isStaffで囲わずロールを問わず表示する。チームカルテ
           (他選手を含むランキング比較)は引き続き指導者・管理者専用。
-          「選手一覧」タブ廃止に伴い、選手メモの未読(playersUnseen)もこの行に合流させる。 */}
+          「選手一覧」タブ廃止に伴い、選手メモの未読(playersUnseen)もこの行に合流させる。
+          フル未満のプランでは同じ/karte/playersが「選手一覧」(基本機能・スタッツ等は非表示)
+          として振る舞うため、ラベル・説明文もisProで出し分ける。 */}
       <HubRow
         href="/karte/players"
-        label="選手カルテ"
-        description={isStaff ? "選手の基本情報・スタッツ・スポーツテストを見る・分析する" : "自分の子のスタッツ・スポーツテストを見る"}
+        label={isPro ? "選手カルテ" : "選手一覧"}
+        description={
+          isPro
+            ? isStaff
+              ? "選手の基本情報・スタッツ・スポーツテストを見る・分析する"
+              : "自分の子のスタッツ・スポーツテストを見る"
+            : isStaff
+              ? "選手の基本情報を登録・管理する"
+              : "自分の子の基本情報を見る"
+        }
         unseen={badges.playerKarteUnseen || badges.playersUnseen}
       />
       {isStaff && (

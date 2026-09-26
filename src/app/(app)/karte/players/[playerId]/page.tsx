@@ -135,15 +135,15 @@ export default function KartePlayerPage() {
   );
   const [sportsTestChartRange, setSportsTestChartRange] = useState<"year" | "all">("year");
 
+  // 選手の閲覧・基本情報編集自体は全プランの基本機能(お試しプランでも利用可)。
+  // hasKarteTabAccessが分けるのは試合スタッツ等の深い分析機能のみで、
+  // このページ自体はブロックしない(isProで表示内容を出し分ける)。
+  const isPro = hasKarteTabAccess(plan);
+
   // players一覧側と同様、保護者(一般・運営)は自分に紐づく選手のカルテのみ閲覧できる。
   // playersテーブル自体はRLS上チーム全員分が見えてしまうため、ここで自分の子どもかどうかを
   // 確認して、そうでなければ一覧に戻す(URL直打ち対策)。
   useEffect(() => {
-    if (!hasKarteTabAccess(plan)) {
-      setAuthorized(false);
-      router.replace("/home");
-      return;
-    }
     if (isStaff) {
       setAuthorized(true);
       return;
@@ -163,7 +163,7 @@ export default function KartePlayerPage() {
         router.replace("/karte/players");
       }
     })();
-  }, [isStaff, userId, params.playerId, plan, router]);
+  }, [isStaff, userId, params.playerId, router]);
 
   useUnsavedChangesGuard(
     editing &&
@@ -377,7 +377,7 @@ export default function KartePlayerPage() {
 
   if (loading || !authorized) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
+      <PageShell header={<AppHeader title={isPro ? "カルテ" : "選手一覧"} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
         <EmptyState>読み込み中…</EmptyState>
       </PageShell>
     );
@@ -385,14 +385,14 @@ export default function KartePlayerPage() {
 
   if (!player) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
+      <PageShell header={<AppHeader title={isPro ? "カルテ" : "選手一覧"} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
         <EmptyState>選手が見つかりません</EmptyState>
       </PageShell>
     );
   }
 
   return (
-    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
+    <PageShell header={<AppHeader title={`${playerFullName(player)} / ${isPro ? "カルテ" : "選手一覧"}`} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
       {isStaff && (
         // 保護者は自分に紐づく選手しかアクセスできないため、兄弟選手間のページ送りは
         // スタッフ限定にする(保護者に他選手のIDへの導線を与えないため)。
@@ -590,17 +590,19 @@ export default function KartePlayerPage() {
         </Card>
       )}
 
-      <div className="mt-3">
-        <FieldLabel>年度</FieldLabel>
-        <InlineSelect
-          value={String(fiscalYear)}
-          onChange={(v) => setFiscalYear(Number(v))}
-          options={FISCAL_YEAR_OPTIONS.map((y) => ({ value: String(y), label: `${y}年度` }))}
-        />
-      </div>
+      {isPro && (
+        <>
+          <div className="mt-3">
+            <FieldLabel>年度</FieldLabel>
+            <InlineSelect
+              value={String(fiscalYear)}
+              onChange={(v) => setFiscalYear(Number(v))}
+              options={FISCAL_YEAR_OPTIONS.map((y) => ({ value: String(y), label: `${y}年度` }))}
+            />
+          </div>
 
-      <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
-      {usesDetailedBasketballStats(sport) ? (
+          <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
+          {usesDetailedBasketballStats(sport) ? (
         gameRows.length === 0 ? (
           <Card>
             <EmptyState>この年度の出場記録がありません</EmptyState>
@@ -919,6 +921,8 @@ export default function KartePlayerPage() {
           <li>FOULS:ファウル</li>
           <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
         </ul>
+      )}
+        </>
       )}
 
       {hasSportsTestAccess(plan) && (
