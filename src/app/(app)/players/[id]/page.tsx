@@ -72,18 +72,22 @@ export default function PlayerDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
+    // 検定はスタッフの場合カルテ(/karte/players/[playerId])へのリンクに切り替えて
+    // 表示するため(重複解消)、スタッフでは元データの取得自体が不要。
     const [{ data: p }, { count }, { data: tests }, { data: progress }] = await Promise.all([
       supabase.from("players").select("*").eq("id", params.id).single(),
       supabase
         .from("player_notes")
         .select("id", { count: "exact", head: true })
         .eq("player_id", params.id),
-      supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
-      supabase
-        .from("player_skill_test_progress")
-        .select("*")
-        .eq("player_id", params.id)
-        .order("created_at", { ascending: false }),
+      isStaff ? Promise.resolve({ data: null }) : supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
+      isStaff
+        ? Promise.resolve({ data: null })
+        : supabase
+            .from("player_skill_test_progress")
+            .select("*")
+            .eq("player_id", params.id)
+            .order("created_at", { ascending: false }),
     ]);
     setPlayer(p ?? null);
     setNoteCount(count ?? 0);
@@ -104,7 +108,7 @@ export default function PlayerDetailPage() {
       setNextId(null);
     }
     setLoading(false);
-  }, [params.id]);
+  }, [params.id, isStaff]);
 
   useEffect(() => {
     load();
@@ -474,26 +478,39 @@ export default function PlayerDetailPage() {
           {hasSkillTestAccess(plan) && (
             <>
               <SectionLabel>検定</SectionLabel>
-              <Card>
-                {skillTests.length === 0 ? (
-                  <div className="text-xs text-ink-soft">まだ検定がありません</div>
-                ) : (
-                  <div className="text-[13.5px]">
-                    {skillTests.map((test) => {
-                      const current = skillProgress.find((row) => row.skill_test_id === test.id);
-                      return (
-                        <div
-                          key={test.id}
-                          className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 border-b border-line last:border-b-0"
-                        >
-                          <span className="font-bold">{test.name}</span>
-                          <span className="text-ink-soft">{current ? current.level_label : "未設定"}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Card>
+              {isStaff ? (
+                // スタッフはカルテ側(閲覧・更新とも)へ集約し、ここでは同じ内容を
+                // 二重に表示しない。
+                <Link href={`/karte/players/${player.id}`}>
+                  <Card className="cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-[13.5px]">カルテで見る・更新する</div>
+                      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                    </div>
+                  </Card>
+                </Link>
+              ) : (
+                <Card>
+                  {skillTests.length === 0 ? (
+                    <div className="text-xs text-ink-soft">まだ検定がありません</div>
+                  ) : (
+                    <div className="text-[13.5px]">
+                      {skillTests.map((test) => {
+                        const current = skillProgress.find((row) => row.skill_test_id === test.id);
+                        return (
+                          <div
+                            key={test.id}
+                            className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 border-b border-line last:border-b-0"
+                          >
+                            <span className="font-bold">{test.name}</span>
+                            <span className="text-ink-soft">{current ? current.level_label : "未設定"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              )}
             </>
           )}
         </>
