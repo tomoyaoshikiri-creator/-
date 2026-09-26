@@ -747,7 +747,6 @@ export default function GameStatsPage() {
 
   return (
     <PageShell
-      wide={isLandscapeWide}
       header={
         <AppHeader
           title="スタッツ入力"

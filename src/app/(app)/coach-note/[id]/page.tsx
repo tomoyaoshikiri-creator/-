@@ -406,10 +406,11 @@ export default function CoachNoteDetailPage() {
               comments.map((c) =>
                 editingCommentId === c.id ? (
                   <div key={c.id} className="mb-3 last:mb-0">
-                    <input
+                    <textarea
+                      rows={2}
                       value={editCommentBody}
                       onChange={(e) => setEditCommentBody(e.target.value)}
-                      className="w-full min-w-0 border border-line rounded-lg px-2 py-1 text-[12px] bg-white text-ink"
+                      className={inputClass("w-full min-w-0 resize-y")}
                     />
                     <div className="flex gap-2 mt-1.5">
                       <button
@@ -471,12 +472,13 @@ export default function CoachNoteDetailPage() {
                 ),
               )
             )}
-            <div className="flex gap-1.5 mt-2.5">
-              <input
+            <div className="flex gap-1.5 mt-2.5 items-end">
+              <textarea
+                rows={2}
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
                 placeholder="コメントを書く"
-                className="flex-1 min-w-0 border border-line rounded-lg px-2 py-1 text-[12px] bg-white text-ink"
+                className={inputClass("flex-1 min-w-0 resize-y")}
               />
               <button
                 type="button"

@@ -214,8 +214,8 @@ textarea {
   出るため主役にはせず、素直な空色の--brand-blueを軸にし、右下だけ
   ごく僅かにcyanを効かせる。また単一色に近いと変化が弱く見えるため、
   開始/終了の彩度差を大きめに取り、グラデーションらしさを出す。
-  .app-shellの他のプロパティ(flex/max-width/デスクトップでの角丸カード化等)は
-  そのまま流用し、backgroundだけをここで上書きする((auth)/layout.tsxで
+  .app-shellの他のプロパティ(flex/max-width等)はそのまま流用し、backgroundだけを
+  ここで上書きする((auth)/layout.tsxで
   "app-shell auth-shell"の2クラスを併用)。
 */
 .auth-shell {
@@ -228,38 +228,18 @@ textarea {
 }
 
 /*
-  余白付きの「浮いたカード」表示(角丸・影・上下マージン)は、マウス操作のPCブラウザ
-  (hover:hover かつ pointer:fine)だけに限定する。iPad等のタッチ端末は同じ横幅でも
-  ネイティブアプリのように画面いっぱいに表示したいため、ここでは除外する。
-*/
-@media (min-width: 640px) and (hover: hover) and (pointer: fine) {
-  .app-shell {
-    position: relative;
-    inset: auto;
-    height: calc(100dvh - 48px);
-    margin-block: 24px;
-    border-radius: 28px;
-    box-shadow: 0 30px 60px -20px rgba(22, 35, 63, 0.35);
-  }
-}
-
-/*
   タブレット(iPad等)・PCブラウザ向け: スマホ画面をそのまま拡大するのではなく、
   左に常設のサイドナビ(Sidebar)を出す横並びレイアウトに切り替えるため、
-  カードの最大幅を広げる(サイドナビ自体はSidebarコンポーネント側でmin-[700px]:flex制御)。
-  700pxはiPad mini縦向き(744px)を含む、一般的なタブレット縦幅を余裕を持って
-  カバーできる値として選んでいる(768pxだと一部の機種の縦向きで切り替わらないため)。
-  タッチ端末はここで上限を付けず画面いっぱいに広げ、PCブラウザだけ次のクエリで
-  ウィンドウ幅の96%(超ワイドモニタでは1600px)に抑えて「浮いたカード」に見せる。
+  カードの最大幅の制限を外し、ウィンドウいっぱいに表示する(サイドナビ自体は
+  Sidebarコンポーネント側でmin-[700px]:flex制御)。700pxはiPad mini縦向き(744px)を
+  含む、一般的なタブレット縦幅を余裕を持ってカバーできる値として選んでいる
+  (768pxだと一部の機種の縦向きで切り替わらないため)。PCブラウザ・タッチ端末を
+  問わず、この幅以上では常に画面いっぱいに表示する(以前はPCブラウザだけ
+  余白付きの「浮いたカード」表示にしていたが、ウィンドウ全体を使いたいという
+  要望により廃止した)。
 */
 @media (min-width: 700px) {
   .app-shell {
     max-width: 100%;
-  }
-}
-
-@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
-  .app-shell {
-    max-width: min(1600px, 96vw);
   }
 }
