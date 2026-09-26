@@ -11,7 +11,6 @@ import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { fgPct, twoPct, threePct, ftPct, type StatTotals } from "@/lib/gameStats";
 import { playerFullName, sortPlayers, sortOpponentPlayers } from "@/lib/format";
-import { useMediaQuery } from "@/lib/useMediaQuery";
 import type {
   GameMatch,
   GameOpponentPlayer,
@@ -272,9 +271,6 @@ export default function GameStatsViewPage() {
   const matchId = params.matchId;
   const router = useRouter();
   const { role, sport, teamName } = useSession();
-  // 横向きの広い画面(iPad横向きなど)では、選手ごとの列が多いボックススコア表を
-  // 中央寄せの狭い幅(max-w-2xl)に押し込めず、画面幅をそのまま活かす。
-  const isLandscapeWide = useMediaQuery("(orientation: landscape) and (min-width: 900px)");
 
   useEffect(() => {
     if (!usesDetailedBasketballStats(sport) || !canRecordGames(role)) router.replace("/game");
@@ -338,7 +334,6 @@ export default function GameStatsViewPage() {
 
   return (
     <PageShell
-      wide={isLandscapeWide}
       header={
         <AppHeader
           title="スタッツを見る"
