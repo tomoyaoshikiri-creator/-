@@ -6,7 +6,6 @@ export type TabKey =
   | "notice"
   | "report"
   | "coachNote"
-  | "players"
   | "game"
   | "karte"
   | "library"
@@ -22,7 +21,6 @@ export const TAB_LABELS: Record<TabKey, string> = {
   notice: "お知らせ",
   report: "チーム日報",
   coachNote: "コーチ日報",
-  players: "選手一覧",
   game: "試合",
   karte: "カルテ",
   library: "ライブラリ",
@@ -37,7 +35,6 @@ export const TAB_PATHS: Record<TabKey, string> = {
   notice: "/notice",
   report: "/report",
   coachNote: "/coach-note",
-  players: "/karte/players",
   game: "/game",
   karte: "/karte",
   library: "/library",
@@ -52,7 +49,6 @@ export const PAGE_TITLES: Record<TabKey, string> = {
   notice: "お知らせ",
   report: "チーム日報",
   coachNote: "コーチ日報",
-  players: "選手一覧",
   game: "試合",
   karte: "カルテ",
   library: "ライブラリ",
@@ -64,16 +60,16 @@ export const PAGE_TITLES: Record<TabKey, string> = {
 // 仕様メモ 2章「権限構造」に基づくタブ出し分け。単一のソースとしてUI・ルートガード双方から参照する。
 // 「設定」タブは全ロールに表示するが、中身(チームのロゴ・配色)は canManageSettings で管理者のみに絞る。
 // 自分自身のアカウント編集(表示名・パスワード)は同タブ内で全ロールに表示する。
-// 選手メモは「選手一覧」タブから選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
+// 選手メモは選手カルテ(/karte/players)で選手を選んで登録・閲覧する形にまとめており、専用タブは持たない。
 // 「コーチ日報」は指導者・管理者専用。「チーム日報」(全ロール共有)とはテーブルごと分離している。
 // 「ライブラリ」(画像・資料の共有置き場)は全ロールに開放している。
 // 「試合記録」タブは一般・運営にも見せるが、その中身(スタメン登録などの記録画面)は指導者・管理者のみが
 // 操作できるため、一般・運営がタップした場合は結果閲覧専用の /game/results に直接遷移させる(tabHrefForRole)。
-// 「選手一覧」は専用タブを廃止し、「カルテ」タブの中の1カードとして統合した(/karte)。
-// そのため「カルテ」タブ自体は全ロールに開放し、中身のカード出し分け(チームカルテ・選手カルテは
-// canViewKarte、選手一覧は全ロール)は/karte/page.tsx側で行う。選手一覧画面側は元のまま、
-// player_guardiansと突き合わせて自分の子ども以外はグレーアウト・選択不可にする
-// (players_select_guardian_view、選手詳細ページの本人確認とセットで運用)。
+// 旧「選手一覧」タブ(/players)は選手一覧→カルテ統合により廃止し、選手の閲覧・登録・編集・削除は
+// すべて選手カルテ(/karte/players)に集約した。「カルテ」タブ自体も廃止され、「チーム」hub配下の
+// カード(選手カルテ・チームカルテ)として統合されている(/karte・/players配下は後方互換のリダイレクトのみ)。
+// 保護者は自分の子どものみ選択可能で、それ以外はグレーアウト表示になる
+// (player_guardians突き合わせ、選手詳細ページの本人確認とセットで運用)。
 const ROLE_TABS: Record<Role, TabKey[]> = {
   一般: ["schedule", "notice", "report", "game", "karte", "library", "settings"],
   運営: ["schedule", "notice", "report", "game", "karte", "library", "users", "settings"],
@@ -84,7 +80,7 @@ const ROLE_TABS: Record<Role, TabKey[]> = {
 // ROLE_TABSはページ単体のルートガード(canAccessTab、/report・/coach-note・/users・
 // /game/results等のuseEffect内のリダイレクト判定)専用として維持する。ボトムナビ自体の
 // 表示タブ構成は、ナビ再設計v3(2026-09)以降ロールに関わらず固定のBOTTOM_NAV_TABSを使う
-// (TabBar.tsx / Sidebar.tsx)。「コーチ日報」「選手一覧」「ライブラリ」等はhub(/team)配下の
+// (TabBar.tsx / Sidebar.tsx)。「コーチ日報」「選手カルテ」「ライブラリ」等はhub(/team)配下の
 // リンクとして残り、ボトムナビの直接のタブではなくなった。
 export function tabsForRole(role: Role): TabKey[] {
   return ROLE_TABS[role];
