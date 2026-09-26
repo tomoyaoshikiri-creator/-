@@ -14,11 +14,14 @@ begin;
 -- トリガー経由のみが行として作られる)。RLSはデフォルト拒否のため、insertポリシーを削除するだけでよい。
 drop policy if exists player_skill_test_progress_insert on public.player_skill_test_progress;
 
+-- approver_id列に依存する既存ポリシー(insert/update)を先に削除してから列を落とす。
+drop policy if exists skill_test_promotion_requests_insert on public.skill_test_promotion_requests;
+drop policy if exists skill_test_promotion_requests_update on public.skill_test_promotion_requests;
+
 -- approver_idを申請時に必須で指定する方式を廃止する。
 alter table public.skill_test_promotion_requests drop column approver_id;
 
 -- 申請: 一般・運営は自分に紐づく選手について、指導者・管理者は任意の選手について申請できる。
-drop policy if exists skill_test_promotion_requests_insert on public.skill_test_promotion_requests;
 create policy skill_test_promotion_requests_insert on public.skill_test_promotion_requests for insert
   with check (
     team_id = public.current_team_id()
@@ -40,7 +43,6 @@ create policy skill_test_promotion_requests_insert on public.skill_test_promotio
 
 -- 承認・却下: 指導者・管理者であれば誰でも、pending中のものに対して行える
 -- (自分自身が申請したものを自分で承認することも許容する。1人体制のチームでも運用できるように)。
-drop policy if exists skill_test_promotion_requests_update on public.skill_test_promotion_requests;
 create policy skill_test_promotion_requests_update on public.skill_test_promotion_requests for update
   using (
     team_id = public.current_team_id()
