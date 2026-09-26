@@ -6,19 +6,24 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { Pill } from "@/components/ui/Pill";
 import { skillTestLevelLabels } from "@/lib/skillTest";
-import type { PlayerSkillTestProgress, SkillTest } from "@/lib/database.types";
+import type { PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest } from "@/lib/database.types";
 
-// カルテの選手個人ページ専用。検定(級・段制の技能検定)の作成・ランク更新をここで行う
-// (選手一覧側の選手個人ページは閲覧専用)。
+// カルテの選手個人ページ専用(指導者・管理者しか描画されない)。検定(級・段制の技能検定)の
+// 作成・ランク登録をここで行う(選手一覧側の選手個人ページは閲覧専用)。指導者・管理者自身の
+// 登録は承認不要で即座に反映される。保護者からの申請(skill_test_promotion_requests)が
+// 承認待ちの間は、二重登録を避けるためここでも「承認待ち」表示にする
+// (承認・却下自体はチームの検定管理画面から行う)。
 export function SkillTestPanel({ playerId }: { playerId: string }) {
   const { teamId, userId } = useSession();
   const toast = useToast();
   const [tests, setTests] = useState<SkillTest[]>([]);
   const [progress, setProgress] = useState<PlayerSkillTestProgress[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<SkillTestPromotionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState<Record<string, string>>({});
-  const [savingTestId, setSavingTestId] = useState<string | null>(null);
+  const [submittingTestId, setSubmittingTestId] = useState<string | null>(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -29,16 +34,22 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: t }, { data: p }] = await Promise.all([
+    const [{ data: t }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
       supabase
         .from("player_skill_test_progress")
         .select("*")
         .eq("player_id", playerId)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("skill_test_promotion_requests")
+        .select("*")
+        .eq("player_id", playerId)
+        .eq("status", "pending"),
     ]);
     setTests(t ?? []);
     setProgress(p ?? []);
+    setPendingRequests(r ?? []);
     setLoading(false);
   }, [playerId]);
 
@@ -48,6 +59,10 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
 
   function latestFor(testId: string) {
     return progress.find((row) => row.skill_test_id === testId) ?? null;
+  }
+
+  function pendingFor(testId: string) {
+    return pendingRequests.find((row) => row.skill_test_id === testId) ?? null;
   }
 
   async function handleAddTest() {
@@ -82,27 +97,33 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
     load();
   }
 
-  async function handleUpdateLevel(test: SkillTest) {
+  // 指導者・管理者自身によるランク登録。承認不要で即座にplayer_skill_test_progressへ反映する。
+  async function handleRequestLevel(test: SkillTest) {
     const raw = selectedIndex[test.id];
     if (raw === undefined || raw === "") {
       toast("ランクを選択してください");
       return;
     }
-    setSavingTestId(test.id);
+    setSubmittingTestId(test.id);
     const supabase = createClient();
-    const { error } = await supabase.from("player_skill_test_progress").insert({
-      team_id: teamId,
-      player_id: playerId,
-      skill_test_id: test.id,
-      level_index: Number(raw),
-      recorded_by: userId,
-    });
-    setSavingTestId(null);
-    if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+    const { data, error } = await supabase
+      .from("player_skill_test_progress")
+      .insert({
+        team_id: teamId,
+        player_id: playerId,
+        skill_test_id: test.id,
+        level_index: Number(raw),
+        recorded_by: userId,
+      })
+      .select("*")
+      .single();
+    setSubmittingTestId(null);
+    if (error || !data) {
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
-    toast(`${test.name}のランクを更新しました`);
+    toast(`${test.name}のランクを登録しました`);
+    setSelectedIndex((s) => ({ ...s, [test.id]: "" }));
     load();
   }
 
@@ -123,6 +144,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
       ) : (
         tests.map((test) => {
           const current = latestFor(test.id);
+          const pending = pendingFor(test.id);
           const levels = skillTestLevelLabels(
             test.kyu_count,
             test.dan_count,
@@ -138,28 +160,32 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
                 <div className="font-bold text-[13.5px]">{test.name}</div>
                 <div className="text-[12px] text-ink-soft">現在: {current ? current.level_label : "未設定"}</div>
               </div>
-              <div className="flex gap-2">
-                <select
-                  className={inputClass("flex-1")}
-                  value={selectedIndex[test.id] ?? ""}
-                  onChange={(e) => setSelectedIndex((s) => ({ ...s, [test.id]: e.target.value }))}
-                >
-                  <option value="">ランクを選択</option>
-                  {levels.map((label, idx) => (
-                    <option key={idx} value={idx}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => handleUpdateLevel(test)}
-                  disabled={savingTestId === test.id}
-                  className="flex-none px-3.5 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
-                >
-                  {savingTestId === test.id ? "申請中…" : "申請"}
-                </button>
-              </div>
+              {pending ? (
+                <Pill tone="pending">{pending.target_level_label}へ承認待ち</Pill>
+              ) : (
+                <div className="flex gap-2">
+                  <select
+                    className={inputClass("flex-1")}
+                    value={selectedIndex[test.id] ?? ""}
+                    onChange={(e) => setSelectedIndex((s) => ({ ...s, [test.id]: e.target.value }))}
+                  >
+                    <option value="">ランクを選択</option>
+                    {levels.map((label, idx) => (
+                      <option key={idx} value={idx}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleRequestLevel(test)}
+                    disabled={submittingTestId === test.id}
+                    className="flex-none px-3.5 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                  >
+                    {submittingTestId === test.id ? "申請中…" : "申請"}
+                  </button>
+                </div>
+              )}
             </Card>
           );
         })

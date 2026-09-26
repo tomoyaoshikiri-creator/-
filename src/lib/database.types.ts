@@ -1309,7 +1309,6 @@ export interface Database {
           is_dan: boolean;
           progress_id: string | null;
           requested_by: string;
-          approver_id: string;
           status: "pending" | "approved" | "rejected";
           reject_reason: string | null;
           decided_by: string | null;
@@ -1326,7 +1325,6 @@ export interface Database {
           is_dan: boolean;
           progress_id?: string | null;
           requested_by: string;
-          approver_id: string;
           status?: "pending" | "approved" | "rejected";
         };
         Update: {

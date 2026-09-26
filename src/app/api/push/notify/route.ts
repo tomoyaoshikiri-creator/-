@@ -216,6 +216,23 @@ export async function POST(request: Request) {
       memberIds = await staffMemberIds(adminClient, teamId);
       break;
     }
+    case "skill_test_promotion_requested": {
+      const { data: req } = await supabase
+        .from("skill_test_promotion_requests")
+        .select("id, requested_by, player_id, skill_test_id, target_level_label")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!req || req.requested_by !== user.id) {
+        return NextResponse.json({ error: "申請が見つかりません" }, { status: 404 });
+      }
+      const player = await getPlayerName(supabase, req.player_id);
+      title = "🥋 検定の承認待ちが届きました";
+      body = `${player}の「${req.target_level_label}」への昇格が承認待ちです`;
+      url = `/karte/team/skill-tests/${req.skill_test_id}`;
+      // 承認は指導者・管理者なら誰でも行えるため、宛先も全スタッフに送る。
+      memberIds = await staffMemberIds(adminClient, teamId);
+      break;
+    }
     case "coach_note_comment_created": {
       const { data: report } = await supabase
         .from("reports")
