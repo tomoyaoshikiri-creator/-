@@ -24,21 +24,26 @@ import {
   computeSeasonTotals,
   compareGameDesc,
   pctString,
+  toSeasonStatAverages,
   GAME_COLUMNS,
   buildGameColumns,
   SPORTS_TEST_RANKING_METRICS,
   type SportsTestMetric,
+  type TeamGameStatAveragesRow,
 } from "@/lib/karteAggregate";
 import {
   effectiveFiscalYear,
   fiscalYearOf,
   formatDateLabel,
+  formatFullDateLabel,
   gradeLabel,
+  obogCohortLabel,
   playerFullName,
   sortPlayers,
   todayDateStr,
 } from "@/lib/format";
 import type {
+  Database,
   GamePlayerStatEntry,
   GamePlayerStatLine,
   Player,
@@ -46,6 +51,8 @@ import type {
   SportsTestRecord,
   TeamStatCategory,
 } from "@/lib/database.types";
+
+type TeamCustomAverageRow = Database["public"]["Functions"]["team_stat_category_averages"]["Returns"][number];
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 4 + i);
@@ -88,6 +95,8 @@ export default function KartePlayerPage() {
   const [statEntries, setStatEntries] = useState<StatEntryWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
+  const [teamAverageRow, setTeamAverageRow] = useState<TeamGameStatAveragesRow | null>(null);
+  const [teamAverageRows, setTeamAverageRows] = useState<TeamCustomAverageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sportsTestView, setSportsTestView] = useState<"table" | "chart">("table");
   const [sportsTestChartMetric, setSportsTestChartMetric] = useState<SportsTestMetric>(
@@ -154,6 +163,21 @@ export default function KartePlayerPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // チーム平均は、個人スタッツと違って他選手の生データに触れずに済むよう、集計だけを
+  // 返す専用RPC(保護者向け/players/[id]/statsと同じもの)を使う。スタッフでも同じ値になる。
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      if (usesDetailedBasketballStats(sport)) {
+        const { data } = await supabase.rpc("team_game_stat_averages", { p_fiscal_year: fiscalYear });
+        setTeamAverageRow(data?.[0] ?? null);
+      } else {
+        const { data } = await supabase.rpc("team_stat_category_averages", { p_fiscal_year: fiscalYear });
+        setTeamAverageRows(data ?? []);
+      }
+    })();
+  }, [fiscalYear, sport]);
 
   const seasonLines = statLines
     .filter((l) => {
@@ -243,15 +267,27 @@ export default function KartePlayerPage() {
         )}
       </div>
 
+      <SectionLabel>基本情報</SectionLabel>
       <Card>
         <div className="flex items-center gap-2.5">
           <NumChip num={player.number ?? "-"} />
           <div>
             <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+            {(player.sei_kana || player.mei_kana) && (
+              <div className="text-[11px] text-ink-soft mt-0.5">
+                {player.sei_kana ?? ""}
+                {player.mei_kana ?? ""}
+              </div>
+            )}
             <div className="text-[11px] text-ink-soft mt-0.5">
-              {gradeLabel(player.grade, category)}・{player.positions.join("/")}
+              {player.status === "OB・OG" ? obogCohortLabel(player.grade, category) : gradeLabel(player.grade, category)}
+              ・{player.positions.length > 0 ? player.positions.join("/") : "ポジション未設定"}
             </div>
           </div>
+        </div>
+        <div className="text-[11px] text-ink-soft mt-2">
+          ステータス: {player.status}
+          {player.birthday && ` / 誕生日: ${formatFullDateLabel(player.birthday)}`}
         </div>
       </Card>
 
@@ -307,6 +343,46 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                    チーム平均
+                  </th>
+                  {columns.map((c) => {
+                    if (c.key === "rebDef") return null;
+                    const teamAverages = teamAverageRow ? toSeasonStatAverages(teamAverageRow) : null;
+                    if (c.key === "rebOff") {
+                      return (
+                        <th
+                          key="reb"
+                          colSpan={2}
+                          className="sticky top-9 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                        >
+                          {teamAverages ? (
+                            <>
+                              <div>{teamAverages.reb}</div>
+                              <div className="text-ink-soft text-[9.5px] font-normal">
+                                {teamAverages.rebOff} - {teamAverages.rebDef}
+                              </div>
+                            </>
+                          ) : (
+                            "-"
+                          )}
+                        </th>
+                      );
+                    }
+                    const v = teamAverages ? (teamAverages[c.key] as number | null) : null;
+                    return (
+                      <th
+                        key={c.key}
+                        className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                        }`}
+                      >
+                        {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
+                      </th>
+                    );
+                  })}
+                </tr>
+                <tr className="bg-paper">
+                  <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     シーズン合計
                   </th>
                   {columns.map((c) => {
@@ -316,7 +392,7 @@ export default function KartePlayerPage() {
                         <th
                           key="reb"
                           colSpan={2}
-                          className="sticky top-9 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                          className="sticky top-[72px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                         >
                           <div>{seasonTotals.reb}</div>
                           <div className="text-ink-soft text-[9.5px] font-normal">
@@ -329,7 +405,7 @@ export default function KartePlayerPage() {
                       return (
                         <th
                           key={c.key}
-                          className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
+                          className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap text-ink-soft`}
                         >
                           -
                         </th>
@@ -355,7 +431,7 @@ export default function KartePlayerPage() {
                       return (
                         <th
                           key={c.key}
-                          className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                          className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
                         >
                           <div className="leading-tight">
                             <div>{att > 0 ? `${made}/${att}` : "-"}</div>
@@ -368,7 +444,7 @@ export default function KartePlayerPage() {
                     return (
                       <th
                         key={c.key}
-                        className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
+                        className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap`}
                       >
                         {v}
                       </th>
@@ -376,7 +452,7 @@ export default function KartePlayerPage() {
                   })}
                 </tr>
                 <tr className="bg-paper">
-                  <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     シーズン平均
                   </th>
                   {columns.map((c) => {
@@ -386,7 +462,7 @@ export default function KartePlayerPage() {
                         <th
                           key="reb"
                           colSpan={2}
-                          className="sticky top-[72px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                          className="sticky top-[108px] h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                         >
                           <div>{seasonAverages.reb}</div>
                           <div className="text-ink-soft text-[9.5px] font-normal">
@@ -399,7 +475,7 @@ export default function KartePlayerPage() {
                     return (
                       <th
                         key={c.key}
-                        className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
+                        className={`sticky top-[108px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
                           c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                         }`}
                       >
@@ -476,12 +552,28 @@ export default function KartePlayerPage() {
               </tr>
               <tr className="bg-paper">
                 <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  チーム平均
+                </th>
+                {statCategories.map((c) => {
+                  const row = teamAverageRows.find((r) => r.category_id === c.id);
+                  return (
+                    <th
+                      key={c.id}
+                      className="sticky top-9 h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                    >
+                      {!row || row.player_count === 0 ? "-" : row.avg_value}
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr className="bg-paper">
+                <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                   シーズン平均
                 </th>
                 {statCategories.map((c) => (
                   <th
                     key={c.id}
-                    className="sticky top-9 h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
+                    className="sticky top-[72px] h-9 bg-paper z-20 w-[58px] min-w-[58px] px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap"
                   >
                     {customSeasonAverages.averages[c.id] ?? 0}
                   </th>
@@ -507,6 +599,27 @@ export default function KartePlayerPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {usesDetailedBasketballStats(sport) && (
+        <ul className="text-[10.5px] text-ink-soft leading-relaxed mb-2.5 pl-4 list-disc space-y-0.5">
+          <li>PTS:得点</li>
+          <li>FG%:フィールドゴール成功率(下段は成功数/試投数)</li>
+          {usesThreePointScoring(sport) && (
+            <>
+              <li>2P%:2ポイントシュート成功率(下段は成功数/試投数)</li>
+              <li>3P%:3ポイントシュート成功率(下段は成功数/試投数)</li>
+            </>
+          )}
+          <li>FT%:フリースロー成功率(下段は成功数/試投数)</li>
+          <li>AST:アシスト</li>
+          <li>REB:リバウンド(下段左はオフェンス(OFF)、右はディフェンス(DEF))</li>
+          <li>BLK:ブロック</li>
+          <li>ST:スティール</li>
+          <li>TO:ターンオーバー</li>
+          <li>FOULS:ファウル</li>
+          <li>EFF:得点+リバウンド+アシスト+スティール+ブロック−(FG失敗+FT失敗+ターンオーバー)</li>
+        </ul>
       )}
 
       {hasSportsTestAccess(plan) && (
