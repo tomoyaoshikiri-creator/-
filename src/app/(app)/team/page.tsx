@@ -86,11 +86,17 @@ export default function TeamHubPage() {
       ) : (
         <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="フル" />
       )}
+      {/* 選手カルテは保護者(一般・運営)にも開放している(見られるのは自分に紐づく
+          選手のみ)ため、isStaffで囲わずロールを問わず表示する。チームカルテ
+          (他選手を含むランキング比較)は引き続き指導者・管理者専用。 */}
+      <HubRow
+        href="/karte/players"
+        label="選手カルテ"
+        description={isStaff ? "選手ごとにスタッツ・スポーツテストを見る・分析する" : "自分の子のスタッツ・スポーツテストを見る"}
+        unseen={badges.playerKarteUnseen}
+      />
       {isStaff && (
-        <>
-          <HubRow href="/karte/players" label="選手カルテ" description="選手ごとにスタッツ・スポーツテストを見る・分析する" unseen={badges.playerKarteUnseen} />
-          <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
-        </>
+        <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
       )}
 
       <SectionLabel>資料</SectionLabel>

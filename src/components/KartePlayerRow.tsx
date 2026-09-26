@@ -6,18 +6,35 @@ import { ChevronRightIcon } from "@/components/icons";
 import { playerFullName } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 
-export function KartePlayerRow({ player, hasUnseenAnalysis }: { player: Player; hasUnseenAnalysis: boolean }) {
-  return (
-    <Link
-      href={`/karte/players/${player.id}`}
-      className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0"
-    >
+export function KartePlayerRow({
+  player,
+  hasUnseenAnalysis,
+  selectable = true,
+}: {
+  player: Player;
+  hasUnseenAnalysis: boolean;
+  // 保護者は自分に紐づく選手のみ選択可能(それ以外はPlayerRowと同様グレーアウト)。
+  // スタッフは常にtrueのため、既存呼び出し元は変更不要。
+  selectable?: boolean;
+}) {
+  const content = (
+    <>
       <NumChip num={player.number ?? "-"} />
       <div className="flex-1 min-w-0 flex items-center gap-1.5">
         {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
         <span className="font-bold text-[13.5px]">{playerFullName(player)}</span>
       </div>
-      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+      {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
+    </>
+  );
+
+  if (!selectable) {
+    return <div className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 opacity-40">{content}</div>;
+  }
+
+  return (
+    <Link href={`/karte/players/${player.id}`} className="flex items-center gap-2.5 py-2.5 border-b border-line last:border-b-0">
+      {content}
     </Link>
   );
 }

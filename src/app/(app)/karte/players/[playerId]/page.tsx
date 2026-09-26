@@ -48,6 +48,8 @@ import type {
   GamePlayerStatLine,
   Player,
   PlayerGrowthRecord,
+  PlayerSkillTestProgress,
+  SkillTest,
   SportsTestRecord,
   TeamStatCategory,
 } from "@/lib/database.types";
@@ -83,7 +85,8 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
 export default function KartePlayerPage() {
   const params = useParams<{ playerId: string }>();
   const router = useRouter();
-  const { role, plan, sport, category } = useSession();
+  const { role, userId, plan, sport, category } = useSession();
+  const isStaff = canViewKarte(role);
   const columns = buildGameColumns(usesThreePointScoring(sport));
 
   const [player, setPlayer] = useState<Player | null>(null);
@@ -95,23 +98,55 @@ export default function KartePlayerPage() {
   const [statEntries, setStatEntries] = useState<StatEntryWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
+  const [skillTests, setSkillTests] = useState<SkillTest[]>([]);
+  const [skillProgress, setSkillProgress] = useState<PlayerSkillTestProgress[]>([]);
   const [teamAverageRow, setTeamAverageRow] = useState<TeamGameStatAveragesRow | null>(null);
   const [teamAverageRows, setTeamAverageRows] = useState<TeamCustomAverageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [sportsTestView, setSportsTestView] = useState<"table" | "chart">("table");
   const [sportsTestChartMetric, setSportsTestChartMetric] = useState<SportsTestMetric>(
     SPORTS_TEST_RANKING_METRICS[0].value,
   );
   const [sportsTestChartRange, setSportsTestChartRange] = useState<"year" | "all">("year");
 
+  // players一覧側と同様、保護者(一般・運営)は自分に紐づく選手のカルテのみ閲覧できる。
+  // playersテーブル自体はRLS上チーム全員分が見えてしまうため、ここで自分の子どもかどうかを
+  // 確認して、そうでなければ一覧に戻す(URL直打ち対策)。
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
-  }, [role, plan, router]);
+    if (!hasKarteTabAccess(plan)) {
+      setAuthorized(false);
+      router.replace("/home");
+      return;
+    }
+    if (isStaff) {
+      setAuthorized(true);
+      return;
+    }
+    (async () => {
+      const supabase = createClient();
+      const { data: link } = await supabase
+        .from("player_guardians")
+        .select("id")
+        .eq("player_id", params.playerId)
+        .eq("profile_id", userId)
+        .maybeSingle();
+      if (link) {
+        setAuthorized(true);
+      } else {
+        setAuthorized(false);
+        router.replace("/karte/players");
+      }
+    })();
+  }, [isStaff, userId, params.playerId, plan, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: lines }, { data: categories }, { data: entries }, { data: tests }, { data: growth }] =
+    // 検定はスタッフの場合SkillTestPanel(直接編集)を使うため、元データの取得自体が不要。
+    // 保護者は従来通り読み取り専用の一覧を表示する(検定ランクの変更は
+    // /karte/team/skill-testsの申請フロー経由)。
+    const [{ data: p }, { data: lines }, { data: categories }, { data: entries }, { data: tests }, { data: growth }, { data: skTests }, { data: skProgress }] =
       await Promise.all([
         supabase.from("players").select("*").eq("id", params.playerId).single(),
         supabase
@@ -137,8 +172,18 @@ export default function KartePlayerPage() {
           .eq("player_id", params.playerId)
           .order("measured_on", { ascending: false })
           .limit(6),
+        isStaff ? Promise.resolve({ data: null }) : supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
+        isStaff
+          ? Promise.resolve({ data: null })
+          : supabase
+              .from("player_skill_test_progress")
+              .select("*")
+              .eq("player_id", params.playerId)
+              .order("created_at", { ascending: false }),
       ]);
     setPlayer(p ?? null);
+    setSkillTests(skTests ?? []);
+    setSkillProgress(skProgress ?? []);
     if (p) {
       const { data: siblings } = await supabase
         .from("players")
@@ -158,7 +203,7 @@ export default function KartePlayerPage() {
     setSportsTestRecords(tests ?? []);
     setGrowthRecords(growth ?? []);
     setLoading(false);
-  }, [params.playerId]);
+  }, [params.playerId, isStaff]);
 
   useEffect(() => {
     load();
@@ -220,9 +265,9 @@ export default function KartePlayerPage() {
 
   const sportsTestRecordsForYear = sportsTestRecords.filter((r) => r.fiscal_year === fiscalYear);
 
-  if (loading) {
+  if (loading || !authorized) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
         <EmptyState>読み込み中…</EmptyState>
       </PageShell>
     );
@@ -230,42 +275,46 @@ export default function KartePlayerPage() {
 
   if (!player) {
     return (
-      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
+      <PageShell header={<AppHeader title="カルテ" variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
         <EmptyState>選手が見つかりません</EmptyState>
       </PageShell>
     );
   }
 
   return (
-    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge="coach" />}>
-      <div className="flex items-center justify-between mb-3">
-        {prevId ? (
-          <Link
-            href={`/karte/players/${prevId}`}
-            aria-label="前の選手"
-            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
-          >
-            ‹
-          </Link>
-        ) : (
-          <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
-            ‹
-          </span>
-        )}
-        {nextId ? (
-          <Link
-            href={`/karte/players/${nextId}`}
-            aria-label="次の選手"
-            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
-          >
-            ›
-          </Link>
-        ) : (
-          <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
-            ›
-          </span>
-        )}
-      </div>
+    <PageShell header={<AppHeader title={`${playerFullName(player)} / カルテ`} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
+      {isStaff && (
+        // 保護者は自分に紐づく選手しかアクセスできないため、兄弟選手間のページ送りは
+        // スタッフ限定にする(保護者に他選手のIDへの導線を与えないため)。
+        <div className="flex items-center justify-between mb-3">
+          {prevId ? (
+            <Link
+              href={`/karte/players/${prevId}`}
+              aria-label="前の選手"
+              className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+            >
+              ‹
+            </Link>
+          ) : (
+            <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+              ‹
+            </span>
+          )}
+          {nextId ? (
+            <Link
+              href={`/karte/players/${nextId}`}
+              aria-label="次の選手"
+              className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+            >
+              ›
+            </Link>
+          ) : (
+            <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+              ›
+            </span>
+          )}
+        </div>
+      )}
 
       <SectionLabel>基本情報</SectionLabel>
       <Card>
@@ -742,7 +791,32 @@ export default function KartePlayerPage() {
       {hasSkillTestAccess(plan) && (
         <>
           <SectionLabel>検定</SectionLabel>
-          <SkillTestPanel playerId={player.id} />
+          {isStaff ? (
+            <SkillTestPanel playerId={player.id} />
+          ) : (
+            // 保護者はランクの直接編集はできない(ランク変更は/karte/team/skill-tests
+            // の申請フロー経由)。現在のランクの閲覧のみ。
+            <Card>
+              {skillTests.length === 0 ? (
+                <div className="text-xs text-ink-soft">まだ検定がありません</div>
+              ) : (
+                <div className="text-[13.5px]">
+                  {skillTests.map((test) => {
+                    const current = skillProgress.find((row) => row.skill_test_id === test.id);
+                    return (
+                      <div
+                        key={test.id}
+                        className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 border-b border-line last:border-b-0"
+                      >
+                        <span className="font-bold">{test.name}</span>
+                        <span className="text-ink-soft">{current ? current.level_label : "未設定"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          )}
         </>
       )}
 
