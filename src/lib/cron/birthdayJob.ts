@@ -48,7 +48,7 @@ export async function runBirthdayReminders(
 
     const title = "🎂 誕生日おめでとう!";
     const body = `今日は${playerFullName(player)}選手の誕生日です。みんなでお祝いしましょう!`;
-    const payload = JSON.stringify({ title, body, url: `/players/${player.id}` });
+    const payload = JSON.stringify({ title, body, url: `/karte/players/${player.id}` });
 
     let sent = 0;
     await Promise.all(

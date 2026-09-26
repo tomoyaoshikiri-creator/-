@@ -57,7 +57,7 @@ export default function PlayerGrowthPage() {
         setAuthorized(true);
       } else {
         setAuthorized(false);
-        router.replace("/players");
+        router.replace("/karte/players");
       }
     })();
   }, [role, userId, params.id, router]);
@@ -132,7 +132,7 @@ export default function PlayerGrowthPage() {
         <AppHeader
           title={player ? `${playerFullName(player)} / 身長・体重` : "身長・体重"}
           variant="detail"
-          backHref={`/players/${params.id}`}
+          backHref={`/karte/players/${params.id}`}
         />
       }
     >

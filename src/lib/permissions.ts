@@ -37,7 +37,7 @@ export const TAB_PATHS: Record<TabKey, string> = {
   notice: "/notice",
   report: "/report",
   coachNote: "/coach-note",
-  players: "/players",
+  players: "/karte/players",
   game: "/game",
   karte: "/karte",
   library: "/library",

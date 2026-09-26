@@ -31,7 +31,7 @@ export function PlayerRow({
   const hasNotes = noteCount > 0;
 
   function navigate() {
-    router.push(`/players/${player.id}`);
+    router.push(`/karte/players/${player.id}`);
   }
 
   return (

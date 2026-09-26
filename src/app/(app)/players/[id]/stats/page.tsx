@@ -81,7 +81,7 @@ export default function PlayerStatsPage() {
   useEffect(() => {
     if (!hasKarteTabAccess(plan)) {
       setAuthorized(false);
-      router.replace("/players");
+      router.replace("/karte/players");
       return;
     }
     if (isStaff) {
@@ -100,7 +100,7 @@ export default function PlayerStatsPage() {
         setAuthorized(true);
       } else {
         setAuthorized(false);
-        router.replace("/players");
+        router.replace("/karte/players");
       }
     })();
   }, [isStaff, userId, params.id, plan, router]);
@@ -195,7 +195,7 @@ export default function PlayerStatsPage() {
         <AppHeader
           title={player ? `${playerFullName(player)} / スタッツ` : "スタッツ"}
           variant="detail"
-          backHref={`/players/${params.id}`}
+          backHref={`/karte/players/${params.id}`}
         />
       }
     >

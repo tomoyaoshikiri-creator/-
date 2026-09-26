@@ -150,7 +150,7 @@ export default function SportsTestPage() {
   useEffect(() => {
     if (!hasSportsTestAccess(plan)) {
       setAuthorized(false);
-      router.replace("/players");
+      router.replace("/karte/players");
       return;
     }
     (async () => {
@@ -169,7 +169,7 @@ export default function SportsTestPage() {
         setAuthorized(true);
       } else {
         setAuthorized(false);
-        router.replace("/players");
+        router.replace("/karte/players");
       }
     })();
   }, [role, userId, params.id, plan, router]);
@@ -293,7 +293,7 @@ export default function SportsTestPage() {
         <AppHeader
           title={player ? `${playerFullName(player)} / スポーツテスト` : "スポーツテスト"}
           variant="detail"
-          backHref={`/players/${params.id}`}
+          backHref={`/karte/players/${params.id}`}
         />
       }
     >
