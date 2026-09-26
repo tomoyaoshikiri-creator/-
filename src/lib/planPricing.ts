@@ -9,7 +9,7 @@ export const PLAN_PRICING_OPTIONS: {
   desc: string;
   highlight?: boolean;
 }[] = [
-  { plan: "中間", price: "¥1,280", yearlyPrice: "¥13,824", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
-  { plan: "フル", price: "¥2,480", yearlyPrice: "¥26,784", desc: "選手・チームの成長をデータで管理したいチーム向け" },
-  { plan: "フルプラス", price: "¥3,280", yearlyPrice: "¥35,424", desc: "データ分析までAIに任せたいチーム向け" },
+  { plan: "中間", price: "¥980", yearlyPrice: "¥9,800", desc: "日々のチーム運営をまとめて管理したいチーム向け", highlight: true },
+  { plan: "フル", price: "¥2,180", yearlyPrice: "¥21,800", desc: "選手・チームの成長をデータで管理したいチーム向け" },
+  { plan: "フルプラス", price: "¥2,980", yearlyPrice: "¥29,800", desc: "データ分析までAIに任せたいチーム向け" },
 ];

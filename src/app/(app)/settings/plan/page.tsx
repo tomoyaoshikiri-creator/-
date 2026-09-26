@@ -135,7 +135,7 @@ export default function SettingsPlanPage() {
                   月払い
                 </SegButton>
                 <SegButton variant="small" active={billingInterval === "yearly"} onClick={() => setBillingInterval("yearly")}>
-                  年払い(10%オフ)
+                  年払い(2ヶ月分お得)
                 </SegButton>
               </div>
               {PLAN_PRICING_OPTIONS.map((opt) => (
