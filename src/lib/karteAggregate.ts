@@ -372,7 +372,7 @@ export function pctString(made: number, att: number): string {
   return att > 0 ? `${Math.round((made / att) * 100)}%` : "-";
 }
 
-// 試合スタッツ一覧(選手カルテ・選手一覧経由の保護者向け閲覧ページの両方で使う)の
+// 試合スタッツ一覧(スタッフ向け・保護者向けの選手カルテ閲覧ページの両方で使う)の
 // 並び順: 日付が新しい方を上、同日に複数試合がある場合は試合番号(第◯試合)が
 // 新しい(遅い)方を上、早い試合を下に表示する。
 export function compareGameDesc(

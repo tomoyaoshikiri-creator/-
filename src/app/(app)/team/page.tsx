@@ -11,8 +11,8 @@ import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
 import { hasCoachNoteAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
-// ナビ再設計v3の「チーム」hub。既存画面(選手一覧・カルテ・チーム日報・コーチ日報・
-// ライブラリ)への薄い索引のみで、リンク先ページの中身は一切変更しない。
+// ナビ再設計v3の「チーム」hub。既存画面(選手カルテ・チームカルテ・チーム日報・
+// コーチ日報・ライブラリ等)への薄い索引のみで、リンク先ページの中身は一切変更しない。
 // セクション順・行の並びは全ロール共通で固定し、ロール非該当の行はアップセルに
 // 使わず出さない(プラン不足の行だけ、ロールが適格な場合に限り小さな案内に留める)。
 function HubRow({

@@ -59,7 +59,7 @@ interface StatEntryWithDate extends GamePlayerStatEntry {
   } | null;
 }
 
-// 指導者・管理者専用の「カルテ」画面の試合スタッツ表と同じ内容を、選手一覧経由でも
+// 指導者・管理者専用の「カルテ」画面の試合スタッツ表と同じ内容を、選手カルテ経由でも
 // (自分の子どもに限り)保護者が閲覧できるようにするための、閲覧専用ページ。
 export default function PlayerStatsPage() {
   const params = useParams<{ id: string }>();
