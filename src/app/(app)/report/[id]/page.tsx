@@ -13,7 +13,7 @@ import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteReport } from "@/lib/permissions";
 import { dateDaysAgoStr, formatFullDateLabel } from "@/lib/format";
-import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
+import { FREE_HISTORY_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
 import { loadProfilesMap } from "@/lib/profiles";
 import { isNewSincePrevious, markItemSeenAndGetPrevious } from "@/lib/itemBadges";
 import { NewBadge } from "@/components/ui/Pill";
@@ -36,7 +36,7 @@ export default function DailyReportDetailPage() {
   const router = useRouter();
   const { userId, teamId, role, plan } = useSession();
   const hasFullHistory = hasFullReportHistoryAccess(plan);
-  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_REPORT_WINDOW_DAYS - 1);
+  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_HISTORY_WINDOW_DAYS - 1);
   const toast = useToast();
 
   const [report, setReport] = useState<DailyReport | null>(null);

@@ -28,7 +28,10 @@ export const maxDuration = 300;
 // そのためこのAPI Route側でも、通常のCookieベースのRLSクライアントで
 // role/プラン/競技対応を検証した後、SUPABASE_SERVICE_ROLE_KEYで作った別クライアントで
 // これら2つのRPCだけを呼び出す。
-const MONTHLY_LIMIT = 50;
+// 2026-09料金改定でチーム単位の月間上限を50回→30回に変更。既にこれまでの上限(50回)まで
+// 使用していたチームが今月内に一時的に「超過」扱いになる場合があるが、超過分を遡って
+// 取り消す処理はしない(新規生成のみブロックされ、翌月1日にused_countがリセットされる)。
+const MONTHLY_LIMIT = 30;
 
 function createServiceRoleClient(): SupabaseClient<Database> | null {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -229,7 +232,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ body, usedThisMonth: usage.used_count, monthlyLimit: MONTHLY_LIMIT });
 }
 
-// 選手カルテ・チームカルテのAI分析ボタン表示時に、今月の利用状況(◯/50回、チーム全体で
+// 選手カルテ・チームカルテのAI分析ボタン表示時に、今月の利用状況(◯/30回、チーム全体で
 // 選手分析・チーム分析を合算)を生成せずに確認するためのエンドポイント。どの画面
 // (選手カルテ/チームカルテ)から呼んでも同じteam_idなら同じ値を返す。
 // get_ai_analysis_usage()は引数を取らずauth.uid()から自チームのteam_idを導出するだけ

@@ -19,7 +19,7 @@ import { canAccessTab } from "@/lib/permissions";
 import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenDailyReportIds } from "@/lib/itemBadges";
 import { currentYearMonth, dateDaysAgoStr, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
-import { FREE_REPORT_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
+import { FREE_HISTORY_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
 import type { DailyReport, DailyReportReaction } from "@/lib/database.types";
 import { NewDailyReportModal } from "./NewDailyReportModal";
 
@@ -34,7 +34,7 @@ export default function ReportPage() {
   const router = useRouter();
   const { userId, role, plan } = useSession();
   const hasFullHistory = hasFullReportHistoryAccess(plan);
-  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_REPORT_WINDOW_DAYS - 1);
+  const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_HISTORY_WINDOW_DAYS - 1);
   const earliestAllowedYearMonth = earliestAllowedDate ? earliestAllowedDate.slice(0, 7) : undefined;
   const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
@@ -141,7 +141,7 @@ export default function ReportPage() {
       <MonthPicker value={monthValue} onChange={setMonthValue} min={earliestAllowedYearMonth} />
       {!hasFullHistory && (
         <div className="text-[11px] text-ink-soft bg-paper border border-line rounded-lg px-3 py-2 mb-3">
-          お試しプランでは直近{FREE_REPORT_WINDOW_DAYS}日分のみ閲覧できます。中間プラン以上で過去の日報もすべて見られるようになります。
+          お試しプランでは直近{FREE_HISTORY_WINDOW_DAYS}日分のみ閲覧できます。中間プラン以上で過去の日報もすべて見られるようになります。
         </div>
       )}
       {loading ? (
