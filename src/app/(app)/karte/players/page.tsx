@@ -27,10 +27,12 @@ const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 export default function KartePlayersPage() {
   const router = useRouter();
   const { role, userId, plan, sport, category } = useSession();
+  const isStaff = canViewKarte(role);
   const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
+  const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
 
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisPrompt, setAnalysisPrompt] = useState("");
@@ -47,12 +49,26 @@ export default function KartePlayersPage() {
   }, []);
 
   useEffect(() => {
-    computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
-  }, [userId]);
+    if (isStaff) computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
+  }, [isStaff, userId]);
+
+  // 保護者(一般・運営)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにする
+  // (players一覧側のPlayerRowと同じ方針)。
+  useEffect(() => {
+    if (isStaff) {
+      setOwnPlayerIds(new Set());
+      return;
+    }
+    (async () => {
+      const supabase = createClient();
+      const { data: pg } = await supabase.from("player_guardians").select("player_id").eq("profile_id", userId);
+      setOwnPlayerIds(new Set((pg ?? []).map((g) => g.player_id)));
+    })();
+  }, [isStaff, userId]);
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
-  }, [role, plan, router]);
+    if (!hasKarteTabAccess(plan)) router.replace("/home");
+  }, [plan, router]);
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");
@@ -89,7 +105,7 @@ export default function KartePlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手カルテ" variant="detail" backHref="/team" accessBadge="coach" />}
+      header={<AppHeader title="選手カルテ" variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />}
     >
       {role === "管理者" && hasAiAnalysisAccess(plan) && (
         <div className="flex items-center justify-end mb-2">
@@ -110,7 +126,12 @@ export default function KartePlayersPage() {
           <EmptyState>選手がいません</EmptyState>
         ) : (
           activeList.map((p) => (
-            <KartePlayerRow key={p.id} player={p} hasUnseenAnalysis={unseenAnalysisIds.has(p.id)} />
+            <KartePlayerRow
+              key={p.id}
+              player={p}
+              hasUnseenAnalysis={unseenAnalysisIds.has(p.id)}
+              selectable={isStaff || ownPlayerIds.has(p.id)}
+            />
           ))
         )}
       </Card>
