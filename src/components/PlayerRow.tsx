@@ -14,12 +14,16 @@ export function PlayerRow({
   showNotes,
   selectable,
   hasUnseenNotes,
+  hasUnseenAnalysis,
 }: {
   player: Player;
   noteCount: number;
   showNotes: boolean;
   selectable: boolean;
   hasUnseenNotes: boolean;
+  // カルテ側のKartePlayerRowにあった「AI分析未読」バッジ。選手一覧・OB/OG一覧を
+  // カルテと共通のRowにするため統合した(スタッフ以外は常にfalseで渡される想定)。
+  hasUnseenAnalysis?: boolean;
 }) {
   const router = useRouter();
   const { category } = useSession();
@@ -52,7 +56,10 @@ export function PlayerRow({
       <NumChip num={player.number ?? "-"} muted={isObog} />
       <div className="flex-1 min-w-0 flex items-center gap-2.5">
         <div className="min-w-0">
-          <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+          <div className="font-bold text-[13.5px] flex items-center gap-1.5">
+            {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+            {playerFullName(player)}
+          </div>
           <div className="text-[11px] text-ink-soft mt-0.5">
             {gradeLabel(player.grade, category)}・{player.positions.join("/")} · {player.status}
           </div>

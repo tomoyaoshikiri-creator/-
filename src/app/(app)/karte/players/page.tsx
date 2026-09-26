@@ -116,7 +116,9 @@ export default function KartePlayersPage() {
       </Card>
 
       {!loading && obogList.length > 0 && (
-        <Link href="/karte/players/obog">
+        // OB・OG一覧は/players/obogに統合済み(選手一覧側と重複していたため)。
+        // スタッフはPlayerRowのselectableが常にtrueになるため、通常のリンクと同様に使える。
+        <Link href="/players/obog">
           <Card className="cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="font-bold text-[13.5px]">OB・OG({obogList.length}名)</div>
