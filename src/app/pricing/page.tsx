@@ -50,7 +50,7 @@ export default function PricingPage() {
           <div className="font-bold text-[14px] mb-0.5">{PLAN_DISPLAY_LABELS["Max"]}</div>
           <div className="text-[13px] font-bold text-ink mb-1">個別見積もり</div>
           <div className="text-[11.5px] text-ink-soft">
-            スポーツテスト・各種検定など、大規模チーム向けの機能を含みます。
+            スポーツテストなど、大規模チーム向けの機能を含みます。
             <Link href="/contact" className="underline font-bold text-ink">
               お問い合わせください
             </Link>

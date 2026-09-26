@@ -1,5 +1,5 @@
 import { isTargetEligible } from "@/lib/format";
-import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
 import type { Attendance, Player, Role, Schedule, TeamPlan } from "@/lib/database.types";
 
@@ -262,8 +262,15 @@ const UPGRADE_CANDIDATES: (UpgradeCandidate & {
     planOk: hasAiAnalysisAccess,
   },
   {
-    label: "スポーツテスト・検定",
-    description: "スポーツテスト・検定の記録を管理する",
+    label: "検定",
+    description: "選手ごとの検定ランクを一括で管理する",
+    requiredPlan: "フル",
+    roleEligible: canViewKarte,
+    planOk: hasSkillTestAccess,
+  },
+  {
+    label: "スポーツテスト",
+    description: "スポーツテスト・身長体重の記録を管理する",
     requiredPlan: "Max",
     roleEligible: canViewKarte,
     planOk: hasSportsTestAccess,
