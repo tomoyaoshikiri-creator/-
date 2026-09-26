@@ -16,7 +16,7 @@ import { KartePlayerRow } from "@/components/KartePlayerRow";
 import { canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess, playerLimitForPlan } from "@/lib/plan";
 import { useUpgradePrompt } from "@/components/PlanLock";
-import { computeUnseenPlayerAnalysisIds } from "@/lib/itemBadges";
+import { computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import { fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 import { buildBulkPlayerCopyText } from "@/lib/ai/buildCopyText";
@@ -35,6 +35,8 @@ export default function KartePlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [unseenAnalysisIds, setUnseenAnalysisIds] = useState<Set<string>>(new Set());
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [unseenNoteIds, setUnseenNoteIds] = useState<Set<string>>(new Set());
   const [ownPlayerIds, setOwnPlayerIds] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [yearConfirm, setYearConfirm] = useState(false);
@@ -58,6 +60,22 @@ export default function KartePlayersPage() {
 
   useEffect(() => {
     if (isStaff) computeUnseenPlayerAnalysisIds(userId).then(setUnseenAnalysisIds);
+  }, [isStaff, userId]);
+
+  // 選手メモは指導者・管理者専用の情報なので、それ以外のロール(保護者)では取得しない
+  // (obogページのPlayerRow呼び出しと同じ方針)。
+  useEffect(() => {
+    if (!isStaff) return;
+    const supabase = createClient();
+    (async () => {
+      const { data: notes } = await supabase.from("player_notes").select("player_id");
+      const counts: Record<string, number> = {};
+      (notes ?? []).forEach((n) => {
+        counts[n.player_id] = (counts[n.player_id] ?? 0) + 1;
+      });
+      setNoteCounts(counts);
+    })();
+    computeUnseenPlayerNoteIds(userId).then(setUnseenNoteIds);
   }, [isStaff, userId]);
 
   // 保護者(一般・運営)は一覧にチーム全選手が出るが、自分の子ども以外は選べないようにする
@@ -200,6 +218,9 @@ export default function KartePlayersPage() {
               player={p}
               hasUnseenAnalysis={unseenAnalysisIds.has(p.id)}
               selectable={isStaff || ownPlayerIds.has(p.id)}
+              showNotes={isStaff}
+              noteCount={noteCounts[p.id] ?? 0}
+              hasUnseenNotes={unseenNoteIds.has(p.id)}
             />
           ))
         )}
