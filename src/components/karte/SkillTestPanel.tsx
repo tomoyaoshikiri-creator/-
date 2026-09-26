@@ -11,10 +11,9 @@ import { skillTestLevelLabels } from "@/lib/skillTest";
 import type { PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest } from "@/lib/database.types";
 
 // カルテの選手個人ページ専用(指導者・管理者しか描画されない)。検定(級・段制の技能検定)の
-// 作成・ランク登録をここで行う(選手一覧側の選手個人ページは閲覧専用)。指導者・管理者自身の
-// 登録は承認不要で即座に反映される。保護者からの申請(skill_test_promotion_requests)が
-// 承認待ちの間は、二重登録を避けるためここでも「承認待ち」表示にする
-// (承認・却下自体はチームの検定管理画面から行う)。
+// 作成・ランク登録をここで行う。指導者・管理者自身の登録は承認不要で即座に反映される。
+// 保護者からの申請(skill_test_promotion_requests)が承認待ちの間は、二重登録を避けるため
+// ここでも「承認待ち」表示にする(承認・却下自体はチームの検定管理画面から行う)。
 export function SkillTestPanel({ playerId }: { playerId: string }) {
   const { teamId, userId } = useSession();
   const toast = useToast();
