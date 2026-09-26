@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { NumChip } from "@/components/ui/Pill";
+import { NewBadge, NumChip } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { gradeLabel, playerFullName } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
@@ -54,31 +54,32 @@ export function PlayerRow({
       }`}
     >
       <NumChip num={player.number ?? "-"} muted={isObog} />
-      <div className="flex-1 min-w-0 flex items-center gap-2.5">
-        <div className="min-w-0">
-          <div className="font-bold text-[13.5px] flex items-center gap-1.5">
-            {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
-            {playerFullName(player)}
-          </div>
-          <div className="text-[11px] text-ink-soft mt-0.5">
-            {gradeLabel(player.grade, category)}・{player.positions.join("/")} · {player.status}
-          </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-[13.5px] flex items-center gap-1.5">
+          {hasUnseenAnalysis && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+          {playerFullName(player)}
         </div>
-        {showNotes && (
-          <Link
-            href={`/players/${player.id}/notes`}
-            onClick={(e) => e.stopPropagation()}
-            className={`relative flex-shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg border whitespace-nowrap ${
-              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink bg-white"
+        <div className="text-[11px] text-ink-soft mt-0.5">
+          {gradeLabel(player.grade, category)}・{player.positions.join("/")} · {player.status}
+        </div>
+      </div>
+      {showNotes && (
+        // メモ一覧(/players/[id]/notes)へ直接遷移させ、選手詳細を経由させない。
+        <Link
+          href={`/players/${player.id}/notes`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-shrink-0 flex items-center gap-1"
+        >
+          {hasUnseenNotes && <NewBadge />}
+          <span
+            className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg border whitespace-nowrap ${
+              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink-soft bg-white"
             }`}
           >
-            {hasNotes ? `メモあり(${noteCount}件)` : "メモなし"}
-            {hasUnseenNotes && (
-              <span className="absolute -top-1 -right-1 w-[7px] h-[7px] rounded-full bg-danger border border-white" />
-            )}
-          </Link>
-        )}
-      </div>
+            {hasNotes ? "メモあり" : "メモなし"}
+          </span>
+        </Link>
+      )}
       {selectable && <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />}
     </div>
   );
