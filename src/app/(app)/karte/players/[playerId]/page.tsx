@@ -5,19 +5,25 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
+import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
-import { FieldLabel, TextTab } from "@/components/ui/SegButton";
+import { FieldLabel, SegButton, SubmitButton, TextTab, inputClass } from "@/components/ui/SegButton";
+import { Switch } from "@/components/ui/Switch";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
+import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
+import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
+import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { StatCell } from "@/components/karte/StatCell";
 import { SkillTestPanel } from "@/components/karte/SkillTestPanel";
+import { BirthdaySelect } from "../../../players/BirthdaySelect";
 import {
   computeCustomSeasonAverages,
   computeSeasonAverages,
@@ -46,9 +52,12 @@ import type {
   Database,
   GamePlayerStatEntry,
   GamePlayerStatLine,
+  Grade,
   Player,
   PlayerGrowthRecord,
   PlayerSkillTestProgress,
+  PlayerStatus,
+  Position,
   SkillTest,
   SportsTestRecord,
   TeamStatCategory,
@@ -88,8 +97,24 @@ export default function KartePlayerPage() {
   const { role, userId, plan, sport, category } = useSession();
   const isStaff = canViewKarte(role);
   const columns = buildGameColumns(usesThreePointScoring(sport));
+  const toast = useToast();
+  const positionOptions = POSITIONS_BY_SPORT[sport];
+  const gradeOptions = GRADES_BY_CATEGORY[category];
 
   const [player, setPlayer] = useState<Player | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [sei, setSei] = useState("");
+  const [mei, setMei] = useState("");
+  const [seiKana, setSeiKana] = useState("");
+  const [meiKana, setMeiKana] = useState("");
+  const [grade, setGrade] = useState("");
+  const [number, setNumber] = useState("");
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [status, setStatus] = useState<PlayerStatus>("在籍");
+  const [birthday, setBirthday] = useState("");
+  const [birthdayVisible, setBirthdayVisible] = useState(true);
   const [prevId, setPrevId] = useState<string | null>(null);
   const [nextId, setNextId] = useState<string | null>(null);
   const [fiscalYear, setFiscalYear] = useState(CURRENT_FISCAL_YEAR);
@@ -139,6 +164,91 @@ export default function KartePlayerPage() {
       }
     })();
   }, [isStaff, userId, params.playerId, plan, router]);
+
+  useUnsavedChangesGuard(
+    editing &&
+      player !== null &&
+      (sei !== player.sei ||
+        mei !== player.mei ||
+        seiKana !== (player.sei_kana ?? "") ||
+        meiKana !== (player.mei_kana ?? "") ||
+        grade !== (player.grade ?? "") ||
+        number !== (player.number ?? "") ||
+        JSON.stringify([...positions].sort()) !== JSON.stringify([...player.positions].sort()) ||
+        status !== player.status ||
+        birthday !== (player.birthday ?? "") ||
+        birthdayVisible !== player.birthday_visible),
+  );
+
+  function startEdit() {
+    if (!player) return;
+    setSei(player.sei);
+    setMei(player.mei);
+    setSeiKana(player.sei_kana ?? "");
+    setMeiKana(player.mei_kana ?? "");
+    setGrade(player.grade ?? "");
+    setNumber(player.number ?? "");
+    setPositions(player.positions);
+    setStatus(player.status);
+    setBirthday(player.birthday ?? "");
+    setBirthdayVisible(player.birthday_visible);
+    setDeleteConfirm(false);
+    setEditing(true);
+  }
+
+  function togglePos(p: Position) {
+    setPositions((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]));
+  }
+
+  async function handleSave() {
+    if (!player) return;
+    if (!sei.trim() || !mei.trim()) {
+      toast("氏名を入力してください");
+      return;
+    }
+    setSaving(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("players")
+      .update({
+        sei: sei.trim(),
+        mei: mei.trim(),
+        sei_kana: seiKana.trim() || null,
+        mei_kana: meiKana.trim() || null,
+        grade: grade || null,
+        number: number.trim() || null,
+        positions,
+        status,
+        birthday: birthday || null,
+        birthday_visible: birthdayVisible,
+      })
+      .eq("id", player.id);
+    setSaving(false);
+    if (error) {
+      toast(`更新に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("選手情報を更新しました");
+    setEditing(false);
+    load();
+  }
+
+  async function handleDelete() {
+    if (!player) return;
+    if (!deleteConfirm) {
+      setDeleteConfirm(true);
+      setTimeout(() => setDeleteConfirm(false), 3000);
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.from("players").delete().eq("id", player.id);
+    if (error) {
+      toast(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("選手を削除しました");
+    router.push("/karte/players");
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -316,29 +426,169 @@ export default function KartePlayerPage() {
         </div>
       )}
 
-      <SectionLabel>基本情報</SectionLabel>
-      <Card>
-        <div className="flex items-center gap-2.5">
-          <NumChip num={player.number ?? "-"} />
-          <div>
-            <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
-            {(player.sei_kana || player.mei_kana) && (
-              <div className="text-[11px] text-ink-soft mt-0.5">
-                {player.sei_kana ?? ""}
-                {player.mei_kana ?? ""}
+      <SectionLabel
+        action={
+          isStaff &&
+          !editing && (
+            <button
+              type="button"
+              onClick={startEdit}
+              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            >
+              編集する
+            </button>
+          )
+        }
+      >
+        基本情報
+      </SectionLabel>
+      {editing ? (
+        <>
+          <Card>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <FieldLabel>氏</FieldLabel>
+                <input className={inputClass()} value={sei} onChange={(e) => setSei(e.target.value)} />
               </div>
-            )}
-            <div className="text-[11px] text-ink-soft mt-0.5">
-              {player.status === "OB・OG" ? obogCohortLabel(player.grade, category) : gradeLabel(player.grade, category)}
-              ・{player.positions.length > 0 ? player.positions.join("/") : "ポジション未設定"}
+              <div className="flex-1">
+                <FieldLabel>名</FieldLabel>
+                <input className={inputClass()} value={mei} onChange={(e) => setMei(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <div className="flex-1">
+                <FieldLabel>氏(カナ)</FieldLabel>
+                <input className={inputClass()} value={seiKana} onChange={(e) => setSeiKana(e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <FieldLabel>名(カナ)</FieldLabel>
+                <input className={inputClass()} value={meiKana} onChange={(e) => setMeiKana(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>学年</FieldLabel>
+              {category === "その他" ? (
+                <div className="text-xs text-ink-soft bg-paper border border-dashed border-line rounded-lg px-3 py-2.5">
+                  このカテゴリーでは学年を登録しません。
+                </div>
+              ) : status === "OB・OG" ? (
+                <input
+                  type="number"
+                  min={GRADUATION_GRADE_BY_CATEGORY[category] ?? undefined}
+                  className={inputClass()}
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                />
+              ) : (
+                <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
+                  <option value="">選択してください</option>
+                  {gradeOptions.map((g) => (
+                    <option key={g.value} value={g.value}>
+                      {g.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[11.5px] font-bold text-ink-soft">誕生日</div>
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[10.5px] font-bold text-ink-soft">公開する</div>
+                  <Switch checked={birthdayVisible} onChange={setBirthdayVisible} />
+                </div>
+              </div>
+              <BirthdaySelect value={birthday} onChange={setBirthday} />
+              <div className="text-xs text-ink-soft mt-1">
+                オフにすると、誕生日お祝い通知やカレンダーの🎂表示の対象外になります。
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>背番号(リバ)</FieldLabel>
+              <input className={inputClass()} value={number} onChange={(e) => setNumber(e.target.value)} />
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>ポジション(複数選択可)</FieldLabel>
+              <div className="flex gap-1.5 flex-wrap">
+                {positionOptions.map((p) => (
+                  <SegButton
+                    key={p}
+                    variant="small"
+                    active={positions.includes(p)}
+                    onClick={() => togglePos(p)}
+                    className="flex-none px-3.5"
+                  >
+                    {p}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>ステータス</FieldLabel>
+              <select className={inputClass()} value={status} onChange={(e) => setStatus(e.target.value as PlayerStatus)}>
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <SubmitButton onClick={handleSave} disabled={saving}>
+              {saving ? "保存中…" : "保存する"}
+            </SubmitButton>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+            >
+              キャンセル
+            </button>
+          </Card>
+
+          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
+          <Card>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
+              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+            >
+              {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
+            </button>
+          </Card>
+        </>
+      ) : (
+        <Card>
+          <div className="flex items-center gap-2.5">
+            <NumChip num={player.number ?? "-"} />
+            <div>
+              <div className="font-bold text-[13.5px]">{playerFullName(player)}</div>
+              {(player.sei_kana || player.mei_kana) && (
+                <div className="text-[11px] text-ink-soft mt-0.5">
+                  {player.sei_kana ?? ""}
+                  {player.mei_kana ?? ""}
+                </div>
+              )}
+              <div className="text-[11px] text-ink-soft mt-0.5">
+                {player.status === "OB・OG" ? obogCohortLabel(player.grade, category) : gradeLabel(player.grade, category)}
+                ・{player.positions.length > 0 ? player.positions.join("/") : "ポジション未設定"}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="text-[11px] text-ink-soft mt-2">
-          ステータス: {player.status}
-          {player.birthday && ` / 誕生日: ${formatFullDateLabel(player.birthday)}`}
-        </div>
-      </Card>
+          <div className="text-[11px] text-ink-soft mt-2">
+            ステータス: {player.status}
+            {player.birthday && ` / 誕生日: ${formatFullDateLabel(player.birthday)}`}
+          </div>
+        </Card>
+      )}
 
       <div className="mt-3">
         <FieldLabel>年度</FieldLabel>
