@@ -61,7 +61,20 @@ export default function TeamHubPage() {
           <LockedFeatureCard label="コーチ日報" description="指導者・管理者だけで共有する日報" requiredPlan="中間" />
         ))}
 
-      <SectionLabel>選手・成長</SectionLabel>
+      <SectionLabel>選手関連</SectionLabel>
+      {/* 選手カルテは保護者(一般・運営)にも開放している(見られるのは自分に紐づく
+          選手のみ)ため、isStaffで囲わずロールを問わず表示する。チームカルテ
+          (他選手を含むランキング比較)は引き続き指導者・管理者専用。
+          「選手一覧」タブ廃止に伴い、選手メモの未読(playersUnseen)もこの行に合流させる。 */}
+      <HubRow
+        href="/karte/players"
+        label="選手カルテ"
+        description={isStaff ? "選手の基本情報・スタッツ・スポーツテストを見る・分析する" : "自分の子のスタッツ・スポーツテストを見る"}
+        unseen={badges.playerKarteUnseen || badges.playersUnseen}
+      />
+      {isStaff && (
+        <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
+      )}
       {/* スポーツテスト・検定管理は一般・運営にも開放している(見られるのは自分に紐づく
           選手の記録+チーム平均のみ、スタッフは全選手を見る・編集できる)ため、
           isStaffで囲わずロールを問わず表示する。 */}
@@ -84,19 +97,6 @@ export default function TeamHubPage() {
         />
       ) : (
         <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="フル" />
-      )}
-      {/* 選手カルテは保護者(一般・運営)にも開放している(見られるのは自分に紐づく
-          選手のみ)ため、isStaffで囲わずロールを問わず表示する。チームカルテ
-          (他選手を含むランキング比較)は引き続き指導者・管理者専用。
-          「選手一覧」タブ廃止に伴い、選手メモの未読(playersUnseen)もこの行に合流させる。 */}
-      <HubRow
-        href="/karte/players"
-        label="選手カルテ"
-        description={isStaff ? "選手の基本情報・スタッツ・スポーツテストを見る・分析する" : "自分の子のスタッツ・スポーツテストを見る"}
-        unseen={badges.playerKarteUnseen || badges.playersUnseen}
-      />
-      {isStaff && (
-        <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
       )}
 
       <SectionLabel>資料</SectionLabel>
