@@ -116,8 +116,8 @@ export default function KarteTeamSkillTestDetailPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 申請モーダル(全ロール共通): 選手を選んでランクを指定し、申請する。承認されるまで
-  // player_skill_test_progressには反映されない(指導者・管理者の自己申請も同様)。
+  // 申請モーダル(全ロール共通): 選手を選んでランクを指定し、申請する。指導者・管理者自身の
+  // 申請は承認不要で即座に反映されるが、一般・運営からの申請は承認されるまで反映されない。
   const [requestPlayer, setRequestPlayer] = useState<Player | null>(null);
   const [requestLevelIdx, setRequestLevelIdx] = useState("");
   const [submittingRequest, setSubmittingRequest] = useState(false);
@@ -247,14 +247,39 @@ export default function KarteTeamSkillTestDetailPage() {
     setRequestLevelIdx("");
   }
 
-  // 全ロール共通の申請。級・段を問わず、承認されるまでplayer_skill_test_progressには反映しない。
+  // 指導者・管理者自身の申請は承認不要で即座に反映する。一般・運営からの申請は、級・段を
+  // 問わず承認されるまでplayer_skill_test_progressには反映しない。
   async function submitRequest() {
     if (!test || !requestPlayer || requestLevelIdx === "") return;
     const targetIndex = Number(requestLevelIdx);
-    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex, test.chapters);
-    const label = levels[targetIndex];
     setSubmittingRequest(true);
     const supabase = createClient();
+
+    if (isStaff) {
+      const { data, error } = await supabase
+        .from("player_skill_test_progress")
+        .insert({
+          team_id: teamId,
+          player_id: requestPlayer.id,
+          skill_test_id: test.id,
+          level_index: targetIndex,
+          recorded_by: userId,
+        })
+        .select("*")
+        .single();
+      setSubmittingRequest(false);
+      if (error || !data) {
+        toast(`登録に失敗しました: ${error?.message ?? ""}`);
+        return;
+      }
+      toast("ランクを登録しました");
+      setRequestPlayer(null);
+      await loadProgress();
+      return;
+    }
+
+    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex, test.chapters);
+    const label = levels[targetIndex];
     const { data, error } = await supabase
       .from("skill_test_promotion_requests")
       .insert({
@@ -603,7 +628,9 @@ export default function KarteTeamSkillTestDetailPage() {
               onChange={(idx) => setRequestLevelIdx(String(idx))}
             />
             <div className="text-[11px] text-ink-soft mt-3">
-              指導者・管理者が承認するまでランクには反映されません。
+              {isStaff
+                ? "この操作は承認不要で、すぐにランクへ反映されます。"
+                : "指導者・管理者が承認するまでランクには反映されません。"}
             </div>
             <SubmitButton onClick={submitRequest} disabled={submittingRequest || requestLevelIdx === ""}>
               {submittingRequest ? "送信中…" : "申請する"}

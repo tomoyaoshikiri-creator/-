@@ -7,14 +7,14 @@ import { useToast } from "@/components/ui/Toast";
 import { Card, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Pill } from "@/components/ui/Pill";
-import { sendPushNotification } from "@/lib/pushNotify";
-import { isSkillTestDanCrossing, skillTestLevelLabels } from "@/lib/skillTest";
+import { skillTestLevelLabels } from "@/lib/skillTest";
 import type { PlayerSkillTestProgress, SkillTest, SkillTestPromotionRequest } from "@/lib/database.types";
 
-// カルテの選手個人ページ専用。検定(級・段制の技能検定)の作成・ランク申請をここで行う
-// (選手一覧側の選手個人ページは閲覧専用)。指導者・管理者が申請しても即座には反映されず、
-// 他の指導者・管理者が承認して初めてplayer_skill_test_progressへ反映される
-// (skill_test_promotion_requests、誰でも承認可能なキュー方式)。
+// カルテの選手個人ページ専用(指導者・管理者しか描画されない)。検定(級・段制の技能検定)の
+// 作成・ランク登録をここで行う(選手一覧側の選手個人ページは閲覧専用)。指導者・管理者自身の
+// 登録は承認不要で即座に反映される。保護者からの申請(skill_test_promotion_requests)が
+// 承認待ちの間は、二重登録を避けるためここでも「承認待ち」表示にする
+// (承認・却下自体はチームの検定管理画面から行う)。
 export function SkillTestPanel({ playerId }: { playerId: string }) {
   const { teamId, userId } = useSession();
   const toast = useToast();
@@ -97,47 +97,32 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
     load();
   }
 
-  // ランクの申請。承認されるまでplayer_skill_test_progressには反映されない。
+  // 指導者・管理者自身によるランク登録。承認不要で即座にplayer_skill_test_progressへ反映する。
   async function handleRequestLevel(test: SkillTest) {
     const raw = selectedIndex[test.id];
     if (raw === undefined || raw === "") {
       toast("ランクを選択してください");
       return;
     }
-    const targetIndex = Number(raw);
-    const levels = skillTestLevelLabels(
-      test.kyu_count,
-      test.dan_count,
-      test.level_names,
-      test.dan_kyu_count,
-      test.kyu_label,
-      test.dan_label,
-      test.chapters,
-    );
-    const label = levels[targetIndex];
-    const isDan = isSkillTestDanCrossing(test.kyu_count, test.dan_kyu_count, targetIndex, test.chapters);
     setSubmittingTestId(test.id);
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("skill_test_promotion_requests")
+      .from("player_skill_test_progress")
       .insert({
         team_id: teamId,
         player_id: playerId,
         skill_test_id: test.id,
-        target_level_index: targetIndex,
-        target_level_label: label,
-        is_dan: isDan,
-        requested_by: userId,
+        level_index: Number(raw),
+        recorded_by: userId,
       })
       .select("*")
       .single();
     setSubmittingTestId(null);
     if (error || !data) {
-      toast(`申請に失敗しました: ${error?.message ?? ""}`);
+      toast(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
-    toast(`${test.name}の「${label}」を申請しました。承認をお待ちください`);
-    sendPushNotification("skill_test_promotion_requested", data.id);
+    toast(`${test.name}のランクを登録しました`);
     setSelectedIndex((s) => ({ ...s, [test.id]: "" }));
     load();
   }
