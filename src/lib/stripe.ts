@@ -13,8 +13,8 @@ export function getStripeClient(): Stripe | null {
 export type BillingInterval = "monthly" | "yearly";
 export type PaidPlan = "中間" | "フル" | "フルプラス";
 
-// 有料プラン(中間・フル・フルプラス)とStripe Price IDの対応。月払い・年払い(10%オフ)の
-// 2種類のPriceを同じプランに紐づける。お試しプランはStripe側に何も作らない
+// 有料プラン(中間・フル・フルプラス)とStripe Price IDの対応。月払い・年払い(月額の10ヶ月分、
+// 2ヶ月分お得)の2種類のPriceを同じプランに紐づける。お試しプランはStripe側に何も作らない
 // (無料なのでサブスクリプション自体が存在しない)。
 export const PAID_PLAN_PRICE_ENV: Record<PaidPlan, Record<BillingInterval, string>> = {
   中間: { monthly: "STRIPE_PRICE_ID_MIDDLE", yearly: "STRIPE_PRICE_ID_MIDDLE_YEARLY" },
