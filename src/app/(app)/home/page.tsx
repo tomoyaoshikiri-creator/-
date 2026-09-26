@@ -480,14 +480,14 @@ export default function HomePage() {
                   {visiblePlayers.map((p) => (
                     <Link
                       key={p.id}
-                      href={`/players/${p.id}`}
+                      href={`/karte/players/${p.id}`}
                       className="text-[10.5px] font-bold px-2 py-1 rounded-full bg-paper text-ink-soft"
                     >
                       {p.name}・{gradeLabel(p.grade, category)}
                     </Link>
                   ))}
                   {myPlayers.length >= 4 && (
-                    <Link href="/players" className="text-[10.5px] font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
+                    <Link href="/karte/players" className="text-[10.5px] font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
                       ほか{myPlayers.length - visiblePlayers.length}名
                     </Link>
                   )}

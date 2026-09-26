@@ -27,7 +27,7 @@ export function OnboardingChecklist() {
           supabase.from("push_subscriptions").select("id", { count: "exact", head: true }).eq("team_id", teamId),
         ]);
       setItems([
-        { key: "players", label: "選手を登録する", href: "/players", done: (playerCount ?? 0) > 0 },
+        { key: "players", label: "選手を登録する", href: "/karte/players", done: (playerCount ?? 0) > 0 },
         { key: "invite", label: "保護者・スタッフを招待する", href: "/users", done: (inviteCount ?? 0) > 0 },
         { key: "schedule", label: "予定を作成する", href: "/schedule", done: (scheduleCount ?? 0) > 0 },
         { key: "push", label: "プッシュ通知をオンにする", href: "/settings", done: (pushCount ?? 0) > 0 },

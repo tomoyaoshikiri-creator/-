@@ -133,7 +133,7 @@ export default function PlayerNotesPage() {
   }, [userId, params.id]);
 
   useEffect(() => {
-    if (!canManagePlayers(role)) router.replace("/players");
+    if (!canManagePlayers(role)) router.replace("/karte/players");
   }, [role, router]);
 
   async function handleAddNote() {
@@ -220,7 +220,7 @@ export default function PlayerNotesPage() {
         <AppHeader
           title={player ? `${playerFullName(player)}のメモ` : "選手メモ"}
           variant="detail"
-          backHref={`/players/${params.id}`}
+          backHref={`/karte/players/${params.id}`}
           accessBadge="coach"
         />
       }

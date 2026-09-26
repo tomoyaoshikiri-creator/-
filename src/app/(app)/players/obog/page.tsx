@@ -68,7 +68,7 @@ export default function ObogPage() {
   return (
     <PageShell
       header={
-        <AppHeader title="OB・OG" variant="detail" backHref="/players" accessBadge={isStaff ? "coach" : undefined} />
+        <AppHeader title="OB・OG" variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />
       }
     >
       {loading ? (
