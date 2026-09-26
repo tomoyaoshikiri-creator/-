@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -27,7 +26,6 @@ import { NewPlayerModal } from "../../players/NewPlayerModal";
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KartePlayersPage() {
-  const router = useRouter();
   const { role, userId, plan, sport, category } = useSession();
   const isStaff = canViewKarte(role);
   const toast = useToast();
@@ -92,9 +90,10 @@ export default function KartePlayersPage() {
     })();
   }, [isStaff, userId]);
 
-  useEffect(() => {
-    if (!hasKarteTabAccess(plan)) router.replace("/home");
-  }, [plan, router]);
+  // 選手の閲覧・登録・編集自体は全プランの基本機能(お試しプランでも利用可)。
+  // hasKarteTabAccessが分けるのは試合スタッツ・カルテ閲覧等の深い分析機能のみで、
+  // このページ自体をブロックしない(isProで見出し・説明文をカルテ/選手一覧に出し分ける)。
+  const isPro = hasKarteTabAccess(plan);
 
   const activeList = players.filter((p) => p.status !== "OB・OG");
   const obogList = players.filter((p) => p.status === "OB・OG");
@@ -161,7 +160,7 @@ export default function KartePlayersPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="選手カルテ" variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />}
+      header={<AppHeader title={isPro ? "選手カルテ" : "選手一覧"} variant="detail" backHref="/team" accessBadge={isStaff ? "coach" : undefined} />}
       fab={
         isStaff && (
           <>
