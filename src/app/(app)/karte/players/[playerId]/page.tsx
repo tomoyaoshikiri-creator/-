@@ -608,7 +608,10 @@ export default function KartePlayerPage() {
             <EmptyState>この年度の出場記録がありません</EmptyState>
           </Card>
         ) : (
-          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+          // ヘッダー4行(試合列見出し・チーム平均・シーズン平均・シーズン合計、各h-9=36px)+
+          // 直近4試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
+          // (直近優先でsortされているgameRowsの並び順をそのまま活かす)。
+          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[288px] mb-2.5">
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>
@@ -684,7 +687,7 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン平均
+                    シーズン平均(個人)
                   </th>
                   {columns.map((c) => {
                     if (c.key === "rebDef") return null;
@@ -717,7 +720,7 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン合計
+                    シーズン合計(個人)
                   </th>
                   {columns.map((c) => {
                     if (c.key === "rebDef") return null;
@@ -789,7 +792,7 @@ export default function KartePlayerPage() {
               <tbody>
                 {gameRows.map((row, i) => (
                   <tr key={i}>
-                    <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                    <td className="sticky left-0 h-9 bg-white z-10 px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
                       {row.label}
                     </td>
                     {columns.map((c) => {
@@ -799,7 +802,7 @@ export default function KartePlayerPage() {
                           <td
                             key="reb"
                             colSpan={2}
-                            className="w-[100px] min-w-[100px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
+                            className="w-[100px] min-w-[100px] h-9 px-1 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
                           >
                             <div className="font-bold">{row.averages.reb}</div>
                             <div className="text-ink-soft text-[10px]">
@@ -812,7 +815,7 @@ export default function KartePlayerPage() {
                       return (
                         <td
                           key={c.key}
-                          className={`${colWidthClass(c.key)} px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
+                          className={`${colWidthClass(c.key)} h-9 px-1 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
                             c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
                           }`}
                         >
@@ -835,7 +838,10 @@ export default function KartePlayerPage() {
           <EmptyState>この年度の出場記録がありません</EmptyState>
         </Card>
       ) : (
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+        // ヘッダー3行(試合列見出し・チーム平均・シーズン平均、各h-9=36px)+
+        // 直近4試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
+        // (直近優先でsortされているcustomGameRowsの並び順をそのまま活かす)。
+        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[252px] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
@@ -869,7 +875,7 @@ export default function KartePlayerPage() {
               </tr>
               <tr className="bg-paper">
                 <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                  シーズン平均
+                  シーズン平均(個人)
                 </th>
                 {statCategories.map((c) => (
                   <th
@@ -884,13 +890,13 @@ export default function KartePlayerPage() {
             <tbody>
               {customGameRows.map((row, i) => (
                 <tr key={i}>
-                  <td className="sticky left-0 bg-white z-10 px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0">
+                  <td className="sticky left-0 h-9 bg-white z-10 px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
                     {row.label}
                   </td>
                   {statCategories.map((c) => (
                     <td
                       key={c.id}
-                      className="w-[58px] min-w-[58px] px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
+                      className="w-[58px] min-w-[58px] h-9 px-1 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap"
                     >
                       {row.averages.totals[c.id] ?? 0}
                     </td>
