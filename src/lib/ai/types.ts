@@ -14,12 +14,16 @@ export function planKindFor(plan: TeamPlan): AiPlanKind | null {
   return null;
 }
 
+// 試合の勝敗。team_score/opponent_scoreのいずれかが未記録の場合はnull
+// (「引き分け」と「未記録」を区別するため、"unknown"ではなくnullで表す)。
+export type GameResult = "win" | "loss" | "draw" | null;
+
 // バスケットボール・ミニバスケットボール(タップ加算式のGAME_COLUMNS)向けのスタッツ。
 export interface BasketballStatsData {
   kind: "basketball";
   gameCount: number;
   seasonAverages: Record<string, number | null>;
-  games: { label: string; averages: Record<string, number | null> }[];
+  games: { label: string; result: GameResult; averages: Record<string, number | null> }[];
 }
 
 // バスケットボール・ミニバスケットボール以外(チームが自由に定義するカスタム項目)向け。
@@ -56,6 +60,7 @@ export interface CustomStatCategoryInfo {
 // 生の値をそのまま列挙する(自動でチーム合計・平均を作らない)。
 export interface CustomStatGameEntry {
   label: string;
+  result: GameResult;
   values: Record<string, { value: number; recordedCount: number }>;
   rawValues: Record<string, number[]>;
 }
