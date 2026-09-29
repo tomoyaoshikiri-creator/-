@@ -611,14 +611,15 @@ export default function KartePlayerPage() {
           // ヘッダー4行(試合列見出し・チーム平均・シーズン平均・シーズン合計、各h-9=36px)+
           // 直近5試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
           // (直近優先でsortされているgameRowsの並び順をそのまま活かす)。列見出し(試合・
-          // チーム平均・シーズン平均・シーズン合計)は他のスタッツ列見出しと同じくtopのみ
-          // stickyにし、leftはstickyにしない(横スクロール時は他の列と同様に左右に動く。
-          // 上下方向にのみ動かず、行が何のスタッツかは常に分かるようにする)。
+          // チーム平均・シーズン平均・シーズン合計)はsticky left-0 + top-Xの両方を持たせ、
+          // 縦横どちらにスクロールしても常に左上に固定表示する(topのみのstickyにすると、
+          // iOS Safariで横スクロールと縦スクロールを組み合わせた際にヘッダーが上に空白を
+          // 残したまま消える不具合が確認されたため、左固定も維持する)。
           <div className="bg-white border border-line rounded-lg overflow-auto max-h-[324px] mb-2.5">
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>
-                  <th className="sticky top-0 h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap">
+                  <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                     試合
                   </th>
                   {columns.map((c) => {
@@ -649,7 +650,7 @@ export default function KartePlayerPage() {
                   })}
                 </tr>
                 <tr className="bg-paper">
-                  <th className="sticky top-9 h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     チーム平均
                   </th>
                   {columns.map((c) => {
@@ -689,7 +690,7 @@ export default function KartePlayerPage() {
                   })}
                 </tr>
                 <tr className="bg-paper">
-                  <th className="sticky top-[72px] h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     シーズン平均(個人)
                   </th>
                   {columns.map((c) => {
@@ -722,7 +723,7 @@ export default function KartePlayerPage() {
                   })}
                 </tr>
                 <tr className="bg-paper">
-                  <th className="sticky top-[108px] h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                  <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                     シーズン合計(個人)
                   </th>
                   {columns.map((c) => {
@@ -795,7 +796,7 @@ export default function KartePlayerPage() {
               <tbody>
                 {gameRows.map((row, i) => (
                   <tr key={i}>
-                    <td className="h-9 bg-white px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
+                    <td className="sticky left-0 h-9 bg-white z-10 px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
                       {row.label}
                     </td>
                     {columns.map((c) => {
@@ -844,13 +845,14 @@ export default function KartePlayerPage() {
         // ヘッダー3行(試合列見出し・チーム平均・シーズン平均、各h-9=36px)+
         // 直近5試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
         // (直近優先でsortされているcustomGameRowsの並び順をそのまま活かす)。列見出し
-        // (試合・チーム平均・シーズン平均)は他の列見出しと同じくtopのみstickyにし、
-        // leftはstickyにしない(横スクロール時は他の列と同様に左右に動く)。
+        // (試合・チーム平均・シーズン平均)はsticky left-0 + top-Xの両方を持たせ、
+        // 縦横どちらにスクロールしても常に左上に固定表示する(topのみのstickyだと
+        // iOS Safariでヘッダーが空白を残して消える不具合があったため)。
         <div className="bg-white border border-line rounded-lg overflow-auto max-h-[288px] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
-                <th className="sticky top-0 h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap">
+                <th className="sticky left-0 top-0 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap">
                   試合
                 </th>
                 {statCategories.map((c) => (
@@ -863,7 +865,7 @@ export default function KartePlayerPage() {
                 ))}
               </tr>
               <tr className="bg-paper">
-                <th className="sticky top-9 h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                <th className="sticky left-0 top-9 h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                   チーム平均
                 </th>
                 {statCategories.map((c) => {
@@ -879,7 +881,7 @@ export default function KartePlayerPage() {
                 })}
               </tr>
               <tr className="bg-paper">
-                <th className="sticky top-[72px] h-9 bg-paper z-20 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
+                <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
                   シーズン平均(個人)
                 </th>
                 {statCategories.map((c) => (
@@ -895,7 +897,7 @@ export default function KartePlayerPage() {
             <tbody>
               {customGameRows.map((row, i) => (
                 <tr key={i}>
-                  <td className="h-9 bg-white px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
+                  <td className="sticky left-0 h-9 bg-white z-10 px-2.5 whitespace-nowrap border-b border-line last:border-b-0">
                     {row.label}
                   </td>
                   {statCategories.map((c) => (
