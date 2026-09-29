@@ -23,6 +23,7 @@ import type {
   AiPlanKind,
   CustomStatCategoryInfo,
   CustomStatGameEntry,
+  GameResult,
   PlayerAnalysisData,
   PracticeMenuSummary,
   PracticeParticipationSummary,
@@ -38,11 +39,26 @@ type DB = SupabaseClient<Database>;
 // database.types.tsは手書きのためRelationshipsが空になっており、supabase-jsの型推論だけでは
 // game_matches(schedules(...))のような埋め込みの型を解決できない。karte画面側の既存パターンと
 // 同じく、ローカルの型 + .returns<T>() で明示する。
+interface GameMatchInfo {
+  opponent: string | null;
+  team_score: number | null;
+  opponent_score: number | null;
+  schedules: { date: string; fiscal_year_override: number | null } | null;
+}
 interface StatLineWithDate extends GamePlayerStatLine {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: GameMatchInfo | null;
 }
 interface StatEntryWithDate extends GamePlayerStatEntry {
-  game_matches: { opponent: string | null; schedules: { date: string; fiscal_year_override: number | null } | null } | null;
+  game_matches: GameMatchInfo | null;
+}
+
+// team_score/opponent_scoreのいずれかが未記録(null)の場合は勝敗を判定せずnullを返す
+// (「引き分け」と「スコア未記録」を区別するため)。
+export function matchResult(teamScore: number | null, opponentScore: number | null): GameResult {
+  if (teamScore === null || opponentScore === null) return null;
+  if (teamScore > opponentScore) return "win";
+  if (teamScore < opponentScore) return "loss";
+  return "draw";
 }
 
 // GAME_COLUMNS/THREE_POINT_GAME_COLUMNSのkeyから読める値だけを、AIに渡す
@@ -177,7 +193,7 @@ export async function collectPlayerAnalysisData(
   if (basketball) {
     const { data: lines } = await supabase
       .from("game_player_stat_lines")
-      .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+      .select("*, game_matches(opponent, team_score, opponent_score, schedules(date, fiscal_year_override))")
       .eq("player_id", playerId)
       .returns<StatLineWithDate[]>();
     const seasonLines = (lines ?? []).filter((l) => {
@@ -194,6 +210,7 @@ export async function collectPlayerAnalysisData(
         .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""))
         .map((l) => ({
           label: `${l.game_matches?.schedules?.date ?? "-"} vs ${l.game_matches?.opponent ?? "-"}`,
+          result: matchResult(l.game_matches?.team_score ?? null, l.game_matches?.opponent_score ?? null),
           averages: basketballAveragesToRecord(computeSeasonAverages([l]), includeThreePoint),
         })),
     };
@@ -202,7 +219,7 @@ export async function collectPlayerAnalysisData(
       supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
       supabase
         .from("game_player_stat_entries")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+        .select("*, game_matches(opponent, team_score, opponent_score, schedules(date, fiscal_year_override))")
         .eq("player_id", playerId)
         .returns<StatEntryWithDate[]>(),
     ]);
@@ -242,12 +259,13 @@ export async function collectPlayerAnalysisData(
         return {
           date: first.game_matches?.schedules?.date ?? "",
           label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
+          result: matchResult(first.game_matches?.team_score ?? null, first.game_matches?.opponent_score ?? null),
           values,
           rawValues,
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map(({ label, values, rawValues }) => ({ label, values, rawValues }));
+      .map(({ label, result, values, rawValues }) => ({ label, result, values, rawValues }));
     stats = { kind: "custom", gameCount, categories: categoryInfos, games };
   }
 
@@ -378,7 +396,7 @@ export async function collectTeamAnalysisData(
   if (basketball) {
     const { data: lines } = await supabase
       .from("game_player_stat_lines")
-      .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+      .select("*, game_matches(opponent, team_score, opponent_score, schedules(date, fiscal_year_override))")
       .returns<StatLineWithDate[]>();
     const seasonLines = (lines ?? []).filter((l) => {
       const date = l.game_matches?.schedules?.date;
@@ -399,11 +417,12 @@ export async function collectTeamAnalysisData(
         return {
           date: first.game_matches?.schedules?.date ?? "",
           label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
+          result: matchResult(first.game_matches?.team_score ?? null, first.game_matches?.opponent_score ?? null),
           averages: basketballAveragesToRecord(computeSeasonAverages(matchLines), includeThreePoint),
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map(({ label, averages }) => ({ label, averages }));
+      .map(({ label, result, averages }) => ({ label, result, averages }));
     stats = {
       kind: "basketball",
       gameCount,
@@ -415,7 +434,7 @@ export async function collectTeamAnalysisData(
       supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
       supabase
         .from("game_player_stat_entries")
-        .select("*, game_matches(opponent, schedules(date, fiscal_year_override))")
+        .select("*, game_matches(opponent, team_score, opponent_score, schedules(date, fiscal_year_override))")
         .returns<StatEntryWithDate[]>(),
     ]);
     const cats = categories ?? [];
@@ -454,12 +473,13 @@ export async function collectTeamAnalysisData(
         return {
           date: first.game_matches?.schedules?.date ?? "",
           label: `${first.game_matches?.schedules?.date ?? "-"} vs ${first.game_matches?.opponent ?? "-"}`,
+          result: matchResult(first.game_matches?.team_score ?? null, first.game_matches?.opponent_score ?? null),
           values,
           rawValues,
         };
       })
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map(({ label, values, rawValues }) => ({ label, values, rawValues }));
+      .map(({ label, result, values, rawValues }) => ({ label, result, values, rawValues }));
     stats = { kind: "custom", gameCount, categories: categoryInfos, games };
   }
 

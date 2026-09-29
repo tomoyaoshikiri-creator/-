@@ -1,8 +1,15 @@
 import { fiscalYearLabel } from "@/lib/format";
-import type { CustomStatCategoryInfo, PlayerAnalysisData, StatsData, TeamAnalysisData } from "./types";
+import type { CustomStatCategoryInfo, GameResult, PlayerAnalysisData, StatsData, TeamAnalysisData } from "./types";
 
 function fmt(v: number | null | undefined, unit = ""): string {
   return v === null || v === undefined ? "データなし" : `${v}${unit}`;
+}
+
+function resultLabel(result: GameResult): string {
+  if (result === "win") return "勝";
+  if (result === "loss") return "負";
+  if (result === "draw") return "分";
+  return "スコア未記録";
 }
 
 function evaluationDirectionLabel(direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL"): string {
@@ -98,7 +105,7 @@ function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: 
           const summary = Object.entries(g.averages)
             .map(([k, v]) => `${k} ${fmt(v)}`)
             .join(" / ");
-          lines.push(`${g.label}: ${summary}`);
+          lines.push(`${g.label}(${resultLabel(g.result)}): ${summary}`);
         });
       }
     }
@@ -145,7 +152,7 @@ function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: 
           Object.entries(g.rawValues).forEach(([name, vals]) => {
             parts.push(`${name} 記録値[${vals.join(", ")}]`);
           });
-          lines.push(`${g.label}: ${parts.length > 0 ? parts.join(" / ") : "この試合の記録なし"}`);
+          lines.push(`${g.label}(${resultLabel(g.result)}): ${parts.length > 0 ? parts.join(" / ") : "この試合の記録なし"}`);
         });
       }
     }
