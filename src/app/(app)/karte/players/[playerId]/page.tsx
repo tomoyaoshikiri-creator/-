@@ -687,7 +687,7 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン平均
+                    シーズン平均(個人)
                   </th>
                   {columns.map((c) => {
                     if (c.key === "rebDef") return null;
@@ -720,7 +720,7 @@ export default function KartePlayerPage() {
                 </tr>
                 <tr className="bg-paper">
                   <th className="sticky left-0 top-[108px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                    シーズン合計
+                    シーズン合計(個人)
                   </th>
                   {columns.map((c) => {
                     if (c.key === "rebDef") return null;
@@ -875,7 +875,7 @@ export default function KartePlayerPage() {
               </tr>
               <tr className="bg-paper">
                 <th className="sticky left-0 top-[72px] h-9 bg-paper z-30 text-left px-2.5 border-b border-line whitespace-nowrap font-bold">
-                  シーズン平均
+                  シーズン平均(個人)
                 </th>
                 {statCategories.map((c) => (
                   <th
