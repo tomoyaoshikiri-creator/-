@@ -223,13 +223,19 @@ export async function GET(request: Request) {
     const birthdayResult = await runBirthdayReminders(supabase, todayStr);
 
     const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
-      supabase.from("schedules").select("*").eq("date", in2DaysStr).eq("send_attendance_reminders", true),
+      supabase
+        .from("schedules")
+        .select("*")
+        .eq("date", in2DaysStr)
+        .eq("send_attendance_reminders", true)
+        .eq("requires_attendance", true),
       supabase
         .from("schedules")
         .select("*")
         .in("type", ["game", "event", "other"])
         .eq("attendance_deadline", todayStr)
-        .eq("send_attendance_reminders", true),
+        .eq("send_attendance_reminders", true)
+        .eq("requires_attendance", true),
       supabase
         .from("schedules")
         .select("*")
@@ -237,7 +243,8 @@ export async function GET(request: Request) {
         .eq("date", in7DaysStr)
         .not("attendance_deadline", "is", null)
         .lt("attendance_deadline", todayStr)
-        .eq("send_attendance_reminders", true),
+        .eq("send_attendance_reminders", true)
+        .eq("requires_attendance", true),
     ]);
 
     const jobs: { schedule: Schedule; reminderType: ReminderType }[] = [

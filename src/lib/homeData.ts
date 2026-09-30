@@ -83,6 +83,8 @@ export function computeAttendanceActionItems(params: {
     // 過去の予定は「要対応」に出さない(取得範囲自体は日程一覧表示用に過去14日分も
     // 含んでいるため、ここで絞り込む)。
     if (schedule.date < todayStr) continue;
+    // 出欠登録自体を求めない予定(type="other"でrequires_attendance=false)は対象外。
+    if (!schedule.requires_attendance) continue;
     const eligiblePlayers = myPlayers.filter((p) => isTargetEligible(p.grade, schedule.target_grade_min));
     eligiblePlayers.forEach((p) => {
       pushIfNeeded(schedule, p.name, attendanceByPlayer.get(`${schedule.id}:${p.id}`));

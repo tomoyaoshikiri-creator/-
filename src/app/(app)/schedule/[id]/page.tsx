@@ -188,13 +188,15 @@ export default function ScheduleDetailPage() {
           {canWriteSchedule(role) && (
             <>
               <div className="flex gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => setRosterOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8 whitespace-nowrap"
-                >
-                  出欠一覧
-                </button>
+                {schedule.requires_attendance && (
+                  <button
+                    type="button"
+                    onClick={() => setRosterOpen(true)}
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8 whitespace-nowrap"
+                  >
+                    出欠一覧
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
@@ -210,13 +212,15 @@ export default function ScheduleDetailPage() {
                   コピーして登録
                 </button>
               </div>
-              <AttendanceRosterModal
-                schedule={schedule}
-                open={rosterOpen}
-                onClose={() => setRosterOpen(false)}
-                userId={userId}
-                role={role}
-              />
+              {schedule.requires_attendance && (
+                <AttendanceRosterModal
+                  schedule={schedule}
+                  open={rosterOpen}
+                  onClose={() => setRosterOpen(false)}
+                  userId={userId}
+                  role={role}
+                />
+              )}
               <NewScheduleModal
                 open={editOpen}
                 onClose={() => setEditOpen(false)}
@@ -244,28 +248,29 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
-          {excludedLinkedCount > 0 && (
+          {schedule.requires_attendance && excludedLinkedCount > 0 && (
             <div className="text-xs text-ink-soft text-center mt-1 mb-2">
               ※この予定の対象学年外のため、出欠登録の対象外のお子さまがいます
             </div>
           )}
 
-          {subjects.map((subject) => (
-            <AttendanceEntryForm
-              key={subject.key}
-              scheduleId={schedule.id}
-              userId={userId}
-              playerId={subject.playerId}
-              label={subject.label}
-              isGame={isGame}
-              venueType={schedule.venue_type}
-              collectCarInfo={schedule.collect_car_info}
-            />
-          ))}
+          {schedule.requires_attendance &&
+            subjects.map((subject) => (
+              <AttendanceEntryForm
+                key={subject.key}
+                scheduleId={schedule.id}
+                userId={userId}
+                playerId={subject.playerId}
+                label={subject.label}
+                isGame={isGame}
+                venueType={schedule.venue_type}
+                collectCarInfo={schedule.collect_car_info}
+              />
+            ))}
 
           {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} scheduleDate={schedule.date} />}
 
-          {role === "管理者" && proxyPlayers.length > 0 && (
+          {schedule.requires_attendance && role === "管理者" && proxyPlayers.length > 0 && (
             <>
               <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
               <Card>
@@ -298,7 +303,7 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
-          {role === "管理者" && unlinkedGuardians.length > 0 && (
+          {schedule.requires_attendance && role === "管理者" && unlinkedGuardians.length > 0 && (
             <>
               <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
               <Card>

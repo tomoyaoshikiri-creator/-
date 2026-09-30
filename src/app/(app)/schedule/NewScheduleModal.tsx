@@ -48,6 +48,10 @@ export function NewScheduleModal({
   const [collectCarInfo, setCollectCarInfo] = useState(false);
   const [attendanceDeadline, setAttendanceDeadline] = useState("");
   const [sendAttendanceReminders, setSendAttendanceReminders] = useState(true);
+  const [requiresAttendance, setRequiresAttendance] = useState(true);
+  // 出欠登録自体を求めるかどうか。「その他」以外は常に求める(requiresAttendanceは
+  // type="other"のときだけUIで編集可能なため、それ以外の種別では意味を持たせない)。
+  const attendanceOn = type !== "other" || requiresAttendance;
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -70,6 +74,7 @@ export function NewScheduleModal({
     collectCarInfo,
     attendanceDeadline,
     sendAttendanceReminders,
+    requiresAttendance,
     title,
     dates,
     startHour,
@@ -90,6 +95,7 @@ export function NewScheduleModal({
     setCollectCarInfo(false);
     setAttendanceDeadline("");
     setSendAttendanceReminders(true);
+    setRequiresAttendance(true);
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -120,6 +126,7 @@ export function NewScheduleModal({
         collectCarInfo: source.collect_car_info,
         attendanceDeadline: editSchedule ? (source.attendance_deadline ?? "") : "",
         sendAttendanceReminders: source.send_attendance_reminders,
+        requiresAttendance: source.requires_attendance,
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -138,6 +145,7 @@ export function NewScheduleModal({
       setCollectCarInfo(fields.collectCarInfo);
       setAttendanceDeadline(fields.attendanceDeadline);
       setSendAttendanceReminders(fields.sendAttendanceReminders);
+      setRequiresAttendance(fields.requiresAttendance);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -159,6 +167,7 @@ export function NewScheduleModal({
         collectCarInfo: false,
         attendanceDeadline: "",
         sendAttendanceReminders: true,
+        requiresAttendance: true,
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -195,13 +204,14 @@ export function NewScheduleModal({
       end_time: endHour && endMin ? `${endHour}:${endMin}` : null,
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
-      target_grade_min: targetGradeMin || null,
+      target_grade_min: attendanceOn ? targetGradeMin || null : null,
       game_category: type === "game" ? gameCategory : null,
       venue_type: type === "game" ? venueType : null,
-      collect_car_info: type !== "game" && collectCarInfo,
-      attendance_deadline: type !== "practice" && attendanceDeadline ? attendanceDeadline : null,
-      send_attendance_reminders: sendAttendanceReminders,
+      collect_car_info: type !== "game" && attendanceOn && collectCarInfo,
+      attendance_deadline: type !== "practice" && attendanceOn && attendanceDeadline ? attendanceDeadline : null,
+      send_attendance_reminders: attendanceOn && sendAttendanceReminders,
       fiscal_year_override: type === "game" && fiscalYearOverride ? Number(fiscalYearOverride) : null,
+      requires_attendance: type === "other" ? requiresAttendance : true,
     };
     const { error } = editSchedule
       ? await supabase
@@ -255,6 +265,18 @@ export function NewScheduleModal({
           その他
         </SegButton>
       </div>
+
+      {type === "other" && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <FieldLabel>出欠を求める</FieldLabel>
+            <Switch checked={requiresAttendance} onChange={setRequiresAttendance} />
+          </div>
+          <div className="text-xs text-ink-soft mt-1">
+            オフにすると、この予定では出欠登録フォーム・出欠一覧・出欠登録リマインドが表示されなくなります。
+          </div>
+        </div>
+      )}
 
       {type === "game" && (
         <div className="mt-3">
@@ -408,7 +430,7 @@ export function NewScheduleModal({
         />
       </div>
 
-      {type !== "game" && (
+      {type !== "game" && attendanceOn && (
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <FieldLabel>車出しの集約</FieldLabel>
@@ -420,7 +442,7 @@ export function NewScheduleModal({
         </div>
       )}
 
-      {type !== "practice" && (
+      {type !== "practice" && attendanceOn && (
         <div className="mt-3">
           <FieldLabel>出欠登録の期限日(任意)</FieldLabel>
           <input
@@ -437,17 +459,19 @@ export function NewScheduleModal({
         </div>
       )}
 
-      <div className="mt-3">
-        <div className="flex items-center justify-between">
-          <FieldLabel>出欠登録リマインド通知</FieldLabel>
-          <Switch checked={sendAttendanceReminders} onChange={setSendAttendanceReminders} />
+      {attendanceOn && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <FieldLabel>出欠登録リマインド通知</FieldLabel>
+            <Switch checked={sendAttendanceReminders} onChange={setSendAttendanceReminders} />
+          </div>
+          <div className="text-xs text-ink-soft mt-1">
+            オンにすると、この予定について出欠未登録の人にプッシュ通知でリマインドします。
+          </div>
         </div>
-        <div className="text-xs text-ink-soft mt-1">
-          オンにすると、この予定について出欠未登録の人にプッシュ通知でリマインドします。
-        </div>
-      </div>
+      )}
 
-      {category !== "その他" && (
+      {category !== "その他" && attendanceOn && (
         <div className="mt-3">
           <FieldLabel>対象</FieldLabel>
           <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>

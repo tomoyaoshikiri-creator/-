@@ -393,6 +393,10 @@ export interface Database {
           send_attendance_reminders: boolean;
           // 4月始まりの自動判定を上書きする年度(nullなら自動判定)。type="game"の予定にのみ意味を持つ。
           fiscal_year_override: number | null;
+          // この予定で出欠登録そのものを求めるかどうか(既定true)。練習・試合・イベントは
+          // 常にtrue固定で、type="other"の予定のみUI側で編集可能。falseの予定は出欠登録
+          // フォーム・出欠一覧・リマインド・ホームの「要対応」集計のいずれにも出さない。
+          requires_attendance: boolean;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -414,6 +418,7 @@ export interface Database {
           attendance_deadline?: string | null;
           send_attendance_reminders?: boolean;
           fiscal_year_override?: number | null;
+          requires_attendance?: boolean;
           created_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"] & { updated_at: string }>;
