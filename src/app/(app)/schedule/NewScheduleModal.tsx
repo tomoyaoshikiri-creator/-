@@ -275,9 +275,9 @@ export function NewScheduleModal({
 
       {type === "other" && (
         <div className="mt-3">
-          <div className="flex items-center justify-between">
-            <FieldLabel>出欠を求める</FieldLabel>
+          <div className="flex items-center gap-2">
             <Switch checked={requiresAttendance} onChange={setRequiresAttendance} />
+            <span className="text-[11.5px] text-ink-soft font-bold">出欠を求める</span>
           </div>
           <div className="text-xs text-ink-soft mt-1">
             オフにすると、この予定では出欠登録フォーム・出欠一覧・出欠登録リマインドが表示されなくなります。
@@ -382,9 +382,9 @@ export function NewScheduleModal({
       </div>
 
       <div className="mt-3">
-        <div className="flex items-center justify-between">
-          <FieldLabel>終日</FieldLabel>
+        <div className="flex items-center gap-2">
           <Switch checked={isAllDay} onChange={setIsAllDay} />
+          <span className="text-[11.5px] text-ink-soft font-bold">終日</span>
         </div>
         <div className="text-xs text-ink-soft mt-1">オンにすると、時刻を指定せず終日の予定として登録します。</div>
       </div>
