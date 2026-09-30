@@ -397,6 +397,9 @@ export interface Database {
           // 常にtrue固定で、type="other"の予定のみUI側で編集可能。falseの予定は出欠登録
           // フォーム・出欠一覧・リマインド・ホームの「要対応」集計のいずれにも出さない。
           requires_attendance: boolean;
+          // 終日の予定かどうか(既定false、全種別対象)。trueの予定はstart_time/end_timeを
+          // 使わず(登録・編集フォーム側でnullにする)、一覧・詳細では「終日」と表示する。
+          is_all_day: boolean;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -419,6 +422,7 @@ export interface Database {
           send_attendance_reminders?: boolean;
           fiscal_year_override?: number | null;
           requires_attendance?: boolean;
+          is_all_day?: boolean;
           created_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["schedules"]["Insert"] & { updated_at: string }>;

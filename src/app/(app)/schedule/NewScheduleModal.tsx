@@ -52,6 +52,7 @@ export function NewScheduleModal({
   // 出欠登録自体を求めるかどうか。「その他」以外は常に求める(requiresAttendanceは
   // type="other"のときだけUIで編集可能なため、それ以外の種別では意味を持たせない)。
   const attendanceOn = type !== "other" || requiresAttendance;
+  const [isAllDay, setIsAllDay] = useState(false);
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
   const [startHour, setStartHour] = useState("");
@@ -75,6 +76,7 @@ export function NewScheduleModal({
     attendanceDeadline,
     sendAttendanceReminders,
     requiresAttendance,
+    isAllDay,
     title,
     dates,
     startHour,
@@ -96,6 +98,7 @@ export function NewScheduleModal({
     setAttendanceDeadline("");
     setSendAttendanceReminders(true);
     setRequiresAttendance(true);
+    setIsAllDay(false);
     setTitle("");
     setDates([]);
     setStartHour("");
@@ -127,6 +130,7 @@ export function NewScheduleModal({
         attendanceDeadline: editSchedule ? (source.attendance_deadline ?? "") : "",
         sendAttendanceReminders: source.send_attendance_reminders,
         requiresAttendance: source.requires_attendance,
+        isAllDay: source.is_all_day,
         title: source.title,
         dates: editSchedule ? [source.date] : [],
         startHour: sh ?? "",
@@ -146,6 +150,7 @@ export function NewScheduleModal({
       setAttendanceDeadline(fields.attendanceDeadline);
       setSendAttendanceReminders(fields.sendAttendanceReminders);
       setRequiresAttendance(fields.requiresAttendance);
+      setIsAllDay(fields.isAllDay);
       setTitle(fields.title);
       setDates(fields.dates);
       setStartHour(fields.startHour);
@@ -168,6 +173,7 @@ export function NewScheduleModal({
         attendanceDeadline: "",
         sendAttendanceReminders: true,
         requiresAttendance: true,
+        isAllDay: false,
         title: "",
         dates: initialDatesValue,
         startHour: "",
@@ -200,8 +206,9 @@ export function NewScheduleModal({
     const base = {
       type,
       title: title.trim(),
-      start_time: startHour && startMin ? `${startHour}:${startMin}` : null,
-      end_time: endHour && endMin ? `${endHour}:${endMin}` : null,
+      start_time: !isAllDay && startHour && startMin ? `${startHour}:${startMin}` : null,
+      end_time: !isAllDay && endHour && endMin ? `${endHour}:${endMin}` : null,
+      is_all_day: isAllDay,
       place: place.trim() || null,
       toban: type === "practice" ? toban.trim() || null : null,
       target_grade_min: attendanceOn ? targetGradeMin || null : null,
@@ -375,50 +382,62 @@ export function NewScheduleModal({
       </div>
 
       <div className="mt-3">
-        <FieldLabel>時刻(開始)</FieldLabel>
-        <div className="flex gap-1.5 items-center">
-          <select className={inputClass()} value={startHour} onChange={(e) => setStartHour(e.target.value)}>
-            <option value="">--</option>
-            {HOURS.map((h) => (
-              <option key={h} value={h}>
-                {h}時
-              </option>
-            ))}
-          </select>
-          <span>:</span>
-          <select className={inputClass()} value={startMin} onChange={(e) => setStartMin(e.target.value)}>
-            <option value="">--</option>
-            {MINUTES.map((m) => (
-              <option key={m} value={m}>
-                {m}分
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center justify-between">
+          <FieldLabel>終日</FieldLabel>
+          <Switch checked={isAllDay} onChange={setIsAllDay} />
         </div>
+        <div className="text-xs text-ink-soft mt-1">オンにすると、時刻を指定せず終日の予定として登録します。</div>
       </div>
 
-      <div className="mt-3">
-        <FieldLabel>時刻(終了)</FieldLabel>
-        <div className="flex gap-1.5 items-center">
-          <select className={inputClass()} value={endHour} onChange={(e) => setEndHour(e.target.value)}>
-            <option value="">--</option>
-            {HOURS.map((h) => (
-              <option key={h} value={h}>
-                {h}時
-              </option>
-            ))}
-          </select>
-          <span>:</span>
-          <select className={inputClass()} value={endMin} onChange={(e) => setEndMin(e.target.value)}>
-            <option value="">--</option>
-            {MINUTES.map((m) => (
-              <option key={m} value={m}>
-                {m}分
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {!isAllDay && (
+        <>
+          <div className="mt-3">
+            <FieldLabel>時刻(開始)</FieldLabel>
+            <div className="flex gap-1.5 items-center">
+              <select className={inputClass()} value={startHour} onChange={(e) => setStartHour(e.target.value)}>
+                <option value="">--</option>
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}時
+                  </option>
+                ))}
+              </select>
+              <span>:</span>
+              <select className={inputClass()} value={startMin} onChange={(e) => setStartMin(e.target.value)}>
+                <option value="">--</option>
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}分
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <FieldLabel>時刻(終了)</FieldLabel>
+            <div className="flex gap-1.5 items-center">
+              <select className={inputClass()} value={endHour} onChange={(e) => setEndHour(e.target.value)}>
+                <option value="">--</option>
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}時
+                  </option>
+                ))}
+              </select>
+              <span>:</span>
+              <select className={inputClass()} value={endMin} onChange={(e) => setEndMin(e.target.value)}>
+                <option value="">--</option>
+                {MINUTES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}分
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="mt-3">
         <FieldLabel>場所</FieldLabel>

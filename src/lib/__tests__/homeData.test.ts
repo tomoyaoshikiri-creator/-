@@ -28,6 +28,7 @@ function schedule(overrides: Partial<Schedule>): Schedule {
     send_attendance_reminders: true,
     fiscal_year_override: null,
     requires_attendance: true,
+    is_all_day: false,
     created_by: null,
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-01T00:00:00Z",
