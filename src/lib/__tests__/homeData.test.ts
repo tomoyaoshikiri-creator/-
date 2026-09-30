@@ -27,6 +27,7 @@ function schedule(overrides: Partial<Schedule>): Schedule {
     attendance_deadline: null,
     send_attendance_reminders: true,
     fiscal_year_override: null,
+    requires_attendance: true,
     created_by: null,
     created_at: "2026-09-01T00:00:00Z",
     updated_at: "2026-09-01T00:00:00Z",
@@ -67,6 +68,19 @@ describe("computeAttendanceActionItems", () => {
     expect(items).toEqual([
       { scheduleId: "s1", scheduleTitle: "通常練習", scheduleDate: "2026-09-10", targetLabel: "山田太郎", kind: "unanswered", overdue: false },
     ]);
+  });
+
+  it("requires_attendance=falseの予定は対象外(その他種別で出欠を求めない設定)", () => {
+    const items = computeAttendanceActionItems({
+      todayStr: "2026-09-05",
+      role: "一般",
+      userId: "guardian1",
+      schedules: [schedule({ id: "s1", type: "other", requires_attendance: false })],
+      myPlayers: [{ id: "p1", grade: "3", name: "山田太郎" }],
+      attendances: [],
+      requireUnlinkedGuardianAttendance: true,
+    });
+    expect(items).toEqual([]);
   });
 
   it("紐づく選手が対象学年外なら、代わりに自分の出欠を見る", () => {

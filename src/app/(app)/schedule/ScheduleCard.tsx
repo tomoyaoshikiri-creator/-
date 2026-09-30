@@ -38,7 +38,7 @@ export function ScheduleCard({
             {schedule.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{schedule.toban}</div>}
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Pill tone={pillTone}>{pillLabel}</Pill>
+            {schedule.requires_attendance && <Pill tone={pillTone}>{pillLabel}</Pill>}
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />
           </div>
         </div>
