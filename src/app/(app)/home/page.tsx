@@ -491,7 +491,8 @@ export default function HomePage() {
                 <div className="mt-2 pt-2 border-t border-line space-y-1.5">
                   {compressedSchedules.map((s) => {
                     let timeLabel = "";
-                    if (s.start_time && s.end_time) timeLabel = `${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
+                    if (s.is_all_day) timeLabel = "終日";
+                    else if (s.start_time && s.end_time) timeLabel = `${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
                     else if (s.start_time) timeLabel = `${s.start_time.slice(0, 5)}〜`;
                     return (
                       <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between gap-2">

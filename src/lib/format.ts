@@ -133,10 +133,12 @@ export function scheduleMeta(s: {
   start_time: string | null;
   end_time: string | null;
   place: string | null;
+  is_all_day?: boolean;
 }): string {
   const dateLabel = formatDateLabel(s.date);
   let timeLabel = "";
-  if (s.start_time && s.end_time) timeLabel = ` ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
+  if (s.is_all_day) timeLabel = " 終日";
+  else if (s.start_time && s.end_time) timeLabel = ` ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
   else if (s.start_time) timeLabel = ` ${s.start_time.slice(0, 5)}〜`;
   const placeLabel = s.place ? ` @ ${s.place}` : "";
   return `${dateLabel}${timeLabel}${placeLabel}`;
