@@ -15,8 +15,7 @@ import { CollapsibleList } from "@/components/CollapsibleList";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markTabSeen } from "@/lib/tabBadges";
-import { computeUnseenNoticeIds, markItemSeen } from "@/lib/itemBadges";
+import { computeUnseenNoticeIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/format";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
@@ -128,15 +127,12 @@ export default function NoticePage() {
   }, [monthValue, query]);
 
   useEffect(() => {
-    markTabSeen(userId, "notice");
-  }, [userId]);
-
-  useEffect(() => {
     computeUnseenNoticeIds(userId).then(setUnseenIds);
   }, [userId, setUnseenIds]);
 
   function openNotice(noticeId: string) {
-    markItemSeen(userId, "notice", noticeId);
+    // 既読記録(item_last_seen)自体は詳細ページ側のmount時に行う(プッシュ通知からの
+    // 直接遷移でも既読になるように)。ここでは一覧上の見た目を即座に更新するだけ。
     setUnseenIds((prev) => {
       if (!prev.has(noticeId)) return prev;
       const next = new Set(prev);

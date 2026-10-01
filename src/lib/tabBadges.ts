@@ -7,15 +7,19 @@ import type { Role } from "@/lib/database.types";
 import { canRecordGames, type TabKey } from "@/lib/permissions";
 import {
   computeTeamAnalysisUnseen,
+  computeUnseenCoachNoteIds,
+  computeUnseenDailyReportIds,
   computeUnseenGameMatchNoteIds,
+  computeUnseenNoticeIds,
   computeUnseenPlayerAnalysisIds,
   computeUnseenPlayerNoteIds,
 } from "@/lib/itemBadges";
 
-// タブアイコンの新着通知(赤丸)。
-// お知らせ・日報・コーチノートは一覧の中の個別項目を辿る先が無いため、従来通り「タブを最後に開いた日時」
-// (tab_last_seen)との比較。選手メモ・分析フィードバックは一覧の行ごとに新着かどうかを
-// 判定したいので、item_last_seenベースの判定(itemBadges.ts)の結果を集約してタブの丸にする。
+// タブアイコンの新着通知(赤丸)。お知らせ・日報・コーチノート・選手メモ・分析フィードバックは
+// すべて一覧の行ごとの新着判定(item_last_seenベース、itemBadges.ts)の結果を集約してタブの丸にする
+// (投稿の詳細ページを直接開けば既読になるので、プッシュ通知などタブ一覧を経由しない遷移でも
+// バッジが正しく消える)。ライブラリだけはプッシュ通知の遷移先が無く、行ごとの新着判定も
+// 無いため、従来通り「タブを最後に開いた日時」(tab_last_seen)との比較のまま。
 export type BadgeTab = "notice" | "report" | "coachNote" | "library";
 
 // karte(TabKeyとしてのバッジ)は「チーム」hub配下の3つのカード(選手一覧・選手カルテ・
@@ -39,49 +43,34 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const { data: seenRows } = await supabase.from("tab_last_seen").select("*").eq("user_id", userId);
-    const seenMap: Partial<Record<BadgeTab, string>> = {};
-    (seenRows ?? []).forEach((r) => {
-      if (r.tab === "notice" || r.tab === "report" || r.tab === "coachNote" || r.tab === "library")
-        seenMap[r.tab] = r.seen_at;
-    });
-    // 一度もそのタブを開いたことが無い場合は、今より前の投稿を新着扱いにしないよう現在時刻を基準にする。
-    const now = new Date().toISOString();
-    const noticeSeen = seenMap.notice ?? now;
-    const reportSeen = seenMap.report ?? now;
-    const coachNoteSeen = seenMap.coachNote ?? now;
-    const librarySeen = seenMap.library ?? now;
+    // ライブラリのみ、タブを最後に開いた日時(tab_last_seen)との比較。一度も開いたことが
+    // 無い場合は、今より前の投稿を新着扱いにしないよう現在時刻を基準にする。
+    const { data: librarySeenRow } = await supabase
+      .from("tab_last_seen")
+      .select("seen_at")
+      .eq("user_id", userId)
+      .eq("tab", "library")
+      .maybeSingle();
+    const librarySeen = librarySeenRow?.seen_at ?? new Date().toISOString();
 
     const [
-      { count: noticeCount },
-      { count: reportCount },
-      { count: coachNoteCount },
       { count: libraryCount },
+      unseenNotices,
+      unseenDailyReports,
+      unseenCoachNotes,
       unseenPlayerNotes,
       unseenPlayerAnalysis,
       teamAnalysisUnseen,
       unseenGameMatchNotes,
     ] = await Promise.all([
       supabase
-        .from("notices")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${noticeSeen},updated_at.gt.${noticeSeen}`)
-        .neq("sender_id", userId),
-      supabase
-        .from("daily_reports")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${reportSeen},updated_at.gt.${reportSeen}`)
-        .neq("author_id", userId),
-      supabase
-        .from("reports")
-        .select("id", { count: "exact", head: true })
-        .or(`created_at.gt.${coachNoteSeen},updated_at.gt.${coachNoteSeen}`)
-        .neq("author_id", userId),
-      supabase
         .from("library_items")
         .select("id", { count: "exact", head: true })
         .gt("created_at", librarySeen)
         .neq("uploader_id", userId),
+      computeUnseenNoticeIds(userId),
+      computeUnseenDailyReportIds(userId),
+      computeUnseenCoachNoteIds(userId),
       computeUnseenPlayerNoteIds(userId),
       computeUnseenPlayerAnalysisIds(userId),
       computeTeamAnalysisUnseen(userId, teamId),
@@ -90,8 +79,9 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
       canRecordGames(role) ? computeUnseenGameMatchNoteIds(userId) : Promise.resolve(new Set<string>()),
     ]);
 
-    const reportUnseen = (reportCount ?? 0) > 0;
-    const coachNoteUnseen = (coachNoteCount ?? 0) > 0;
+    const noticeUnseen = unseenNotices.size > 0;
+    const reportUnseen = unseenDailyReports.size > 0;
+    const coachNoteUnseen = unseenCoachNotes.size > 0;
     const libraryUnseen = (libraryCount ?? 0) > 0;
     const playersUnseen = unseenPlayerNotes.size > 0;
     const playerKarteUnseen = unseenPlayerAnalysis.size > 0;
@@ -102,7 +92,7 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
     const gameUnseen = unseenGameMatchNotes.size > 0;
 
     setBadges({
-      notice: (noticeCount ?? 0) > 0,
+      notice: noticeUnseen,
       report: reportUnseen,
       coachNote: coachNoteUnseen,
       // 「選手一覧」は専用タブを廃止しカルテタブ内のカードに統合したため、

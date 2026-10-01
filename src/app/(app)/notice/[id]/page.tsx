@@ -10,6 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { markItemSeen } from "@/lib/itemBadges";
 import { sendPushNotification } from "@/lib/pushNotify";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
@@ -85,6 +86,7 @@ export default function NoticeDetailPage() {
     setProfiles(profMap);
     if (n) {
       setNotice(n);
+      markItemSeen(userId, "notice", n.id);
       setSenderName(n.sender_id ? (profMap[n.sender_id] ?? "") : "");
       const { data: atts } = await supabase.from("notice_attachments").select("*").eq("notice_id", n.id);
       const withUrls = await Promise.all(
@@ -103,7 +105,7 @@ export default function NoticeDetailPage() {
       setReactions(r ?? []);
     }
     setLoading(false);
-  }, [params.id]);
+  }, [params.id, userId]);
 
   useEffect(() => {
     load();

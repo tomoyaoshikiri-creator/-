@@ -582,7 +582,7 @@ export default function HomePage() {
       {elevateGameResult && gameResultNode}
 
       {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
-          ホームを開いただけでは既読にしない(既読化は各既存タブ側のmarkTabSeenのみで行う)。 */}
+          ホームを開いただけでは既読にしない(既読化は各投稿の詳細ページを開いた時のみ行う)。 */}
       {digestStatus === "loading" && <CardSkeleton lines={3} />}
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
       {digestStatus === "success" && (
