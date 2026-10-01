@@ -18,7 +18,6 @@ import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab } from "@/lib/permissions";
 import { hasCoachNoteAccess } from "@/lib/plan";
 import { loadProfilesMap } from "@/lib/profiles";
-import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenCoachNoteIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import type { Report, ReportReaction } from "@/lib/database.types";
@@ -104,10 +103,6 @@ export default function CoachNotePage() {
   useEffect(() => {
     setShowAll(false);
   }, [monthValue]);
-
-  useEffect(() => {
-    markTabSeen(userId, "coachNote");
-  }, [userId]);
 
   useEffect(() => {
     computeUnseenCoachNoteIds(userId).then(setUnseenIds);

@@ -16,7 +16,6 @@ import { CollapsibleList } from "@/components/CollapsibleList";
 import { ReactionSummary } from "@/components/ReactionButtons";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab } from "@/lib/permissions";
-import { markTabSeen } from "@/lib/tabBadges";
 import { computeUnseenDailyReportIds } from "@/lib/itemBadges";
 import { currentYearMonth, dateDaysAgoStr, formatFullDateLabel, monthRangeBounds } from "@/lib/format";
 import { FREE_HISTORY_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
@@ -106,10 +105,6 @@ export default function ReportPage() {
   useEffect(() => {
     setShowAll(false);
   }, [monthValue]);
-
-  useEffect(() => {
-    markTabSeen(userId, "report");
-  }, [userId]);
 
   useEffect(() => {
     computeUnseenDailyReportIds(userId).then(setUnseenIds);
