@@ -6,6 +6,9 @@ export interface MemberOption {
   id: string;
   label: string;
   checked: boolean;
+  // 5ファウルに達し退場となった選手。出場中(checked)なら交代で外すことはできるが、
+  // 一度外れた後は再び出場選手として選べない。
+  disqualified?: boolean;
 }
 
 // 試合中に発生する途中交代を、スタッツ入力画面からその場で反映するための選手選択モーダル。
@@ -31,17 +34,24 @@ export function MemberChangeModal({
         <div className="text-xs text-ink-soft py-3">選手がいません</div>
       ) : (
         options.map((o) => {
-          const dimmed = checkedCount >= 5 && !o.checked;
+          // 退場した選手は、出場中(交代で外す)でなければ再選択できない。
+          const blocked = !o.checked && !!o.disqualified;
+          const dimmed = blocked || (checkedCount >= 5 && !o.checked);
           return (
             <button
               key={o.id}
               type="button"
-              onClick={() => onToggle(o.id)}
-              className={`w-full flex items-center py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
+              onClick={() => {
+                if (!blocked) onToggle(o.id);
+              }}
+              className={`w-full flex items-center justify-between py-2.5 px-2.5 -mx-2.5 rounded-lg border-b border-line last:border-b-0 text-left ${
                 dimmed ? "opacity-40" : ""
               } ${o.checked ? "bg-orange/10" : ""}`}
             >
               <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
+              {o.disqualified && (
+                <span className="flex-none text-[10.5px] font-bold text-danger ml-2">5ファウル退場</span>
+              )}
             </button>
           );
         })

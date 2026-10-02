@@ -5,7 +5,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { useSession } from "@/lib/session-context";
 import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
-import { STAT_BUTTONS, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
+import { STAT_BUTTONS, isFouledOut, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
 import type { GameStatEvent, GameOpponentStatEvent, GameTimeoutEvent } from "@/lib/database.types";
 
 export interface StatEntrant {
@@ -102,15 +102,21 @@ function ChipRow({
       {entrants.map((e) => {
         const r = statLines[e.id];
         const isActive = active(e.id);
+        const fouledOut = isFouledOut(r);
         return (
           <button
             key={e.id}
             type="button"
             onClick={() => onSelect(e.id)}
-            className={`flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
+            className={`relative flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
               isActive ? activeClass : idleClass
             }`}
           >
+            {fouledOut && (
+              <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded-full bg-danger text-white text-[7px] font-bold leading-none">
+                5F退場
+              </span>
+            )}
             {showName && e.name && (
               <span
                 className={`w-full px-0.5 text-[8px] leading-none truncate text-center ${

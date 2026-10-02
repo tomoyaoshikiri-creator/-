@@ -40,6 +40,15 @@ export const STAT_BUTTONS: { event: StatEvent; label: string }[] = [
   { event: "reb_def", label: "DEFリバウンド" },
 ];
 
+// バスケットボール・ミニバスケットボールいずれも、個人の反則が5つに達した選手はその試合に
+// 再出場できない(5ファウル退場)。チームファウル(teamFoulCount、クォーターごとにリセット)
+// とは別の、1試合を通じた個人の反則数で判定する。
+export const DISQUALIFYING_FOUL_COUNT = 5;
+
+export function isFouledOut(row: StatTotals | undefined): boolean {
+  return (row?.fouls ?? 0) >= DISQUALIFYING_FOUL_COUNT;
+}
+
 export function statEventCount(row: StatTotals | undefined, event: StatEvent): number {
   if (!row) return 0;
   switch (event) {
