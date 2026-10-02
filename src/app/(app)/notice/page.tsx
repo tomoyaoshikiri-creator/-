@@ -33,6 +33,10 @@ export default function NoticePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [monthValue, setMonthValue] = useState(currentYearMonth());
+  // 開いた直後は「今月」ではなく「直近のお知らせが投稿された月」をデフォルトで表示したいため、
+  // 最新のお知らせを1件取得してその月に合わせる。取得が終わるまでは一覧の読み込みを待つ
+  // (今月分を一瞬表示してから切り替わるチラつきを防ぐため)。
+  const [initializing, setInitializing] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const cacheKey = useCallback((field: string) => `notice:${monthValue}:${field}`, [monthValue]);
   const [notices, setNotices] = useCachedState<Notice[]>(cacheKey("notices"), []);
@@ -48,6 +52,7 @@ export default function NoticePage() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(async () => {
+    if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
     const { start, end } = monthRangeBounds(monthValue);
@@ -82,7 +87,7 @@ export default function NoticePage() {
       setReactions([]);
     }
     setLoading(false);
-  }, [monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setHasMore]);
+  }, [initializing, monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setHasMore]);
 
   async function loadMore() {
     if (notices.length === 0 || loadingMore) return;
@@ -117,6 +122,20 @@ export default function NoticePage() {
     }
     setLoadingMore(false);
   }
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("notices")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setMonthValue(data.created_at.slice(0, 7));
+      setInitializing(false);
+    })();
+  }, []);
 
   useEffect(() => {
     load();
@@ -248,7 +267,7 @@ export default function NoticePage() {
     >
       <SectionLabel>お知らせ</SectionLabel>
       <MonthPicker value={monthValue} onChange={setMonthValue} />
-      {loading ? (
+      {initializing || loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
