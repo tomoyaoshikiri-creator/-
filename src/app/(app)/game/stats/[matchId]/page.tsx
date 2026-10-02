@@ -32,6 +32,8 @@ import {
   deleteGameTimeoutEvent,
   resetMatchStats,
   teamFoulCount,
+  isFouledOut,
+  DISQUALIFYING_FOUL_COUNT,
   type StatEvent,
 } from "@/lib/gameStats";
 import type {
@@ -286,6 +288,10 @@ export default function GameStatsPage() {
     if (!isOnCourt && onCourtIds.length >= 5) {
       return;
     }
+    // 5ファウル退場した選手は、出場中(交代で外す)でなければ再出場させられない。
+    if (!isOnCourt && isFouledOut(statLines[playerId])) {
+      return;
+    }
     if (starters.includes(playerId)) {
       setBenchedStarterIds((prev) =>
         prev.includes(playerId) ? prev.filter((x) => x !== playerId) : [...prev, playerId],
@@ -299,6 +305,10 @@ export default function GameStatsPage() {
   async function handleToggleOpponentMember(opponentPlayerId: string) {
     const isOnCourt = opponentOnCourtIds.includes(opponentPlayerId);
     if (!isOnCourt && opponentOnCourtIds.length >= 5) {
+      return;
+    }
+    // 5ファウル退場した選手は、出場中(交代で外す)でなければ再出場させられない。
+    if (!isOnCourt && isFouledOut(opponentStatLines[opponentPlayerId])) {
       return;
     }
     if (opponentStarters.includes(opponentPlayerId)) {
@@ -342,6 +352,10 @@ export default function GameStatsPage() {
         },
         ...prev,
       ]);
+      if (event === "fouls" && result.line.fouls === DISQUALIFYING_FOUL_COUNT) {
+        const p = players.find((pl) => pl.id === playerId);
+        toast(`${p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "選手"}が5ファウルに達しました。退場です。交代してください。`);
+      }
     }
   }
 
@@ -374,6 +388,10 @@ export default function GameStatsPage() {
         },
         ...prev,
       ]);
+      if (event === "fouls" && result.line.fouls === DISQUALIFYING_FOUL_COUNT) {
+        const p = opponentPlayers.find((op) => op.id === opponentPlayerId);
+        toast(`${p ? `#${p.number}` : "相手選手"}が5ファウルに達しました。退場です。`);
+      }
     }
   }
 
@@ -671,11 +689,13 @@ export default function GameStatsPage() {
     id: p.id,
     label: `${p.number ? `#${p.number} ` : ""}${playerFullName(p)}`,
     checked: onCourtIds.includes(p.id),
+    disqualified: isFouledOut(statLines[p.id]),
   }));
   const opponentMemberOptions: MemberOption[] = opponentPlayers.map((p) => ({
     id: p.id,
     label: `#${p.number}`,
     checked: opponentOnCourtIds.includes(p.id),
+    disqualified: isFouledOut(opponentStatLines[p.id]),
   }));
 
   // タイムアウトも記録ログに含めるため、statEvents(選手単位)とtimeoutEvents(チーム単位)を

@@ -8,6 +8,7 @@ import { buildGridCells, type StatEntrant } from "./StatPad";
 import { TeamFoulLamps } from "@/components/TeamFoulLamps";
 import {
   STAT_BUTTONS,
+  isFouledOut,
   statEventCount,
   statEventLabel,
   statEventPoints,
@@ -36,6 +37,7 @@ function quarterPoints(events: { event: StatEvent; delta: number; quarter: numbe
 function SquareChip({
   entrant,
   pts,
+  fouledOut,
   active,
   activeColor,
   showName,
@@ -43,6 +45,7 @@ function SquareChip({
 }: {
   entrant: StatEntrant;
   pts: number;
+  fouledOut: boolean;
   active: boolean;
   activeColor: "orange" | "navy";
   showName: boolean;
@@ -55,10 +58,15 @@ function SquareChip({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-lg border font-bold ${
+      className={`relative flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-lg border font-bold ${
         active ? activeClass : idleClass
       }`}
     >
+      {fouledOut && (
+        <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded-full bg-danger text-white text-[7.5px] font-bold leading-none">
+          5F退場
+        </span>
+      )}
       {showName && entrant.name && (
         <span
           className={`w-full px-1 text-[8.5px] font-bold truncate text-center leading-none ${
@@ -397,6 +405,7 @@ export function GameStatsLandscape({
                 key={e.id}
                 entrant={e}
                 pts={ownStatLines[e.id]?.pts ?? 0}
+                fouledOut={isFouledOut(ownStatLines[e.id])}
                 active={selected?.side === "own" && selected.id === e.id}
                 activeColor="orange"
                 showName
@@ -476,6 +485,7 @@ export function GameStatsLandscape({
                 key={e.id}
                 entrant={e}
                 pts={opponentStatLines[e.id]?.pts ?? 0}
+                fouledOut={isFouledOut(opponentStatLines[e.id])}
                 active={selected?.side === "opponent" && selected.id === e.id}
                 activeColor="navy"
                 showName={false}
