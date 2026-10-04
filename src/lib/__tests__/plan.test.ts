@@ -3,6 +3,7 @@ import {
   PLAN_CONFIG,
   canSelfCheckout,
   hasAiAnalysisAccess,
+  hasShootingDrillAccess,
   hasSkillTestAccess,
   hasSportsTestAccess,
   isInquiryPlan,
@@ -26,6 +27,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 104857600,
       canSelfCheckout: false,
       isPublicPlan: true,
@@ -39,6 +41,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 1073741824,
       canSelfCheckout: true,
       isPublicPlan: true,
@@ -52,6 +55,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 5368709120,
       canSelfCheckout: true,
       isPublicPlan: true,
@@ -65,6 +69,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 5368709120,
       canSelfCheckout: true,
       isPublicPlan: true,
@@ -78,6 +83,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: false,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 10737418240,
       canSelfCheckout: false,
       isPublicPlan: true,
@@ -91,6 +97,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: true,
       experimentalAccess: false,
       developerAccess: false,
+      shootingDrill: false,
       storageLimitBytes: 10737418240,
       canSelfCheckout: false,
       isPublicPlan: false,
@@ -104,6 +111,7 @@ describe("PLAN_CONFIG", () => {
       earlyAccess: true,
       experimentalAccess: true,
       developerAccess: true,
+      shootingDrill: true,
       storageLimitBytes: 10737418240,
       canSelfCheckout: false,
       isPublicPlan: false,
@@ -170,6 +178,13 @@ describe("plan回帰テスト", () => {
     expect(isPublicPlan("Max")).toBe(true);
     expect(isInquiryPlan("Max")).toBe(true);
     expect(canSelfCheckout("Max")).toBe(false);
+  });
+
+  it("シュート練習記録(コービーシューティング)はSignature Editionのみ利用可能", () => {
+    expect(hasShootingDrillAccess("signature_edition")).toBe(true);
+    for (const plan of ["お試し", "中間", "フル", "フルプラス", "Max", "max_partner"] as TeamPlan[]) {
+      expect(hasShootingDrillAccess(plan)).toBe(false);
+    }
   });
 });
 
