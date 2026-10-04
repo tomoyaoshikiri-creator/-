@@ -144,6 +144,12 @@ export function canManageSportsTests(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
+// シュート練習記録(コービーシューティング)の計測・登録・編集・削除ができるロール。
+// 一般・運営(保護者)は紐づく選手の記録を見られるのみで、入力はできない。
+export function canRecordShootingDrill(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
+
 // ライブラリの他人のアップロードファイルも削除できるロール(スタッフ)。
 // アップロード本人は自分の分のみ、それ以外の一般・運営は削除ボタン自体を出さない。
 export function canManageLibrary(role: Role): boolean {
