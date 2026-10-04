@@ -24,6 +24,8 @@ interface PlanCapabilities {
   // experimentalAccessを流用せず専用フラグにする(将来この機能だけを他プランへ広げる際、
   // 他の実験的機能を巻き込まずに切り替えられるようにするため)。
   shootingDrill: boolean;
+  // シェービングドリル。コービーシューティングと同じ理由で独立したフラグにする。
+  shavingDrill: boolean;
   // バイト数。supabase/migrations内のsync_team_storage_limit()トリガーが
   // teams.storage_limit_bytesを自動算出する際の値と一致させること。
   storageLimitBytes: number;
@@ -46,6 +48,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 104857600, // 100MiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -60,6 +63,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 1073741824, // 1GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -74,6 +78,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -88,6 +93,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -103,6 +109,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -118,6 +125,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: false,
     developerAccess: false,
     shootingDrill: false,
+    shavingDrill: false,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -133,6 +141,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     experimentalAccess: true,
     developerAccess: true,
     shootingDrill: true,
+    shavingDrill: true,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -228,6 +237,11 @@ export function hasDeveloperAccess(plan: TeamPlan): boolean {
 // シュート練習記録(コービーシューティング、Signature Edition限定)。
 export function hasShootingDrillAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].shootingDrill;
+}
+
+// シェービングドリル(Signature Edition限定)。
+export function hasShavingDrillAccess(plan: TeamPlan): boolean {
+  return PLAN_CONFIG[plan].shavingDrill;
 }
 
 // ユーザー自身がStripe Checkoutから契約・変更できるプランか

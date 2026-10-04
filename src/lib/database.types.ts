@@ -1479,6 +1479,44 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      shaving_drill_records: {
+        Row: {
+          id: string;
+          team_id: string;
+          player_id: string;
+          recorded_on: string;
+          duration_sec: number;
+          move1_count: number;
+          move2_count: number;
+          move3_count: number;
+          move4_count: number;
+          recorded_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          player_id: string;
+          recorded_on: string;
+          duration_sec: number;
+          move1_count: number;
+          move2_count: number;
+          move3_count: number;
+          move4_count: number;
+          recorded_by?: string | null;
+        };
+        Update: Partial<{
+          recorded_on: string;
+          duration_sec: number;
+          move1_count: number;
+          move2_count: number;
+          move3_count: number;
+          move4_count: number;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
       team_analysis_notes: {
         Row: {
           id: string;
@@ -1996,6 +2034,7 @@ export type PracticeMenu = Database["public"]["Tables"]["practice_menus"]["Row"]
 export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records"]["Row"];
 export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_records"]["Row"];
 export type ShootingDrillRecord = Database["public"]["Tables"]["shooting_drill_records"]["Row"];
+export type ShavingDrillRecord = Database["public"]["Tables"]["shaving_drill_records"]["Row"];
 export type GamePlayerStatLine = Database["public"]["Tables"]["game_player_stat_lines"]["Row"];
 export type GameStatEvent = Database["public"]["Tables"]["game_stat_events"]["Row"];
 export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_players"]["Row"];

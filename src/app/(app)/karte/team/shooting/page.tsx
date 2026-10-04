@@ -56,7 +56,7 @@ export default function ShootingDrillListPage() {
   const canRecord = canRecordShootingDrill(role);
 
   useEffect(() => {
-    if (!hasShootingDrillAccess(plan)) router.replace("/team");
+    if (!hasShootingDrillAccess(plan)) router.replace("/karte/team/workout");
   }, [plan, router]);
 
   const [players, setPlayers] = useState<Player[]>([]);
@@ -208,7 +208,7 @@ export default function ShootingDrillListPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="シュート練習記録" variant="list" backHref="/team" accessBadge={canRecord ? "coach" : undefined} />}
+      header={<AppHeader title="コービーシューティング" variant="list" backHref="/karte/team/workout" accessBadge={canRecord ? "coach" : undefined} />}
       fab={canRecord && <Fab onClick={() => router.push("/karte/team/shooting/new")} label="計測する" />}
     >
       {loading ? (
