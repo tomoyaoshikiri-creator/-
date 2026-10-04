@@ -8,13 +8,7 @@ import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import {
-  hasCoachNoteAccess,
-  hasKarteTabAccess,
-  hasShootingDrillAccess,
-  hasSkillTestAccess,
-  hasSportsTestAccess,
-} from "@/lib/plan";
+import { hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
 // ナビ再設計v3の「チーム」hub。既存画面(選手カルテ・チームカルテ・チーム日報・
@@ -114,17 +108,6 @@ export default function TeamHubPage() {
         />
       ) : (
         <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="フル" />
-      )}
-
-      {/* Signature Edition専用の実験的機能。他プランには存在自体を見せないため、
-          LockedFeatureCardもアップグレード案内も出さず、hasShootingDrillAccess(plan)が
-          falseの場合は何も表示しない。 */}
-      {hasShootingDrillAccess(plan) && (
-        <HubRow
-          href="/karte/team/shooting"
-          label="シュート練習記録"
-          description={isStaff ? "コービーシューティングのタイムを計測・記録する" : "紐づく選手のシュート練習の記録を見る"}
-        />
       )}
 
       <SectionLabel>資料</SectionLabel>
