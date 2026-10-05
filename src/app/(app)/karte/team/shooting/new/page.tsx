@@ -24,7 +24,10 @@ import {
 import { playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { Player } from "@/lib/database.types";
 
-const CATEGORY_LABEL: Record<ShotCategory, string> = { three: "3P", mid: "ミドル", layup: "ゴール下" };
+// ミニバスには3Pラインが無いため、「ロング」(チームで決めた遠めのシュート位置)と表記する
+// (コービーシューティングはSignature Edition限定=都賀ビクトリーズ専用のため、実際の
+// 3Pラインを持つ一般のバスケットボールチームがこの表記を使うことはない)。
+const CATEGORY_LABEL: Record<ShotCategory, string> = { three: "ロング", mid: "ミドル", layup: "ゴール下" };
 
 function formatElapsed(ms: number): string {
   const totalTenths = Math.floor(ms / 100);
@@ -367,7 +370,7 @@ export default function ShootingDrillNewPage() {
 
               {(
                 [
-                  ["3P", manualThreeMade, setManualThreeMade, manualThreeAtt, setManualThreeAtt],
+                  ["ロング", manualThreeMade, setManualThreeMade, manualThreeAtt, setManualThreeAtt],
                   ["ミドル", manualMidMade, setManualMidMade, manualMidAtt, setManualMidAtt],
                   ["ゴール下", manualLayupMade, setManualLayupMade, manualLayupAtt, setManualLayupAtt],
                 ] as const
@@ -429,7 +432,7 @@ export default function ShootingDrillNewPage() {
               <div className="mt-4 grid grid-cols-2 gap-y-2 text-[12.5px]">
                 <div className="text-ink-soft">{targetPoints}点到達タイム</div>
                 <div className="text-right font-mono font-bold">{formatElapsed(elapsedMs)}</div>
-                <div className="text-ink-soft">3P</div>
+                <div className="text-ink-soft">ロング</div>
                 <div className="text-right font-mono">
                   {summary.three_made}/{summary.three_att}
                 </div>
