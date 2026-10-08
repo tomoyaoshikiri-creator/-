@@ -10,12 +10,11 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canRecordShavingDrill } from "@/lib/permissions";
 import { hasShavingDrillAccess } from "@/lib/plan";
 import { SHAVING_DURATION_PRESETS, SHAVING_MOVE_LABELS, formatShavingDuration } from "@/lib/shavingDrill";
-import { formatFullDateLabel, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
-import type { Player, ShavingDrillRecord } from "@/lib/database.types";
+import { formatFullDateLabel, todayDateStr } from "@/lib/format";
+import type { ShavingDrillRecord } from "@/lib/database.types";
 
 type CountsDraft = { move1_count: string; move2_count: string; move3_count: string; move4_count: string };
 
@@ -41,24 +40,18 @@ export default function ShavingDrillPage() {
     if (!hasShavingDrillAccess(plan)) router.replace("/karte/team/workout");
   }, [plan, router]);
 
-  const [players, setPlayers] = useState<Player[]>([]);
   const [records, setRecords] = useState<ShavingDrillRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playerFilter, setPlayerFilter] = useState<string>("all");
 
   const load = useCallback(async () => {
     if (!hasShavingDrillAccess(plan)) return;
     setLoading(true);
     const supabase = createClient();
-    const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("players").select("*"),
-      supabase
-        .from("shaving_drill_records")
-        .select("*")
-        .order("recorded_on", { ascending: false })
-        .order("created_at", { ascending: false }),
-    ]);
-    setPlayers(sortPlayers(p ?? []));
+    const { data: r } = await supabase
+      .from("shaving_drill_records")
+      .select("*")
+      .order("recorded_on", { ascending: false })
+      .order("created_at", { ascending: false });
     setRecords(r ?? []);
     setLoading(false);
   }, [plan]);
@@ -67,24 +60,8 @@ export default function ShavingDrillPage() {
     load();
   }, [load]);
 
-  const playerName = (id: string) => {
-    const p = players.find((pl) => pl.id === id);
-    return p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "-";
-  };
-
-  const playerIdsInRecords = Array.from(new Set(records.map((r) => r.player_id)));
-  const filterOptions = [
-    { value: "all", label: "すべて" },
-    ...sortPlayers(players.filter((p) => playerIdsInRecords.includes(p.id))).map((p) => ({
-      value: p.id,
-      label: `#${p.number ?? "-"} ${playerFullName(p)}`,
-    })),
-  ];
-  const filteredRecords = playerFilter === "all" ? records : records.filter((r) => r.player_id === playerFilter);
-
   // 新規登録モーダル
   const [modalOpen, setModalOpen] = useState(false);
-  const [formPlayerId, setFormPlayerId] = useState<string | null>(null);
   const [formDate, setFormDate] = useState(todayDateStr());
   const [formDuration, setFormDuration] = useState<number | "custom">(180);
   const [formCustomDuration, setFormCustomDuration] = useState("");
@@ -92,7 +69,6 @@ export default function ShavingDrillPage() {
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
-    setFormPlayerId(null);
     setFormDate(todayDateStr());
     setFormDuration(180);
     setFormCustomDuration("");
@@ -102,10 +78,6 @@ export default function ShavingDrillPage() {
   async function handleCreate() {
     const durationSec = formDuration === "custom" ? Number(formCustomDuration) : formDuration;
     const counts = COUNT_KEYS.map((k) => Number(formCounts[k]));
-    if (!formPlayerId) {
-      toast("選手を選んでください");
-      return;
-    }
     if (!Number.isInteger(durationSec) || durationSec <= 0) {
       toast("時間を正しく入力してください");
       return;
@@ -120,7 +92,6 @@ export default function ShavingDrillPage() {
       .from("shaving_drill_records")
       .insert({
         team_id: teamId,
-        player_id: formPlayerId,
         recorded_on: formDate,
         duration_sec: durationSec,
         move1_count: counts[0],
@@ -225,20 +196,6 @@ export default function ShavingDrillPage() {
           <>
             <Fab onClick={() => setModalOpen(true)} label="記録する" />
             <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="シェービングドリルを記録">
-              <FieldLabel>選手</FieldLabel>
-              <select
-                className={inputClass()}
-                value={formPlayerId ?? ""}
-                onChange={(e) => setFormPlayerId(e.target.value || null)}
-              >
-                <option value="">選択してください</option>
-                {players.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    #{p.number ?? "-"} {playerFullName(p)}
-                  </option>
-                ))}
-              </select>
-
               <FieldLabel>日付</FieldLabel>
               <input type="date" className={inputClass()} value={formDate} onChange={(e) => setFormDate(e.target.value)} />
 
@@ -292,19 +249,14 @@ export default function ShavingDrillPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : (
         <>
-          <div className="mb-3">
-            <FieldLabel>選手で絞り込む</FieldLabel>
-            <InlineSelect value={playerFilter} onChange={setPlayerFilter} options={filterOptions} />
-          </div>
-
           <SectionLabel>記録一覧</SectionLabel>
-          {filteredRecords.length === 0 ? (
+          {records.length === 0 ? (
             <Card>
               <EmptyState>記録がありません</EmptyState>
             </Card>
           ) : (
             <Card className="max-h-[65vh] overflow-y-auto">
-              {filteredRecords.map((r) => {
+              {records.map((r) => {
                 const expanded = expandedId === r.id;
                 return (
                   <div key={r.id} className="border-b border-line last:border-b-0">
@@ -315,8 +267,7 @@ export default function ShavingDrillPage() {
                     >
                       <div>
                         <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
-                        <span className="font-bold">{playerName(r.player_id)}</span>
-                        <span className="text-ink-soft ml-1.5">{formatShavingDuration(r.duration_sec)}</span>
+                        <span className="font-bold">{formatShavingDuration(r.duration_sec)}</span>
                       </div>
                       <span className="flex-none font-mono text-[10px] text-ink-soft">
                         {SHAVING_MOVE_LABELS[0]} {r.move1_count} / {SHAVING_MOVE_LABELS[1]} {r.move2_count} /{" "}
