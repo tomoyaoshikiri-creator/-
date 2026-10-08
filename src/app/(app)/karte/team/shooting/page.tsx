@@ -284,7 +284,7 @@ export default function ShootingDrillListPage() {
                         </span>
                       </div>
                       <span className="flex-none font-mono text-[10px] text-ink-soft">
-                        3P {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
+                        ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
                       </span>
                     </button>
 
@@ -327,7 +327,7 @@ export default function ShootingDrillListPage() {
                         </div>
                         {(
                           [
-                            ["3P", "three_made", "three_att"],
+                            ["ロング", "three_made", "three_att"],
                             ["ミドル", "mid_made", "mid_att"],
                             ["ゴール下", "layup_made", "layup_att"],
                           ] as const

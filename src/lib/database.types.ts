@@ -569,12 +569,35 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      library_folders: {
+        Row: {
+          id: string;
+          team_id: string;
+          parent_folder_id: string | null;
+          name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          parent_folder_id?: string | null;
+          name: string;
+        };
+        Update: Partial<{
+          parent_folder_id: string | null;
+          name: string;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
       library_items: {
         Row: {
           id: string;
           team_id: string;
           uploader_id: string | null;
           category_id: string | null;
+          folder_id: string | null;
           title: string;
           created_at: string;
         };
@@ -583,10 +606,12 @@ export interface Database {
           team_id: string;
           uploader_id?: string | null;
           category_id?: string | null;
+          folder_id?: string | null;
           title: string;
         };
         Update: Partial<{
           category_id: string | null;
+          folder_id: string | null;
           title: string;
         }>;
         Relationships: [];
@@ -2010,6 +2035,7 @@ export type DailyReportCommentReaction = Database["public"]["Tables"]["daily_rep
 export type DailyReportAttachment = Database["public"]["Tables"]["daily_report_attachments"]["Row"];
 export type ReportAttachment = Database["public"]["Tables"]["report_attachments"]["Row"];
 export type LibraryCategory = Database["public"]["Tables"]["library_categories"]["Row"];
+export type LibraryFolder = Database["public"]["Tables"]["library_folders"]["Row"];
 export type LibraryItem = Database["public"]["Tables"]["library_items"]["Row"];
 export type LibraryFile = Database["public"]["Tables"]["library_files"]["Row"];
 export type Player = Database["public"]["Tables"]["players"]["Row"];

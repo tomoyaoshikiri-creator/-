@@ -14,7 +14,9 @@ import { isImageFile, isPdfFile } from "@/lib/storagePath";
 import { formatDateLabel } from "@/lib/format";
 import { canManageLibrary } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import type { LibraryCategory, LibraryFile, LibraryItem } from "@/lib/database.types";
+import { folderPath } from "@/lib/libraryFolders";
+import type { LibraryCategory, LibraryFile, LibraryFolder, LibraryItem } from "@/lib/database.types";
+import { MoveModal } from "../MoveModal";
 
 type FileWithUrl = LibraryFile & { url: string | null; thumbUrl: string | null };
 
@@ -29,11 +31,13 @@ export default function LibraryItemDetailPage() {
   const [item, setItem] = useState<LibraryItem | null>(null);
   const [files, setFiles] = useState<FileWithUrl[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
+  const [folders, setFolders] = useState<LibraryFolder[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
 
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -45,13 +49,15 @@ export default function LibraryItemDetailPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const [{ data: i }, { data: cats }, profMap] = await Promise.all([
+    const [{ data: i }, { data: cats }, { data: folderRows }, profMap] = await Promise.all([
       supabase.from("library_items").select("*").eq("id", params.id).maybeSingle(),
       supabase.from("library_categories").select("*").order("name", { ascending: true }),
+      supabase.from("library_folders").select("*").order("name", { ascending: true }),
       loadProfilesMap(supabase),
     ]);
     setItem(i ?? null);
     setCategories(cats ?? []);
+    setFolders(folderRows ?? []);
     setProfiles(profMap);
 
     if (i) {
@@ -131,7 +137,24 @@ export default function LibraryItemDetailPage() {
     router.push("/library");
   }
 
+  async function handleMove(destinationFolderId: string | null) {
+    if (!item) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("library_items")
+      .update({ folder_id: destinationFolderId })
+      .eq("id", item.id);
+    if (error) {
+      toast(`移動に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("移動しました");
+    setMoveOpen(false);
+    load();
+  }
+
   const category = item ? categories.find((c) => c.id === item.category_id) : undefined;
+  const itemFolderCrumbs = item ? folderPath(folders, item.folder_id) : [];
 
   return (
     <PageShell header={<AppHeader title="資料" variant="detail" backHref="/library" />}>
@@ -188,13 +211,22 @@ export default function LibraryItemDetailPage() {
           <SectionLabel
             action={
               canEdit(item) && (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-                >
-                  編集する
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMoveOpen(true)}
+                    className="flex-none text-[11px] font-bold border border-line rounded-full px-2.5 py-1 bg-white text-ink-soft"
+                  >
+                    移動
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startEdit}
+                    className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                  >
+                    編集する
+                  </button>
+                </div>
               )
             }
           >
@@ -211,6 +243,11 @@ export default function LibraryItemDetailPage() {
             </div>
             <div className="text-[11px] text-ink-soft mt-1">
               {item.uploader_id ? (profiles[item.uploader_id] ?? "") : ""} ・ {formatDateLabel(item.created_at.slice(0, 10))}
+            </div>
+            <div className="text-[11px] text-ink-soft mt-1">
+              📁 ホーム{itemFolderCrumbs.map((f) => (
+                <span key={f.id}> › {f.name}</span>
+              ))}
             </div>
 
             {files.length > 0 && (
@@ -264,6 +301,14 @@ export default function LibraryItemDetailPage() {
           </Card>
         </>
       )}
+      <MoveModal
+        open={moveOpen}
+        title="資料を移動"
+        folders={folders}
+        currentFolderId={item?.folder_id ?? null}
+        onClose={() => setMoveOpen(false)}
+        onMove={handleMove}
+      />
     </PageShell>
   );
 }
