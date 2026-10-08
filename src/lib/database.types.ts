@@ -1508,7 +1508,6 @@ export interface Database {
         Row: {
           id: string;
           team_id: string;
-          player_id: string;
           recorded_on: string;
           duration_sec: number;
           move1_count: number;
@@ -1522,7 +1521,6 @@ export interface Database {
         Insert: {
           id?: string;
           team_id: string;
-          player_id: string;
           recorded_on: string;
           duration_sec: number;
           move1_count: number;
