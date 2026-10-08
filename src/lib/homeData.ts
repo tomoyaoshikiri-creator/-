@@ -103,10 +103,12 @@ export function computeAttendanceActionItems(params: {
   });
 }
 
-// 「新着」カードの1件。お知らせ・チーム日報・コーチ日報・検定の承認待ちを時系列統合するための共通形。
+// 「新着」カードの1件。お知らせ・チーム日報・コーチ日報・検定の承認待ち・投票を
+// 時系列統合するための共通形。pollOpen=まだ投票していない開催中の投票、
+// pollClosed=結果発表をまだ見ていない締切済みの投票。
 export interface DigestItem {
   id: string;
-  source: "notice" | "report" | "coachNote" | "skillTestRequest";
+  source: "notice" | "report" | "coachNote" | "skillTestRequest" | "pollOpen" | "pollClosed";
   label: string;
   timestamp: string;
   href: string;
@@ -131,6 +133,13 @@ export function buildDigestItems(params: {
     createdAt: string;
     requestedBy: string;
   }[];
+  // 開催中の投票のうち、自分がまだ投票していないもの(対象ロール外は除く)。
+  openPolls?: { id: string; title: string; allowedRoles: string[]; createdAt: string }[];
+  votedPollIds?: string[];
+  myRole?: Role;
+  // 締め切られた投票のうち、結果発表をまだ見ていないもの(item_last_seenで既に
+  // 絞り込み済みの前提。skillTestRequestsと同じく、ここでは追加の既読判定は行わない)。
+  closedPollsUnseen?: { id: string; title: string; closedAt: string }[];
   userId: string;
   noticeSeen: string;
   reportSeen: string;
@@ -142,6 +151,10 @@ export function buildDigestItems(params: {
     dailyReports,
     coachNotes,
     skillTestRequests = [],
+    openPolls = [],
+    votedPollIds = [],
+    myRole,
+    closedPollsUnseen = [],
     userId,
     noticeSeen,
     reportSeen,
@@ -149,6 +162,7 @@ export function buildDigestItems(params: {
     includeCoachNotes,
   } = params;
   const items: DigestItem[] = [];
+  const votedPollIdSet = new Set(votedPollIds);
 
   notices.forEach((n) => {
     if (n.sender_id === userId) return;
@@ -194,6 +208,16 @@ export function buildDigestItems(params: {
       timestamp: r.createdAt,
       href: `/karte/team/skill-tests/${r.skillTestId}`,
     });
+  });
+
+  openPolls.forEach((p) => {
+    if (!myRole || !p.allowedRoles.includes(myRole)) return;
+    if (votedPollIdSet.has(p.id)) return;
+    items.push({ id: `poll-open-${p.id}`, source: "pollOpen", label: `投票受付中: ${p.title}`, timestamp: p.createdAt, href: `/poll/${p.id}` });
+  });
+
+  closedPollsUnseen.forEach((p) => {
+    items.push({ id: `poll-closed-${p.id}`, source: "pollClosed", label: `投票結果: ${p.title}`, timestamp: p.closedAt, href: `/poll/${p.id}` });
   });
 
   return items.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
