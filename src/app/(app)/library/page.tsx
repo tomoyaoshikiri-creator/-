@@ -14,9 +14,13 @@ import { formatBytes } from "@/lib/format";
 import { useSession } from "@/lib/session-context";
 import { canManageLibrary } from "@/lib/permissions";
 import { markTabSeen } from "@/lib/tabBadges";
-import type { LibraryCategory, LibraryItem } from "@/lib/database.types";
+import { childFolders, folderPath } from "@/lib/libraryFolders";
+import type { LibraryCategory, LibraryFolder, LibraryItem } from "@/lib/database.types";
 import { NewLibraryFileModal } from "./NewLibraryFileModal";
 import { EditCategoriesModal } from "./EditCategoriesModal";
+import { NewFolderModal } from "./NewFolderModal";
+import { FolderActionsModal } from "./FolderActionsModal";
+import { MoveModal } from "./MoveModal";
 
 // 1回のDB取得件数の上限。従来は範囲を絞らず全件取得しており、チームの活動年数が
 // 長くなるほど取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
@@ -27,10 +31,17 @@ export default function LibraryPage() {
   const { teamId, userId, role } = useSession();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
+  const [folders, setFolders] = useState<LibraryFolder[]>([]);
+  // 現在閲覧中のフォルダ(nullはルート)。フォルダ機能と同じ思想で、カテゴリーの絞り込みは
+  // このフォルダの中の資料に対してのみ働く。
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editCategoriesOpen, setEditCategoriesOpen] = useState(false);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [folderActionsTarget, setFolderActionsTarget] = useState<LibraryFolder | null>(null);
+  const [moveFolderTarget, setMoveFolderTarget] = useState<LibraryFolder | null>(null);
   const [usedBytes, setUsedBytes] = useState(0);
   const [limitBytes, setLimitBytes] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -54,6 +65,12 @@ export default function LibraryPage() {
     const supabase = createClient();
     const { data: cats } = await supabase.from("library_categories").select("*").order("name", { ascending: true });
     setCategories(cats ?? []);
+  }, []);
+
+  const loadFolders = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("library_folders").select("*").order("name", { ascending: true });
+    setFolders(data ?? []);
   }, []);
 
   // 読み込んだ資料(items)のうち、添付ファイルがちょうど1件のものについてだけ
@@ -92,29 +109,24 @@ export default function LibraryPage() {
   const load = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const { data: libItems } = await supabase
-      .from("library_items")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(LIBRARY_PAGE_SIZE + 1);
+    let query = supabase.from("library_items").select("*").order("created_at", { ascending: false });
+    query = currentFolderId === null ? query.is("folder_id", null) : query.eq("folder_id", currentFolderId);
+    const { data: libItems } = await query.limit(LIBRARY_PAGE_SIZE + 1);
     const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
     setItems(page);
     setSingleFileUrlByItem(await loadSingleFileUrls(supabase, page.map((i) => i.id)));
     setLoading(false);
-  }, []);
+  }, [currentFolderId]);
 
   async function loadMore() {
     if (items.length === 0 || loadingMore) return;
     setLoadingMore(true);
     const supabase = createClient();
     const cursor = items[items.length - 1].created_at;
-    const { data: libItems } = await supabase
-      .from("library_items")
-      .select("*")
-      .lt("created_at", cursor)
-      .order("created_at", { ascending: false })
-      .limit(LIBRARY_PAGE_SIZE + 1);
+    let query = supabase.from("library_items").select("*").lt("created_at", cursor).order("created_at", { ascending: false });
+    query = currentFolderId === null ? query.is("folder_id", null) : query.eq("folder_id", currentFolderId);
+    const { data: libItems } = await query.limit(LIBRARY_PAGE_SIZE + 1);
     const page = (libItems ?? []).slice(0, LIBRARY_PAGE_SIZE);
     setHasMore((libItems?.length ?? 0) > LIBRARY_PAGE_SIZE);
     if (page.length > 0) {
@@ -127,9 +139,13 @@ export default function LibraryPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
+    loadFolders();
     loadCategories();
     loadUsage();
-  }, [load, loadCategories, loadUsage]);
+  }, [loadFolders, loadCategories, loadUsage]);
 
   // ナビ再設計v3で「チーム」タブの赤丸に配下(ライブラリ含む)の未読を集約するようになったため、
   // notice/report/coach-noteと同じ既読記録パターンをここにも追加する(タブの表示内容自体は変更なし)。
@@ -144,7 +160,17 @@ export default function LibraryPage() {
     }
   }, [categories, selectedCategoryId]);
 
+  // 現在見ているフォルダが(他端末での操作などで)削除された場合、ルートに戻す。
+  useEffect(() => {
+    if (currentFolderId !== null && !folders.some((f) => f.id === currentFolderId)) {
+      setCurrentFolderId(null);
+    }
+  }, [folders, currentFolderId]);
+
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
+  const crumbs = folderPath(folders, currentFolderId);
+  const visibleFolders = childFolders(folders, currentFolderId);
+  const canManage = canManageLibrary(role);
 
   return (
     <PageShell
@@ -154,6 +180,7 @@ export default function LibraryPage() {
           <Fab onClick={() => setModalOpen(true)} />
           <NewLibraryFileModal
             open={modalOpen}
+            folderId={currentFolderId}
             onClose={() => setModalOpen(false)}
             onCreated={() => {
               setModalOpen(false);
@@ -192,6 +219,117 @@ export default function LibraryPage() {
         </div>
       )}
 
+      <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3.5">
+        <button type="button" onClick={() => setCurrentFolderId(null)} className={currentFolderId === null ? "text-orange" : ""}>
+          ホーム
+        </button>
+        {crumbs.map((c) => (
+          <span key={c.id} className="flex items-center gap-1">
+            <span>›</span>
+            <button
+              type="button"
+              onClick={() => setCurrentFolderId(c.id)}
+              className={currentFolderId === c.id ? "text-orange" : ""}
+            >
+              {c.name}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <SectionLabel
+        action={
+          <button
+            type="button"
+            onClick={() => setNewFolderOpen(true)}
+            className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+          >
+            ＋ フォルダを作成
+          </button>
+        }
+      >
+        フォルダ
+      </SectionLabel>
+      <NewFolderModal
+        open={newFolderOpen}
+        parentFolderId={currentFolderId}
+        onClose={() => setNewFolderOpen(false)}
+        onCreated={() => {
+          setNewFolderOpen(false);
+          loadFolders();
+          toast("フォルダを作成しました");
+        }}
+      />
+
+      {visibleFolders.length === 0 ? (
+        <EmptyState>フォルダはありません</EmptyState>
+      ) : (
+        <div className="space-y-2 mb-3.5">
+          {visibleFolders.map((f) => (
+            <div key={f.id} className="bg-white border border-line rounded-lg flex items-stretch">
+              <button
+                type="button"
+                onClick={() => setCurrentFolderId(f.id)}
+                className="flex-1 min-w-0 px-4 py-3 text-left font-bold text-[14.5px] truncate"
+              >
+                📁 {f.name}
+              </button>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setFolderActionsTarget(f)}
+                  aria-label="フォルダを編集"
+                  className="flex-none flex items-center px-3 border-l border-line text-ink-soft font-bold"
+                >
+                  ⋯
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <FolderActionsModal
+        open={folderActionsTarget !== null}
+        folder={folderActionsTarget}
+        onClose={() => setFolderActionsTarget(null)}
+        onRenamed={() => {
+          setFolderActionsTarget(null);
+          loadFolders();
+        }}
+        onRequestMove={() => {
+          setMoveFolderTarget(folderActionsTarget);
+          setFolderActionsTarget(null);
+        }}
+        onDeleted={() => {
+          setFolderActionsTarget(null);
+          loadFolders();
+          load();
+        }}
+      />
+      <MoveModal
+        open={moveFolderTarget !== null}
+        title="フォルダを移動"
+        folders={folders}
+        currentFolderId={moveFolderTarget?.parent_folder_id ?? null}
+        excludeFolderId={moveFolderTarget?.id}
+        onClose={() => setMoveFolderTarget(null)}
+        onMove={async (destinationFolderId) => {
+          if (!moveFolderTarget) return;
+          const supabase = createClient();
+          const { error } = await supabase
+            .from("library_folders")
+            .update({ parent_folder_id: destinationFolderId, updated_at: new Date().toISOString() })
+            .eq("id", moveFolderTarget.id);
+          if (error) {
+            toast(`移動に失敗しました: ${error.message}`);
+            return;
+          }
+          toast("フォルダを移動しました");
+          setMoveFolderTarget(null);
+          loadFolders();
+        }}
+      />
+
       {categories.length > 0 && (
         <div className="flex gap-2 mb-3.5 flex-wrap">
           <SegButton variant="small" active={selectedCategoryId === "all"} onClick={() => setSelectedCategoryId("all")}>
@@ -212,7 +350,7 @@ export default function LibraryPage() {
 
       <SectionLabel
         action={
-          canManageLibrary(role) &&
+          canManage &&
           categories.length > 0 && (
             <button
               type="button"

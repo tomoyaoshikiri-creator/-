@@ -18,10 +18,13 @@ const NEW_CATEGORY_VALUE = "__new__";
 
 export function NewLibraryFileModal({
   open,
+  folderId,
   onClose,
   onCreated,
 }: {
   open: boolean;
+  // 現在閲覧中のフォルダ。新規作成する資料はここに置かれる(ルート閲覧中はnull)。
+  folderId: string | null;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -174,6 +177,7 @@ export function NewLibraryFileModal({
         team_id: teamId,
         uploader_id: userId,
         category_id: resolvedCategoryId,
+        folder_id: folderId,
         title: title.trim(),
       })
       .select()
