@@ -312,6 +312,47 @@ describe("buildDigestItems", () => {
       },
     ]);
   });
+
+  it("開催中の投票は、対象ロールでまだ投票していない場合だけ含める", () => {
+    const base = {
+      notices: [],
+      dailyReports: [],
+      coachNotes: [],
+      userId: "me",
+      noticeSeen: "2026-09-01T00:00:00Z",
+      reportSeen: "2026-09-01T00:00:00Z",
+      coachNoteSeen: "2026-09-01T00:00:00Z",
+      includeCoachNotes: true,
+    };
+    const items = buildDigestItems({
+      ...base,
+      openPolls: [
+        { id: "p1", title: "次の合宿先", allowedRoles: ["一般", "運営", "指導者", "管理者"], createdAt: "2026-09-05T09:00:00Z" },
+        { id: "p2", title: "スタッフ限定投票", allowedRoles: ["指導者", "管理者"], createdAt: "2026-09-05T09:00:00Z" },
+        { id: "p3", title: "投票済みの投票", allowedRoles: ["一般"], createdAt: "2026-09-05T09:00:00Z" },
+      ],
+      votedPollIds: ["p3"],
+      myRole: "一般",
+    });
+    expect(items.map((i) => i.id)).toEqual(["poll-open-p1"]);
+  });
+
+  it("締め切られた投票(未確認)は結果発表として含める", () => {
+    const items = buildDigestItems({
+      notices: [],
+      dailyReports: [],
+      coachNotes: [],
+      closedPollsUnseen: [{ id: "p1", title: "次の合宿先", closedAt: "2026-09-06T09:00:00Z" }],
+      userId: "me",
+      noticeSeen: "2026-09-01T00:00:00Z",
+      reportSeen: "2026-09-01T00:00:00Z",
+      coachNoteSeen: "2026-09-01T00:00:00Z",
+      includeCoachNotes: true,
+    });
+    expect(items).toEqual([
+      { id: "poll-closed-p1", source: "pollClosed", label: "投票結果: 次の合宿先", timestamp: "2026-09-06T09:00:00Z", href: "/poll/p1" },
+    ]);
+  });
 });
 
 describe("computeTodayBirthdays", () => {

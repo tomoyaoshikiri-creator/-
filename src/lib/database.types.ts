@@ -1733,6 +1733,76 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      polls: {
+        Row: {
+          id: string;
+          team_id: string;
+          created_by: string | null;
+          title: string;
+          description: string | null;
+          multi_select: boolean;
+          anonymous: boolean;
+          allowed_roles: string[];
+          status: "open" | "closed";
+          closed_at: string | null;
+          closed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          created_by?: string | null;
+          title: string;
+          description?: string | null;
+          multi_select?: boolean;
+          anonymous?: boolean;
+          allowed_roles: string[];
+        };
+        Update: Partial<{
+          title: string;
+          description: string | null;
+          status: "open" | "closed";
+          closed_at: string | null;
+          closed_by: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
+      poll_options: {
+        Row: {
+          id: string;
+          poll_id: string;
+          label: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          poll_id: string;
+          label: string;
+          position?: number;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      poll_votes: {
+        Row: {
+          id: string;
+          poll_id: string;
+          option_id: string;
+          voter_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          poll_id: string;
+          option_id: string;
+          voter_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2011,6 +2081,14 @@ export interface Database {
         Args: { p_team_id: string; p_reservation_id: string; p_succeeded: boolean };
         Returns: void;
       };
+      cast_poll_vote: {
+        Args: { p_poll_id: string; p_option_ids: string[] };
+        Returns: void;
+      };
+      poll_results: {
+        Args: { p_poll_id: string };
+        Returns: { option_id: string; option_label: string; vote_count: number; voter_ids: string[] | null }[];
+      };
     };
   };
 }
@@ -2059,6 +2137,9 @@ export type SportsTestRecord = Database["public"]["Tables"]["sports_test_records
 export type PlayerGrowthRecord = Database["public"]["Tables"]["player_growth_records"]["Row"];
 export type ShootingDrillRecord = Database["public"]["Tables"]["shooting_drill_records"]["Row"];
 export type ShavingDrillRecord = Database["public"]["Tables"]["shaving_drill_records"]["Row"];
+export type Poll = Database["public"]["Tables"]["polls"]["Row"];
+export type PollOption = Database["public"]["Tables"]["poll_options"]["Row"];
+export type PollVote = Database["public"]["Tables"]["poll_votes"]["Row"];
 export type GamePlayerStatLine = Database["public"]["Tables"]["game_player_stat_lines"]["Row"];
 export type GameStatEvent = Database["public"]["Tables"]["game_stat_events"]["Row"];
 export type GameOpponentPlayer = Database["public"]["Tables"]["game_opponent_players"]["Row"];

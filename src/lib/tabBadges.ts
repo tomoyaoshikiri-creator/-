@@ -7,6 +7,7 @@ import type { Role } from "@/lib/database.types";
 import { canRecordGames, type TabKey } from "@/lib/permissions";
 import {
   computeTeamAnalysisUnseen,
+  computeUnseenClosedPollIds,
   computeUnseenCoachNoteIds,
   computeUnseenDailyReportIds,
   computeUnseenGameMatchNoteIds,
@@ -31,6 +32,10 @@ export interface TabBadges extends Partial<Record<TabKey, boolean>> {
   playersUnseen?: boolean;
   playerKarteUnseen?: boolean;
   teamKarteUnseen?: boolean;
+  // 投票:自分が対象ロールでまだ投票していない開催中の投票、または結果発表をまだ見ていない
+  // 締切済みの投票のいずれかがあるか。tab_last_seenではなく直接の存在判定のため、
+  // BadgeTab(markTabSeen)の仕組みには乗せていない。
+  pollUnseen?: boolean;
 }
 
 export function useTabBadges(userId: string, teamId: string, role: Role): TabBadges {
@@ -62,6 +67,9 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
       unseenPlayerAnalysis,
       teamAnalysisUnseen,
       unseenGameMatchNotes,
+      unseenClosedPolls,
+      { data: openPollRows },
+      { data: myVotedPollRows },
     ] = await Promise.all([
       supabase
         .from("library_items")
@@ -77,6 +85,9 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
       // コーチメモは試合記録を操作できるロール(指導者・管理者)のみ閲覧できるため、
       // それ以外のロールでは新着判定自体を行わない。
       canRecordGames(role) ? computeUnseenGameMatchNoteIds(userId) : Promise.resolve(new Set<string>()),
+      computeUnseenClosedPollIds(userId),
+      supabase.from("polls").select("id, allowed_roles").eq("status", "open"),
+      supabase.from("poll_votes").select("poll_id").eq("voter_id", userId),
     ]);
 
     const noticeUnseen = unseenNotices.size > 0;
@@ -90,6 +101,11 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
     // なく、それぞれの内訳(playersUnseen/playerKarteUnseen/teamKarteUnseen)を使うこと。
     const karteUnseen = playersUnseen || playerKarteUnseen || teamAnalysisUnseen;
     const gameUnseen = unseenGameMatchNotes.size > 0;
+    const myVotedPollIds = new Set((myVotedPollRows ?? []).map((v) => v.poll_id));
+    const hasUnvotedOpenPoll = (openPollRows ?? []).some(
+      (p) => p.allowed_roles.includes(role) && !myVotedPollIds.has(p.id),
+    );
+    const pollUnseen = hasUnvotedOpenPoll || unseenClosedPolls.size > 0;
 
     setBadges({
       notice: noticeUnseen,
@@ -103,9 +119,10 @@ export function useTabBadges(userId: string, teamId: string, role: Role): TabBad
       teamKarteUnseen: teamAnalysisUnseen,
       library: libraryUnseen,
       game: gameUnseen,
-      // 「チーム」hub配下(チーム日報・コーチ日報・カルテ・ライブラリ)の未読を、
+      pollUnseen,
+      // 「チーム」hub配下(チーム日報・コーチ日報・カルテ・ライブラリ・投票)の未読を、
       // ボトムナビの「チーム」タブに件数ではなく単純ドットで集約する。
-      team: reportUnseen || coachNoteUnseen || karteUnseen || libraryUnseen,
+      team: reportUnseen || coachNoteUnseen || karteUnseen || libraryUnseen || pollUnseen,
     });
   }, [userId, teamId, role]);
 

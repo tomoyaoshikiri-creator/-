@@ -11,7 +11,8 @@ export type ItemType =
   | "notice"
   | "daily_report"
   | "coach_note"
-  | "game_match_note";
+  | "game_match_note"
+  | "poll";
 
 export async function markItemSeen(userId: string, itemType: ItemType, itemId: string) {
   const supabase = createClient();
@@ -154,6 +155,22 @@ export async function computeUnseenCoachNoteIds(userId: string): Promise<Set<str
     if (r.author_id === userId) return;
     const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
     if (isNewer(latest, seenMap.get(r.id))) unseen.add(r.id);
+  });
+  return unseen;
+}
+
+// 締め切られた投票のうち、結果発表(closed_at)をまだ見ていないものを拾う(新着カード用)。
+// 投票を見られるロール自体はpolls_selectのRLSで全ロールに開放しているため、ここでは
+// 作成者を除く判定は行わない(締め切ったのが別の人の場合もあり、結果は本人にも知らせる)。
+export async function computeUnseenClosedPollIds(userId: string): Promise<Set<string>> {
+  const supabase = createClient();
+  const [seenMap, { data: polls }] = await Promise.all([
+    loadSeenMap(userId, "poll"),
+    supabase.from("polls").select("id, status, closed_at").eq("status", "closed"),
+  ]);
+  const unseen = new Set<string>();
+  (polls ?? []).forEach((p) => {
+    if (p.closed_at && isNewer(p.closed_at, seenMap.get(p.id))) unseen.add(p.id);
   });
   return unseen;
 }

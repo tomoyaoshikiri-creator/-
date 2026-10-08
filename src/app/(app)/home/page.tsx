@@ -21,6 +21,7 @@ import {
   type AttendanceActionItem,
   type DigestItem,
 } from "@/lib/homeData";
+import { computeUnseenClosedPollIds } from "@/lib/itemBadges";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { PlanLimitBanner } from "@/components/PlanLimitBanner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
@@ -234,8 +235,9 @@ export default function HomePage() {
       // 検定の承認待ちキューは、指導者・管理者なら誰でも承認できるため、指導者・管理者全員の
       // ダッシュボードに合流させる(既読管理はせず、承認・却下されるまで表示し続ける)。
       const includeSkillTestRequests = isStaff && hasSkillTestAccess(plan);
+      const unseenClosedPollIds = await computeUnseenClosedPollIds(userId);
 
-      const [noticesRes, reportsRes, coachRes, skillTestRes] = await Promise.all([
+      const [noticesRes, reportsRes, coachRes, skillTestRes, openPollsRes, myVotesRes, closedPollsRes] = await Promise.all([
         supabase
           .from("notices")
           .select("id, title, created_at, updated_at, sender_id")
@@ -268,11 +270,19 @@ export default function HomePage() {
               .limit(20)
               .returns<PendingSkillTestRequestRow[]>()
           : Promise.resolve({ data: [] as PendingSkillTestRequestRow[], error: null }),
+        supabase.from("polls").select("id, title, allowed_roles, created_at").eq("status", "open"),
+        supabase.from("poll_votes").select("poll_id").eq("voter_id", userId),
+        unseenClosedPollIds.size > 0
+          ? supabase.from("polls").select("id, title, closed_at, created_at").in("id", Array.from(unseenClosedPollIds))
+          : Promise.resolve({ data: [], error: null }),
       ]);
       if (noticesRes.error) throw noticesRes.error;
       if (reportsRes.error) throw reportsRes.error;
       if (coachRes.error) throw coachRes.error;
       if (skillTestRes.error) throw skillTestRes.error;
+      if (openPollsRes.error) throw openPollsRes.error;
+      if (myVotesRes.error) throw myVotesRes.error;
+      if (closedPollsRes.error) throw closedPollsRes.error;
 
       setDigestItems(
         buildDigestItems({
@@ -287,6 +297,19 @@ export default function HomePage() {
             createdAt: r.created_at,
             requestedBy: r.requested_by,
           })),
+          openPolls: (openPollsRes.data ?? []).map((p) => ({
+            id: p.id,
+            title: p.title,
+            allowedRoles: p.allowed_roles,
+            createdAt: p.created_at,
+          })),
+          votedPollIds: (myVotesRes.data ?? []).map((v) => v.poll_id),
+          myRole: role,
+          closedPollsUnseen: (closedPollsRes.data ?? []).map((p) => ({
+            id: p.id,
+            title: p.title,
+            closedAt: p.closed_at ?? p.created_at,
+          })),
           userId,
           noticeSeen,
           reportSeen,
@@ -298,7 +321,7 @@ export default function HomePage() {
     } catch {
       setDigestStatus("error");
     }
-  }, [userId, isStaff, plan]);
+  }, [userId, isStaff, plan, role]);
 
   const loadStaffBirthdays = useCallback(async () => {
     if (!isStaff) {

@@ -26,6 +26,10 @@ interface PlanCapabilities {
   shootingDrill: boolean;
   // シェービングドリル。コービーシューティングと同じ理由で独立したフラグにする。
   shavingDrill: boolean;
+  // 投票機能自体は全プラン共通。このフラグは「管理者が締切前・匿名投票でも常に
+  // 投票者名まで見られる」監査用の特例機能だけをSignature Edition限定にするもので、
+  // 実際の検証はpoll_results RPC内でteams.planを直接確認して行う(ここはUI表示用)。
+  pollVoterIdentityAlwaysVisible: boolean;
   // バイト数。supabase/migrations内のsync_team_storage_limit()トリガーが
   // teams.storage_limit_bytesを自動算出する際の値と一致させること。
   storageLimitBytes: number;
@@ -49,6 +53,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 104857600, // 100MiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -64,6 +69,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 1073741824, // 1GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -79,6 +85,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -94,6 +101,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -110,6 +118,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -126,6 +135,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: false,
     shootingDrill: false,
     shavingDrill: false,
+    pollVoterIdentityAlwaysVisible: false,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -142,6 +152,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     developerAccess: true,
     shootingDrill: true,
     shavingDrill: true,
+    pollVoterIdentityAlwaysVisible: true,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -242,6 +253,12 @@ export function hasShootingDrillAccess(plan: TeamPlan): boolean {
 // シェービングドリル(Signature Edition限定)。
 export function hasShavingDrillAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].shavingDrill;
+}
+
+// 投票:管理者が締切前・匿名投票でも常に投票者名まで見られる監査用の特例
+// (Signature Edition限定)。投票機能自体は全プラン共通。
+export function hasPollVoterIdentityAccess(plan: TeamPlan): boolean {
+  return PLAN_CONFIG[plan].pollVoterIdentityAlwaysVisible;
 }
 
 // ユーザー自身がStripe Checkoutから契約・変更できるプランか

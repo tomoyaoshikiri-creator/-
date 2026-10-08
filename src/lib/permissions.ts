@@ -182,3 +182,10 @@ export function canManageSettings(role: Role): boolean {
 export function canIssueInvite(role: Role): boolean {
   return role === "運営" || role === "指導者" || role === "管理者";
 }
+
+// 投票の作成ができるロール(運営以上。一般は不可、ユーザー指示)。編集・締め切り・削除は
+// 作成者またはスタッフ(指導者・管理者)で、こちらは呼び出し元でcreated_by突き合わせと
+// 併せて判定するため専用関数は持たない(library item等の既存canEditパターンと同じ)。
+export function canCreatePoll(role: Role): boolean {
+  return role === "運営" || role === "指導者" || role === "管理者";
+}

@@ -112,6 +112,9 @@ export default function TeamHubPage() {
 
       <SectionLabel>資料</SectionLabel>
       <HubRow href="/library" label="ライブラリ" description="画像・資料の共有置き場" unseen={badges.library} />
+
+      <SectionLabel>投票</SectionLabel>
+      <HubRow href="/poll" label="投票" description="チームで意見を集める・決める" unseen={badges.pollUnseen} />
     </PageShell>
   );
 }
