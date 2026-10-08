@@ -280,9 +280,8 @@ export default function HomePage() {
       if (reportsRes.error) throw reportsRes.error;
       if (coachRes.error) throw coachRes.error;
       if (skillTestRes.error) throw skillTestRes.error;
-      if (openPollsRes.error) throw openPollsRes.error;
-      if (myVotesRes.error) throw myVotesRes.error;
-      if (closedPollsRes.error) throw closedPollsRes.error;
+      // 投票関連のクエリは、既存のお知らせ・日報等の新着表示を道連れにして壊さないよう
+      // 失敗してもthrowしない(dataのnullish fallbackで「投票は0件扱い」に留める)。
 
       setDigestItems(
         buildDigestItems({
