@@ -4,7 +4,7 @@ import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
 import { playerFullName } from "@/lib/format";
 import { logError } from "@/lib/logger";
-import type { Database } from "@/lib/database.types";
+import type { Database, Role } from "@/lib/database.types";
 
 // チーム内の自分以外の購読者にWeb Pushを送る。鍵が未設定の環境(このリポジトリの
 // デフォルト状態)ではskipped:trueを返すだけで、呼び出し元(お知らせ投稿など)を
@@ -233,6 +233,23 @@ export async function POST(request: Request) {
       memberIds = await staffMemberIds(adminClient, teamId);
       break;
     }
+    case "poll_created": {
+      const { data: poll } = await supabase
+        .from("polls")
+        .select("id, title, created_by, allowed_roles")
+        .eq("id", refId)
+        .maybeSingle();
+      if (!poll || poll.created_by !== user.id) {
+        return NextResponse.json({ error: "投票が見つかりません" }, { status: 404 });
+      }
+      title = "🗳️ 新しい投票があります";
+      body = poll.title;
+      url = `/poll/${poll.id}`;
+      // お知らせと異なり、投票は対象ロール(allowed_roles)が公開範囲ではなく「投票できる人」
+      // なので、通知もそのロールの購読者だけに絞る(ユーザー指示)。
+      memberIds = await roleMemberIds(adminClient, teamId, poll.allowed_roles as Role[]);
+      break;
+    }
     case "coach_note_comment_created": {
       const { data: report } = await supabase
         .from("reports")
@@ -309,5 +326,10 @@ async function staffMemberIds(adminClient: SupabaseClient<Database>, teamId: str
     .select("user_id")
     .eq("team_id", teamId)
     .in("role", ["指導者", "管理者"]);
+  return (data ?? []).map((m) => m.user_id);
+}
+
+async function roleMemberIds(adminClient: SupabaseClient<Database>, teamId: string, roles: Role[]): Promise<string[]> {
+  const { data } = await adminClient.from("team_memberships").select("user_id").eq("team_id", teamId).in("role", roles);
   return (data ?? []).map((m) => m.user_id);
 }

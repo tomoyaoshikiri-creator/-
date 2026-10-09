@@ -12,6 +12,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { Switch } from "@/components/ui/Switch";
 import { canCreatePoll } from "@/lib/permissions";
 import { POLL_ROLE_OPTIONS } from "@/lib/polls";
+import { sendPushNotification } from "@/lib/pushNotify";
 import { playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, Role } from "@/lib/database.types";
 
@@ -126,6 +127,7 @@ export default function NewPollPage() {
     }
     setSaving(false);
     toast("投票を作成しました");
+    sendPushNotification("poll_created", poll.id);
     router.push(`/poll/${poll.id}`);
   }
 

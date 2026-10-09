@@ -16,7 +16,8 @@ export type PushEventType =
   | "daily_report_comment_created"
   | "coach_note_created"
   | "coach_note_comment_created"
-  | "skill_test_promotion_requested";
+  | "skill_test_promotion_requested"
+  | "poll_created";
 
 export function sendPushNotification(eventType: PushEventType, refId: string) {
   fetch("/api/push/notify", {

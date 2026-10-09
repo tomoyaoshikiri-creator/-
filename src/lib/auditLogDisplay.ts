@@ -15,6 +15,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   billing_subscription_canceled: "サブスクリプションが解約",
   data_export: "データをエクスポート",
   players_bulk_imported: "選手をCSV一括登録",
+  poll_voter_identity_viewed: "投票者名を特例で閲覧",
 };
 
 export function describeAuditDetail(action: AuditAction, detail: unknown): string | null {
