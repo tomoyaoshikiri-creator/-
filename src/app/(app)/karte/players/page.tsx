@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -12,8 +13,8 @@ import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { KartePlayerRow } from "@/components/KartePlayerRow";
-import { canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess, playerLimitForPlan } from "@/lib/plan";
+import { canManagePlayers, canViewKarte } from "@/lib/permissions";
+import { hasAiAnalysisAccess, hasBulkImportAccess, hasKarteTabAccess, playerLimitForPlan } from "@/lib/plan";
 import { useUpgradePrompt } from "@/components/PlanLock";
 import { computeUnseenPlayerAnalysisIds, computeUnseenPlayerNoteIds } from "@/lib/itemBadges";
 import { fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
@@ -26,6 +27,7 @@ import { NewPlayerModal } from "../../players/NewPlayerModal";
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 
 export default function KartePlayersPage() {
+  const router = useRouter();
   const { role, userId, plan, sport, category } = useSession();
   const isStaff = canViewKarte(role);
   const toast = useToast();
@@ -193,17 +195,28 @@ export default function KartePlayersPage() {
         )}
       </div>
 
-      {role === "管理者" && hasAiAnalysisAccess(plan) && (
-        <div className="flex items-center justify-end mb-2">
-          <button
-            type="button"
-            onClick={handleOpenAnalysis}
-            className="flex-none px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8"
-          >
-            分析用抽出〈一括〉
-          </button>
+      {(canManagePlayers(role) && hasBulkImportAccess(plan)) || (role === "管理者" && hasAiAnalysisAccess(plan)) ? (
+        <div className="flex items-center justify-end gap-2 mb-2">
+          {canManagePlayers(role) && hasBulkImportAccess(plan) && (
+            <button
+              type="button"
+              onClick={() => router.push("/karte/players/bulk-import")}
+              className="flex-none px-3 py-1.5 rounded-lg border border-line text-[11px] font-bold text-ink-soft bg-paper"
+            >
+              CSV一括登録
+            </button>
+          )}
+          {role === "管理者" && hasAiAnalysisAccess(plan) && (
+            <button
+              type="button"
+              onClick={handleOpenAnalysis}
+              className="flex-none px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8"
+            >
+              分析用抽出〈一括〉
+            </button>
+          )}
         </div>
-      )}
+      ) : null}
 
       <Card>
         {loading ? (

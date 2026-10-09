@@ -22,6 +22,7 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   billing_plan_changed: "プランが変更",
   billing_subscription_canceled: "サブスクリプションが解約",
   data_export: "データをエクスポート",
+  players_bulk_imported: "選手をCSV一括登録",
 };
 
 function describeDetail(action: AuditAction, detail: unknown): string | null {
@@ -38,6 +39,8 @@ function describeDetail(action: AuditAction, detail: unknown): string | null {
       return d.scope === "player" ? "選手分析" : d.scope === "team" ? "チーム分析" : null;
     case "billing_plan_changed":
       return typeof d.plan === "string" ? `${d.plan}(${d.subscription_status ?? "-"})` : null;
+    case "players_bulk_imported":
+      return typeof d.imported === "number" ? `${d.imported}件登録(対象${d.total ?? "-"}件)` : null;
     default:
       return null;
   }
