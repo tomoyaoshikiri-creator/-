@@ -36,6 +36,14 @@ export default function ContactPage() {
             スムーズにご対応するため、ご登録のメールアドレスと、チーム名(わかる場合)をあわせてお知らせください。内容を確認のうえ、順次ご返信いたします。
           </p>
         </Section>
+
+        <div className="text-[12px] text-ink-soft">
+          操作方法については、先に
+          <a href="/help" className="underline font-bold text-orange">
+            よくある質問
+          </a>
+          もご確認ください。
+        </div>
       </div>
     </div>
   );

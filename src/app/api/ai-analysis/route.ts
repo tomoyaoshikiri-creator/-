@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient as createSupabaseJsClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { hasAiAnalysisAccess } from "@/lib/plan";
+import { hasAiAnalysisAccess, AI_ANALYSIS_MONTHLY_LIMIT } from "@/lib/plan";
 import { AI_ANALYSIS_MODEL, AI_ANALYSIS_MAX_TOKENS } from "@/lib/ai/model";
 import { planKindFor } from "@/lib/ai/types";
 import { hasSportContext } from "@/lib/ai/sports";
@@ -31,7 +31,7 @@ export const maxDuration = 300;
 // 2026-09料金改定でチーム単位の月間上限を50回→30回に変更。既にこれまでの上限(50回)まで
 // 使用していたチームが今月内に一時的に「超過」扱いになる場合があるが、超過分を遡って
 // 取り消す処理はしない(新規生成のみブロックされ、翌月1日にused_countがリセットされる)。
-const MONTHLY_LIMIT = 30;
+const MONTHLY_LIMIT = AI_ANALYSIS_MONTHLY_LIMIT;
 
 function createServiceRoleClient(): SupabaseClient<Database> | null {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

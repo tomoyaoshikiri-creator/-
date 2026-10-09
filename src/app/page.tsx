@@ -71,6 +71,9 @@ export default async function Home() {
         </div>
 
         <div className="flex items-center justify-center gap-3 text-[10.5px] text-ink-soft">
+          <a href="/help" className="underline">
+            よくある質問
+          </a>
           <a href="/privacy" className="underline">
             プライバシーポリシー
           </a>

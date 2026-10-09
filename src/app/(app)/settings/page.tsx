@@ -35,6 +35,11 @@ export default function SettingsPage() {
         </>
       )}
 
+      <SectionLabel>ヘルプ</SectionLabel>
+      <Card>
+        <SettingsRow href="/help" label="よくある質問" />
+      </Card>
+
       <SectionLabel>規約・ポリシー</SectionLabel>
       <Card>
         <SettingsRow href="/privacy" label="プライバシーポリシー" />

@@ -68,6 +68,9 @@ export default function PricingPage() {
         </div>
 
         <div className="flex items-center justify-center gap-3 text-[11px] text-ink-soft mt-6">
+          <a href="/help" className="underline">
+            よくある質問
+          </a>
           <a href="/tokushoho" target="_blank" className="underline">
             特定商取引法に基づく表記
           </a>
