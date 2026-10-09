@@ -16,6 +16,7 @@ describe("AUDIT_ACTION_LABELS", () => {
       "billing_subscription_canceled",
       "data_export",
       "players_bulk_imported",
+      "poll_voter_identity_viewed",
     ];
     for (const action of actions) {
       expect(AUDIT_ACTION_LABELS[action]).toBeTruthy();

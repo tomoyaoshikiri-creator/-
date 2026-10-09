@@ -57,7 +57,8 @@ export type AuditAction =
   | "billing_plan_changed"
   | "billing_subscription_canceled"
   | "data_export"
-  | "players_bulk_imported";
+  | "players_bulk_imported"
+  | "poll_voter_identity_viewed";
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 // 選手登録時に選べる学年(在籍中の選手のみ)。絶対値の17段階スケール
 // (0=未就学,1-6=小学1-6年,7-9=中学1-3年,10-12=高校1-3年,13-16=大学1-4年、
