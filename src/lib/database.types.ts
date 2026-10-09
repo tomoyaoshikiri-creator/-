@@ -2090,6 +2090,21 @@ export interface Database {
         Args: { p_poll_id: string };
         Returns: { option_id: string; option_label: string; vote_count: number; voter_ids: string[] | null }[];
       };
+      team_attendance_report: {
+        Args: { p_from: string; p_to: string; p_schedule_type?: string | null };
+        Returns: {
+          player_id: string;
+          sei: string;
+          mei: string;
+          grade: string | null;
+          number: string | null;
+          eligible_count: number;
+          present_count: number;
+          absent_count: number;
+          late_count: number;
+          observe_count: number;
+        }[];
+      };
     };
   };
 }

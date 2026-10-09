@@ -122,6 +122,12 @@ export function fiscalYearLabel(year: number): string {
   return `${year}年度`;
 }
 
+// 年度(4月始まり)の開始日・終了日([from, to]、両端含む)。出欠集計レポート(M-2)の
+// 既定期間に使う。
+export function fiscalYearRange(year: number): { from: string; to: string } {
+  return { from: `${year}-04-01`, to: `${year + 1}-03-31` };
+}
+
 // 予定に手動で年度が固定されている場合はそちらを優先し、無ければ日付から自動判定する。
 // 新チーム発足など、実態が4月始まりの年度と一致しないケースに対応するため。
 export function effectiveFiscalYear(dateStr: string, override: number | null | undefined): number {

@@ -7,8 +7,8 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
-import { canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import { canViewAttendanceReport, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
+import { hasAttendanceReportAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
 // ナビ再設計v3の「チーム」hub。既存画面(選手カルテ・チームカルテ・チーム日報・
@@ -49,6 +49,7 @@ export default function TeamHubPage() {
   const badges = useTabBadges(userId, teamId, role);
   const isStaff = canViewKarte(role);
   const canCoachNote = canWriteCoachNote(role);
+  const canAttendanceReport = canViewAttendanceReport(role);
   const isPro = hasKarteTabAccess(plan);
 
   return (
@@ -109,6 +110,12 @@ export default function TeamHubPage() {
       ) : (
         <LockedFeatureCard label="検定管理" description="選手ごとの検定ランクを一括で管理" requiredPlan="フル" />
       )}
+      {canAttendanceReport &&
+        (hasAttendanceReportAccess(plan) ? (
+          <HubRow href="/karte/team/attendance-report" label="出欠集計" description="期間を指定して選手ごとの出欠を集計する" />
+        ) : (
+          <LockedFeatureCard label="出欠集計" description="期間を指定して選手ごとの出欠を集計する" requiredPlan="フル" />
+        ))}
 
       <SectionLabel>資料</SectionLabel>
       <HubRow href="/library" label="ライブラリ" description="画像・資料の共有置き場" unseen={badges.library} />
