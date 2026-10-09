@@ -230,6 +230,11 @@ export function hasAiAnalysisAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].aiAnalysis;
 }
 
+// 1チームあたりの月間AI分析生成回数上限(選手個人分析・チーム分析を合算)。
+// src/app/api/ai-analysis/route.tsとsrc/content/faq.tsxの両方から参照する単一の値
+// (2026-09料金改定で50回→30回に変更)。
+export const AI_ANALYSIS_MONTHLY_LIMIT = 30;
+
 // 正式リリース前機能の先行利用(Max Partner/Signature Edition限定)。
 export function hasEarlyAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].earlyAccess;
