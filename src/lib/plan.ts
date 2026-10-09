@@ -223,6 +223,11 @@ export function hasKarteTabAccess(plan: TeamPlan): boolean {
   return tierOf(plan) >= tierOf("フル");
 }
 
+// 出欠の集計レポート(クラウド指示書 M-2)はフル(Pro)プラン以上で利用可能。
+export function hasAttendanceReportAccess(plan: TeamPlan): boolean {
+  return tierOf(plan) >= tierOf("フル");
+}
+
 // スポーツテストはMax/Max Partner/Signature Editionのみ利用可能。
 export function hasSportsTestAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].sportsTest;

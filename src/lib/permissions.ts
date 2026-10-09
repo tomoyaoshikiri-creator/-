@@ -189,3 +189,8 @@ export function canIssueInvite(role: Role): boolean {
 export function canCreatePoll(role: Role): boolean {
   return role === "運営" || role === "指導者" || role === "管理者";
 }
+
+// 出欠の集計レポート(クラウド指示書 M-2)の閲覧ができるロール。カルテタブ閲覧と同じ方針。
+export function canViewAttendanceReport(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
