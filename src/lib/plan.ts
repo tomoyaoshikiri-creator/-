@@ -32,6 +32,9 @@ interface PlanCapabilities {
   pollVoterIdentityAlwaysVisible: boolean;
   // 選手のCSV一括登録(クラウド指示書 M-1)。Max/Max Partner/Signature Edition限定。
   bulkImport: boolean;
+  // 監査ログの絞り込み・CSV出力(クラウド指示書 M-3)。bulkImportと同じ対象プラン
+  // (Max/Max Partner/Signature Edition)のため、常に同じ値をセットする。
+  auditLogAdvanced: boolean;
   // バイト数。supabase/migrations内のsync_team_storage_limit()トリガーが
   // teams.storage_limit_bytesを自動算出する際の値と一致させること。
   storageLimitBytes: number;
@@ -57,6 +60,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: false,
+    auditLogAdvanced: false,
     storageLimitBytes: 104857600, // 100MiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -74,6 +78,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: false,
+    auditLogAdvanced: false,
     storageLimitBytes: 1073741824, // 1GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -91,6 +96,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: false,
+    auditLogAdvanced: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -108,6 +114,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: false,
+    auditLogAdvanced: false,
     storageLimitBytes: 5368709120, // 5GiB
     canSelfCheckout: true,
     isPublicPlan: true,
@@ -126,6 +133,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: true,
+    auditLogAdvanced: true,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: true,
@@ -144,6 +152,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: false,
     pollVoterIdentityAlwaysVisible: false,
     bulkImport: true,
+    auditLogAdvanced: true,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -162,6 +171,7 @@ export const PLAN_CONFIG: Record<TeamPlan, PlanCapabilities> = {
     shavingDrill: true,
     pollVoterIdentityAlwaysVisible: true,
     bulkImport: true,
+    auditLogAdvanced: true,
     storageLimitBytes: 10737418240, // 10GiB
     canSelfCheckout: false,
     isPublicPlan: false,
@@ -283,6 +293,12 @@ export function hasPollVoterIdentityAccess(plan: TeamPlan): boolean {
 // 選手のCSV一括登録(Max/Max Partner/Signature Edition限定)。
 export function hasBulkImportAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].bulkImport;
+}
+
+// 監査ログの絞り込み・CSV出力(Max/Max Partner/Signature Edition限定)。基本の一覧閲覧
+// 自体は全プラン共通で、この判定が絞るのは絞り込み・CSV出力の2機能のみ。
+export function hasAdvancedAuditLogAccess(plan: TeamPlan): boolean {
+  return PLAN_CONFIG[plan].auditLogAdvanced;
 }
 
 // ユーザー自身がStripe Checkoutから契約・変更できるプランか
