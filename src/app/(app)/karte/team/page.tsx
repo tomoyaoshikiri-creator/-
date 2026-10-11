@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewKarte } from "@/lib/permissions";
+import { canViewKarte, canViewWorkout } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 
@@ -70,7 +70,9 @@ export default function KarteTeamPage() {
         </Card>
       </Link>
 
-      {isStaff && (
+      {/* ワークアウトだけはカルテ閲覧全般(isStaff)より一段広く、運営にも開放する
+          (canViewWorkout、ユーザー指示)。 */}
+      {canViewWorkout(role) && (
         <Link href="/karte/team/workout">
           <Card className="cursor-pointer">
             <div className="flex items-center justify-between">

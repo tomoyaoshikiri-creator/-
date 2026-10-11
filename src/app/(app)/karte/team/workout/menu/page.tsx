@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel } from "@/components/ui/Card";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewKarte } from "@/lib/permissions";
+import { canViewWorkout } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
 import { fiscalYearLabel, fiscalYearOf, formatDateLabel, todayDateStr } from "@/lib/format";
 import type { PracticeMenu, Schedule } from "@/lib/database.types";
@@ -36,7 +36,7 @@ export default function WorkoutMenuTallyPage() {
   const [expandedTheme, setExpandedTheme] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canViewKarte(role) || !hasKarteTabAccess(plan)) router.replace("/home");
+    if (!canViewWorkout(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   useEffect(() => {
