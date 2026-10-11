@@ -14,11 +14,15 @@ export function AppNav({ role, children }: { role: Role; children: React.ReactNo
 
   return (
     <>
-      <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0">
-        <Sidebar role={role} badges={badges} />
-        <div className="flex-1 flex flex-col min-h-0 relative">{children}</div>
+      <div className="flex-1 flex min-[700px]:flex-row flex-col min-h-0 print:block">
+        <div className="print:hidden">
+          <Sidebar role={role} badges={badges} />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0 relative print:block">{children}</div>
       </div>
-      <TabBar role={role} badges={badges} />
+      <div className="print:hidden">
+        <TabBar role={role} badges={badges} />
+      </div>
     </>
   );
 }
