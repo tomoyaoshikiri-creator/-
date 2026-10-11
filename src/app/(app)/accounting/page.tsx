@@ -22,6 +22,32 @@ export default function AccountingHubPage() {
 
   return (
     <PageShell header={<AppHeader title="会計" variant="list" backHref="/team" accessBadge="operations" />}>
+      <SectionLabel>集金</SectionLabel>
+      <Link href="/accounting/dues">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">集金項目の設定</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">月謝などの集金項目・料金・周期を設定する</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
+      <SectionLabel>入出金</SectionLabel>
+      <Link href="/accounting/transactions">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">入出金を記録・確認する</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">日付・項目・金額で入出金を記録し、明細を見る</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
       <SectionLabel>予算・項目</SectionLabel>
       <Link href="/accounting/budget">
         <Card className="cursor-pointer">
@@ -40,19 +66,6 @@ export default function AccountingHubPage() {
             <div>
               <div className="font-bold text-[15px]">項目の管理</div>
               <div className="text-[11.5px] text-ink-soft mt-1">収入・支出の項目を追加・編集・並べ替えする</div>
-            </div>
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-          </div>
-        </Card>
-      </Link>
-
-      <SectionLabel>入出金</SectionLabel>
-      <Link href="/accounting/transactions">
-        <Card className="cursor-pointer">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-bold text-[15px]">入出金を記録・確認する</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">日付・項目・金額で入出金を記録し、明細を見る</div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>

@@ -1953,6 +1953,158 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      accounting_dues_items: {
+        Row: {
+          id: string;
+          team_id: string;
+          name: string;
+          pricing_method: "flat" | "grade_band" | "per_player";
+          flat_monthly_amount: number | null;
+          cycle_months: number;
+          payment_methods: string[];
+          billing_unit: "player" | "household";
+          income_category_id: string;
+          reminder_days_after: number | null;
+          active: boolean;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          name: string;
+          pricing_method: "flat" | "grade_band" | "per_player";
+          flat_monthly_amount?: number | null;
+          cycle_months: number;
+          payment_methods?: string[];
+          billing_unit: "player" | "household";
+          income_category_id: string;
+          reminder_days_after?: number | null;
+          active?: boolean;
+          position?: number;
+        };
+        Update: Partial<{
+          name: string;
+          pricing_method: "flat" | "grade_band" | "per_player";
+          flat_monthly_amount: number | null;
+          cycle_months: number;
+          payment_methods: string[];
+          billing_unit: "player" | "household";
+          income_category_id: string;
+          reminder_days_after: number | null;
+          active: boolean;
+          position: number;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
+      accounting_dues_grade_bands: {
+        Row: {
+          id: string;
+          dues_item_id: string;
+          grade_min: number;
+          grade_max: number;
+          monthly_amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          dues_item_id: string;
+          grade_min: number;
+          grade_max: number;
+          monthly_amount: number;
+        };
+        Update: Partial<{
+          grade_min: number;
+          grade_max: number;
+          monthly_amount: number;
+        }>;
+        Relationships: [];
+      };
+      accounting_dues_player_settings: {
+        Row: {
+          id: string;
+          dues_item_id: string;
+          player_id: string;
+          monthly_amount: number | null;
+          exempt: boolean;
+          start_date: string | null;
+          stop_date: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          dues_item_id: string;
+          player_id: string;
+          monthly_amount?: number | null;
+          exempt?: boolean;
+          start_date?: string | null;
+          stop_date?: string | null;
+          note?: string | null;
+        };
+        Update: Partial<{
+          monthly_amount: number | null;
+          exempt: boolean;
+          start_date: string | null;
+          stop_date: string | null;
+          note: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
+      accounting_dues_billing_periods: {
+        Row: {
+          id: string;
+          dues_item_id: string;
+          fiscal_year: number;
+          period_start: string;
+          period_end: string;
+          generated_at: string;
+          transaction_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          dues_item_id: string;
+          fiscal_year: number;
+          period_start: string;
+          period_end: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      accounting_dues_charges: {
+        Row: {
+          id: string;
+          billing_period_id: string;
+          player_id: string;
+          group_key: string;
+          amount: number;
+          status: "unpaid" | "paid";
+          paid_at: string | null;
+          paid_by: string | null;
+          reminder_sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          billing_period_id: string;
+          player_id: string;
+          group_key: string;
+          amount: number;
+        };
+        Update: Partial<{
+          status: "unpaid" | "paid";
+          paid_at: string | null;
+          paid_by: string | null;
+          reminder_sent_at: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2322,3 +2474,8 @@ export type AccountingBudget = Database["public"]["Tables"]["accounting_budgets"
 export type AccountingOfficer = Database["public"]["Tables"]["accounting_officers"]["Row"];
 export type AccountingTransaction = Database["public"]["Tables"]["accounting_transactions"]["Row"];
 export type AccountingApproval = Database["public"]["Tables"]["accounting_approvals"]["Row"];
+export type AccountingDuesItem = Database["public"]["Tables"]["accounting_dues_items"]["Row"];
+export type AccountingDuesGradeBand = Database["public"]["Tables"]["accounting_dues_grade_bands"]["Row"];
+export type AccountingDuesPlayerSetting = Database["public"]["Tables"]["accounting_dues_player_settings"]["Row"];
+export type AccountingDuesBillingPeriod = Database["public"]["Tables"]["accounting_dues_billing_periods"]["Row"];
+export type AccountingDuesCharge = Database["public"]["Tables"]["accounting_dues_charges"]["Row"];
