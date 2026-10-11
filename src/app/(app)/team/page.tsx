@@ -124,6 +124,12 @@ export default function TeamHubPage() {
           <LockedFeatureCard label="出欠集計" description="期間を指定して選手ごとの出欠を集計する" requiredPlan="フル" />
         ))}
 
+      <SectionLabel>資料</SectionLabel>
+      <HubRow href="/library" label="ライブラリ" description="画像・資料の共有置き場" unseen={badges.library} />
+
+      <SectionLabel>投票</SectionLabel>
+      <HubRow href="/poll" label="投票" description="チームで意見を集める・決める" unseen={badges.pollUnseen} />
+
       {/* 会計機能(フェーズ1)。一般(保護者)向けの会計報告閲覧はフェーズ3で追加予定のため、
           現時点では運営以上のみに表示する。 */}
       {canManageAccounting(role) &&
@@ -138,12 +144,6 @@ export default function TeamHubPage() {
             <LockedFeatureCard label="会計" description="予算案・項目・会計担当を管理する" requiredPlan="フル" />
           </>
         ))}
-
-      <SectionLabel>資料</SectionLabel>
-      <HubRow href="/library" label="ライブラリ" description="画像・資料の共有置き場" unseen={badges.library} />
-
-      <SectionLabel>投票</SectionLabel>
-      <HubRow href="/poll" label="投票" description="チームで意見を集める・決める" unseen={badges.pollUnseen} />
     </PageShell>
   );
 }
