@@ -145,14 +145,23 @@ export function canManageSportsTests(role: Role): boolean {
 }
 
 // シュート練習記録(コービーシューティング)の計測・登録・編集・削除ができるロール。
-// 一般・運営(保護者)は紐づく選手の記録を見られるのみで、入力はできない。
+// 運営・指導者・管理者(ユーザー指示)。一般(保護者)は紐づく選手の記録を見られるのみで、
+// 入力はできない。
 export function canRecordShootingDrill(role: Role): boolean {
-  return role === "指導者" || role === "管理者";
+  return role === "運営" || role === "指導者" || role === "管理者";
 }
 
 // シェービングドリルの登録・編集・削除ができるロール。コービーシューティングと同じ方針。
 export function canRecordShavingDrill(role: Role): boolean {
-  return role === "指導者" || role === "管理者";
+  return role === "運営" || role === "指導者" || role === "管理者";
+}
+
+// ワークアウト(ハブ画面・練習メニュー集計・コービーシューティング・シェービングドリル)
+// の閲覧ができるロール。カルテ閲覧(canViewKarte、指導者・管理者限定)より一段広く、
+// 運営にも開放する(ユーザー指示)。一般(保護者)は対象外(コービーは紐づく選手の記録のみ
+// 別途RLSで見える)。
+export function canViewWorkout(role: Role): boolean {
+  return role === "運営" || role === "指導者" || role === "管理者";
 }
 
 // ライブラリの他人のアップロードファイルも削除できるロール(スタッフ)。
