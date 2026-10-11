@@ -59,6 +59,19 @@ export default function AccountingHubPage() {
         </Card>
       </Link>
 
+      <SectionLabel>会計報告</SectionLabel>
+      <Link href="/accounting/report">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">会計報告・予算案を出力する</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">予算額・決算額・差異をまとめて印刷・PDF保存する</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
       <SectionLabel>担当者</SectionLabel>
       <Link href="/accounting/officers">
         <Card className="cursor-pointer">
