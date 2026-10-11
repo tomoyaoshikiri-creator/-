@@ -243,9 +243,9 @@ describe("buildDigestItems", () => {
         },
       ],
       userId: "me",
-      noticeSeen: "2026-09-02T00:00:00Z",
-      reportSeen: "2026-09-01T00:00:00Z",
-      coachNoteSeen: "2026-09-01T00:00:00Z",
+      unseenNoticeIds: new Set(["n1"]),
+      unseenDailyReportIds: new Set(["r1"]),
+      unseenCoachNoteIds: new Set(["c1"]),
       includeCoachNotes: true,
     });
     expect(items.map((i) => i.id)).toEqual(["c1", "r1", "n1"]);
@@ -265,10 +265,26 @@ describe("buildDigestItems", () => {
         },
       ],
       userId: "me",
-      noticeSeen: "2026-09-01T00:00:00Z",
-      reportSeen: "2026-09-01T00:00:00Z",
-      coachNoteSeen: "2026-09-01T00:00:00Z",
+      unseenNoticeIds: new Set(),
+      unseenDailyReportIds: new Set(),
+      unseenCoachNoteIds: new Set(["c1"]),
       includeCoachNotes: false,
+    });
+    expect(items).toEqual([]);
+  });
+
+  it("投稿ごとの既読管理で未読のものしか含めない(既読になったものは除く)", () => {
+    const items = buildDigestItems({
+      notices: [
+        { id: "n1", title: "既読済みのお知らせ", created_at: "2026-09-05T10:00:00Z", updated_at: "2026-09-05T10:00:00Z", sender_id: "other" },
+      ],
+      dailyReports: [],
+      coachNotes: [],
+      userId: "me",
+      unseenNoticeIds: new Set(),
+      unseenDailyReportIds: new Set(),
+      unseenCoachNoteIds: new Set(),
+      includeCoachNotes: true,
     });
     expect(items).toEqual([]);
   });
@@ -297,9 +313,9 @@ describe("buildDigestItems", () => {
         },
       ],
       userId: "me",
-      noticeSeen: "2026-09-01T00:00:00Z",
-      reportSeen: "2026-09-01T00:00:00Z",
-      coachNoteSeen: "2026-09-01T00:00:00Z",
+      unseenNoticeIds: new Set(),
+      unseenDailyReportIds: new Set(),
+      unseenCoachNoteIds: new Set(),
       includeCoachNotes: true,
     });
     expect(items).toEqual([
@@ -319,9 +335,9 @@ describe("buildDigestItems", () => {
       dailyReports: [],
       coachNotes: [],
       userId: "me",
-      noticeSeen: "2026-09-01T00:00:00Z",
-      reportSeen: "2026-09-01T00:00:00Z",
-      coachNoteSeen: "2026-09-01T00:00:00Z",
+      unseenNoticeIds: new Set<string>(),
+      unseenDailyReportIds: new Set<string>(),
+      unseenCoachNoteIds: new Set<string>(),
       includeCoachNotes: true,
     };
     const items = buildDigestItems({
@@ -344,9 +360,9 @@ describe("buildDigestItems", () => {
       coachNotes: [],
       closedPollsUnseen: [{ id: "p1", title: "次の合宿先", closedAt: "2026-09-06T09:00:00Z" }],
       userId: "me",
-      noticeSeen: "2026-09-01T00:00:00Z",
-      reportSeen: "2026-09-01T00:00:00Z",
-      coachNoteSeen: "2026-09-01T00:00:00Z",
+      unseenNoticeIds: new Set<string>(),
+      unseenDailyReportIds: new Set<string>(),
+      unseenCoachNoteIds: new Set<string>(),
       includeCoachNotes: true,
     });
     expect(items).toEqual([

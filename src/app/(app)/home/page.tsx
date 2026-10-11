@@ -21,7 +21,7 @@ import {
   type AttendanceActionItem,
   type DigestItem,
 } from "@/lib/homeData";
-import { computeUnseenClosedPollIds } from "@/lib/itemBadges";
+import { computeUnseenClosedPollIds, computeUnseenCoachNoteIds, computeUnseenDailyReportIds, computeUnseenNoticeIds } from "@/lib/itemBadges";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { PlanLimitBanner } from "@/components/PlanLimitBanner";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
@@ -219,36 +219,28 @@ export default function HomePage() {
     setDigestStatus("loading");
     try {
       const supabase = createClient();
-      const { data: seenRows, error: seenError } = await supabase
-        .from("tab_last_seen")
-        .select("*")
-        .eq("user_id", userId);
-      if (seenError) throw seenError;
-      const seenMap: Partial<Record<"notice" | "report" | "coachNote", string>> = {};
-      (seenRows ?? []).forEach((r) => {
-        if (r.tab === "notice" || r.tab === "report" || r.tab === "coachNote") seenMap[r.tab] = r.seen_at;
-      });
-      const now = new Date().toISOString();
-      const noticeSeen = seenMap.notice ?? now;
-      const reportSeen = seenMap.report ?? now;
-      const coachNoteSeen = seenMap.coachNote ?? now;
       // 検定の承認待ちキューは、指導者・管理者なら誰でも承認できるため、指導者・管理者全員の
       // ダッシュボードに合流させる(既読管理はせず、承認・却下されるまで表示し続ける)。
       const includeSkillTestRequests = isStaff && hasSkillTestAccess(plan);
-      const unseenClosedPollIds = await computeUnseenClosedPollIds(userId);
+      // お知らせ・日報・コーチ日報は、投稿ごとの既読管理(item_last_seen)ベースで未読判定する
+      // (タブの赤丸バッジと同じ仕組み。詳細ページを開けば既読になる)。
+      const [unseenNoticeIds, unseenDailyReportIds, unseenCoachNoteIds, unseenClosedPollIds] = await Promise.all([
+        computeUnseenNoticeIds(userId),
+        computeUnseenDailyReportIds(userId),
+        isStaff ? computeUnseenCoachNoteIds(userId) : Promise.resolve(new Set<string>()),
+        computeUnseenClosedPollIds(userId),
+      ]);
 
       const [noticesRes, reportsRes, coachRes, skillTestRes, openPollsRes, myVotesRes, closedPollsRes] = await Promise.all([
         supabase
           .from("notices")
           .select("id, title, created_at, updated_at, sender_id")
-          .or(`created_at.gt.${noticeSeen},updated_at.gt.${noticeSeen}`)
           .neq("sender_id", userId)
           .order("updated_at", { ascending: false })
           .limit(20),
         supabase
           .from("daily_reports")
           .select("id, body, created_at, updated_at, author_id")
-          .or(`created_at.gt.${reportSeen},updated_at.gt.${reportSeen}`)
           .neq("author_id", userId)
           .order("updated_at", { ascending: false })
           .limit(20),
@@ -256,7 +248,6 @@ export default function HomePage() {
           ? supabase
               .from("reports")
               .select("id, body, created_at, updated_at, author_id")
-              .or(`created_at.gt.${coachNoteSeen},updated_at.gt.${coachNoteSeen}`)
               .neq("author_id", userId)
               .order("updated_at", { ascending: false })
               .limit(20)
@@ -310,9 +301,9 @@ export default function HomePage() {
             closedAt: p.closed_at ?? p.created_at,
           })),
           userId,
-          noticeSeen,
-          reportSeen,
-          coachNoteSeen,
+          unseenNoticeIds,
+          unseenDailyReportIds,
+          unseenCoachNoteIds,
           includeCoachNotes: isStaff,
         }),
       );

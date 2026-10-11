@@ -141,9 +141,14 @@ export function buildDigestItems(params: {
   // 絞り込み済みの前提。skillTestRequestsと同じく、ここでは追加の既読判定は行わない)。
   closedPollsUnseen?: { id: string; title: string; closedAt: string }[];
   userId: string;
-  noticeSeen: string;
-  reportSeen: string;
-  coachNoteSeen: string;
+  // お知らせ・日報・コーチ日報の既読判定は、投稿ごとの既読管理(item_last_seen、
+  // itemBadges.tsのcomputeUnseenNoticeIds等)の結果をそのまま使う。タブ単位の
+  // tab_last_seenは現状ライブラリタブしか更新されないため、ここでは使わない
+  // (以前はtab_last_seenベースだったが、それだと詳細ページを開いて既読にしても
+  // ホームの新着からは永久に消えないバグがあった)。
+  unseenNoticeIds: Set<string>;
+  unseenDailyReportIds: Set<string>;
+  unseenCoachNoteIds: Set<string>;
   includeCoachNotes: boolean;
 }): DigestItem[] {
   const {
@@ -156,9 +161,9 @@ export function buildDigestItems(params: {
     myRole,
     closedPollsUnseen = [],
     userId,
-    noticeSeen,
-    reportSeen,
-    coachNoteSeen,
+    unseenNoticeIds,
+    unseenDailyReportIds,
+    unseenCoachNoteIds,
     includeCoachNotes,
   } = params;
   const items: DigestItem[] = [];
@@ -166,15 +171,15 @@ export function buildDigestItems(params: {
 
   notices.forEach((n) => {
     if (n.sender_id === userId) return;
+    if (!unseenNoticeIds.has(n.id)) return;
     const latest = n.updated_at > n.created_at ? n.updated_at : n.created_at;
-    if (latest <= noticeSeen) return;
     items.push({ id: n.id, source: "notice", label: n.title, timestamp: latest, href: `/notice/${n.id}` });
   });
 
   dailyReports.forEach((r) => {
     if (r.author_id === userId) return;
+    if (!unseenDailyReportIds.has(r.id)) return;
     const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
-    if (latest <= reportSeen) return;
     items.push({
       id: r.id,
       source: "report",
@@ -187,8 +192,8 @@ export function buildDigestItems(params: {
   if (includeCoachNotes) {
     coachNotes.forEach((r) => {
       if (r.author_id === userId) return;
+      if (!unseenCoachNoteIds.has(r.id)) return;
       const latest = r.updated_at > r.created_at ? r.updated_at : r.created_at;
-      if (latest <= coachNoteSeen) return;
       items.push({
         id: r.id,
         source: "coachNote",
