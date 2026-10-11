@@ -203,3 +203,9 @@ export function canCreatePoll(role: Role): boolean {
 export function canViewAttendanceReport(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
+
+// 会計機能(項目・予算・会計担当・会計監査の管理、入出金登録)ができるロール
+// (運営以上、ユーザー指示)。一般(保護者)は会計報告の閲覧のみ(フェーズ3で実装)。
+export function canManageAccounting(role: Role): boolean {
+  return role === "運営" || role === "指導者" || role === "管理者";
+}

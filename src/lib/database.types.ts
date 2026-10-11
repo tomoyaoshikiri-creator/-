@@ -1805,6 +1805,102 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      accounting_categories: {
+        Row: {
+          id: string;
+          team_id: string;
+          kind: "income" | "expense";
+          name: string;
+          position: number;
+          auto_managed: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          kind: "income" | "expense";
+          name: string;
+          position?: number;
+          auto_managed?: boolean;
+        };
+        Update: Partial<{
+          kind: "income" | "expense";
+          name: string;
+          position: number;
+          auto_managed: boolean;
+        }>;
+        Relationships: [];
+      };
+      accounting_fiscal_years: {
+        Row: {
+          id: string;
+          team_id: string;
+          fiscal_year: number;
+          closed: boolean;
+          closed_at: string | null;
+          closed_by: string | null;
+          carried_over_amount: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          fiscal_year: number;
+          closed?: boolean;
+          closed_at?: string | null;
+          closed_by?: string | null;
+          carried_over_amount?: number | null;
+        };
+        Update: Partial<{
+          closed: boolean;
+          closed_at: string | null;
+          closed_by: string | null;
+          carried_over_amount: number | null;
+        }>;
+        Relationships: [];
+      };
+      accounting_budgets: {
+        Row: {
+          id: string;
+          team_id: string;
+          fiscal_year: number;
+          category_id: string;
+          budgeted_amount: number;
+          note: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          fiscal_year: number;
+          category_id: string;
+          budgeted_amount?: number;
+          note?: string | null;
+        };
+        Update: Partial<{
+          budgeted_amount: number;
+          note: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
+      accounting_officers: {
+        Row: {
+          id: string;
+          team_id: string;
+          user_id: string;
+          officer_role: "担当" | "監査";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          user_id: string;
+          officer_role: "担当" | "監査";
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2168,3 +2264,7 @@ export type TeamStatCategory = Database["public"]["Tables"]["team_stat_categorie
 export type GamePlayerStatEntry = Database["public"]["Tables"]["game_player_stat_entries"]["Row"];
 export type TeamMember = Database["public"]["Functions"]["list_team_members"]["Returns"][number];
 export type RosterPlayer = Database["public"]["Functions"]["list_roster_players"]["Returns"][number];
+export type AccountingCategory = Database["public"]["Tables"]["accounting_categories"]["Row"];
+export type AccountingFiscalYear = Database["public"]["Tables"]["accounting_fiscal_years"]["Row"];
+export type AccountingBudget = Database["public"]["Tables"]["accounting_budgets"]["Row"];
+export type AccountingOfficer = Database["public"]["Tables"]["accounting_officers"]["Row"];

@@ -238,6 +238,11 @@ export function hasAttendanceReportAccess(plan: TeamPlan): boolean {
   return tierOf(plan) >= tierOf("フル");
 }
 
+// 会計機能(予算案・入出金・会計報告)はフル(Pro)プラン以上で利用可能。
+export function hasAccountingAccess(plan: TeamPlan): boolean {
+  return tierOf(plan) >= tierOf("フル");
+}
+
 // スポーツテストはMax/Max Partner/Signature Editionのみ利用可能。
 export function hasSportsTestAccess(plan: TeamPlan): boolean {
   return PLAN_CONFIG[plan].sportsTest;
