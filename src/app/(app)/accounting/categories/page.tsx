@@ -220,7 +220,7 @@ export default function AccountingCategoriesPage() {
   }, [load]);
 
   return (
-    <PageShell header={<AppHeader title="項目の管理" variant="detail" backHref="/accounting" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="項目の管理" variant="detail" backHref="/accounting" accessBadge="operations" />}>
       <div className="text-[12px] text-ink-soft mb-3">
         予算・入出金・会計報告で使う収入・支出の項目です。チームで自由に追加・並び替えできます。
       </div>
