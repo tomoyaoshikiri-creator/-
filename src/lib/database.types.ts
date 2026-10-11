@@ -1936,6 +1936,23 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      accounting_approvals: {
+        Row: {
+          id: string;
+          team_id: string;
+          fiscal_year: number;
+          officer_id: string;
+          approved_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          fiscal_year: number;
+          officer_id: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2304,3 +2321,4 @@ export type AccountingFiscalYear = Database["public"]["Tables"]["accounting_fisc
 export type AccountingBudget = Database["public"]["Tables"]["accounting_budgets"]["Row"];
 export type AccountingOfficer = Database["public"]["Tables"]["accounting_officers"]["Row"];
 export type AccountingTransaction = Database["public"]["Tables"]["accounting_transactions"]["Row"];
+export type AccountingApproval = Database["public"]["Tables"]["accounting_approvals"]["Row"];

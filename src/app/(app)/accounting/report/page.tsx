@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
+import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
@@ -13,7 +14,14 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { ACCOUNTING_OFFICER_ROLE_LABELS, formatYen, type AccountingKind } from "@/lib/accounting";
 import { fiscalYearLabel, fiscalYearOf, formatFullDateLabel, todayDateStr } from "@/lib/format";
-import type { AccountingBudget, AccountingCategory, AccountingOfficer, AccountingTransaction, TeamMember } from "@/lib/database.types";
+import type {
+  AccountingApproval,
+  AccountingBudget,
+  AccountingCategory,
+  AccountingOfficer,
+  AccountingTransaction,
+  TeamMember,
+} from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_FISCAL_YEAR - 2 + i);
@@ -79,9 +87,66 @@ function ReportTable({ title, rows, mode }: { title: string; rows: Row[]; mode: 
   );
 }
 
+// 承認済み(本人が「確認・承認」した)場合のみ印影を表示する(押印C案)。未承認は空欄の印欄。
+function SealBox({
+  officer,
+  approval,
+  isSelf,
+  busy,
+  onApprove,
+  onRevoke,
+}: {
+  officer: AccountingOfficer | null;
+  approval: AccountingApproval | undefined;
+  isSelf: boolean;
+  busy: boolean;
+  onApprove: () => void;
+  onRevoke: () => void;
+}) {
+  return (
+    <div className="text-center">
+      {approval ? (
+        <div
+          className="w-14 h-14 rounded-full mx-auto flex items-center justify-center border-2"
+          style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+        >
+          <span className="text-[10px] font-bold leading-tight">承認済</span>
+        </div>
+      ) : (
+        <div className="w-14 h-14 border border-line rounded-full mx-auto" />
+      )}
+      {approval && <div className="text-[9px] text-ink-soft mt-1">{formatFullDateLabel(approval.approved_at.slice(0, 10))}承認</div>}
+      {isSelf && officer && (
+        <div className="print:hidden mt-1.5">
+          {approval ? (
+            <button
+              type="button"
+              onClick={onRevoke}
+              disabled={busy}
+              className="text-[10px] font-bold text-ink-soft underline disabled:opacity-50"
+            >
+              承認を取り消す
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onApprove}
+              disabled={busy}
+              className="text-[10px] font-bold text-orange underline disabled:opacity-50"
+            >
+              確認・承認する
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AccountingReportPage() {
   const router = useRouter();
-  const { role, plan, teamName } = useSession();
+  const { role, plan, teamName, userId } = useSession();
+  const toast = useToast();
 
   useEffect(() => {
     if (!canManageAccounting(role) || !hasAccountingAccess(plan)) router.replace("/accounting");
@@ -93,23 +158,28 @@ export default function AccountingReportPage() {
   const [budgets, setBudgets] = useState<AccountingBudget[]>([]);
   const [transactions, setTransactions] = useState<AccountingTransaction[]>([]);
   const [officers, setOfficers] = useState<AccountingOfficer[]>([]);
+  const [approvals, setApprovals] = useState<AccountingApproval[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [approvalBusyId, setApprovalBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: cats }, { data: bud }, { data: txs }, { data: officerRows }, { data: memberRows }] = await Promise.all([
-      supabase.from("accounting_categories").select("*").order("position", { ascending: true }),
-      supabase.from("accounting_budgets").select("*").eq("fiscal_year", fiscalYear),
-      supabase.from("accounting_transactions").select("*").eq("fiscal_year", fiscalYear),
-      supabase.from("accounting_officers").select("*"),
-      supabase.rpc("list_team_members"),
-    ]);
+    const [{ data: cats }, { data: bud }, { data: txs }, { data: officerRows }, { data: approvalRows }, { data: memberRows }] =
+      await Promise.all([
+        supabase.from("accounting_categories").select("*").order("position", { ascending: true }),
+        supabase.from("accounting_budgets").select("*").eq("fiscal_year", fiscalYear),
+        supabase.from("accounting_transactions").select("*").eq("fiscal_year", fiscalYear),
+        supabase.from("accounting_officers").select("*"),
+        supabase.from("accounting_approvals").select("*").eq("fiscal_year", fiscalYear),
+        supabase.rpc("list_team_members"),
+      ]);
     setCategories(cats ?? []);
     setBudgets(bud ?? []);
     setTransactions(txs ?? []);
     setOfficers(officerRows ?? []);
+    setApprovals(approvalRows ?? []);
     setMembers(memberRows ?? []);
     setLoading(false);
   }, [fiscalYear]);
@@ -117,6 +187,32 @@ export default function AccountingReportPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleApprove(officerId: string) {
+    setApprovalBusyId(officerId);
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_approvals").insert({ team_id: officers.find((o) => o.id === officerId)!.team_id, fiscal_year: fiscalYear, officer_id: officerId });
+    setApprovalBusyId(null);
+    if (error) {
+      toast(`承認に失敗しました: ${error.message}`);
+      return;
+    }
+    toast("承認しました");
+    load();
+  }
+
+  async function handleRevoke(approvalId: string) {
+    setApprovalBusyId(approvalId);
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_approvals").delete().eq("id", approvalId);
+    setApprovalBusyId(null);
+    if (error) {
+      toast(`取り消しに失敗しました: ${error.message}`);
+      return;
+    }
+    toast("承認を取り消しました");
+    load();
+  }
 
   const incomeRows = buildRows(categories, budgets, transactions, "income");
   const expenseRows = buildRows(categories, budgets, transactions, "expense");
@@ -155,6 +251,11 @@ export default function AccountingReportPage() {
           >
             印刷・PDF保存する
           </button>
+          {mode === "report" && (
+            <div className="text-[10.5px] text-ink-soft mt-2">
+              会計担当・会計監査本人が「確認・承認」すると印欄に印影が表示されます。承認後に入出金が修正されると、その年度の承認は自動で取り消されます。
+            </div>
+          )}
         </Card>
       </div>
 
@@ -199,25 +300,45 @@ export default function AccountingReportPage() {
             <>
               <div className="text-[13px] mb-6">以上の通り、ご報告申し上げます。</div>
               <div className="flex justify-end gap-8 mb-6">
-                {(tantou.length > 0 ? tantou : [null, null]).slice(0, 2).map((o, i) => (
-                  <div key={o?.id ?? i} className="text-center">
-                    <div className="text-[10.5px] text-ink-soft mb-1">{ACCOUNTING_OFFICER_ROLE_LABELS["担当"]}</div>
-                    <div className="text-[12.5px] font-bold mb-2">{o ? officerName(o.user_id) : "　"}</div>
-                    <div className="w-14 h-14 border border-line rounded-full mx-auto" />
-                  </div>
-                ))}
+                {(tantou.length > 0 ? tantou : [null, null]).slice(0, 2).map((o, i) => {
+                  const approval = o ? approvals.find((a) => a.officer_id === o.id) : undefined;
+                  return (
+                    <div key={o?.id ?? i}>
+                      <div className="text-[10.5px] text-ink-soft mb-1 text-center">{ACCOUNTING_OFFICER_ROLE_LABELS["担当"]}</div>
+                      <div className="text-[12.5px] font-bold mb-2 text-center">{o ? officerName(o.user_id) : "　"}</div>
+                      <SealBox
+                        officer={o}
+                        approval={approval}
+                        isSelf={o?.user_id === userId}
+                        busy={approvalBusyId === o?.id || approvalBusyId === approval?.id}
+                        onApprove={() => o && handleApprove(o.id)}
+                        onRevoke={() => approval && handleRevoke(approval.id)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
               <div className="text-[13px] mb-4">
                 {fiscalYearLabel(fiscalYear)} {teamName}会計報告の内容に相違がないことを確認いたしました。
               </div>
               <div className="flex justify-end gap-8">
-                {(kansa.length > 0 ? kansa : [null]).slice(0, 1).map((o, i) => (
-                  <div key={o?.id ?? i} className="text-center">
-                    <div className="text-[10.5px] text-ink-soft mb-1">{ACCOUNTING_OFFICER_ROLE_LABELS["監査"]}</div>
-                    <div className="text-[12.5px] font-bold mb-2">{o ? officerName(o.user_id) : "　"}</div>
-                    <div className="w-14 h-14 border border-line rounded-full mx-auto" />
-                  </div>
-                ))}
+                {(kansa.length > 0 ? kansa : [null]).slice(0, 1).map((o, i) => {
+                  const approval = o ? approvals.find((a) => a.officer_id === o.id) : undefined;
+                  return (
+                    <div key={o?.id ?? i}>
+                      <div className="text-[10.5px] text-ink-soft mb-1 text-center">{ACCOUNTING_OFFICER_ROLE_LABELS["監査"]}</div>
+                      <div className="text-[12.5px] font-bold mb-2 text-center">{o ? officerName(o.user_id) : "　"}</div>
+                      <SealBox
+                        officer={o}
+                        approval={approval}
+                        isSelf={o?.user_id === userId}
+                        busy={approvalBusyId === o?.id || approvalBusyId === approval?.id}
+                        onApprove={() => o && handleApprove(o.id)}
+                        onRevoke={() => approval && handleRevoke(approval.id)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
