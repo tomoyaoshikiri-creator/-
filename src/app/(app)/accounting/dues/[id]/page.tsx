@@ -340,20 +340,26 @@ export default function AccountingDuesItemPage() {
         </div>
         <div className="mt-2.5">
           <FieldLabel>未納通知を送るタイミング(任意)</FieldLabel>
+          <div className="text-[11px] text-ink-soft mb-1.5">
+            集金期間の開始から何日後に、未納の家庭へ自動でお知らせするか。空欄なら自動送信しません。
+          </div>
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              className={inputClass("w-24 flex-none")}
-              defaultValue={item.reminder_days_after ?? ""}
-              placeholder="未設定"
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                const days = v === "" ? null : Number(v);
-                if (days === null || (Number.isFinite(days) && days >= 0)) handleSave({ reminder_days_after: days });
-              }}
-            />
-            <span className="text-[12px] text-ink-soft">日後に自動送信(空欄なら送らない)</span>
+            <span className="text-[12px] text-ink-soft flex-none">開始から</span>
+            <div className="w-20 flex-none">
+              <input
+                type="number"
+                min={0}
+                className={inputClass()}
+                defaultValue={item.reminder_days_after ?? ""}
+                placeholder="未設定"
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  const days = v === "" ? null : Number(v);
+                  if (days === null || (Number.isFinite(days) && days >= 0)) handleSave({ reminder_days_after: days });
+                }}
+              />
+            </div>
+            <span className="text-[12px] text-ink-soft flex-none">日後</span>
           </div>
         </div>
       </Card>
@@ -383,45 +389,51 @@ export default function AccountingDuesItemPage() {
               </ul>
             )}
             {grades.length > 0 && (
-              <div className={bands.length > 0 ? "mt-2.5 flex items-center gap-1.5" : "flex items-center gap-1.5"}>
-                <select
-                  className={inputClass("flex-1")}
-                  value={bandDraft.grade_min}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}
-                >
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      {gradeLabel(String(g), category)}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-[12px] text-ink-soft flex-none">〜</span>
-                <select
-                  className={inputClass("flex-1")}
-                  value={bandDraft.grade_max}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}
-                >
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      {gradeLabel(String(g), category)}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="月額"
-                  className={inputClass("w-24 flex-none")}
-                  value={bandDraft.monthly_amount}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, monthly_amount: e.target.value }))}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddBand}
-                  className="flex-none px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
-                >
-                  追加
-                </button>
+              <div className={bands.length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    className={inputClass("flex-1")}
+                    value={bandDraft.grade_min}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}
+                  >
+                    {grades.map((g) => (
+                      <option key={g} value={g}>
+                        {gradeLabel(String(g), category)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[12px] text-ink-soft flex-none">〜</span>
+                  <select
+                    className={inputClass("flex-1")}
+                    value={bandDraft.grade_max}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}
+                  >
+                    {grades.map((g) => (
+                      <option key={g} value={g}>
+                        {gradeLabel(String(g), category)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-24 flex-none">
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="月額"
+                      className={inputClass()}
+                      value={bandDraft.monthly_amount}
+                      onChange={(e) => setBandDraft((d) => ({ ...d, monthly_amount: e.target.value }))}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddBand}
+                    className="flex-1 px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                  >
+                    追加
+                  </button>
+                </div>
               </div>
             )}
           </Card>
