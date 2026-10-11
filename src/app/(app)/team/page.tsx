@@ -7,8 +7,15 @@ import { PageShell } from "@/components/PageShell";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
-import { canViewAttendanceReport, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
-import { hasAttendanceReportAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import { canManageAccounting, canViewAttendanceReport, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
+import {
+  hasAccountingAccess,
+  hasAttendanceReportAccess,
+  hasCoachNoteAccess,
+  hasKarteTabAccess,
+  hasSkillTestAccess,
+  hasSportsTestAccess,
+} from "@/lib/plan";
 import { useTabBadges } from "@/lib/tabBadges";
 
 // ナビ再設計v3の「チーム」hub。既存画面(選手カルテ・チームカルテ・チーム日報・
@@ -115,6 +122,21 @@ export default function TeamHubPage() {
           <HubRow href="/karte/team/attendance-report" label="出欠集計" description="期間を指定して選手ごとの出欠を集計する" />
         ) : (
           <LockedFeatureCard label="出欠集計" description="期間を指定して選手ごとの出欠を集計する" requiredPlan="フル" />
+        ))}
+
+      {/* 会計機能(フェーズ1)。一般(保護者)向けの会計報告閲覧はフェーズ3で追加予定のため、
+          現時点では運営以上のみに表示する。 */}
+      {canManageAccounting(role) &&
+        (hasAccountingAccess(plan) ? (
+          <>
+            <SectionLabel>会計</SectionLabel>
+            <HubRow href="/accounting" label="会計" description="予算案・項目・会計担当を管理する" />
+          </>
+        ) : (
+          <>
+            <SectionLabel>会計</SectionLabel>
+            <LockedFeatureCard label="会計" description="予算案・項目・会計担当を管理する" requiredPlan="フル" />
+          </>
         ))}
 
       <SectionLabel>資料</SectionLabel>
