@@ -3,6 +3,7 @@ import { createClient as createSupabaseJsClient, type SupabaseClient } from "@su
 import webpush from "web-push";
 import { formatDateLabel, isTargetEligible, playerFullName } from "@/lib/format";
 import { runBirthdayReminders } from "@/lib/cron/birthdayJob";
+import { runDuesGeneration } from "@/lib/cron/accountingDuesJob";
 import { logError, withCronCheckIn } from "@/lib/logger";
 import { sendTrackedEmail, retryFailedEmailNotifications } from "@/lib/emailNotify";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
@@ -15,8 +16,9 @@ export const dynamic = "force-dynamic";
 // ・試合/イベントでattendance_deadlineを設定した場合のみ: 期限日当日
 // ・同上: 期限を過ぎてもなお未登録の場合、予定日の1週間前に再通知
 // 同じ予定・同じ種類のリマインドを二重送信しないよう、attendance_reminder_logで管理する。
-// あわせて、Vercel Cronのジョブ数を増やさないよう、選手の誕生日プッシュ通知(runBirthdayReminders)も
-// この日次バッチの中でまとめて処理する。退会猶予期間を過ぎたチームの完全削除は、
+// あわせて、Vercel Cronのジョブ数を増やさないよう、選手の誕生日プッシュ通知(runBirthdayReminders)・
+// 集金項目(月謝など)の請求自動生成(runDuesGeneration)も この日次バッチの中でまとめて処理する。
+// 退会猶予期間を過ぎたチームの完全削除は、
 // push通知(VAPIDキー)の設定有無に処理が左右されないよう、専用cron
 // (/api/cron/team-deletion)に分離している(A-6)。
 
@@ -221,6 +223,7 @@ export async function GET(request: Request) {
     const in7DaysStr = toDateStr(addDays(today, 7));
 
     const birthdayResult = await runBirthdayReminders(supabase, todayStr);
+    const duesResult = await runDuesGeneration(supabase, todayStr);
 
     const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
       supabase
@@ -254,7 +257,7 @@ export async function GET(request: Request) {
     ];
 
     if (jobs.length === 0) {
-      return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult });
+      return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult, dues: duesResult });
     }
 
     const { data: existingLogs } = await supabase
@@ -291,6 +294,7 @@ export async function GET(request: Request) {
       processed: pendingJobs.length,
       results,
       birthdays: birthdayResult,
+      dues: duesResult,
       emailsRecovered,
     });
   });

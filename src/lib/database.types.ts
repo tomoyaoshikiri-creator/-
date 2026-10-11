@@ -2055,6 +2055,56 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      accounting_dues_billing_periods: {
+        Row: {
+          id: string;
+          dues_item_id: string;
+          fiscal_year: number;
+          period_start: string;
+          period_end: string;
+          generated_at: string;
+          transaction_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          dues_item_id: string;
+          fiscal_year: number;
+          period_start: string;
+          period_end: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
+      accounting_dues_charges: {
+        Row: {
+          id: string;
+          billing_period_id: string;
+          player_id: string;
+          group_key: string;
+          amount: number;
+          status: "unpaid" | "paid";
+          paid_at: string | null;
+          paid_by: string | null;
+          reminder_sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          billing_period_id: string;
+          player_id: string;
+          group_key: string;
+          amount: number;
+        };
+        Update: Partial<{
+          status: "unpaid" | "paid";
+          paid_at: string | null;
+          paid_by: string | null;
+          reminder_sent_at: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2427,3 +2477,5 @@ export type AccountingApproval = Database["public"]["Tables"]["accounting_approv
 export type AccountingDuesItem = Database["public"]["Tables"]["accounting_dues_items"]["Row"];
 export type AccountingDuesGradeBand = Database["public"]["Tables"]["accounting_dues_grade_bands"]["Row"];
 export type AccountingDuesPlayerSetting = Database["public"]["Tables"]["accounting_dues_player_settings"]["Row"];
+export type AccountingDuesBillingPeriod = Database["public"]["Tables"]["accounting_dues_billing_periods"]["Row"];
+export type AccountingDuesCharge = Database["public"]["Tables"]["accounting_dues_charges"]["Row"];

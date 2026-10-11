@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -10,6 +11,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
+import { ChevronRightIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
@@ -236,6 +238,18 @@ export default function AccountingDuesItemPage() {
 
   return (
     <PageShell header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
+      <Link href={`/accounting/dues/${item.id}/checklist`}>
+        <Card className="cursor-pointer mb-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[14px]">入金チェック</div>
+              <div className="text-[11px] text-ink-soft mt-0.5">請求の作成状況・入金状況を確認する</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
+
       <SectionLabel>基本設定</SectionLabel>
       <Card>
         <div className="flex items-center justify-between">
