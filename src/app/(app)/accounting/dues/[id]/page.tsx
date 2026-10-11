@@ -11,7 +11,7 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
-import { EditToggleButton } from "@/components/ui/EditToggle";
+import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
@@ -96,14 +96,11 @@ export default function AccountingDuesItemPage() {
     load();
   }, [load]);
 
-  // 基本設定の編集。カードごとに表示モード⇄編集モードを独立して切り替える
-  // (「編集」をタップするまでは読み取り専用で表示してほしいというユーザー指示)。
+  // 基本設定の編集。ページ全体で表示モード⇄編集モードを1つのボタンで切り替える
+  // (「編集」をタップするまでは読み取り専用で表示してほしいというユーザー指示。
+  // 当初カードごとにボタンを置いたが、1画面に1つでよいとのフィードバックを受けて変更)。
   // フィールドごとの即時保存(handleSave)の挙動自体は変えない。
-  const [editingBasic, setEditingBasic] = useState(false);
-  const [editingPricing, setEditingPricing] = useState(false);
-  const [editingCollection, setEditingCollection] = useState(false);
-  const [editingAccounting, setEditingAccounting] = useState(false);
-  const [editingReminder, setEditingReminder] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   async function handleSave(patch: DuesItemPatch) {
     if (!item) return;
@@ -252,7 +249,14 @@ export default function AccountingDuesItemPage() {
   const step = (text: string) => `${++stepNumber}. ${text}`;
 
   return (
-    <PageShell header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
+    <PageShell
+      header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}
+      fab={
+        <Fab onClick={() => setEditing((v) => !v)} label={editing ? "編集を終了する" : "設定を編集する"}>
+          {editing ? "完了" : "編集"}
+        </Fab>
+      }
+    >
       <Link href={`/accounting/dues/${item.id}/checklist`}>
         <Card className="cursor-pointer mb-2.5">
           <div className="flex items-center justify-between">
@@ -265,11 +269,9 @@ export default function AccountingDuesItemPage() {
         </Card>
       </Link>
 
-      <SectionLabel action={<EditToggleButton editing={editingBasic} onClick={() => setEditingBasic((v) => !v)} />}>
-        {step("名称・状態")}
-      </SectionLabel>
+      <SectionLabel>{step("名称・状態")}</SectionLabel>
       <Card>
-        {editingBasic ? (
+        {editing ? (
           <>
             <FieldLabel>名称</FieldLabel>
             <input
@@ -299,11 +301,9 @@ export default function AccountingDuesItemPage() {
         )}
       </Card>
 
-      <SectionLabel action={<EditToggleButton editing={editingPricing} onClick={() => setEditingPricing((v) => !v)} />}>
-        {step("料金の決め方")}
-      </SectionLabel>
+      <SectionLabel>{step("料金の決め方")}</SectionLabel>
       <Card>
-        {editingPricing ? (
+        {editing ? (
           <>
             <div className="flex flex-col gap-1.5">
               {(Object.keys(DUES_PRICING_METHOD_LABELS) as DuesPricingMethod[]).map((m) => (
@@ -524,11 +524,9 @@ export default function AccountingDuesItemPage() {
         )}
       </Card>
 
-      <SectionLabel action={<EditToggleButton editing={editingCollection} onClick={() => setEditingCollection((v) => !v)} />}>
-        {step("集金の設定")}
-      </SectionLabel>
+      <SectionLabel>{step("集金の設定")}</SectionLabel>
       <Card>
-        {editingCollection ? (
+        {editing ? (
           <>
             <FieldLabel>集金の周期</FieldLabel>
             <div className="flex flex-wrap gap-1.5">
@@ -579,11 +577,9 @@ export default function AccountingDuesItemPage() {
         )}
       </Card>
 
-      <SectionLabel action={<EditToggleButton editing={editingAccounting} onClick={() => setEditingAccounting((v) => !v)} />}>
-        {step("会計への計上")}
-      </SectionLabel>
+      <SectionLabel>{step("会計への計上")}</SectionLabel>
       <Card>
-        {editingAccounting ? (
+        {editing ? (
           <>
             <FieldLabel>計上先の収入項目</FieldLabel>
             <select className={inputClass()} value={item.income_category_id} onChange={(e) => handleSave({ income_category_id: e.target.value })}>
@@ -601,11 +597,9 @@ export default function AccountingDuesItemPage() {
         )}
       </Card>
 
-      <SectionLabel action={<EditToggleButton editing={editingReminder} onClick={() => setEditingReminder((v) => !v)} />}>
-        {step("未納通知(任意)")}
-      </SectionLabel>
+      <SectionLabel>{step("未納通知(任意)")}</SectionLabel>
       <Card>
-        {editingReminder ? (
+        {editing ? (
           <>
             <div className="text-[11px] text-ink-soft mb-1.5">
               集金期間の開始から何日後に、未納の家庭へ自動でお知らせするか。空欄なら自動送信しません。
