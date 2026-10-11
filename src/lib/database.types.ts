@@ -1901,6 +1901,41 @@ export interface Database {
         Update: Record<string, never>;
         Relationships: [];
       };
+      accounting_transactions: {
+        Row: {
+          id: string;
+          team_id: string;
+          fiscal_year: number;
+          category_id: string;
+          transaction_date: string;
+          payee: string;
+          amount: number;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          fiscal_year: number;
+          category_id: string;
+          transaction_date: string;
+          payee: string;
+          amount: number;
+          note?: string | null;
+          created_by?: string | null;
+        };
+        Update: Partial<{
+          category_id: string;
+          transaction_date: string;
+          payee: string;
+          amount: number;
+          note: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -2268,3 +2303,4 @@ export type AccountingCategory = Database["public"]["Tables"]["accounting_catego
 export type AccountingFiscalYear = Database["public"]["Tables"]["accounting_fiscal_years"]["Row"];
 export type AccountingBudget = Database["public"]["Tables"]["accounting_budgets"]["Row"];
 export type AccountingOfficer = Database["public"]["Tables"]["accounting_officers"]["Row"];
+export type AccountingTransaction = Database["public"]["Tables"]["accounting_transactions"]["Row"];

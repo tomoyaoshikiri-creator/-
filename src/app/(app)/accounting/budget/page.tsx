@@ -96,7 +96,7 @@ export default function AccountingBudgetPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="予算案" variant="detail" backHref="/accounting" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="予算案" variant="detail" backHref="/accounting" accessBadge="operations" />}>
       <SectionLabel>年度</SectionLabel>
       <Card>
         <InlineSelect

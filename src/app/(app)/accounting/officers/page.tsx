@@ -139,7 +139,7 @@ export default function AccountingOfficersPage() {
   }, [load]);
 
   return (
-    <PageShell header={<AppHeader title="会計担当・会計監査" variant="detail" backHref="/accounting" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="会計担当・会計監査" variant="detail" backHref="/accounting" accessBadge="operations" />}>
       <div className="text-[12px] text-ink-soft mb-3">
         会計報告書に署名・押印する人を指定します。1人が会計担当・会計監査を兼任することはできません。
       </div>

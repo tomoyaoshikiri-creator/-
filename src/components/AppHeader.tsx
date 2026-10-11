@@ -24,8 +24,9 @@ export function AppHeader({
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   // このページに実際にアクセスできるロールを画面上で明示するための任意バッジ。
-  // "coach"は指導者・管理者専用画面、"admin"は管理者専用画面であることを示す。
-  accessBadge?: "coach" | "admin";
+  // "coach"は指導者・管理者専用画面、"admin"は管理者専用画面、"operations"は
+  // 運営・指導者・管理者専用画面であることを示す。
+  accessBadge?: "coach" | "admin" | "operations";
 }) {
   void variant;
   const { teamName, teamLogoUrl } = useSession();
@@ -91,7 +92,7 @@ export function AppHeader({
             className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg tracking-wide"
             style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
           >
-            {accessBadge === "admin" ? "管理者専用画面" : "コーチ専用画面"}
+            {accessBadge === "admin" ? "管理者専用画面" : accessBadge === "operations" ? "運営専用画面" : "コーチ専用画面"}
           </span>
         )}
       </h1>
