@@ -601,6 +601,7 @@ export interface Database {
           category_id: string | null;
           folder_id: string | null;
           title: string;
+          allowed_roles: string[];
           created_at: string;
         };
         Insert: {
@@ -610,11 +611,13 @@ export interface Database {
           category_id?: string | null;
           folder_id?: string | null;
           title: string;
+          allowed_roles?: string[];
         };
         Update: Partial<{
           category_id: string | null;
           folder_id: string | null;
           title: string;
+          allowed_roles: string[];
         }>;
         Relationships: [];
       };

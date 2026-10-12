@@ -15,7 +15,8 @@ import { formatDateLabel } from "@/lib/format";
 import { canManageLibrary } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { folderPath } from "@/lib/libraryFolders";
-import type { LibraryCategory, LibraryFile, LibraryFolder, LibraryItem } from "@/lib/database.types";
+import { LIBRARY_ROLE_OPTIONS } from "@/lib/library";
+import type { LibraryCategory, LibraryFile, LibraryFolder, LibraryItem, Role } from "@/lib/database.types";
 import { MoveModal } from "../MoveModal";
 
 type FileWithUrl = LibraryFile & { url: string | null; thumbUrl: string | null };
@@ -41,10 +42,19 @@ export default function LibraryItemDetailPage() {
 
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [allowedRoles, setAllowedRoles] = useState<Role[]>([...LIBRARY_ROLE_OPTIONS]);
 
   useUnsavedChangesGuard(
-    editing && item !== null && (title !== item.title || categoryId !== (item.category_id ?? "")),
+    editing &&
+      item !== null &&
+      (title !== item.title ||
+        categoryId !== (item.category_id ?? "") ||
+        allowedRoles.length !== item.allowed_roles.length),
   );
+
+  function toggleRole(r: Role) {
+    setAllowedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  }
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -86,6 +96,7 @@ export default function LibraryItemDetailPage() {
     if (!item) return;
     setTitle(item.title);
     setCategoryId(item.category_id ?? "");
+    setAllowedRoles([...item.allowed_roles] as Role[]);
     setDeleteConfirm(false);
     setEditing(true);
   }
@@ -96,11 +107,15 @@ export default function LibraryItemDetailPage() {
       toast("タイトルを入力してください");
       return;
     }
+    if (allowedRoles.length === 0) {
+      toast("閲覧できるロールを1つ以上選んでください");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("library_items")
-      .update({ title: title.trim(), category_id: categoryId || null })
+      .update({ title: title.trim(), category_id: categoryId || null, allowed_roles: allowedRoles })
       .eq("id", item.id);
     setSaving(false);
     if (error) {
@@ -181,6 +196,25 @@ export default function LibraryItemDetailPage() {
               </select>
             </div>
 
+            <div className="mt-3">
+              <FieldLabel>閲覧できるロール</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {LIBRARY_ROLE_OPTIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => toggleRole(r)}
+                    className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
+                      allowedRoles.includes(r) ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-ink-soft mt-1.5">※指定しない場合は全員が閲覧できます</div>
+            </div>
+
             <SubmitButton onClick={handleSave} disabled={saving}>
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>
@@ -249,6 +283,11 @@ export default function LibraryItemDetailPage() {
                 <span key={f.id}> › {f.name}</span>
               ))}
             </div>
+            {item.allowed_roles.length < LIBRARY_ROLE_OPTIONS.length && (
+              <div className="text-[11px] text-ink-soft mt-1">
+                👁 閲覧可能: {item.allowed_roles.join("・")}
+              </div>
+            )}
 
             {files.length > 0 && (
               <div className="mt-2.5 space-y-1.5">

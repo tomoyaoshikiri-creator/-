@@ -12,7 +12,8 @@ import { cleanupUploadedObjects, rollbackParentAndObjects, type UploadedObjectRe
 import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
-import type { LibraryCategory } from "@/lib/database.types";
+import { LIBRARY_ROLE_OPTIONS } from "@/lib/library";
+import type { LibraryCategory, Role } from "@/lib/database.types";
 
 const NEW_CATEGORY_VALUE = "__new__";
 
@@ -40,6 +41,7 @@ export function NewLibraryFileModal({
   const [categoryId, setCategoryId] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [allowedRoles, setAllowedRoles] = useState<Role[]>([...LIBRARY_ROLE_OPTIONS]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -64,6 +66,11 @@ export function NewLibraryFileModal({
     setCategoryId("");
     setNewCategoryName("");
     setFiles([]);
+    setAllowedRoles([...LIBRARY_ROLE_OPTIONS]);
+  }
+
+  function toggleRole(r: Role) {
+    setAllowedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
   }
 
   function addFiles(newFiles: FileList | null) {
@@ -114,6 +121,10 @@ export function NewLibraryFileModal({
     }
     if (files.length === 0) {
       toast("ファイルを選んでください");
+      return;
+    }
+    if (allowedRoles.length === 0) {
+      toast("閲覧できるロールを1つ以上選んでください");
       return;
     }
     const totalNewBytes = files.reduce((sum, f) => sum + f.size, 0);
@@ -179,6 +190,7 @@ export function NewLibraryFileModal({
         category_id: resolvedCategoryId,
         folder_id: folderId,
         title: title.trim(),
+        allowed_roles: allowedRoles,
       })
       .select()
       .single();
@@ -251,6 +263,25 @@ export function NewLibraryFileModal({
             placeholder="新しいカテゴリー名"
           />
         )}
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>閲覧できるロール</FieldLabel>
+        <div className="flex flex-wrap gap-2">
+          {LIBRARY_ROLE_OPTIONS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => toggleRole(r)}
+              className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
+                allowedRoles.includes(r) ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="text-xs text-ink-soft mt-1.5">※指定しない場合は全員が閲覧できます</div>
       </div>
 
       <div className="mt-3">
