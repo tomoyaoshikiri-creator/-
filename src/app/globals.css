@@ -156,15 +156,24 @@ body {
 /*
   タップした瞬間に押し込まれたように見えるフィードバックを、アプリ全体のbutton要素に
   一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに済ませるため)。
-  SegButtonの`active`propのような「選択中」の色とは別物で、実際に指/マウスで
-  押し下げている間(:active疑似クラス)だけ働く。disabledは対象外。
+  SegButtonの`active`propのような「選択中」の色とは別物。
+  :active疑似クラスはマウス操作のフォールバックとして残すが、実機タップでは
+  :activeが描画に間に合わないことがあるため、TapFeedback.tsx(pointerdown/up)が
+  付け外しする.is-pressedクラスを主な発火条件にしている。prefers-reduced-motion
+  環境ではtransform(拡大縮小)ではなくopacityの変化だけで押下を示す。
 */
 button:not(:disabled) {
-  transition: transform 0.1s ease-out;
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+button:not(:disabled):active,
+button:not(:disabled).is-pressed {
+  opacity: 0.8;
 }
 @media (prefers-reduced-motion: no-preference) {
-  button:not(:disabled):active {
+  button:not(:disabled):active,
+  button:not(:disabled).is-pressed {
     transform: scale(0.96);
+    opacity: 1;
   }
 }
 

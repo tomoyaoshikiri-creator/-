@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant, Noto_Sans_JP, Roboto_Mono } from "next/font/google";
+import { TapFeedback } from "@/components/TapFeedback";
 import "./globals.css";
 
 const cormorant = Cormorant({
@@ -62,7 +63,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${cormorant.variable} ${notoSansJP.variable} ${robotoMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <TapFeedback />
+        {children}
+      </body>
     </html>
   );
 }
