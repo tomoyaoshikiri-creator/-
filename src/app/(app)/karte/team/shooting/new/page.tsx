@@ -470,25 +470,24 @@ export default function ShootingDrillNewPage() {
             </div>
 
             {phase === "running" && (
-              <div className="mt-4 space-y-1.5 text-[12.5px]">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-ink-soft">ロング(3点)</span>
-                  <span className="font-mono font-bold">
-                    {summary.three_made}/{summary.three_att}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-ink-soft">ミドル(2点)</span>
-                  <span className="font-mono font-bold">
-                    {summary.mid_made}/{summary.mid_att}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-ink-soft">ゴール下(1点)</span>
-                  <span className="font-mono font-bold">
-                    {summary.layup_made}/{summary.layup_att}
-                  </span>
-                </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ["ロング", "3点", summary.three_made, summary.three_att],
+                    ["ミドル", "2点", summary.mid_made, summary.mid_att],
+                    ["ゴール下", "1点", summary.layup_made, summary.layup_att],
+                  ] as const
+                ).map(([label, points, made, att]) => (
+                  <div key={label} className="rounded-lg border border-line bg-paper py-2.5 text-center">
+                    <div className="text-[11px] font-bold text-ink-soft">
+                      {label}
+                      <span className="ml-1 text-[9.5px] font-normal">{points}</span>
+                    </div>
+                    <div className="font-mono text-[16px] font-bold mt-1">
+                      {made}/{att}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
