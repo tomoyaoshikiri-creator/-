@@ -65,7 +65,7 @@ export async function signUpTeam(_prev: FormState, formData: FormData): Promise<
 
   if (!data.session) {
     return {
-      message: "確認メールを送信しました。メールに記載の6桁のコードを入力してください。",
+      message: "確認メールを送信しました。メールに記載の確認コードを入力してください。",
       awaitingCode: true,
       email,
     };

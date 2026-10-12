@@ -41,7 +41,7 @@ export function InviteForm({
     return (
       <div className="bg-white border border-line rounded-lg p-5">
         <div className="text-[12.5px] text-ink-soft mb-1">
-          {email} 宛に確認コードを送信しました。メールに記載の6桁のコードを入力してください。
+          {email} 宛に確認コードを送信しました。メールに記載の確認コードを入力してください。
         </div>
         <div className="text-[11px] text-ink-soft mb-4">
           メールが届かない場合は、迷惑メールフォルダもご確認ください。
@@ -54,13 +54,12 @@ export function InviteForm({
           <input type="hidden" name="playerIds" value={playerIds} />
           <input type="hidden" name="agreedTermsVersion" value={agreedTermsVersion} />
           <input type="hidden" name="agreedTermsAt" value={agreedTermsAt} />
-          <FieldLabel htmlFor="code">確認コード(6桁)</FieldLabel>
+          <FieldLabel htmlFor="code">確認コード</FieldLabel>
           <input
             id="code"
             name="code"
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
             className={inputClass()}
             autoFocus
             required
