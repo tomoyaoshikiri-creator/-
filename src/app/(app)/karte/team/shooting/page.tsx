@@ -269,6 +269,9 @@ export default function ShootingDrillListPage() {
             <Card className="max-h-[50vh] overflow-y-auto">
               {filteredRecords.map((r) => {
                 const expanded = expandedId === r.id;
+                const totalMade = r.three_made + r.mid_made + r.layup_made;
+                const totalAtt = r.three_att + r.mid_att + r.layup_att;
+                const shotPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 100) : null;
                 return (
                   <div key={r.id} className="border-b border-line last:border-b-0">
                     <button
@@ -285,6 +288,7 @@ export default function ShootingDrillListPage() {
                       </div>
                       <span className="flex-none font-mono text-[10px] text-ink-soft">
                         ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
+                        {shotPct !== null && <span className="ml-1.5 font-bold text-orange">{shotPct}%</span>}
                       </span>
                     </button>
 
