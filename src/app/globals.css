@@ -154,6 +154,21 @@ body {
 }
 
 /*
+  タップした瞬間に押し込まれたように見えるフィードバックを、アプリ全体のbutton要素に
+  一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに済ませるため)。
+  SegButtonの`active`propのような「選択中」の色とは別物で、実際に指/マウスで
+  押し下げている間(:active疑似クラス)だけ働く。disabledは対象外。
+*/
+button:not(:disabled) {
+  transition: transform 0.1s ease-out;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):active {
+    transform: scale(0.96);
+  }
+}
+
+/*
   iOS Safariは入力欄の文字が16px未満だとフォーカス時に自動でズームし、
   戻らなくなることがあるため、フォーム要素は常に16px以上にする。
 */
