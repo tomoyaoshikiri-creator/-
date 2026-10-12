@@ -159,21 +159,23 @@ body {
   SegButtonの`active`propのような「選択中」の色とは別物。
   :active疑似クラスはマウス操作のフォールバックとして残すが、実機タップでは
   :activeが描画に間に合わないことがあるため、TapFeedback.tsx(pointerdown/up)が
-  付け外しする.is-pressedクラスを主な発火条件にしている。prefers-reduced-motion
-  環境ではtransform(拡大縮小)ではなくopacityの変化だけで押下を示す。
+  付け外しする.is-pressedクラスを主な発火条件にしている。
+  opacityではなくfilter: brightness()にしているのは、白背景のボタン(例:
+  「コービーシューティング」の「外れた」ボタン)だと周囲も白系のため、
+  opacityで薄くしてもほぼ違いが分からなかったため。brightnessなら白背景でも
+  はっきり灰色がかって見え、色付きボタンでも同様に少し暗くなる。
 */
 button:not(:disabled) {
-  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  transition: transform 0.1s ease-out, filter 0.1s ease-out;
 }
 button:not(:disabled):active,
 button:not(:disabled).is-pressed {
-  opacity: 0.8;
+  filter: brightness(0.92);
 }
 @media (prefers-reduced-motion: no-preference) {
   button:not(:disabled):active,
   button:not(:disabled).is-pressed {
     transform: scale(0.96);
-    opacity: 1;
   }
 }
 
