@@ -470,18 +470,24 @@ export default function ShootingDrillNewPage() {
             </div>
 
             {phase === "running" && (
-              <div className="mt-4 grid grid-cols-2 gap-y-1.5 text-[12.5px]">
-                <div className="text-ink-soft">ロング(3点)</div>
-                <div className="text-right font-mono">
-                  {summary.three_made}/{summary.three_att}
+              <div className="mt-4 space-y-1.5 text-[12.5px]">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-ink-soft">ロング(3点)</span>
+                  <span className="font-mono font-bold">
+                    {summary.three_made}/{summary.three_att}
+                  </span>
                 </div>
-                <div className="text-ink-soft">ミドル(2点)</div>
-                <div className="text-right font-mono">
-                  {summary.mid_made}/{summary.mid_att}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-ink-soft">ミドル(2点)</span>
+                  <span className="font-mono font-bold">
+                    {summary.mid_made}/{summary.mid_att}
+                  </span>
                 </div>
-                <div className="text-ink-soft">ゴール下(1点)</div>
-                <div className="text-right font-mono">
-                  {summary.layup_made}/{summary.layup_att}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-ink-soft">ゴール下(1点)</span>
+                  <span className="font-mono font-bold">
+                    {summary.layup_made}/{summary.layup_att}
+                  </span>
                 </div>
               </div>
             )}
