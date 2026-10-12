@@ -52,6 +52,9 @@ export function AttendanceEntryForm({
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  // 登録済みならデフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。未登録(初回)はそのまま入力できるよう編集状態で始める。
+  const [editing, setEditing] = useState(false);
 
   // statusが選ばれているのにまだ(この内容で)保存されていない状態を「未保存」とみなす。
   useUnsavedChangesGuard(!loading && status !== null && !registered);
@@ -75,6 +78,7 @@ export function AttendanceEntryForm({
       setSetupCount(a?.setup_count?.toString() ?? "1");
       setNote(a?.note ?? "");
       setRegistered(Boolean(a?.status));
+      setEditing(!a?.status);
       setLoading(false);
     })();
   }, [scheduleId, userId, playerId]);
@@ -109,6 +113,7 @@ export function AttendanceEntryForm({
     }
     toast("登録しました");
     setRegistered(true);
+    setEditing(false);
     onChanged?.();
   }
 
@@ -139,6 +144,7 @@ export function AttendanceEntryForm({
     setSetupCount("");
     setNote("");
     setRegistered(false);
+    setEditing(true);
     onChanged?.();
   }
 
@@ -148,6 +154,36 @@ export function AttendanceEntryForm({
       <Card>
         {loading ? (
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
+        ) : !editing ? (
+          <>
+            <div className="text-[13.5px] font-bold">{status}</div>
+            {isGame && !isSelf && accompany && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                保護者の帯同: {accompany}
+                {accompany === "あり" && `(${accompanyCount}人)`}
+              </div>
+            )}
+            {isGame && isHome && setupAvailable && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                会場設営: {setupAvailable === "あり" ? "可能" : "不可"}
+                {setupAvailable === "あり" && `(${setupCount}人)`}
+              </div>
+            )}
+            {showCarSection && car && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                車出し: {car}
+                {car === "可" && `(${seats}人乗車可)`}
+              </div>
+            )}
+            {note && <div className="text-[12.5px] text-ink-soft mt-1">備考: {note}</div>}
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="w-full mt-3 text-center py-2 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8"
+            >
+              出欠を編集する
+            </button>
+          </>
         ) : (
           <>
             <div className="flex gap-2 flex-wrap">
