@@ -165,7 +165,16 @@ export function AttendanceEntryForm({
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
         ) : !editing ? (
           <>
-            <div>{status && <Pill tone={statusTone(status)}>{status}</Pill>}</div>
+            <div className="flex items-center justify-between gap-2">
+              <div>{status && <Pill tone={statusTone(status)} size="lg">{status}</Pill>}</div>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex-none text-center py-1.5 px-3 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+              >
+                編集する
+              </button>
+            </div>
             {isGame && !isSelf && accompany && (
               <div className="text-[12.5px] text-ink-soft mt-1">
                 保護者の帯同: {accompany}
@@ -185,13 +194,6 @@ export function AttendanceEntryForm({
               </div>
             )}
             {note && <div className="text-[12.5px] text-ink-soft mt-1">備考: {note}</div>}
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="w-full mt-3 text-center py-2 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8"
-            >
-              出欠を編集する
-            </button>
           </>
         ) : (
           <>

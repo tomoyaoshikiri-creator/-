@@ -3,9 +3,13 @@ import { scheduleTypeColor } from "@/lib/scheduleColor";
 export function Pill({
   tone,
   children,
+  size = "sm",
 }: {
   tone: "ok" | "pending" | "absent" | "late" | "watch";
   children: React.ReactNode;
+  // 集計バッジ等の添え物(sm)に対し、「選択済みの状態そのもの」を主役として
+  // 大きく見せたい場面(lg)で使う(出欠ステータスの表示など)。
+  size?: "sm" | "lg";
 }) {
   const cls =
     tone === "ok"
@@ -17,8 +21,9 @@ export function Pill({
           : tone === "watch"
             ? "bg-ink-soft/10 text-ink-soft"
             : "bg-orange/10 text-orange";
+  const sizeCls = size === "lg" ? "text-[15px] px-3.5 py-2" : "text-[11px] px-2.5 py-1";
   return (
-    <span className={`font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg ${cls}`}>
+    <span className={`font-mono font-bold rounded-lg ${sizeCls} ${cls}`}>
       {children}
     </span>
   );
