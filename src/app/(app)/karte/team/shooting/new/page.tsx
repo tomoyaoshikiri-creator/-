@@ -415,14 +415,14 @@ export default function ShootingDrillNewPage() {
                     onClick={() => handleShot(true)}
                     className="py-8 rounded-xl border-2 border-orange bg-orange text-white font-extrabold text-[28px]"
                   >
-                    MADE
+                    IN
                   </button>
                   <button
                     type="button"
                     onClick={() => handleShot(false)}
                     className="py-8 rounded-xl border-2 border-line bg-white text-ink-soft font-extrabold text-[28px]"
                   >
-                    MISS
+                    OUT
                   </button>
                 </div>
               </div>
