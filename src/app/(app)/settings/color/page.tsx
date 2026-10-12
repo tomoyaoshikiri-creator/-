@@ -32,6 +32,9 @@ export default function SettingsColorPage() {
   const [customized, setCustomized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ色選択欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。
+  const [editing, setEditing] = useState(false);
 
   useUnsavedChangesGuard(!loading && (primary !== savedPrimary || accent !== savedAccent));
 
@@ -75,6 +78,7 @@ export default function SettingsColorPage() {
     setCustomized(true);
     setSavedPrimary(primary);
     setSavedAccent(accent);
+    setEditing(false);
     toast("配色を保存しました");
     router.refresh();
   }
@@ -113,67 +117,83 @@ export default function SettingsColorPage() {
               : "現在はアプリ標準の配色です。チームのブランドカラーに変更できます。"}
           </div>
 
-          <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={primary}
-              onChange={(e) => setPrimary(e.target.value)}
-              className="w-12 h-10 rounded-lg border border-line bg-white"
-            />
-            <input
-              type="text"
-              value={primary}
-              onChange={(e) => setPrimary(e.target.value)}
-              className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-            />
-          </div>
-
-          <div className="mt-4">
-            <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={accent}
-                onChange={(e) => setAccent(e.target.value)}
-                className="w-12 h-10 rounded-lg border border-line bg-white"
-              />
-              <input
-                type="text"
-                value={accent}
-                onChange={(e) => setAccent(e.target.value)}
-                className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex gap-2 items-center">
+          <div className="flex gap-2 items-center">
             <span
               className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
               style={{ backgroundColor: primary }}
             >
-              基調色
+              基調色 {primary}
             </span>
             <span
               className="inline-block px-3 py-1.5 rounded-lg text-white text-xs font-bold"
               style={{ backgroundColor: accent }}
             >
-              アクセント
+              アクセント {accent}
             </span>
           </div>
 
-          <SubmitButton onClick={handleSave} disabled={saving}>
-            {saving ? "保存中…" : "この配色を保存する"}
-          </SubmitButton>
+          {editing && (
+            <>
+              <div className="mt-4">
+                <FieldLabel>基調色(タブの見出し・強調表示など画面全体に使用)</FieldLabel>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={primary}
+                    onChange={(e) => setPrimary(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-line bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={primary}
+                    onChange={(e) => setPrimary(e.target.value)}
+                    className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+                  />
+                </div>
+              </div>
 
-          {customized && (
+              <div className="mt-4">
+                <FieldLabel>アクセントカラー(詳細画面の見出し・ボタンに使用)</FieldLabel>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-line bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={accent}
+                    onChange={(e) => setAccent(e.target.value)}
+                    className="flex-1 border border-line rounded-lg px-2.5 py-2 font-mono text-[13px] bg-white text-ink"
+                  />
+                </div>
+              </div>
+
+              <SubmitButton onClick={handleSave} disabled={saving}>
+                {saving ? "保存中…" : "この配色を保存する"}
+              </SubmitButton>
+
+              {customized && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={saving}
+                  className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+                >
+                  デフォルトの配色に戻す
+                </button>
+              )}
+            </>
+          )}
+
+          {!editing && (
             <button
               type="button"
-              onClick={handleReset}
-              disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              onClick={() => setEditing(true)}
+              className="w-full mt-4 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
             >
-              デフォルトの配色に戻す
+              配色を編集する
             </button>
           )}
         </Card>

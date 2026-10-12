@@ -27,6 +27,9 @@ export default function SettingsLogoPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。
+  const [editingName, setEditingName] = useState(false);
 
   useUnsavedChangesGuard(!loading && teamName !== savedTeamName);
 
@@ -68,6 +71,7 @@ export default function SettingsLogoPage() {
     }
     setTeamName(trimmed);
     setSavedTeamName(trimmed);
+    setEditingName(false);
     toast("チーム名を更新しました");
     router.refresh();
   }
@@ -168,12 +172,27 @@ export default function SettingsLogoPage() {
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
         <Card>
-          <FieldLabel>チーム名</FieldLabel>
-          <input value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass()} />
-          <div className="text-xs text-ink-soft mt-2">アプリ内のヘッダーなど、画面各所に表示されます。</div>
-          <SubmitButton onClick={handleSaveName} disabled={savingName}>
-            {savingName ? "保存中…" : "保存する"}
-          </SubmitButton>
+          {editingName ? (
+            <>
+              <FieldLabel>チーム名</FieldLabel>
+              <input value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass()} />
+              <div className="text-xs text-ink-soft mt-2">アプリ内のヘッダーなど、画面各所に表示されます。</div>
+              <SubmitButton onClick={handleSaveName} disabled={savingName}>
+                {savingName ? "保存中…" : "保存する"}
+              </SubmitButton>
+            </>
+          ) : (
+            <>
+              <div className="text-[14px] font-bold">{teamName}</div>
+              <button
+                type="button"
+                onClick={() => setEditingName(true)}
+                className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+              >
+                チーム名を編集する
+              </button>
+            </>
+          )}
         </Card>
       )}
 
