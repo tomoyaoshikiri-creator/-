@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
+import { Pill } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/database.types";
@@ -12,6 +13,14 @@ import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/databa
 // (<select>)で選べるようにする(既存の「学年」選択等と同じ方式)。標準(未選択時)は1人。
 const COUNT_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1); // 1〜10
 const SEAT_OPTIONS = Array.from({ length: 11 }, (_, i) => i); // 0〜10(乗車可能人数のみ0を許容)
+
+// 出欠一覧(AttendanceRosterModal.tsx)の集計バッジと同じ色分けに揃える。
+function statusTone(s: AttendanceStatus): "ok" | "absent" | "late" | "watch" {
+  if (s === "出席") return "ok";
+  if (s === "欠席") return "absent";
+  if (s === "遅刻早退") return "late";
+  return "watch";
+}
 
 export function AttendanceEntryForm({
   scheduleId,
@@ -156,7 +165,7 @@ export function AttendanceEntryForm({
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
         ) : !editing ? (
           <>
-            <div className="text-[13.5px] font-bold">{status}</div>
+            <div>{status && <Pill tone={statusTone(status)}>{status}</Pill>}</div>
             {isGame && !isSelf && accompany && (
               <div className="text-[12.5px] text-ink-soft mt-1">
                 保護者の帯同: {accompany}
