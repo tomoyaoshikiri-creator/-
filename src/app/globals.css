@@ -154,9 +154,10 @@ body {
 }
 
 /*
-  タップした瞬間に押し込まれたように見えるフィードバックを、アプリ全体のbutton要素に
-  一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに済ませるため)。
-  SegButtonの`active`propのような「選択中」の色とは別物。
+  タップした瞬間に押し込まれたように見えるフィードバックを、アプリ全体のbutton・
+  リンク(aタグ。SettingsRowやカード一覧行など、ボタンと同じ見た目で使われている
+  箇所が多い)に一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに
+  済ませるため)。SegButtonの`active`propのような「選択中」の色とは別物。
   :active疑似クラスはマウス操作のフォールバックとして残すが、実機タップでは
   :activeが描画に間に合わないことがあるため、TapFeedback.tsx(pointerdown/up)が
   付け外しする.is-pressedクラスを主な発火条件にしている。
@@ -165,16 +166,21 @@ body {
   opacityで薄くしてもほぼ違いが分からなかったため。brightnessなら白背景でも
   はっきり灰色がかって見え、色付きボタンでも同様に少し暗くなる。
 */
-button:not(:disabled) {
+button:not(:disabled),
+a[href] {
   transition: transform 0.1s ease-out, filter 0.1s ease-out;
 }
 button:not(:disabled):active,
-button:not(:disabled).is-pressed {
+button:not(:disabled).is-pressed,
+a[href]:active,
+a[href].is-pressed {
   filter: brightness(0.92);
 }
 @media (prefers-reduced-motion: no-preference) {
   button:not(:disabled):active,
-  button:not(:disabled).is-pressed {
+  button:not(:disabled).is-pressed,
+  a[href]:active,
+  a[href].is-pressed {
     transform: scale(0.96);
   }
 }

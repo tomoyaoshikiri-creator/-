@@ -8,8 +8,11 @@ import { useEffect } from "react";
 // CSSの:activeだけに頼ると視覚的に間に合わないケースがある。ここでは
 // pointerdown時点で即座にクラスを付け、最低でも一定時間は保持してから外す
 // ことで、どんなに速いタップでも必ず1フレームは押し込み表示を見せる。
+// button要素だけでなく、SettingsRowやカード一覧行などボタンと同じ見た目で
+// 使われているaタグ(href付き)も対象にする。
 const PRESSED_CLASS = "is-pressed";
 const MIN_VISIBLE_MS = 90;
+const PRESSABLE_SELECTOR = "button:not(:disabled), a[href]";
 
 export function TapFeedback() {
   useEffect(() => {
@@ -17,7 +20,7 @@ export function TapFeedback() {
     let pressedAt = 0;
 
     function targetButton(e: Event): HTMLElement | null {
-      return (e.target as HTMLElement | null)?.closest<HTMLElement>("button:not(:disabled)") ?? null;
+      return (e.target as HTMLElement | null)?.closest<HTMLElement>(PRESSABLE_SELECTOR) ?? null;
     }
 
     function onDown(e: PointerEvent) {
