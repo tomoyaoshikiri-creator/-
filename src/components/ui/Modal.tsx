@@ -89,34 +89,19 @@ export function Modal({
   );
 }
 
-export function Fab({
-  onClick,
-  label = "追加",
-  children = "+",
-}: {
-  onClick: () => void;
-  label?: string;
-  // 既定は従来通り「+」(新規追加ボタン)。編集モード切り替えなど、別の文言を表示したい
-  // 画面ではここに短いテキストを渡す(例: 「編集」⇄「完了」)。
-  children?: React.ReactNode;
-}) {
+export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?: string }) {
   // MASTER SPECIFICATION Visual Refresh: 背景はアプリ全体のPrimary Action色(--orange、
   // teamPrimaryのエイリアス。team未設定時はCIRCLE LINES Brand Blueへfallback)に統一する。
   // 文字色は任意のteamPrimaryでも可読性を確保するため、teamThemeStyle()が算出した
   // コントラスト安全な--on-team-primaryをそのまま使う(SubmitButton等の固定text-whiteとは
   // 異なり、ここは明示的にcontrast機構を利用する)。shadowも旧・緑固定値ではなく、
   // 現在のteamPrimaryと連動する色にする(color-mixで透明度を掛け合わせる)。
-  // childrenが既定の「+」のときだけ従来通りの40x40円形にし、それ以外(「編集」等の
-  // 短いテキスト)のときは文字が収まる横長のピル形にする。
-  const isPlusIcon = children === "+";
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`absolute right-4 bottom-4 rounded-full border border-orange flex items-center justify-center font-bold z-10 ${
-        isPlusIcon ? "w-10 h-10 text-xl" : "h-10 px-4 text-[13px]"
-      }`}
+      className="absolute right-4 bottom-4 w-10 h-10 rounded-full border border-orange flex items-center justify-center text-xl font-bold z-10"
       style={{
         color: "var(--on-team-primary)",
         // SubmitButton/SegButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
@@ -126,7 +111,7 @@ export function Fab({
         boxShadow: "0 10px 20px -6px color-mix(in srgb, var(--orange) 55%, transparent)",
       }}
     >
-      {children}
+      +
     </button>
   );
 }

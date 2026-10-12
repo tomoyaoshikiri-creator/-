@@ -11,7 +11,6 @@ import { PageShell } from "@/components/PageShell";
 import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
-import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
@@ -249,14 +248,7 @@ export default function AccountingDuesItemPage() {
   const step = (text: string) => `${++stepNumber}. ${text}`;
 
   return (
-    <PageShell
-      header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}
-      fab={
-        <Fab onClick={() => setEditing((v) => !v)} label={editing ? "編集を終了する" : "設定を編集する"}>
-          {editing ? "完了" : "編集"}
-        </Fab>
-      }
-    >
+    <PageShell header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
       <Link href={`/accounting/dues/${item.id}/checklist`}>
         <Card className="cursor-pointer mb-2.5">
           <div className="flex items-center justify-between">
@@ -629,6 +621,14 @@ export default function AccountingDuesItemPage() {
           </div>
         )}
       </Card>
+
+      <button
+        type="button"
+        onClick={() => setEditing((v) => !v)}
+        className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8 mb-2.5"
+      >
+        {editing ? "編集を終了する" : "設定を編集する"}
+      </button>
 
       <SectionLabel>削除</SectionLabel>
       <Card>
