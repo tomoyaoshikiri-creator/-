@@ -38,6 +38,9 @@ export default function AccountingBudgetPage() {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (集金項目の詳細画面と揃えたユーザー指示)。
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +89,7 @@ export default function AccountingBudgetPage() {
       return;
     }
     toast("予算を保存しました");
+    setEditing(false);
     load();
   }
 
@@ -124,31 +128,48 @@ export default function AccountingBudgetPage() {
                   {list.map((c, idx) => (
                     <div key={c.id} className={`py-2.5 ${idx > 0 ? "border-t border-line" : ""}`}>
                       <div className="font-bold text-[13px] mb-1.5">{c.name}</div>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          min={0}
-                          className={inputClass("flex-1")}
-                          placeholder="予算額"
-                          value={drafts[c.id]?.budgeted_amount ?? ""}
-                          onChange={(e) => updateDraft(c.id, { budgeted_amount: e.target.value })}
-                        />
-                        <input
-                          className={inputClass("flex-[1.5]")}
-                          placeholder="備考(任意)"
-                          value={drafts[c.id]?.note ?? ""}
-                          onChange={(e) => updateDraft(c.id, { note: e.target.value })}
-                        />
-                      </div>
+                      {editing ? (
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min={0}
+                            className={inputClass("flex-1")}
+                            placeholder="予算額"
+                            value={drafts[c.id]?.budgeted_amount ?? ""}
+                            onChange={(e) => updateDraft(c.id, { budgeted_amount: e.target.value })}
+                          />
+                          <input
+                            className={inputClass("flex-[1.5]")}
+                            placeholder="備考(任意)"
+                            value={drafts[c.id]?.note ?? ""}
+                            onChange={(e) => updateDraft(c.id, { note: e.target.value })}
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-[12.5px]">
+                          <span className="font-bold">{formatYen(Number(drafts[c.id]?.budgeted_amount || 0))}</span>
+                          {drafts[c.id]?.note && <span className="text-ink-soft ml-2">{drafts[c.id].note}</span>}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </Card>
               </div>
             );
           })}
-          <SubmitButton onClick={handleSave} disabled={saving}>
-            {saving ? "保存中…" : "この内容で保存する"}
-          </SubmitButton>
+          {editing ? (
+            <SubmitButton onClick={handleSave} disabled={saving}>
+              {saving ? "保存中…" : "この内容で保存する"}
+            </SubmitButton>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+            >
+              予算を編集する
+            </button>
+          )}
         </>
       )}
     </PageShell>
