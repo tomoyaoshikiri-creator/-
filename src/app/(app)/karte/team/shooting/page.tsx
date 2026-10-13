@@ -299,7 +299,7 @@ export default function ShootingDrillListPage() {
                             <FieldLabel>日付</FieldLabel>
                             <input
                               type="date"
-                              className={inputClass()}
+                              className={inputClass("h-[42px]")}
                               value={editDraft.recorded_on}
                               onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
                             />
@@ -307,7 +307,7 @@ export default function ShootingDrillListPage() {
                           <div>
                             <FieldLabel>基準点</FieldLabel>
                             <select
-                              className={inputClass()}
+                              className={inputClass("h-[42px]")}
                               value={editDraft.target_points}
                               onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
                             >
