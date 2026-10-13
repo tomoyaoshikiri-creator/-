@@ -303,7 +303,7 @@ export default function ShootingDrillNewPage() {
             )}
 
             <div className="mt-4">
-              <FieldLabel>目標点</FieldLabel>
+              <FieldLabel>基準点</FieldLabel>
               <div className="flex gap-1.5">
                 {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
                   <SegButton key={t} active={targetPoints === t} onClick={() => setTargetPoints(t)}>
@@ -345,7 +345,7 @@ export default function ShootingDrillNewPage() {
               <FieldLabel>日付</FieldLabel>
               <input type="date" className={inputClass()} value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
 
-              <FieldLabel>到達タイム(目標21点固定)</FieldLabel>
+              <FieldLabel>到達タイム(基準21点固定)</FieldLabel>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -398,7 +398,7 @@ export default function ShootingDrillNewPage() {
           <Card>
             <div className="text-center">
               <div className="text-[12px] text-ink-soft font-bold">
-                {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 目標{targetPoints}点
+                {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 基準{targetPoints}点
               </div>
               <div className="font-mono text-[44px] font-bold mt-1 tabular-nums">{formatElapsed(elapsedMs)}</div>
               <div className="font-mono text-[20px] font-bold text-orange mt-1">{summary.total_points}点</div>

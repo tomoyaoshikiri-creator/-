@@ -220,10 +220,10 @@ export default function ShootingDrillListPage() {
             <InlineSelect value={playerFilter} onChange={setPlayerFilter} options={filterOptions} />
           </div>
 
-          <SectionLabel>ベストタイム(目標21点)</SectionLabel>
+          <SectionLabel>ベストタイム(基準21点)</SectionLabel>
           {bestTimeRows.length === 0 ? (
             <Card>
-              <EmptyState>まだ目標21点の記録がありません</EmptyState>
+              <EmptyState>まだ基準21点の記録がありません</EmptyState>
             </Card>
           ) : (
             <div className="bg-white border border-line rounded-lg overflow-auto mb-3">
@@ -283,7 +283,7 @@ export default function ShootingDrillListPage() {
                         <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
                         <span className="font-bold">{playerName(r.player_id)}</span>
                         <span className="text-ink-soft ml-1.5">
-                          目標{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
+                          基準{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
                         </span>
                       </div>
                       <span className="flex-none font-mono text-[10px] text-ink-soft">
@@ -305,7 +305,7 @@ export default function ShootingDrillListPage() {
                             />
                           </div>
                           <div>
-                            <FieldLabel>目標点</FieldLabel>
+                            <FieldLabel>基準点</FieldLabel>
                             <select
                               className={inputClass()}
                               value={editDraft.target_points}
