@@ -433,7 +433,7 @@ export default function PlayerAnalysisPage() {
             placeholder="例: 怪我明けなのでコンディション面を中心に見てほしい"
           />
           <div className="text-xs text-ink-soft mt-2.5">
-            選手のスタッツ・スポーツテスト・練習参加状況・身長体重のデータと分析の観点を整理したテキストがコピーされます。外部のAIチャットに貼り付けて利用できます
+            選手のスタッツ・スポーツテスト・コービーシューティングの記録・練習参加状況・身長体重のデータと分析の観点を整理したテキストがコピーされます。外部のAIチャットに貼り付けて利用できます
           </div>
           <SubmitButton onClick={handleCopyAnalysis} disabled={copyingAnalysis}>
             {copyingAnalysis ? "準備中…" : "この内容でコピーする"}

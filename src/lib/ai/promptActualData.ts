@@ -12,6 +12,15 @@ function resultLabel(result: GameResult): string {
   return "スコア未記録";
 }
 
+// shooting_drill_records.time_secは小数を含み得るが、アプリのUI表示(コービー
+// シューティング画面)と同じく秒は整数(四捨五入)で表記を揃える。
+function formatDrillTime(sec: number): string {
+  const total = Math.round(sec);
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
+  return m > 0 ? `${m}分${s}秒` : `${s}秒`;
+}
+
 function evaluationDirectionLabel(direction: "HIGHER_IS_BETTER" | "LOWER_IS_BETTER" | "NEUTRAL"): string {
   if (direction === "HIGHER_IS_BETTER") return "高い方が良い";
   if (direction === "LOWER_IS_BETTER") return "低い方が良い";
@@ -101,11 +110,18 @@ function statsToLines(stats: StatsData, scope: "player" | "team", rosterCount?: 
       if (stats.games.length > 0) {
         lines.push("");
         lines.push("■ 試合ごとの記録");
+        const hasQuarterData = stats.games.some((g) => g.quartersTracked != null);
+        if (hasQuarterData) {
+          lines.push(
+            "(出場クォーター数は、各試合のメンバーチェンジ機能で記録されたスターター・途中出場選手の一覧から算出した参考値で、正確な出場時間ではありません。この機能が使われていない試合は出場クォーター数を併記していません。スタッツの多寡を解釈する際、出場クォーター数が分かる試合ではそれを踏まえ、分からない試合はこれまで通りスタッツの絶対値のみで判断してください)",
+          );
+        }
         stats.games.forEach((g) => {
           const summary = Object.entries(g.averages)
             .map(([k, v]) => `${k} ${fmt(v)}`)
             .join(" / ");
-          lines.push(`${g.label}(${resultLabel(g.result)}): ${summary}`);
+          const quarterInfo = g.quartersTracked != null ? ` / 出場クォーター数 ${g.quartersPlayed}/${g.quartersTracked}` : "";
+          lines.push(`${g.label}(${resultLabel(g.result)}): ${summary}${quarterInfo}`);
         });
       }
     }
@@ -170,6 +186,29 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   lines.push("");
 
   lines.push(...statsToLines(data.stats, "player"));
+  lines.push("");
+
+  lines.push("■ コービーシューティング");
+  if (data.shootingDrills.records.length === 0) {
+    lines.push("記録なし");
+  } else {
+    const records = data.shootingDrills.records;
+    const totalMade = records.reduce((sum, r) => sum + r.threeMade + r.midMade + r.layupMade, 0);
+    const totalAtt = records.reduce((sum, r) => sum + r.threeAtt + r.midAtt + r.layupAtt, 0);
+    const overallPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 1000) / 10 : null;
+    lines.push(`記録件数: ${records.length}件 / 通算ショット率: ${fmt(overallPct, "%")}(${totalMade}/${totalAtt}本)`);
+    lines.push(
+      "(実施頻度は選手・コーチの裁量に委ねられているため、記録件数の多寡自体を練習量や意欲の評価材料にしないでください。基準点(11/15/21点)が異なると到達タイムは単純比較できないため、タイムの変化を見る際は同じ基準点同士で比較してください)",
+    );
+    records.forEach((r) => {
+      const made = r.threeMade + r.midMade + r.layupMade;
+      const att = r.threeAtt + r.midAtt + r.layupAtt;
+      const pct = att > 0 ? Math.round((made / att) * 1000) / 10 : null;
+      lines.push(
+        `${r.recordedOn}: 基準${r.targetPoints}点 ${formatDrillTime(r.timeSec)} 総得点${r.totalPoints}点 / ロング${r.threeMade}/${r.threeAtt} ミドル${r.midMade}/${r.midAtt} ゴール下${r.layupMade}/${r.layupAtt} / ショット率${fmt(pct, "%")}`,
+      );
+    });
+  }
   lines.push("");
 
   if (data.sportsTest) {
