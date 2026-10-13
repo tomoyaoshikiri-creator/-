@@ -30,8 +30,9 @@ type EditDraft = {
 };
 
 function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = (sec - m * 60).toFixed(1);
+  const total = Math.round(sec);
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
   return m > 0 ? `${m}分${s}秒` : `${s}秒`;
 }
 
@@ -277,7 +278,7 @@ export default function ShootingDrillListPage() {
                     <button
                       type="button"
                       onClick={() => canRecord && openRow(r)}
-                      className="w-full text-left py-2 text-[11.5px] leading-tight flex items-center justify-between gap-2"
+                      className="w-full text-left py-2 text-[11.5px] leading-tight"
                     >
                       <div>
                         <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
@@ -286,10 +287,10 @@ export default function ShootingDrillListPage() {
                           基準{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
                         </span>
                       </div>
-                      <span className="flex-none font-mono text-[10px] text-ink-soft">
+                      <div className="font-mono text-[11px] text-ink-soft mt-0.5">
                         ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
                         {shotPct !== null && <span className="ml-1.5 font-bold text-orange">{shotPct}%</span>}
-                      </span>
+                      </div>
                     </button>
 
                     {expanded && editDraft && canRecord && (
