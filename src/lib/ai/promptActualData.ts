@@ -189,14 +189,28 @@ export function buildPlayerActualData(data: PlayerAnalysisData): string {
   lines.push("");
 
   lines.push("■ コービーシューティング");
+  lines.push(
+    "(このドリルは通常のシュート練習と異なり、「時間を計りながら、基準点に到達するまで続ける」形式のメニューです。プレッシャー・時間的制約がかかった状態でもシュートを決め切れるかという、試合に近い強度での成功力を測る狙いがあります。分析では次の2点を着眼点にしてください。①同じ基準点同士で比較した到達タイムの時系列推移: 決め切る速さ・安定性が伸びているかの指標として扱う。②ロング(3点)/ミドル(2点)/ゴール下(1点)の距離別ショット率の差: その選手の距離ごとの得意・不得意を示す手がかりとして扱う)",
+  );
   if (data.shootingDrills.records.length === 0) {
     lines.push("記録なし");
   } else {
     const records = data.shootingDrills.records;
-    const totalMade = records.reduce((sum, r) => sum + r.threeMade + r.midMade + r.layupMade, 0);
-    const totalAtt = records.reduce((sum, r) => sum + r.threeAtt + r.midAtt + r.layupAtt, 0);
+    const zoneTotals = (key: "three" | "mid" | "layup") => {
+      const made = records.reduce((sum, r) => sum + r[`${key}Made`], 0);
+      const att = records.reduce((sum, r) => sum + r[`${key}Att`], 0);
+      return { made, att, pct: att > 0 ? Math.round((made / att) * 1000) / 10 : null };
+    };
+    const three = zoneTotals("three");
+    const mid = zoneTotals("mid");
+    const layup = zoneTotals("layup");
+    const totalMade = three.made + mid.made + layup.made;
+    const totalAtt = three.att + mid.att + layup.att;
     const overallPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 1000) / 10 : null;
     lines.push(`記録件数: ${records.length}件 / 通算ショット率: ${fmt(overallPct, "%")}(${totalMade}/${totalAtt}本)`);
+    lines.push(
+      `距離別通算: ロング ${three.made}/${three.att}(${fmt(three.pct, "%")}) / ミドル ${mid.made}/${mid.att}(${fmt(mid.pct, "%")}) / ゴール下 ${layup.made}/${layup.att}(${fmt(layup.pct, "%")})`,
+    );
     lines.push(
       "(実施頻度は選手・コーチの裁量に委ねられているため、記録件数の多寡自体を練習量や意欲の評価材料にしないでください。基準点(11/15/21点)が異なると到達タイムは単純比較できないため、タイムの変化を見る際は同じ基準点同士で比較してください)",
     );
