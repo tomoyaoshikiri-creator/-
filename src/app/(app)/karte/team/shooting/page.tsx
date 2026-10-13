@@ -209,7 +209,7 @@ export default function ShootingDrillListPage() {
   return (
     <PageShell
       header={<AppHeader title="コービーシューティング" variant="list" backHref="/karte/team/workout" accessBadge={canRecord ? "coach" : undefined} />}
-      fab={canRecord && <Fab onClick={() => router.push("/karte/team/shooting/new")} label="計測する" />}
+      fab={canRecord && expandedId === null && <Fab onClick={() => router.push("/karte/team/shooting/new")} label="計測する" />}
     >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
