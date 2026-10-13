@@ -294,30 +294,28 @@ export default function ShootingDrillListPage() {
 
                     {expanded && editDraft && canRecord && (
                       <div className="pb-3">
-                        <div className="grid grid-cols-2 gap-2 mb-2">
-                          <div>
-                            <FieldLabel>日付</FieldLabel>
-                            <input
-                              type="date"
-                              className={inputClass("h-[42px]")}
-                              value={editDraft.recorded_on}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <FieldLabel>基準点</FieldLabel>
-                            <select
-                              className={inputClass("h-[42px]")}
-                              value={editDraft.target_points}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
-                            >
-                              {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}点
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                        <div className="mb-2">
+                          <FieldLabel>日付</FieldLabel>
+                          <input
+                            type="date"
+                            className={inputClass()}
+                            value={editDraft.recorded_on}
+                            onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <FieldLabel>基準点</FieldLabel>
+                          <select
+                            className={inputClass()}
+                            value={editDraft.target_points}
+                            onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
+                          >
+                            {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
+                              <option key={t} value={t}>
+                                {t}点
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="mb-2">
                           <FieldLabel>到達タイム(秒)</FieldLabel>
