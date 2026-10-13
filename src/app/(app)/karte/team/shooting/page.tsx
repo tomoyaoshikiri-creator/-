@@ -283,9 +283,9 @@ export default function ShootingDrillListPage() {
                       <div>
                         <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
                         <span className="font-bold">{playerName(r.player_id)}</span>
-                        <span className="text-ink-soft ml-1.5">
-                          基準{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
-                        </span>
+                      </div>
+                      <div className="text-ink-soft mt-0.5">
+                        基準{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
                       </div>
                       <div className="font-mono text-[11px] text-ink-soft mt-0.5">
                         ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
