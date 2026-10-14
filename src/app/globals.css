@@ -170,30 +170,39 @@ body {
   有効化する目的で入れているdocumentのpointerdown購読により、iOS Safariでは
   指を離さずスクロールしている間ずっと:activeが掛かったままになることがあり、
   transformが掛かった要素がスクロール中に一瞬非表示になる実機不具合が
-  報告された。TapFeedback.tsx側はpointermoveで一定距離動いたら即座に
-  .is-pressedを外すようにしたため、タッチ環境の:activeは完全に無効化し、
-  この不具合の原因を断つ。
+  報告された。
+
+  さらに、transition: transform/filterをbutton・a[href]全要素に常時
+  (押下中かどうかに関わらず)宣言していたこと自体が原因だったことが実機検証で
+  判明した。iOS Safariはtransform/filterをtransition対象に持つ要素を
+  待機中からコンポジットレイヤーに昇格させる傾向があり、スケジュール一覧のように
+  aタグ(カード)が多数並ぶ画面では、高速スクロール中にそのレイヤーの再描画が
+  間に合わず要素が一瞬完全に透明になる(.is-pressedの付け外しとは無関係に、
+  指が触れていないカードでも発生する)。タッチ環境ではtransitionそのものを
+  宣言しないことでレイヤー昇格の起点を断ち、.is-pressedのON/OFFは
+  アニメーションなしで瞬時に切り替える。マウス操作(hover:hover/pointer:fine)は
+  このバグの対象外のためtransitionを維持し、従来通りなめらかに:activeへ遷移する。
 */
-button:not(:disabled),
-a[href] {
-  transition: transform 0.1s ease-out, filter 0.1s ease-out;
-}
 button:not(:disabled).is-pressed,
 a[href].is-pressed {
   filter: brightness(0.92);
-}
-@media (hover: hover) and (pointer: fine) {
-  button:not(:disabled):active,
-  a[href]:active {
-    filter: brightness(0.92);
-  }
 }
 @media (prefers-reduced-motion: no-preference) {
   button:not(:disabled).is-pressed,
   a[href].is-pressed {
     transform: scale(0.96);
   }
-  @media (hover: hover) and (pointer: fine) {
+}
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled),
+  a[href] {
+    transition: transform 0.1s ease-out, filter 0.1s ease-out;
+  }
+  button:not(:disabled):active,
+  a[href]:active {
+    filter: brightness(0.92);
+  }
+  @media (prefers-reduced-motion: no-preference) {
     button:not(:disabled):active,
     a[href]:active {
       transform: scale(0.96);
