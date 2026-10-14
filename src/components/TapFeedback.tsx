@@ -12,10 +12,16 @@ import { useEffect } from "react";
 // 使われているaタグ(href付き)も対象にする。
 //
 // ボタン/リンクの上から指を離さずスクロールを始めるケース(タップではない)では、
-// 一定距離動いた時点でpointerup/pointercancelを待たずに即座にクラスを外す。
-// これを入れていないと、スクロール中ずっとtransform/filterが掛かった状態になり、
+// pointerup/pointercancelを待たずに即座にクラスを外す必要がある。これを
+// 入れていないと、スクロール中ずっとtransform/filterが掛かった状態になり、
 // iOS Safari実機でその要素が一瞬完全に非表示になる不具合が報告された
 // (スクロール開始位置がたまたまカード/リンクの上だった場合に発生)。
+// 当初pointermoveの移動量で検知していたが、iOS Safariはタッチをネイティブの
+// スクロールジェスチャーと判定した時点でpointermoveの配信自体を止めてしまう
+// ことがあり、移動量だけでは検知できないケースが残っていた。スクロール自体は
+// どの経路で起きても対象要素のscrollTopが変化してscrollイベントが発火するため、
+// (バブリングしないのでcaptureフェーズで)documentで拾い、押下中の要素があれば
+// 問答無用で即座に解除する。
 const PRESSED_CLASS = "is-pressed";
 const MIN_VISIBLE_MS = 90;
 const MOVE_CANCEL_PX = 10;
@@ -30,6 +36,13 @@ export function TapFeedback() {
 
     function targetButton(e: Event): HTMLElement | null {
       return (e.target as HTMLElement | null)?.closest<HTMLElement>(PRESSABLE_SELECTOR) ?? null;
+    }
+
+    function cancelPress() {
+      if (!current) return;
+      const btn = current;
+      current = null;
+      btn.classList.remove(PRESSED_CLASS);
     }
 
     function onDown(e: PointerEvent) {
@@ -47,10 +60,12 @@ export function TapFeedback() {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (dx * dx + dy * dy > MOVE_CANCEL_PX * MOVE_CANCEL_PX) {
-        const btn = current;
-        current = null;
-        btn.classList.remove(PRESSED_CLASS);
+        cancelPress();
       }
+    }
+
+    function onScroll() {
+      cancelPress();
     }
 
     function release() {
@@ -66,12 +81,14 @@ export function TapFeedback() {
     document.addEventListener("pointermove", onMove, { passive: true });
     document.addEventListener("pointerup", release, { passive: true });
     document.addEventListener("pointercancel", release, { passive: true });
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
 
     return () => {
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", release);
       document.removeEventListener("pointercancel", release);
+      document.removeEventListener("scroll", onScroll, { capture: true });
     };
   }, []);
 
