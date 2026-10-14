@@ -185,6 +185,37 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      team_billing_subscriptions: {
+        Row: {
+          id: string;
+          team_id: string;
+          platform: "stripe" | "apple" | "google";
+          external_subscription_id: string;
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          platform: "stripe" | "apple" | "google";
+          external_subscription_id: string;
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
       audit_logs: {
         Row: {
           id: string;
@@ -2479,3 +2510,4 @@ export type AccountingDuesGradeBand = Database["public"]["Tables"]["accounting_d
 export type AccountingDuesPlayerSetting = Database["public"]["Tables"]["accounting_dues_player_settings"]["Row"];
 export type AccountingDuesBillingPeriod = Database["public"]["Tables"]["accounting_dues_billing_periods"]["Row"];
 export type AccountingDuesCharge = Database["public"]["Tables"]["accounting_dues_charges"]["Row"];
+export type TeamBillingSubscription = Database["public"]["Tables"]["team_billing_subscriptions"]["Row"];

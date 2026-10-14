@@ -6,6 +6,7 @@ import { getStripeClient, planForPriceId } from "@/lib/stripe";
 import { logError } from "@/lib/logger";
 import { recordAuditEvent } from "@/lib/auditLog";
 import { sendTrackedEmail } from "@/lib/emailNotify";
+import { recomputeTeamPlan, upsertBillingSubscription } from "@/lib/teamBilling";
 import type { Database } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +73,10 @@ export async function POST(request: Request) {
     }
   }
 
+  // プラン自体の反映はteam_billing_subscriptions経由(recomputeTeamPlan、
+  // iOS/Android課金が増えても同じ仕組みで反映されるようにするため。ユーザー指示
+  // 項目4)にするが、stripe_subscription_id/subscription_statusはStripe固有の
+  // 付随情報としてteamsに従来通り直接書く。
   async function syncSubscription(subscription: Stripe.Subscription): Promise<boolean> {
     const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
     const priceId = subscription.items.data[0]?.price.id ?? null;
@@ -80,23 +85,33 @@ export async function POST(request: Request) {
       logError(`[webhooks/stripe] unknown price id ${priceId} for customer ${customerId}`);
       return false;
     }
-    const { data, error } = await adminClient
+    const { data: teams, error: metaError } = await adminClient
       .from("teams")
-      .update({ plan, stripe_subscription_id: subscription.id, subscription_status: subscription.status })
+      .update({ stripe_subscription_id: subscription.id, subscription_status: subscription.status })
       .eq("stripe_customer_id", customerId)
       .select("id");
-    if (error) {
-      logError("[webhooks/stripe] failed to sync subscription", error);
+    if (metaError) {
+      logError("[webhooks/stripe] failed to sync subscription metadata", metaError);
       return false;
     }
-    for (const team of data ?? []) {
+    for (const team of teams ?? []) {
+      const subOk = await upsertBillingSubscription(adminClient, {
+        teamId: team.id,
+        platform: "stripe",
+        externalSubscriptionId: subscription.id,
+        plan,
+        status: "active",
+      });
+      if (!subOk) return false;
+      const resolvedPlan = await recomputeTeamPlan(adminClient, team.id);
+      if (resolvedPlan === null) return false;
       await recordAuditEvent(adminClient, {
         teamId: team.id,
         actorId: null,
         action: "billing_plan_changed",
         targetType: "team",
         targetId: team.id,
-        detail: { plan, subscription_status: subscription.status },
+        detail: { plan: resolvedPlan, subscription_status: subscription.status },
       });
     }
     return true;
@@ -146,24 +161,42 @@ export async function POST(request: Request) {
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
-      const { data, error } = await adminClient
+      const priceId = subscription.items.data[0]?.price.id ?? null;
+      const lastPlan = planForPriceId(priceId) ?? "お試し";
+      const { data: teams, error: metaError } = await adminClient
         .from("teams")
-        .update({ plan: "お試し", stripe_subscription_id: null, subscription_status: "canceled" })
+        .update({ stripe_subscription_id: null, subscription_status: "canceled" })
         .eq("stripe_customer_id", customerId)
         .select("id");
-      if (error) {
-        logError("[webhooks/stripe] failed to downgrade canceled subscription", error);
+      if (metaError) {
+        logError("[webhooks/stripe] failed to downgrade canceled subscription", metaError);
         ok = false;
-      } else {
-        for (const team of data ?? []) {
-          await recordAuditEvent(adminClient, {
-            teamId: team.id,
-            actorId: null,
-            action: "billing_subscription_canceled",
-            targetType: "team",
-            targetId: team.id,
-          });
+        break;
+      }
+      for (const team of teams ?? []) {
+        const subOk = await upsertBillingSubscription(adminClient, {
+          teamId: team.id,
+          platform: "stripe",
+          externalSubscriptionId: subscription.id,
+          plan: lastPlan,
+          status: "canceled",
+        });
+        if (!subOk) {
+          ok = false;
+          break;
         }
+        const resolvedPlan = await recomputeTeamPlan(adminClient, team.id);
+        if (resolvedPlan === null) {
+          ok = false;
+          break;
+        }
+        await recordAuditEvent(adminClient, {
+          teamId: team.id,
+          actorId: null,
+          action: "billing_subscription_canceled",
+          targetType: "team",
+          targetId: team.id,
+        });
       }
       break;
     }
