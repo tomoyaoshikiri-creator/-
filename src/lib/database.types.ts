@@ -2246,10 +2246,6 @@ export interface Database {
           beep_test_reps: number | null;
         }[];
       };
-      get_default_team_logo_path: {
-        Args: Record<string, never>;
-        Returns: string | null;
-      };
       get_team_login_branding: {
         Args: { p_slug: string };
         Returns: { name: string; logo_path: string | null }[];
