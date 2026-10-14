@@ -121,10 +121,6 @@ export function canPostTeacherOnlyNotice(role: Role): boolean {
   return role === "指導者" || role === "管理者";
 }
 
-export function canWriteReport(role: Role): boolean {
-  return role === "一般" || role === "運営" || role === "指導者" || role === "管理者";
-}
-
 // コーチノート(指導者・管理者専用の日誌)の閲覧・投稿ができるロール。
 export function canWriteCoachNote(role: Role): boolean {
   return role === "指導者" || role === "管理者";

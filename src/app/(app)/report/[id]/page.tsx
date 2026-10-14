@@ -11,7 +11,7 @@ import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import { canAccessTab, canWriteReport } from "@/lib/permissions";
+import { canAccessTab } from "@/lib/permissions";
 import { dateDaysAgoStr, formatFullDateLabel } from "@/lib/format";
 import { FREE_HISTORY_WINDOW_DAYS, hasFullReportHistoryAccess } from "@/lib/plan";
 import { loadProfilesMap } from "@/lib/profiles";
@@ -38,6 +38,7 @@ export default function DailyReportDetailPage() {
   const hasFullHistory = hasFullReportHistoryAccess(plan);
   const earliestAllowedDate = hasFullHistory ? null : dateDaysAgoStr(FREE_HISTORY_WINDOW_DAYS - 1);
   const toast = useToast();
+  const canEditReport = (r: DailyReport) => r.author_id === userId || role === "指導者" || role === "管理者";
 
   const [report, setReport] = useState<DailyReport | null>(null);
   const [attachments, setAttachments] = useState<AttachmentWithUrl[]>([]);
@@ -371,7 +372,7 @@ export default function DailyReportDetailPage() {
         <>
           <SectionLabel
             action={
-              canWriteReport(role) && (
+              canEditReport(report) && (
                 <button
                   type="button"
                   onClick={startEdit}
