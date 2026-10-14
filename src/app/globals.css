@@ -158,30 +158,46 @@ body {
   リンク(aタグ。SettingsRowやカード一覧行など、ボタンと同じ見た目で使われている
   箇所が多い)に一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに
   済ませるため)。SegButtonの`active`propのような「選択中」の色とは別物。
-  :active疑似クラスはマウス操作のフォールバックとして残すが、実機タップでは
-  :activeが描画に間に合わないことがあるため、TapFeedback.tsx(pointerdown/up)が
-  付け外しする.is-pressedクラスを主な発火条件にしている。
   opacityではなくfilter: brightness()にしているのは、白背景のボタン(例:
   「コービーシューティング」の「外れた」ボタン)だと周囲も白系のため、
   opacityで薄くしてもほぼ違いが分からなかったため。brightnessなら白背景でも
   はっきり灰色がかって見え、色付きボタンでも同様に少し暗くなる。
+
+  :active疑似クラスはマウス操作(pointer: fine / hover: hover)限定にする。
+  タッチ環境は.is-pressedクラス(TapFeedback.tsx)だけに任せる。実機タップでは
+  :activeが描画に間に合わないことがあるため元々.is-pressedを主な発火条件に
+  していたが、スクロール開始位置がボタン/リンクの上だった場合、タップ操作を
+  有効化する目的で入れているdocumentのpointerdown購読により、iOS Safariでは
+  指を離さずスクロールしている間ずっと:activeが掛かったままになることがあり、
+  transformが掛かった要素がスクロール中に一瞬非表示になる実機不具合が
+  報告された。TapFeedback.tsx側はpointermoveで一定距離動いたら即座に
+  .is-pressedを外すようにしたため、タッチ環境の:activeは完全に無効化し、
+  この不具合の原因を断つ。
 */
 button:not(:disabled),
 a[href] {
   transition: transform 0.1s ease-out, filter 0.1s ease-out;
 }
-button:not(:disabled):active,
 button:not(:disabled).is-pressed,
-a[href]:active,
 a[href].is-pressed {
   filter: brightness(0.92);
 }
-@media (prefers-reduced-motion: no-preference) {
+@media (hover: hover) and (pointer: fine) {
   button:not(:disabled):active,
+  a[href]:active {
+    filter: brightness(0.92);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
   button:not(:disabled).is-pressed,
-  a[href]:active,
   a[href].is-pressed {
     transform: scale(0.96);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    button:not(:disabled):active,
+    a[href]:active {
+      transform: scale(0.96);
+    }
   }
 }
 
