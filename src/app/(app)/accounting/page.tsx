@@ -34,6 +34,17 @@ export default function AccountingHubPage() {
           </div>
         </Card>
       </Link>
+      <Link href="/accounting/dues/unpaid">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">未納一覧</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">集金項目をまたいで、未納のままの請求をまとめて確認する</div>
+            </div>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
 
       <SectionLabel>入出金</SectionLabel>
       <Link href="/accounting/transactions">

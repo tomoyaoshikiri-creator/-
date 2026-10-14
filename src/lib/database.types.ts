@@ -43,7 +43,8 @@ export type EmailNotificationEvent =
   | "invite_issued"
   | "attendance_deadline"
   | "billing_payment_failed"
-  | "team_deletion_warning";
+  | "team_deletion_warning"
+  | "dues_unpaid_reminder";
 // 監査ログ(audit_logs)の記録対象イベント種別(B-3)。data_exportは将来のデータ
 // エクスポート機能(B-6)向けに予約済みだが、現時点では発行箇所がない。
 export type AuditAction =

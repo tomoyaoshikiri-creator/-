@@ -16,7 +16,7 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import { hasAccountingAccess, hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
@@ -1110,6 +1110,20 @@ export default function KartePlayerPage() {
           記録を入力・編集する
         </Link>
       </Card>
+
+      {hasAccountingAccess(plan) && (
+        <>
+          <SectionLabel>集金</SectionLabel>
+          <Link href={`/players/${player.id}/dues`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">集金状況を見る</div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
+        </>
+      )}
 
       {canManagePlayers(role) && (
         <>
