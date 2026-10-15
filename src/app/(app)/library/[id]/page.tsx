@@ -172,7 +172,15 @@ export default function LibraryItemDetailPage() {
   const itemFolderCrumbs = item ? folderPath(folders, item.folder_id) : [];
 
   return (
-    <PageShell header={<AppHeader title="資料" variant="detail" backHref="/library" />}>
+    <PageShell
+      header={
+        <AppHeader
+          title="資料"
+          variant="detail"
+          backHref={item?.folder_id ? `/library?folder=${item.folder_id}` : "/library"}
+        />
+      }
+    >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !item ? (

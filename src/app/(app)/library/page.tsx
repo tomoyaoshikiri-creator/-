@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
@@ -28,13 +29,19 @@ const LIBRARY_PAGE_SIZE = 30;
 
 export default function LibraryPage() {
   const toast = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { teamId, userId, role } = useSession();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [folders, setFolders] = useState<LibraryFolder[]>([]);
-  // 現在閲覧中のフォルダ(nullはルート)。フォルダ機能と同じ思想で、カテゴリーの絞り込みは
-  // このフォルダの中の資料に対してのみ働く。
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  // 現在閲覧中のフォルダ(nullはルート)。PCのFinder等と同じ感覚で「戻る」操作が
+  // 1階層ずつ効くよう、ローカルstateではなくURLのクエリparamで管理する
+  // (フォルダに入る=ブラウザ履歴が1件進む、戻る=1階層だけ戻る)。
+  const currentFolderId = searchParams.get("folder");
+  function goToFolder(folderId: string | null) {
+    router.push(folderId ? `/library?folder=${folderId}` : "/library");
+  }
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -161,11 +168,12 @@ export default function LibraryPage() {
   }, [categories, selectedCategoryId]);
 
   // 現在見ているフォルダが(他端末での操作などで)削除された場合、ルートに戻す。
+  // ユーザー操作による移動ではないため、履歴には残さずreplaceする。
   useEffect(() => {
-    if (currentFolderId !== null && !folders.some((f) => f.id === currentFolderId)) {
-      setCurrentFolderId(null);
+    if (currentFolderId !== null && folders.length > 0 && !folders.some((f) => f.id === currentFolderId)) {
+      router.replace("/library");
     }
-  }, [folders, currentFolderId]);
+  }, [folders, currentFolderId, router]);
 
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
   const crumbs = folderPath(folders, currentFolderId);
@@ -220,7 +228,7 @@ export default function LibraryPage() {
       )}
 
       <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3.5">
-        <button type="button" onClick={() => setCurrentFolderId(null)} className={currentFolderId === null ? "text-orange" : ""}>
+        <button type="button" onClick={() => goToFolder(null)} className={currentFolderId === null ? "text-orange" : ""}>
           ホーム
         </button>
         {crumbs.map((c) => (
@@ -228,7 +236,7 @@ export default function LibraryPage() {
             <span>›</span>
             <button
               type="button"
-              onClick={() => setCurrentFolderId(c.id)}
+              onClick={() => goToFolder(c.id)}
               className={currentFolderId === c.id ? "text-orange" : ""}
             >
               {c.name}
@@ -239,16 +247,27 @@ export default function LibraryPage() {
 
       <SectionLabel
         action={
-          <button
-            type="button"
-            onClick={() => setNewFolderOpen(true)}
-            className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-          >
-            ＋ フォルダを作成
-          </button>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setNewFolderOpen(true)}
+              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            >
+              ＋ フォルダを作成
+            </button>
+            {canManage && categories.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setEditCategoriesOpen(true)}
+                className="flex-none text-[11px] font-bold border border-line rounded-full px-2.5 py-1 bg-white text-ink-soft"
+              >
+                カテゴリーを編集
+              </button>
+            )}
+          </div>
         }
       >
-        フォルダ
+        ライブラリ
       </SectionLabel>
       <NewFolderModal
         open={newFolderOpen}
@@ -260,74 +279,11 @@ export default function LibraryPage() {
           toast.success("フォルダを作成しました");
         }}
       />
-
-      {visibleFolders.length === 0 ? (
-        <EmptyState>フォルダはありません</EmptyState>
-      ) : (
-        <div className="space-y-2 mb-3.5">
-          {visibleFolders.map((f) => (
-            <div key={f.id} className="bg-white border border-line rounded-lg flex items-stretch">
-              <button
-                type="button"
-                onClick={() => setCurrentFolderId(f.id)}
-                className="flex-1 min-w-0 px-4 py-3 text-left font-bold text-[14.5px] truncate"
-              >
-                📁 {f.name}
-              </button>
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => setFolderActionsTarget(f)}
-                  aria-label="フォルダを編集"
-                  className="flex-none flex items-center px-3 border-l border-line text-ink-soft font-bold"
-                >
-                  ⋯
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      <FolderActionsModal
-        open={folderActionsTarget !== null}
-        folder={folderActionsTarget}
-        onClose={() => setFolderActionsTarget(null)}
-        onRenamed={() => {
-          setFolderActionsTarget(null);
-          loadFolders();
-        }}
-        onRequestMove={() => {
-          setMoveFolderTarget(folderActionsTarget);
-          setFolderActionsTarget(null);
-        }}
-        onDeleted={() => {
-          setFolderActionsTarget(null);
-          loadFolders();
-          load();
-        }}
-      />
-      <MoveModal
-        open={moveFolderTarget !== null}
-        title="フォルダを移動"
-        folders={folders}
-        currentFolderId={moveFolderTarget?.parent_folder_id ?? null}
-        excludeFolderId={moveFolderTarget?.id}
-        onClose={() => setMoveFolderTarget(null)}
-        onMove={async (destinationFolderId) => {
-          if (!moveFolderTarget) return;
-          const supabase = createClient();
-          const { error } = await supabase
-            .from("library_folders")
-            .update({ parent_folder_id: destinationFolderId, updated_at: new Date().toISOString() })
-            .eq("id", moveFolderTarget.id);
-          if (error) {
-            toast.error(`移動に失敗しました: ${error.message}`);
-            return;
-          }
-          toast.success("フォルダを移動しました");
-          setMoveFolderTarget(null);
-          loadFolders();
-        }}
+      <EditCategoriesModal
+        open={editCategoriesOpen}
+        categories={categories}
+        onClose={() => setEditCategoriesOpen(false)}
+        onUpdated={loadCategories}
       />
 
       {categories.length > 0 && (
@@ -348,35 +304,36 @@ export default function LibraryPage() {
         </div>
       )}
 
-      <SectionLabel
-        action={
-          canManage &&
-          categories.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setEditCategoriesOpen(true)}
-              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-            >
-              カテゴリーを編集
-            </button>
-          )
-        }
-      >
-        共有ファイル
-      </SectionLabel>
-      <EditCategoriesModal
-        open={editCategoriesOpen}
-        categories={categories}
-        onClose={() => setEditCategoriesOpen(false)}
-        onUpdated={loadCategories}
-      />
-
+      {/* フォルダとファイルをPCのファイルマネージャーのような1つのリストにまとめて表示する
+          (フォルダ先頭・ファイル後続、ユーザー指示)。カテゴリーの絞り込みはファイルのみに働く
+          (フォルダは常に表示)。 */}
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
-      ) : visibleItems.length === 0 ? (
-        <EmptyState>まだファイルがありません</EmptyState>
+      ) : visibleFolders.length === 0 && visibleItems.length === 0 ? (
+        <EmptyState>まだフォルダ・ファイルがありません</EmptyState>
       ) : (
         <>
+          {visibleFolders.map((f) => (
+            <div key={f.id} className="bg-white border border-line rounded-lg mb-2.5 flex items-stretch">
+              <button
+                type="button"
+                onClick={() => goToFolder(f.id)}
+                className="flex-1 min-w-0 px-4 py-3.5 text-left font-bold text-[14.5px] truncate"
+              >
+                📁 {f.name}
+              </button>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setFolderActionsTarget(f)}
+                  aria-label="フォルダを編集"
+                  className="flex-none flex items-center px-3 border-l border-line text-ink-soft font-bold"
+                >
+                  ⋯
+                </button>
+              )}
+            </div>
+          ))}
           {visibleItems.map((item) => {
             const category = categories.find((c) => c.id === item.category_id);
             const fileUrl = singleFileUrlByItem[item.id];
@@ -423,6 +380,48 @@ export default function LibraryPage() {
           )}
         </>
       )}
+
+      <FolderActionsModal
+        open={folderActionsTarget !== null}
+        folder={folderActionsTarget}
+        onClose={() => setFolderActionsTarget(null)}
+        onRenamed={() => {
+          setFolderActionsTarget(null);
+          loadFolders();
+        }}
+        onRequestMove={() => {
+          setMoveFolderTarget(folderActionsTarget);
+          setFolderActionsTarget(null);
+        }}
+        onDeleted={() => {
+          setFolderActionsTarget(null);
+          loadFolders();
+          load();
+        }}
+      />
+      <MoveModal
+        open={moveFolderTarget !== null}
+        title="フォルダを移動"
+        folders={folders}
+        currentFolderId={moveFolderTarget?.parent_folder_id ?? null}
+        excludeFolderId={moveFolderTarget?.id}
+        onClose={() => setMoveFolderTarget(null)}
+        onMove={async (destinationFolderId) => {
+          if (!moveFolderTarget) return;
+          const supabase = createClient();
+          const { error } = await supabase
+            .from("library_folders")
+            .update({ parent_folder_id: destinationFolderId, updated_at: new Date().toISOString() })
+            .eq("id", moveFolderTarget.id);
+          if (error) {
+            toast.error(`移動に失敗しました: ${error.message}`);
+            return;
+          }
+          toast.success("フォルダを移動しました");
+          setMoveFolderTarget(null);
+          loadFolders();
+        }}
+      />
     </PageShell>
   );
 }
