@@ -20,6 +20,29 @@ if (!url || !serviceRoleKey) {
 const supabase = createClient(url, serviceRoleKey);
 const outDir = path.join(process.cwd(), "backup", "storage");
 
+// 診断用: SDK経由で原因不明のエラーが出た場合に切り分けるため、生のfetchで
+// bucket一覧エンドポイントを直接叩いて実際のレスポンスを確認する。
+// 鍵の値自体は出力せず、長さと形式だけ出力する(秘密情報の漏洩を避けるため)。
+async function diagnoseStorageEndpoint() {
+  console.log(`[diag] url=${JSON.stringify(url)} url.length=${url.length}`);
+  console.log(`[diag] serviceRoleKey.length=${serviceRoleKey.length} startsWith(eyJ)=${serviceRoleKey.startsWith("eyJ")}`);
+  const endpoint = `${url}/storage/v1/bucket`;
+  console.log(`[diag] GET ${endpoint}`);
+  try {
+    const res = await fetch(endpoint, {
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    });
+    const text = await res.text();
+    console.log(`[diag] status=${res.status} body=${text.slice(0, 500)}`);
+  } catch (e) {
+    console.log(`[diag] fetch threw: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+await diagnoseStorageEndpoint();
+
 async function downloadFolder(bucketName, folderPath) {
   const { data: entries, error } = await supabase.storage.from(bucketName).list(folderPath, { limit: 1000 });
   if (error) {
