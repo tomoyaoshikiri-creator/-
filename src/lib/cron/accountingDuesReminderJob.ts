@@ -4,6 +4,7 @@ import { sendTrackedEmail } from "@/lib/emailNotify";
 import { duesPeriodLabel } from "@/lib/accountingDues";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
 import { logError } from "@/lib/logger";
+import { sendNativePush } from "@/lib/nativePush";
 import type { Database } from "@/lib/database.types";
 
 function addDaysStr(dateStr: string, days: number): string {
@@ -125,6 +126,8 @@ async function sendDuesReminder(
       }
     }),
   );
+
+  await sendNativePush(supabase, profileIds, { title, body, url });
 
   // メールフォールバック(B-4)。push購読を1件も持たないユーザーにだけ送る。
   const pushedUserIds = new Set((subs ?? []).map((s) => s.user_id));

@@ -7,6 +7,7 @@ import { runDuesGeneration } from "@/lib/cron/accountingDuesJob";
 import { runDuesReminders } from "@/lib/cron/accountingDuesReminderJob";
 import { logError, withCronCheckIn } from "@/lib/logger";
 import { sendTrackedEmail, retryFailedEmailNotifications } from "@/lib/emailNotify";
+import { sendNativePush } from "@/lib/nativePush";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -166,6 +167,14 @@ async function sendToRecipients(
           await supabase.from("push_subscriptions").delete().eq("id", s.id);
         }
       }
+    }),
+  );
+
+  await Promise.all(
+    [...recipients.keys()].map((userId) => {
+      const labels = recipients.get(userId) ?? [];
+      const body = labels.length > 0 ? `${bodyBase}(対象: ${labels.join("・")})` : bodyBase;
+      return sendNativePush(supabase, [userId], { title, body, url });
     }),
   );
 

@@ -1738,6 +1738,31 @@ export interface Database {
         }>;
         Relationships: [];
       };
+      device_push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          team_id: string;
+          platform: "ios" | "android";
+          token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          team_id: string;
+          platform: "ios" | "android";
+          token: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          token: string;
+          updated_at: string;
+        }>;
+        Relationships: [];
+      };
       attendance_reminder_log: {
         Row: {
           id: string;
