@@ -6,8 +6,12 @@ import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// GitHub Actions Secretsへの登録時、コピー&ペースト由来の前後の空白・改行が
+// 紛れ込むことがあるため、念のためtrimしておく(混入しているとURLの構築が
+// 壊れ、どのAPI呼び出しも「Invalid path specified in request URL」で
+// 失敗する)。
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 if (!url || !serviceRoleKey) {
   console.error("NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY が未設定です");
   process.exit(1);
