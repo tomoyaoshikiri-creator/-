@@ -6,23 +6,14 @@ APP-WIDE VISUAL REFRESH(MASTER SPECIFICATION)の実施中に発見した、UI Re
 
 ---
 
-## 1. SubmitButtonの手動複製(コンポーネント未再利用)
+## 1. SubmitButtonの手動複製(コンポーネント未再利用)(対応済み)
 
 - Screen: `TeamDeletionScreen.tsx` / `ActiveTeamErrorScreen.tsx` /
   `(auth)/invite/[token]/AcceptInviteAsExistingUserForm.tsx` /
   `(app)/settings/teams/new/NewTeamForm.tsx`
-- Current behavior: `src/components/ui/SegButton.tsx`の`SubmitButton`と全く同じ
-  className(`mt-3.5 w-full/block py-2.5 rounded-[10px] bg-navy text-white font-bold
-  text-[13px] ...`)を、共通コンポーネントを使わずこの4ファイルで個別にハードコード
-  している。
-- Problem: 今回`SubmitButton`本体は`bg-navy`→`bg-orange`(teamPrimaryのエイリアス)
-  へ修正したが、この4箇所は`SubmitButton`を経由していないため追従していない
-  (未設定時ほぼ黒のまま)。
-- Desired behavior: この4箇所を`<SubmitButton>`(または`<Link>`が必要な箇所は
-  同等のクラスを`bg-orange`に統一)へ置き換え、Primary Actionの色を全画面で統一する。
-- Priority: Medium(視覚的な不統一のみで機能への影響はない)
-- UI Refreshでは未対応(個別文脈の確認〈destructive actionかどうか等〉が必要なため、
-  今回の一括修正には含めなかった)。
+- `<button>`の2箇所は`<SubmitButton>`へ置き換え、`<Link>`の2箇所(チーム切り替え導線)は
+  新設した`<SubmitLinkButton>`(`SegButton.tsx`、SubmitButtonと同じ見た目を`<Link>`向けに
+  提供)へ置き換えた。今後SubmitButtonの見た目を変更しても、この4箇所も自動的に追従する。
 
 ## 2. EmptyStateにアイコンがない
 

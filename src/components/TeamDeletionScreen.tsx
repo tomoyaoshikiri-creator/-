@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatFullDateLabel } from "@/lib/format";
+import { SubmitButton } from "@/components/ui/SegButton";
 
 // (app)/layout.tsx がteams.deletion_requested_atを検知した際に、通常のタブUIの
 // 代わりに全ロール共通で表示する画面。管理者だけ「退会を取り消す」操作ができる。
@@ -59,14 +60,9 @@ export function TeamDeletionScreen({
                 それまでは「退会を取り消す」からいつでも復旧できます。有料プランをご利用中だった場合、契約は退会申請時点で解約済みのため、取り消し後に改めてお申し込みが必要です。
               </div>
               {error && <div className="mt-3 text-[12.5px] text-danger">{error}</div>}
-              <button
-                type="button"
-                onClick={handleRestore}
-                disabled={restoring}
-                className="mt-3.5 w-full py-2.5 rounded-lg bg-navy text-white font-bold text-[13px] active:opacity-85 disabled:opacity-50"
-              >
+              <SubmitButton onClick={handleRestore} disabled={restoring}>
                 {restoring ? "処理中…" : "退会を取り消す"}
-              </button>
+              </SubmitButton>
             </>
           ) : (
             <div className="text-[12.5px] text-ink-soft leading-relaxed mt-3">

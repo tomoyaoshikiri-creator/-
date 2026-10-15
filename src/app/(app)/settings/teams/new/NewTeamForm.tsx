@@ -1,10 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { createAdditionalTeam, type FormState } from "./actions";
 import { Card, SectionLabel } from "@/components/ui/Card";
-import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { FieldLabel, SubmitButton, SubmitLinkButton, inputClass } from "@/components/ui/SegButton";
 import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 import { CATEGORIES, CATEGORY_DISPLAY_LABELS, isMiniBasketballAllowed } from "@/lib/category";
 import type { TeamCategory } from "@/lib/database.types";
@@ -25,12 +24,7 @@ export function NewTeamForm() {
           <div className="text-[13px] text-ink-soft">
             チームは作成されましたが、この端末での切り替えに失敗しました。お手数ですが、下のボタンから手動でチームを切り替えてください。
           </div>
-          <Link
-            href="/select-team"
-            className="mt-3.5 block w-full py-2.5 rounded-lg bg-navy text-white font-bold text-[13px] text-center active:opacity-85"
-          >
-            チームを切り替える
-          </Link>
+          <SubmitLinkButton href="/select-team">チームを切り替える</SubmitLinkButton>
         </Card>
       </>
     );
