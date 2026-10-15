@@ -1,0 +1,50 @@
+name: DB Backup
+
+on:
+  schedule:
+    # UTC 18:00 = JST 3:00(利用が少ない時間帯)
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # 生のpg_dumpではなくsupabase db dumpを使う。Supabase公式の案内により、
+      # 生のpg_dumpはSupabase内部のスキーマまで含めてしまい復元時に権限エラーに
+      # なるため(supabase db dumpはSupabase内部スキーマの除外・予約ロールの
+      # 除去を自動で行う)。
+      - name: Dump database (roles / schema / data)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -eu
+          mkdir -p backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/data.sql --use-copy --data-only
+
+      - name: Download storage files
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/backup-storage.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: circle-lines-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 7
