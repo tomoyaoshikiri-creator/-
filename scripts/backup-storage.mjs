@@ -18,13 +18,17 @@ const outDir = path.join(process.cwd(), "backup", "storage");
 
 async function downloadFolder(bucketName, folderPath) {
   const { data: entries, error } = await supabase.storage.from(bucketName).list(folderPath, { limit: 1000 });
-  if (error) throw error;
+  if (error) {
+    console.error(`skip listing ${bucketName}/${folderPath}: ${error.message}`);
+    return;
+  }
 
   for (const entry of entries ?? []) {
     const entryPath = folderPath ? `${folderPath}/${entry.name}` : entry.name;
-    // Storageの一覧APIはフォルダをid=nullのエントリとして返す(擬似ディレクトリ)ため、
-    // それを目印に再帰する。
-    if (entry.id === null) {
+    // Storageの一覧APIはフォルダを擬似ディレクトリ(id無し)として返すため、それを目印に
+    // 再帰する。APIのバージョンによってidがnullではなくundefinedの場合もあるため、
+    // 厳密な===nullではなく!entry.idで判定する。
+    if (!entry.id) {
       await downloadFolder(bucketName, entryPath);
       continue;
     }
