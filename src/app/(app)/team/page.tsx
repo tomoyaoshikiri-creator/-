@@ -94,6 +94,9 @@ export default function TeamHubPage() {
       {isStaff && (
         <HubRow href="/karte/team" label="チームカルテ" description="項目別ランキングでチーム全体を見る・分析する" unseen={badges.teamKarteUnseen} />
       )}
+      {/* ワークアウトは指導者・管理者は上の「チームカルテ」経由で見られるため、ここでは
+          一般・運営向けの入口としてのみ表示する(重複表示を避ける、ユーザー指示)。 */}
+      {!isStaff && <HubRow href="/karte/team/workout" label="ワークアウト" description="いつどんな練習をしたかの履歴" />}
       {/* スポーツテスト・検定管理は一般・運営にも開放している(見られるのは自分に紐づく
           選手の記録+チーム平均のみ、スタッフは全選手を見る・編集できる)ため、
           isStaffで囲わずロールを問わず表示する。 */}

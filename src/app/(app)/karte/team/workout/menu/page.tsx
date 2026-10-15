@@ -98,7 +98,7 @@ export default function WorkoutMenuTallyPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="ワークアウトメニュー集計" variant="detail" backHref="/karte/team/workout" accessBadge="coach" />}
+      header={<AppHeader title="ワークアウトメニュー集計" variant="detail" backHref="/karte/team/workout" />}
     >
       <div className="flex items-center gap-2 mb-3.5 flex-wrap">
         {availableYears.length > 0 && (

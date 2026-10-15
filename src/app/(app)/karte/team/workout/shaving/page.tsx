@@ -190,7 +190,7 @@ export default function ShavingDrillPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="シェービングドリル" variant="list" backHref="/karte/team/workout" accessBadge={canRecord ? "coach" : undefined} />}
+      header={<AppHeader title="シェービングドリル" variant="list" backHref="/karte/team/workout" />}
       fab={
         canRecord && (
           <>
