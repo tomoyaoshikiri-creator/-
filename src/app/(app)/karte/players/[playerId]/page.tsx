@@ -203,7 +203,7 @@ export default function KartePlayerPage() {
   async function handleSave() {
     if (!player) return;
     if (!sei.trim() || !mei.trim()) {
-      toast("氏名を入力してください");
+      toast.warning("氏名を入力してください");
       return;
     }
     setSaving(true);
@@ -225,10 +225,10 @@ export default function KartePlayerPage() {
       .eq("id", player.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("選手情報を更新しました");
+    toast.success("選手情報を更新しました");
     setEditing(false);
     load();
   }
@@ -243,10 +243,10 @@ export default function KartePlayerPage() {
     const supabase = createClient();
     const { error } = await supabase.from("players").delete().eq("id", player.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("選手を削除しました");
+    toast.success("選手を削除しました");
     router.push("/karte/players");
   }
 

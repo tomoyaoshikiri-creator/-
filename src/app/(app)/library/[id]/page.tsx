@@ -104,11 +104,11 @@ export default function LibraryItemDetailPage() {
   async function handleSave() {
     if (!item) return;
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (allowedRoles.length === 0) {
-      toast("閲覧できるロールを1つ以上選んでください");
+      toast.warning("閲覧できるロールを1つ以上選んでください");
       return;
     }
     setSaving(true);
@@ -119,10 +119,10 @@ export default function LibraryItemDetailPage() {
       .eq("id", item.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("更新しました");
+    toast.success("更新しました");
     setEditing(false);
     load();
   }
@@ -139,16 +139,16 @@ export default function LibraryItemDetailPage() {
     if (pathsToRemove.length > 0) {
       const { error: storageError } = await supabase.storage.from("library-files").remove(pathsToRemove);
       if (storageError) {
-        toast(`削除に失敗しました: ${storageError.message}`);
+        toast.error(`削除に失敗しました: ${storageError.message}`);
         return;
       }
     }
     const { error } = await supabase.from("library_items").delete().eq("id", item.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("削除しました");
+    toast.success("削除しました");
     router.push("/library");
   }
 
@@ -160,10 +160,10 @@ export default function LibraryItemDetailPage() {
       .update({ folder_id: destinationFolderId })
       .eq("id", item.id);
     if (error) {
-      toast(`移動に失敗しました: ${error.message}`);
+      toast.error(`移動に失敗しました: ${error.message}`);
       return;
     }
-    toast("移動しました");
+    toast.success("移動しました");
     setMoveOpen(false);
     load();
   }

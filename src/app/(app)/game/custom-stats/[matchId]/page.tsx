@@ -77,7 +77,7 @@ export default function CustomStatsPage() {
       .single();
     setSavingKey(null);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     if (data) setEntries((prev) => ({ ...prev, [key]: data }));

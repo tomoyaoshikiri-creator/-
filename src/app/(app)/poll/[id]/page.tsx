@@ -93,7 +93,7 @@ export default function PollDetailPage() {
     if (!poll) return;
     const optionIds = Array.from(selected);
     if (!isValidOptionSelection(optionIds, poll.multi_select)) {
-      toast(poll.multi_select ? "選択肢を選んでください" : "選択肢を1つ選んでください");
+      toast.warning(poll.multi_select ? "選択肢を選んでください" : "選択肢を1つ選んでください");
       return;
     }
     setVoting(true);
@@ -101,10 +101,10 @@ export default function PollDetailPage() {
     const { error } = await supabase.rpc("cast_poll_vote", { p_poll_id: poll.id, p_option_ids: optionIds });
     setVoting(false);
     if (error) {
-      toast(`投票に失敗しました: ${error.message}`);
+      toast.error(`投票に失敗しました: ${error.message}`);
       return;
     }
-    toast(myVotedOptionIds.size > 0 ? "投票を変更しました" : "投票しました");
+    toast.success(myVotedOptionIds.size > 0 ? "投票を変更しました" : "投票しました");
     load();
   }
 
@@ -123,11 +123,11 @@ export default function PollDetailPage() {
       .eq("id", poll.id);
     setClosing(false);
     if (error) {
-      toast(`締め切りに失敗しました: ${error.message}`);
+      toast.error(`締め切りに失敗しました: ${error.message}`);
       return;
     }
     setCloseConfirm(false);
-    toast("投票を締め切りました");
+    toast.success("投票を締め切りました");
     load();
   }
 
@@ -143,10 +143,10 @@ export default function PollDetailPage() {
     const { error } = await supabase.from("polls").delete().eq("id", poll.id);
     setDeleting(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("投票を削除しました");
+    toast.success("投票を削除しました");
     router.push("/poll");
   }
 

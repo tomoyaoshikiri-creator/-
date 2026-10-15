@@ -89,7 +89,7 @@ export default function UsersPage() {
           .eq("player_id", playerId)
       : await supabase.from("player_guardians").insert({ team_id: teamId, profile_id: profileId, player_id: playerId });
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setGuardianLinks((m) => ({
@@ -104,10 +104,10 @@ export default function UsersPage() {
     const supabase = createClient();
     const { error } = await supabase.rpc("update_team_member", { target_user_id: id, new_role: role });
     if (error) {
-      toast(error.message);
+      toast.error(error.message);
       return;
     }
-    toast("権限を更新しました");
+    toast.success("権限を更新しました");
     load();
   }
 
@@ -115,10 +115,10 @@ export default function UsersPage() {
     const supabase = createClient();
     const { error } = await supabase.rpc("update_team_member", { target_user_id: id, new_status: status });
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("ステータスを更新しました");
+    toast.success("ステータスを更新しました");
     load();
   }
 
@@ -132,10 +132,10 @@ export default function UsersPage() {
     const supabase = createClient();
     const { error } = await supabase.rpc("remove_team_member", { target_user_id: id });
     if (error) {
-      toast(error.message ?? "削除に失敗しました");
+      toast.error(error.message ?? "削除に失敗しました");
       return;
     }
-    toast("ユーザーを削除しました");
+    toast.success("ユーザーを削除しました");
     load();
   }
 
@@ -145,10 +145,10 @@ export default function UsersPage() {
     const { error } = await supabase.from("invites").insert({ team_id: teamId, role, created_by: userId });
     setGenerating(null);
     if (error) {
-      toast(`発行に失敗しました: ${error.message}`);
+      toast.error(`発行に失敗しました: ${error.message}`);
       return;
     }
-    toast("招待リンクを発行しました");
+    toast.success("招待リンクを発行しました");
     load();
   }
 
@@ -163,7 +163,7 @@ export default function UsersPage() {
     if (navigator.clipboard && window.isSecureContext) {
       try {
         await navigator.clipboard.writeText(url);
-        toast("リンクをコピーしました");
+        toast.success("リンクをコピーしました");
         return;
       } catch {
         // フォールバックへ続行
@@ -183,7 +183,11 @@ export default function UsersPage() {
       copied = false;
     }
     document.body.removeChild(textarea);
-    toast(copied ? "リンクをコピーしました" : "コピーに失敗しました。上の欄を長押しして手動でコピーしてください");
+    if (copied) {
+      toast.success("リンクをコピーしました");
+    } else {
+      toast.error("コピーに失敗しました。上の欄を長押しして手動でコピーしてください");
+    }
   }
 
   // 招待リンクをメールで送る(B-4)。リンク自体は複数人が使い回せる共有リンクのため、
@@ -191,7 +195,7 @@ export default function UsersPage() {
   async function sendInviteEmail(inviteId: string, token: string) {
     const email = (emailDrafts[inviteId] ?? "").trim();
     if (!email) {
-      toast("メールアドレスを入力してください");
+      toast.warning("メールアドレスを入力してください");
       return;
     }
     setSendingEmailId(inviteId);
@@ -203,10 +207,10 @@ export default function UsersPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast(data.error ?? "送信に失敗しました");
+        toast.error(data.error ?? "送信に失敗しました");
         return;
       }
-      toast("招待メールを送信しました");
+      toast.success("招待メールを送信しました");
       setEmailDrafts((d) => ({ ...d, [inviteId]: "" }));
     } finally {
       setSendingEmailId(null);
@@ -223,10 +227,10 @@ export default function UsersPage() {
     const supabase = createClient();
     const { error } = await supabase.from("invites").delete().eq("id", id);
     if (error) {
-      toast(`取り消しに失敗しました: ${error.message}`);
+      toast.error(`取り消しに失敗しました: ${error.message}`);
       return;
     }
-    toast("招待リンクを取り消しました");
+    toast.success("招待リンクを取り消しました");
     load();
   }
 

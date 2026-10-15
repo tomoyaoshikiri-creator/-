@@ -277,12 +277,12 @@ export default function SportsTestPage() {
       .single();
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setRecord(data);
     loadYearRecords();
-    toast("スポーツテスト記録を保存しました");
+    toast.success("スポーツテスト記録を保存しました");
   }
 
   if (!authorized) return null;

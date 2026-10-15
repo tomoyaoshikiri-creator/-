@@ -59,19 +59,19 @@ export default function KarteTeamSkillTestsPage() {
   async function handleAddTest() {
     const name = newName.trim();
     if (!name) {
-      toast("検定名を入力してください");
+      toast.warning("検定名を入力してください");
       return;
     }
     if (chapterDrafts.some((c) => !c.name.trim() || c.name.trim().length > 20)) {
-      toast("チャプター名を正しく入力してください");
+      toast.warning("チャプター名を正しく入力してください");
       return;
     }
     if (chapterDrafts.some((c) => !Number.isInteger(Number(c.kyuCount)) || Number(c.kyuCount) < 1 || Number(c.kyuCount) > 30)) {
-      toast("チャプター内の級数を正しく入力してください");
+      toast.warning("チャプター内の級数を正しく入力してください");
       return;
     }
     if (chapterDrafts.length === 0) {
-      toast("チャプターを1つ以上追加してください");
+      toast.warning("チャプターを1つ以上追加してください");
       return;
     }
     setAddingTest(true);
@@ -94,13 +94,13 @@ export default function KarteTeamSkillTestsPage() {
       .single();
     setAddingTest(false);
     if (error || !data) {
-      toast(`追加に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     resetAddForm();
     setModalOpen(false);
     setTests((prev) => [...prev, data]);
-    toast("検定を追加しました");
+    toast.success("検定を追加しました");
   }
 
   return (

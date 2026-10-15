@@ -154,7 +154,7 @@ export default function ShootingDrillListPage() {
       layup_made > layup_att ||
       time_sec <= 0
     ) {
-      toast("入力内容を確認してください");
+      toast.warning("入力内容を確認してください");
       return;
     }
     setSaving(true);
@@ -178,13 +178,13 @@ export default function ShootingDrillListPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`更新に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`更新に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setRecords((prev) => prev.map((r) => (r.id === id ? data : r)));
     setExpandedId(null);
     setEditDraft(null);
-    toast("記録を修正しました");
+    toast.success("記録を修正しました");
   }
 
   function handleDeleteClick(id: string) {
@@ -198,12 +198,12 @@ export default function ShootingDrillListPage() {
       const supabase = createClient();
       const { error } = await supabase.from("shooting_drill_records").delete().eq("id", id);
       if (error) {
-        toast(`削除に失敗しました: ${error.message}`);
+        toast.error(`削除に失敗しました: ${error.message}`);
         return;
       }
       setRecords((prev) => prev.filter((r) => r.id !== id));
       setExpandedId(null);
-      toast("記録を削除しました");
+      toast.success("記録を削除しました");
     })();
   }
 

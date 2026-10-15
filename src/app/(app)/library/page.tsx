@@ -187,7 +187,7 @@ export default function LibraryPage() {
               load();
               loadCategories();
               loadUsage();
-              toast("ファイルを追加しました");
+              toast.success("ファイルを追加しました");
             }}
           />
         </>
@@ -257,7 +257,7 @@ export default function LibraryPage() {
         onCreated={() => {
           setNewFolderOpen(false);
           loadFolders();
-          toast("フォルダを作成しました");
+          toast.success("フォルダを作成しました");
         }}
       />
 
@@ -321,10 +321,10 @@ export default function LibraryPage() {
             .update({ parent_folder_id: destinationFolderId, updated_at: new Date().toISOString() })
             .eq("id", moveFolderTarget.id);
           if (error) {
-            toast(`移動に失敗しました: ${error.message}`);
+            toast.error(`移動に失敗しました: ${error.message}`);
             return;
           }
-          toast("フォルダを移動しました");
+          toast.success("フォルダを移動しました");
           setMoveFolderTarget(null);
           loadFolders();
         }}

@@ -72,14 +72,14 @@ export default function SettingsColorPage() {
       .eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setCustomized(true);
     setSavedPrimary(primary);
     setSavedAccent(accent);
     setEditing(false);
-    toast("配色を保存しました");
+    toast.success("配色を保存しました");
     router.refresh();
   }
 
@@ -92,7 +92,7 @@ export default function SettingsColorPage() {
       .eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setCustomized(false);
@@ -100,7 +100,7 @@ export default function SettingsColorPage() {
     setAccent(DEFAULT_ACCENT);
     setSavedPrimary(DEFAULT_PRIMARY);
     setSavedAccent(DEFAULT_ACCENT);
-    toast("デフォルトの配色に戻しました");
+    toast.success("デフォルトの配色に戻しました");
     router.refresh();
   }
 

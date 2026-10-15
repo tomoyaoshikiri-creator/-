@@ -38,11 +38,11 @@ export default function KarteTeamGoalPage() {
       .eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setEditing(false);
-    toast("チーム目標を更新しました");
+    toast.success("チーム目標を更新しました");
     router.refresh();
   }
 

@@ -116,15 +116,15 @@ export function NewLibraryFileModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (files.length === 0) {
-      toast("ファイルを選んでください");
+      toast.warning("ファイルを選んでください");
       return;
     }
     if (allowedRoles.length === 0) {
-      toast("閲覧できるロールを1つ以上選んでください");
+      toast.warning("閲覧できるロールを1つ以上選んでください");
       return;
     }
     const totalNewBytes = files.reduce((sum, f) => sum + f.size, 0);
@@ -161,7 +161,7 @@ export function NewLibraryFileModal({
       if (uploadError) {
         const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
         setSaving(false);
-        toast(
+        toast.error(
           `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
             (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -197,7 +197,7 @@ export function NewLibraryFileModal({
     if (error || !item) {
       const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
       setSaving(false);
-      toast(
+      toast.error(
         `登録に失敗しました: ${error?.message ?? ""}` +
           (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
       );
@@ -221,7 +221,7 @@ export function NewLibraryFileModal({
           uploadedObjects: uploadedObjectRefs(),
         });
         setSaving(false);
-        toast(
+        toast.error(
           `${u.file.name}の登録に失敗しました: ${insertError.message}` +
             (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );

@@ -237,7 +237,7 @@ export default function GameStatsPage() {
       { onConflict: "match_id,quarter" },
     );
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return false;
     }
     setStarters(newStarters);
@@ -249,7 +249,7 @@ export default function GameStatsPage() {
     setSavingStarters(true);
     const ok = await saveRecord(newStarters, subs);
     setSavingStarters(false);
-    if (ok) toast(`${quarter}Qのスターティングを登録しました`);
+    if (ok) toast.success(`${quarter}Qのスターティングを登録しました`);
   }
 
   async function saveOpponentRecord(newStarters: string[], newSubs: string[]) {
@@ -265,7 +265,7 @@ export default function GameStatsPage() {
       { onConflict: "match_id,quarter" },
     );
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return false;
     }
     setOpponentStarters(newStarters);
@@ -277,7 +277,7 @@ export default function GameStatsPage() {
     setSavingOpponentStarters(true);
     const ok = await saveOpponentRecord(newStarters, opponentSubs);
     setSavingOpponentStarters(false);
-    if (ok) toast(`${quarter}Qの相手スターティングを登録しました`);
+    if (ok) toast.success(`${quarter}Qの相手スターティングを登録しました`);
   }
 
   // メンバーチェンジ: 出場中の選手をタップして選択解除→控えの選手をタップして選択、で交代を表す。
@@ -332,7 +332,7 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, event, delta);
     if (error) {
-      toast(`スタッツの記録に失敗しました: ${error.message}`);
+      toast.error(`スタッツの記録に失敗しました: ${error.message}`);
       setStatLines((prev) => ({ ...prev, [playerId]: prevRow }));
       return;
     }
@@ -354,7 +354,7 @@ export default function GameStatsPage() {
       ]);
       if (event === "fouls" && result.line.fouls === DISQUALIFYING_FOUL_COUNT) {
         const p = players.find((pl) => pl.id === playerId);
-        toast(`${p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "選手"}が5ファウルに達しました。退場です。交代してください。`);
+        toast.warning(`${p ? `#${p.number ?? "-"} ${playerFullName(p)}` : "選手"}が5ファウルに達しました。退場です。交代してください。`);
       }
     }
   }
@@ -368,7 +368,7 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, event, delta);
     if (error) {
-      toast(`スタッツの記録に失敗しました: ${error.message}`);
+      toast.error(`スタッツの記録に失敗しました: ${error.message}`);
       setOpponentStatLines((prev) => ({ ...prev, [opponentPlayerId]: prevRow }));
       return;
     }
@@ -390,7 +390,7 @@ export default function GameStatsPage() {
       ]);
       if (event === "fouls" && result.line.fouls === DISQUALIFYING_FOUL_COUNT) {
         const p = opponentPlayers.find((op) => op.id === opponentPlayerId);
-        toast(`${p ? `#${p.number}` : "相手選手"}が5ファウルに達しました。退場です。`);
+        toast.success(`${p ? `#${p.number}` : "相手選手"}が5ファウルに達しました。退場です。`);
       }
     }
   }
@@ -409,7 +409,7 @@ export default function GameStatsPage() {
     for (let i = 0; i < makes; i++) {
       const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_make", 1);
       if (error) {
-        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        toast.error(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
       const result = data?.[0];
@@ -433,7 +433,7 @@ export default function GameStatsPage() {
     for (let i = 0; i < misses; i++) {
       const { data, error } = await recordGameStat(supabase, matchId, playerId, quarter, "ft_miss", 1);
       if (error) {
-        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        toast.error(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
       const result = data?.[0];
@@ -468,7 +468,7 @@ export default function GameStatsPage() {
     for (let i = 0; i < makes; i++) {
       const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_make", 1);
       if (error) {
-        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        toast.error(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
       const result = data?.[0];
@@ -492,7 +492,7 @@ export default function GameStatsPage() {
     for (let i = 0; i < misses; i++) {
       const { data, error } = await recordOpponentGameStat(supabase, matchId, opponentPlayerId, quarter, "ft_miss", 1);
       if (error) {
-        toast(`スタッツの記録に失敗しました: ${error.message}`);
+        toast.error(`スタッツの記録に失敗しました: ${error.message}`);
         continue;
       }
       const result = data?.[0];
@@ -520,11 +520,11 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { error } = await supabase.from("game_stat_events").update({ quarter: newQuarter }).eq("id", eventId);
     if (error) {
-      toast(`修正に失敗しました: ${error.message}`);
+      toast.error(`修正に失敗しました: ${error.message}`);
       return;
     }
     setStatEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, quarter: newQuarter } : e)));
-    toast("クォーターを修正しました");
+    toast.success("クォーターを修正しました");
   }
 
   async function handleDeleteStatEvent(eventId: string) {
@@ -533,7 +533,7 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { error } = await deleteGameStatEvent(supabase, eventId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setStatEvents((prev) => prev.filter((e) => e.id !== eventId));
@@ -542,18 +542,18 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    toast("記録を削除しました");
+    toast.success("記録を削除しました");
   }
 
   async function handleChangeOpponentStatEventQuarter(eventId: string, newQuarter: number) {
     const supabase = createClient();
     const { error } = await supabase.from("game_opponent_stat_events").update({ quarter: newQuarter }).eq("id", eventId);
     if (error) {
-      toast(`修正に失敗しました: ${error.message}`);
+      toast.error(`修正に失敗しました: ${error.message}`);
       return;
     }
     setOpponentStatEvents((prev) => prev.map((e) => (e.id === eventId ? { ...e, quarter: newQuarter } : e)));
-    toast("クォーターを修正しました");
+    toast.success("クォーターを修正しました");
   }
 
   async function handleDeleteOpponentStatEvent(eventId: string) {
@@ -562,7 +562,7 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { error } = await deleteOpponentGameStatEvent(supabase, eventId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setOpponentStatEvents((prev) => prev.filter((e) => e.id !== eventId));
@@ -571,7 +571,7 @@ export default function GameStatsPage() {
       if (!row) return prev;
       return { ...prev, [target.opponent_player_id]: applyStatEventLocally(row, target.event, -target.delta) };
     });
-    toast("記録を削除しました");
+    toast.success("記録を削除しました");
   }
 
   async function handleTimeout(side: "own" | "opponent") {
@@ -579,7 +579,7 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { data, error } = await recordGameTimeout(supabase, matchId, side, quarter);
     if (error) {
-      toast(`タイムアウトの記録に失敗しました: ${error.message}`);
+      toast.error(`タイムアウトの記録に失敗しました: ${error.message}`);
       return;
     }
     if (data) setTimeoutEvents((prev) => [data, ...prev]);
@@ -589,11 +589,11 @@ export default function GameStatsPage() {
     const supabase = createClient();
     const { error } = await deleteGameTimeoutEvent(supabase, eventId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setTimeoutEvents((prev) => prev.filter((e) => e.id !== eventId));
-    toast("記録を削除しました");
+    toast.success("記録を削除しました");
   }
 
   // 記録ログはスタッツ(statEvents)とタイムアウト(timeoutEvents)を混ぜて表示しているため、
@@ -620,7 +620,7 @@ export default function GameStatsPage() {
     const { error } = await resetMatchStats(supabase, matchId);
     setResetting(false);
     if (error) {
-      toast(`リセットに失敗しました: ${error.message}`);
+      toast.error(`リセットに失敗しました: ${error.message}`);
       return;
     }
     setStatLines({});
@@ -635,7 +635,7 @@ export default function GameStatsPage() {
     setOpponentSubs([]);
     setBenchedOpponentStarterIds([]);
     setOpponentPlayers([]);
-    toast("この試合のスタッツ・スタメン・相手選手の登録をリセットしました");
+    toast.success("この試合のスタッツ・スタメン・相手選手の登録をリセットしました");
   }
 
   const onCourtIds = Array.from(

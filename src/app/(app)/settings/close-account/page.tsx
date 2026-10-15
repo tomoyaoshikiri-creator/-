@@ -33,7 +33,7 @@ export default function CloseAccountPage() {
         setError(data.error ?? "退会手続きに失敗しました");
         return;
       }
-      toast("退会手続きを受け付けました");
+      toast.success("退会手続きを受け付けました");
       router.refresh();
     } catch {
       setError("退会手続きに失敗しました");

@@ -86,7 +86,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setInput("");
@@ -101,7 +101,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     const { error } = await supabase.from("practice_menus").update({ theme: trimmed }).eq("id", id);
     setSavingEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setEditingId(null);
@@ -117,7 +117,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     const supabase = createClient();
     const { error } = await supabase.from("practice_menus").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setDeleteConfirmId(null);
@@ -139,7 +139,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     );
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      toast(`並び替えに失敗しました: ${failed.error.message}`);
+      toast.error(`並び替えに失敗しました: ${failed.error.message}`);
       load();
     }
   }
@@ -176,10 +176,10 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     );
     setCopying(false);
     if (error) {
-      toast(`コピーに失敗しました: ${error.message}`);
+      toast.error(`コピーに失敗しました: ${error.message}`);
       return;
     }
-    toast("コピーしました");
+    toast.success("コピーしました");
     setCopyOpen(false);
     setCopyTargetId("");
   }

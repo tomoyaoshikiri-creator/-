@@ -125,7 +125,7 @@ export default function NoticeDetailPage() {
     if (existing) {
       const { error } = await supabase.from("notice_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -136,7 +136,7 @@ export default function NoticeDetailPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
       if (notice.sender_id && notice.sender_id !== userId) {
@@ -167,7 +167,7 @@ export default function NoticeDetailPage() {
     setNewFiles((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), ...picked] }));
     // 端末側の複数選択が実際に何件渡ってきたかをその場で分かるようにする
     // (一部端末で複数選択したはずが1件しか渡らない事象の切り分け用)。
-    toast(`${picked.length}件を選択しました(${kind})`);
+    toast.success(`${picked.length}件を選択しました(${kind})`);
   }
 
   function removeNewFile(kind: AttachmentKind, index: number) {
@@ -183,27 +183,27 @@ export default function NoticeDetailPage() {
     const { error: storageError } = await supabase.storage.from("notice-attachments").remove(pathsToRemove);
     if (storageError) {
       setRemovingId(null);
-      toast(`削除に失敗しました: ${storageError.message}`);
+      toast.error(`削除に失敗しました: ${storageError.message}`);
       return;
     }
     const { error } = await supabase.from("notice_attachments").delete().eq("id", attachment.id);
     setRemovingId(null);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
-    toast("添付資料を削除しました");
+    toast.success("添付資料を削除しました");
   }
 
   async function handleSave() {
     if (!notice) return;
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (audience === "学年指定" && !targetGradeMin) {
-      toast("対象学年を選択してください");
+      toast.warning("対象学年を選択してください");
       return;
     }
     setSaving(true);
@@ -219,7 +219,7 @@ export default function NoticeDetailPage() {
       .eq("id", notice.id);
     if (error) {
       setSaving(false);
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
 
@@ -297,7 +297,7 @@ export default function NoticeDetailPage() {
       );
       cleanupOk = cleanupOk && objectsOk;
       setSaving(false);
-      toast(
+      toast.error(
         `お知らせ本体は更新しましたが、添付の追加に失敗しました: ${failureMessage}` +
           (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
       );
@@ -306,7 +306,7 @@ export default function NoticeDetailPage() {
     }
 
     setSaving(false);
-    toast("お知らせを更新しました");
+    toast.success("お知らせを更新しました");
     setEditing(false);
     setNewFiles({});
     load();
@@ -327,17 +327,17 @@ export default function NoticeDetailPage() {
         .remove(attachments.flatMap((a) => (a.thumbnail_path ? [a.storage_path, a.thumbnail_path] : [a.storage_path])));
       if (storageError) {
         setDeleting(false);
-        toast(`削除に失敗しました: ${storageError.message}`);
+        toast.error(`削除に失敗しました: ${storageError.message}`);
         return;
       }
     }
     const { error } = await supabase.from("notices").delete().eq("id", notice.id);
     setDeleting(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("お知らせを削除しました");
+    toast.success("お知らせを削除しました");
     router.push("/notice");
   }
 

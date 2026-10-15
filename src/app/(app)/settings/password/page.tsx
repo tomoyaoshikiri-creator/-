@@ -21,11 +21,11 @@ export default function SettingsPasswordPage() {
 
   async function handleSave() {
     if (newPassword.length < 8) {
-      toast("パスワードは8文字以上で入力してください");
+      toast.warning("パスワードは8文字以上で入力してください");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast("確認用パスワードが一致しません");
+      toast.warning("確認用パスワードが一致しません");
       return;
     }
     setSaving(true);
@@ -33,10 +33,10 @@ export default function SettingsPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSaving(false);
     if (error) {
-      toast(`変更に失敗しました: ${error.message}`);
+      toast.error(`変更に失敗しました: ${error.message}`);
       return;
     }
-    toast("パスワードを変更しました");
+    toast.success("パスワードを変更しました");
     router.push("/settings");
   }
 

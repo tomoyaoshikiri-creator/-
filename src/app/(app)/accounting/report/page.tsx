@@ -194,10 +194,10 @@ export default function AccountingReportPage() {
     const { error } = await supabase.from("accounting_approvals").insert({ team_id: officers.find((o) => o.id === officerId)!.team_id, fiscal_year: fiscalYear, officer_id: officerId });
     setApprovalBusyId(null);
     if (error) {
-      toast(`承認に失敗しました: ${error.message}`);
+      toast.error(`承認に失敗しました: ${error.message}`);
       return;
     }
-    toast("承認しました");
+    toast.success("承認しました");
     load();
   }
 
@@ -207,10 +207,10 @@ export default function AccountingReportPage() {
     const { error } = await supabase.from("accounting_approvals").delete().eq("id", approvalId);
     setApprovalBusyId(null);
     if (error) {
-      toast(`取り消しに失敗しました: ${error.message}`);
+      toast.error(`取り消しに失敗しました: ${error.message}`);
       return;
     }
-    toast("承認を取り消しました");
+    toast.success("承認を取り消しました");
     load();
   }
 

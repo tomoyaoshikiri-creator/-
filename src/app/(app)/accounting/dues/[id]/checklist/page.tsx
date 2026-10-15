@@ -89,11 +89,11 @@ export default function AccountingDuesChecklistPage() {
     });
     setGenerating(false);
     if (!res.ok) {
-      toast("請求の作成に失敗しました");
+      toast.error("請求の作成に失敗しました");
       return;
     }
     const json = await res.json();
-    toast(json.periodsCreated > 0 ? `${json.periodsCreated}期間分の請求を作成しました` : "新しく作成する請求はありませんでした");
+    toast.success(json.periodsCreated > 0 ? `${json.periodsCreated}期間分の請求を作成しました` : "新しく作成する請求はありませんでした");
     load();
   }
 
@@ -139,7 +139,7 @@ export default function AccountingDuesChecklistPage() {
       .in("id", group.chargeIds);
     setToggling(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setCharges((prev) =>
@@ -166,10 +166,10 @@ export default function AccountingDuesChecklistPage() {
       .in("id", unpaidIds);
     setBulkChecking(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast(`${unpaidIds.length}件を入金済みにしました`);
+    toast.success(`${unpaidIds.length}件を入金済みにしました`);
     load();
   }
 

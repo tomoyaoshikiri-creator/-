@@ -136,11 +136,11 @@ export default function AccountingDuesUnpaidPage() {
       .in("id", group.chargeIds);
     setToggling(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
-    toast("入金済みにしました");
+    toast.success("入金済みにしました");
   }
 
   return (

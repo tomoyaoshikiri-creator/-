@@ -65,7 +65,7 @@ export function NewPlayerModal({
 
   async function handleSubmit() {
     if (!sei.trim() || !mei.trim()) {
-      toast("氏名を入力してください");
+      toast.warning("氏名を入力してください");
       return;
     }
     setSaving(true);
@@ -82,7 +82,7 @@ export function NewPlayerModal({
     });
     setSaving(false);
     if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+      toast.error(`登録に失敗しました: ${error.message}`);
       return;
     }
     reset();

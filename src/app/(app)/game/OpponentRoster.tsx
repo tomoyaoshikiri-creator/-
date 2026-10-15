@@ -29,7 +29,7 @@ export function OpponentRoster({
     const number = newNumber.trim();
     if (!number) return;
     if (opponentPlayers.some((p) => p.number === number)) {
-      toast("すでに登録されている背番号です");
+      toast.warning("すでに登録されている背番号です");
       return;
     }
     setAdding(true);
@@ -41,7 +41,7 @@ export function OpponentRoster({
       .single();
     setAdding(false);
     if (error) {
-      toast(`追加に失敗しました: ${error.message}`);
+      toast.error(`追加に失敗しました: ${error.message}`);
       return;
     }
     if (data) {
@@ -56,7 +56,7 @@ export function OpponentRoster({
     const existing = new Set(opponentPlayers.map((p) => p.number));
     const numbers = Array.from({ length: 15 }, (_, i) => String(i + 4)).filter((n) => !existing.has(n));
     if (numbers.length === 0) {
-      toast("4〜18番はすべて登録済みです");
+      toast.warning("4〜18番はすべて登録済みです");
       return;
     }
     setAddingTemplate(true);
@@ -67,12 +67,12 @@ export function OpponentRoster({
       .select();
     setAddingTemplate(false);
     if (error) {
-      toast(`一括登録に失敗しました: ${error.message}`);
+      toast.error(`一括登録に失敗しました: ${error.message}`);
       return;
     }
     if (data) {
       onChange([...opponentPlayers, ...data]);
-      toast(`${data.length}件登録しました`);
+      toast.success(`${data.length}件登録しました`);
     }
   }
 

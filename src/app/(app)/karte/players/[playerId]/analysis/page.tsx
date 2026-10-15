@@ -116,7 +116,7 @@ export default function PlayerAnalysisPage() {
     if (existing) {
       const { error } = await supabase.from("player_analysis_note_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -127,7 +127,7 @@ export default function PlayerAnalysisPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -148,10 +148,10 @@ export default function PlayerAnalysisPage() {
       });
       const text = buildPlayerCopyText(data, analysisPrompt);
       await navigator.clipboard.writeText(text);
-      toast("分析用テキストをコピーしました");
+      toast.success("分析用テキストをコピーしました");
       setAnalysisOpen(false);
     } catch {
-      toast("コピーに失敗しました");
+      toast.error("コピーに失敗しました");
     } finally {
       setCopyingAnalysis(false);
     }
@@ -182,14 +182,14 @@ export default function PlayerAnalysisPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast(data.error ?? "AI分析の生成に失敗しました");
+        toast.error(data.error ?? "AI分析の生成に失敗しました");
         return;
       }
       setAiUsage({ used: data.usedThisMonth, limit: data.monthlyLimit });
-      toast("AI分析を生成し、フィードバック欄に追加しました");
+      toast.success("AI分析を生成し、フィードバック欄に追加しました");
       loadNotes();
     } catch {
-      toast("AI分析の生成に失敗しました");
+      toast.error("AI分析の生成に失敗しました");
     } finally {
       setAiGenerating(false);
     }
@@ -213,7 +213,7 @@ export default function PlayerAnalysisPage() {
 
   async function handleSaveNoteEdit(noteId: string) {
     if (!editNoteBody.trim()) {
-      toast("メモを入力してください");
+      toast.warning("メモを入力してください");
       return;
     }
     setSavingNoteEdit(true);
@@ -224,10 +224,10 @@ export default function PlayerAnalysisPage() {
       .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを更新しました");
+    toast.success("メモを更新しました");
     setEditingNoteId(null);
     loadNotes();
   }
@@ -242,10 +242,10 @@ export default function PlayerAnalysisPage() {
     const supabase = createClient();
     const { error } = await supabase.from("player_analysis_notes").delete().eq("id", noteId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを削除しました");
+    toast.success("メモを削除しました");
     setExpandedNoteId(null);
     loadNotes();
   }
@@ -406,7 +406,7 @@ export default function PlayerAnalysisPage() {
             onClose={() => setAddFeedbackOpen(false)}
             onCreated={() => {
               setAddFeedbackOpen(false);
-              toast("フィードバックを登録しました");
+              toast.success("フィードバックを登録しました");
               loadNotes();
             }}
             insert={handleAddNote}

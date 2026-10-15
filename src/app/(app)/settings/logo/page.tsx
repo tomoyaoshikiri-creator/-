@@ -58,7 +58,7 @@ export default function SettingsLogoPage() {
   async function handleSaveName() {
     const trimmed = teamName.trim();
     if (!trimmed) {
-      toast("チーム名を入力してください");
+      toast.warning("チーム名を入力してください");
       return;
     }
     setSavingName(true);
@@ -66,25 +66,25 @@ export default function SettingsLogoPage() {
     const { error } = await supabase.from("teams").update({ name: trimmed }).eq("id", teamId);
     setSavingName(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setTeamName(trimmed);
     setSavedTeamName(trimmed);
     setEditingName(false);
-    toast("チーム名を更新しました");
+    toast.success("チーム名を更新しました");
     router.refresh();
   }
 
   function copyLoginUrl() {
     navigator.clipboard?.writeText(`${origin}/login/${slug}`);
-    toast("リンクをコピーしました");
+    toast.success("リンクをコピーしました");
   }
 
   async function handleLogoChange(file: File | undefined) {
     if (!file) return;
     if (/\.(heic|heif)$/i.test(file.name)) {
-      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      toast.warning("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
       return;
     }
     setUploading(true);
@@ -94,12 +94,12 @@ export default function SettingsLogoPage() {
     const data = await res.json();
     setUploading(false);
     if (!res.ok) {
-      toast(`アップロードに失敗しました: ${data.error ?? ""}`);
+      toast.error(`アップロードに失敗しました: ${data.error ?? ""}`);
       return;
     }
     const supabase = createClient();
     setLogoUrl(teamLogoUrl(supabase, data.path));
-    toast("ロゴを更新しました");
+    toast.success("ロゴを更新しました");
     router.refresh();
   }
 
@@ -109,11 +109,11 @@ export default function SettingsLogoPage() {
     const { error } = await supabase.from("teams").update({ logo_path: null }).eq("id", teamId);
     setUploading(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setLogoUrl(null);
-    toast("ロゴを削除しました");
+    toast.success("ロゴを削除しました");
     router.refresh();
   }
 

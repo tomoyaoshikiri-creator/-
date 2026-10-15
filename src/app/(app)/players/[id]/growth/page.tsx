@@ -81,7 +81,7 @@ export default function PlayerGrowthPage() {
   async function handleSave() {
     if (!player) return;
     if (!heightCm.trim() && !weightKg.trim()) {
-      toast("身長か体重のどちらかを入力してください");
+      toast.warning("身長か体重のどちらかを入力してください");
       return;
     }
     setSaving(true);
@@ -99,12 +99,12 @@ export default function PlayerGrowthPage() {
     );
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setHeightCm("");
     setWeightKg("");
-    toast("記録しました");
+    toast.success("記録しました");
     load();
   }
 
@@ -117,7 +117,7 @@ export default function PlayerGrowthPage() {
     const supabase = createClient();
     const { error } = await supabase.from("player_growth_records").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setDeleteConfirmId(null);

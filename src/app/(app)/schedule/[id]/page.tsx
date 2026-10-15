@@ -231,7 +231,7 @@ export default function ScheduleDetailPage() {
                 }}
                 onDeleted={() => {
                   setEditOpen(false);
-                  toast("予定を削除しました");
+                  toast.success("予定を削除しました");
                   router.push("/schedule");
                 }}
               />
@@ -241,7 +241,7 @@ export default function ScheduleDetailPage() {
                 copySource={schedule}
                 onCreated={() => {
                   setCopyOpen(false);
-                  toast("予定をコピーして登録しました");
+                  toast.success("予定をコピーして登録しました");
                   router.push("/schedule");
                 }}
               />

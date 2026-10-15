@@ -17,10 +17,10 @@ export function useUpgradePrompt() {
   const { role } = useSession();
   return (message: string) => {
     if (canManageSettings(role)) {
-      toast(message);
+      toast.warning(message);
       router.push("/settings/plan");
     } else {
-      toast(`${message}(管理者にご相談ください)`);
+      toast.warning(`${message}(管理者にご相談ください)`);
     }
   };
 }

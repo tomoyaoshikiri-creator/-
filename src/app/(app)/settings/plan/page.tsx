@@ -37,8 +37,8 @@ export default function SettingsPlanPage() {
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
-    if (checkout === "success") toast("お申し込みが完了しました");
-    if (checkout === "cancel") toast("お申し込みを中断しました");
+    if (checkout === "success") toast.success("お申し込みが完了しました");
+    if (checkout === "cancel") toast.warning("お申し込みを中断しました");
   }, [searchParams, toast]);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function SettingsPlanPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        toast(`お申し込みページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
+        toast.error(`お申し込みページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
         return;
       }
       window.location.href = data.url;
@@ -81,7 +81,7 @@ export default function SettingsPlanPage() {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        toast(`お支払い管理ページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
+        toast.error(`お支払い管理ページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
         return;
       }
       window.location.href = data.url;

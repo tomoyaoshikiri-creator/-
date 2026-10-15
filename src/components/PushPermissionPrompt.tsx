@@ -38,9 +38,9 @@ export function PushPermissionPrompt() {
 
   async function handleAllow() {
     const result = await subscribe();
-    if (result === "subscribed") toast("通知を有効にしました");
-    else if (result === "permission_denied") toast("通知が許可されませんでした");
-    else if (result === "error") toast("通知の登録に失敗しました");
+    if (result === "subscribed") toast.success("通知を有効にしました");
+    else if (result === "permission_denied") toast.warning("通知が許可されませんでした");
+    else if (result === "error") toast.error("通知の登録に失敗しました");
     dismiss();
   }
 

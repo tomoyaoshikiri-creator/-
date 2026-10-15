@@ -64,7 +64,7 @@ export function LineupSection({
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);
     if (!isActive && draft.length >= 5) {
-      toast("スターティングは5人までです");
+      toast.warning("スターティングは5人までです");
       return;
     }
     setDraft(isActive ? draft.filter((x) => x !== id) : [...draft, id]);

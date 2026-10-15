@@ -126,7 +126,7 @@ export default function ReportPage() {
             onCreated={() => {
               setModalOpen(false);
               load();
-              toast("チーム日報を登録しました");
+              toast.success("チーム日報を登録しました");
             }}
           />
         </>

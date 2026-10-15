@@ -42,7 +42,7 @@ export default function SettingsTeamPage() {
     setSavingAttendanceToggle(false);
     if (error) {
       setAttendanceToggle(!next);
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     router.refresh();

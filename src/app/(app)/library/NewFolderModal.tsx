@@ -26,7 +26,7 @@ export function NewFolderModal({
   async function handleSubmit() {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast("フォルダ名を入力してください");
+      toast.warning("フォルダ名を入力してください");
       return;
     }
     setSaving(true);
@@ -36,7 +36,7 @@ export function NewFolderModal({
       .insert({ team_id: teamId, parent_folder_id: parentFolderId, name: trimmed });
     setSaving(false);
     if (error) {
-      toast(`作成に失敗しました: ${error.message}`);
+      toast.error(`作成に失敗しました: ${error.message}`);
       return;
     }
     setName("");

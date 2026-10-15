@@ -85,10 +85,10 @@ export default function AccountingBudgetPage() {
     const { error } = await supabase.from("accounting_budgets").upsert(rows, { onConflict: "team_id,fiscal_year,category_id" });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("予算を保存しました");
+    toast.success("予算を保存しました");
     setEditing(false);
     load();
   }

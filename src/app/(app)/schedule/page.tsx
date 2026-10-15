@@ -94,7 +94,7 @@ export default function SchedulePage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("予定を登録しました");
+                toast.success("予定を登録しました");
               }}
               initialDates={
                 view === "calendar" && calendarSelectedDate ? [calendarSelectedDate] : undefined

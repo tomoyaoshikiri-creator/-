@@ -124,7 +124,7 @@ export default function CoachNotePage() {
             onCreated={() => {
               setModalOpen(false);
               load();
-              toast("コーチ日報を登録しました");
+              toast.success("コーチ日報を登録しました");
             }}
           />
         </>

@@ -141,10 +141,10 @@ export default function KartePlayersPage() {
     const supabase = createClient();
     const { error } = await supabase.rpc("advance_academic_year");
     if (error) {
-      toast(`実行に失敗しました: ${error.message}`);
+      toast.error(`実行に失敗しました: ${error.message}`);
       return;
     }
-    toast("年度更新を実行しました");
+    toast.success("年度更新を実行しました");
     load();
   }
 
@@ -153,10 +153,10 @@ export default function KartePlayersPage() {
     const text = buildBulkPlayerCopyText(analysisPlayersData, analysisPrompt);
     try {
       await navigator.clipboard.writeText(text);
-      toast("分析用テキストをコピーしました");
+      toast.success("分析用テキストをコピーしました");
       setAnalysisOpen(false);
     } catch {
-      toast("コピーに失敗しました");
+      toast.error("コピーに失敗しました");
     }
   }
 
@@ -173,7 +173,7 @@ export default function KartePlayersPage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("選手を登録しました");
+                toast.success("選手を登録しました");
               }}
             />
           </>

@@ -113,7 +113,7 @@ export default function AccountingDuesItemPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setItem(data);
@@ -138,7 +138,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_items").delete().eq("id", item.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     router.push("/accounting/dues");
@@ -151,7 +151,7 @@ export default function AccountingDuesItemPage() {
     if (!item) return;
     const amount = Number(bandDraft.monthly_amount);
     if (bandDraft.grade_min > bandDraft.grade_max || !Number.isFinite(amount) || amount <= 0) {
-      toast("学年の範囲・月額を正しく入力してください");
+      toast.warning("学年の範囲・月額を正しく入力してください");
       return;
     }
     const supabase = createClient();
@@ -161,7 +161,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`追加に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setBands((prev) => [...prev, data].sort((a, b) => a.grade_min - b.grade_min));
@@ -171,7 +171,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_grade_bands").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setBands((prev) => prev.filter((b) => b.id !== id));
@@ -190,7 +190,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`追加に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setPlayerSettings((prev) => [...prev, data]);
@@ -205,7 +205,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setPlayerSettings((prev) => prev.map((s) => (s.id === id ? data : s)));
@@ -214,7 +214,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_player_settings").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setPlayerSettings((prev) => prev.filter((s) => s.id !== id));

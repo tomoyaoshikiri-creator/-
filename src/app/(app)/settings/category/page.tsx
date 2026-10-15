@@ -58,7 +58,7 @@ export default function SettingsCategoryPage() {
     setCategory(next);
     if (sport === "ミニバスケットボール" && !isMiniBasketballAllowed(next)) {
       setSport("バスケットボール");
-      toast("ミニバスケットボールは小学生カテゴリー専用のため、競技をバスケットボールに変更しました");
+      toast.success("ミニバスケットボールは小学生カテゴリー専用のため、競技をバスケットボールに変更しました");
     }
   }
 
@@ -71,14 +71,14 @@ export default function SettingsCategoryPage() {
     const { error } = await supabase.from("teams").update({ category, sport: sportToSave }).eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setSport(sportToSave);
     setSavedCategory(category);
     setSavedSport(sportToSave);
     setEditing(false);
-    toast("カテゴリーを保存しました");
+    toast.success("カテゴリーを保存しました");
     router.refresh();
   }
 

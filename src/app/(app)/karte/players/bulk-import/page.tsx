@@ -79,12 +79,12 @@ export default function PlayerBulkImportPage() {
       });
       const json: ImportResponse = await res.json();
       if (!res.ok) {
-        toast(json.error ?? "確認に失敗しました");
+        toast.error(json.error ?? "確認に失敗しました");
         return;
       }
       setResult(json);
     } catch {
-      toast("確認に失敗しました");
+      toast.error("確認に失敗しました");
     } finally {
       setChecking(false);
     }
@@ -101,14 +101,14 @@ export default function PlayerBulkImportPage() {
       });
       const json: ImportResponse = await res.json();
       if (!res.ok) {
-        toast(json.error ?? "登録に失敗しました");
+        toast.error(json.error ?? "登録に失敗しました");
         return;
       }
       setResult(json);
       setConfirmed(true);
-      toast(`${json.insertedCount ?? 0}件登録しました`);
+      toast.success(`${json.insertedCount ?? 0}件登録しました`);
     } catch {
-      toast("登録に失敗しました");
+      toast.error("登録に失敗しました");
     } finally {
       setSubmitting(false);
     }

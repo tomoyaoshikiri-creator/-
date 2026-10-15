@@ -23,7 +23,7 @@ export default function SettingsNamePage() {
   async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast("表示名を入力してください");
+      toast.warning("表示名を入力してください");
       return;
     }
     setSaving(true);
@@ -31,10 +31,10 @@ export default function SettingsNamePage() {
     const { error } = await supabase.from("profiles").update({ name: trimmed }).eq("id", userId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("表示名を更新しました");
+    toast.success("表示名を更新しました");
     router.push("/settings");
     router.refresh();
   }

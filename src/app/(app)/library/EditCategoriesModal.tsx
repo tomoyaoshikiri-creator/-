@@ -41,7 +41,7 @@ export function EditCategoriesModal({
   async function handleSave(category: LibraryCategory) {
     const name = (names[category.id] ?? "").trim();
     if (!name) {
-      toast("カテゴリー名を入力してください");
+      toast.warning("カテゴリー名を入力してください");
       return;
     }
     if (name === category.name) return;
@@ -50,10 +50,10 @@ export function EditCategoriesModal({
     const { error } = await supabase.from("library_categories").update({ name }).eq("id", category.id);
     setSavingId(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("カテゴリー名を更新しました");
+    toast.success("カテゴリー名を更新しました");
     onUpdated();
   }
 
@@ -69,10 +69,10 @@ export function EditCategoriesModal({
     const { error } = await supabase.from("library_categories").delete().eq("id", category.id);
     setDeletingId(null);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("カテゴリーを削除しました。このカテゴリーだった資料は「カテゴリーなし」になります");
+    toast.success("カテゴリーを削除しました。このカテゴリーだった資料は「カテゴリーなし」になります");
     onUpdated();
   }
 

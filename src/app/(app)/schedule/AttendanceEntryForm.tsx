@@ -94,7 +94,7 @@ export function AttendanceEntryForm({
 
   async function handleSubmit() {
     if (!status) {
-      toast("出欠を選択してください");
+      toast.warning("出欠を選択してください");
       return;
     }
     setSaving(true);
@@ -117,10 +117,10 @@ export function AttendanceEntryForm({
     );
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("登録しました");
+    toast.success("登録しました");
     setRegistered(true);
     setEditing(false);
     onChanged?.();
@@ -140,10 +140,10 @@ export function AttendanceEntryForm({
     setSaving(false);
     setDeleteConfirm(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("出欠を削除しました");
+    toast.success("出欠を削除しました");
     setStatus(null);
     setAccompany(null);
     setAccompanyCount("");

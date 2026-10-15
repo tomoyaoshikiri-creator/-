@@ -177,7 +177,7 @@ export default function NoticePage() {
     if (existing) {
       const { error } = await supabase.from("notice_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -188,7 +188,7 @@ export default function NoticePage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -258,7 +258,7 @@ export default function NoticePage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("お知らせを登録しました");
+                toast.success("お知らせを登録しました");
               }}
             />
           </>

@@ -28,14 +28,14 @@ export function AddFeedbackModal({
 
   async function handleSubmit() {
     if (!body.trim()) {
-      toast("内容を入力してください");
+      toast.warning("内容を入力してください");
       return;
     }
     setSaving(true);
     const { error } = await insert(body.trim());
     setSaving(false);
     if (error) {
-      toast(`登録に失敗しました: ${error}`);
+      toast.error(`登録に失敗しました: ${error}`);
       return;
     }
     setBody("");

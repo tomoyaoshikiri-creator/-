@@ -69,11 +69,11 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
     const kyuCount = Number(newKyuCount);
     const danCount = Number(newDanCount);
     if (!name) {
-      toast("検定名を入力してください");
+      toast.warning("検定名を入力してください");
       return;
     }
     if (!Number.isInteger(kyuCount) || !Number.isInteger(danCount) || kyuCount < 0 || danCount < 0 || kyuCount + danCount < 1) {
-      toast("級・段の数を正しく入力してください");
+      toast.warning("級・段の数を正しく入力してください");
       return;
     }
     setAddingTest(true);
@@ -86,7 +86,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
     });
     setAddingTest(false);
     if (error) {
-      toast(`追加に失敗しました: ${error.message}`);
+      toast.error(`追加に失敗しました: ${error.message}`);
       return;
     }
     setNewName("");
@@ -100,7 +100,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
   async function handleRequestLevel(test: SkillTest) {
     const raw = selectedIndex[test.id];
     if (raw === undefined || raw === "") {
-      toast("ランクを選択してください");
+      toast.warning("ランクを選択してください");
       return;
     }
     setSubmittingTestId(test.id);
@@ -118,10 +118,10 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
       .single();
     setSubmittingTestId(null);
     if (error || !data) {
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
-    toast(`${test.name}のランクを登録しました`);
+    toast.success(`${test.name}のランクを登録しました`);
     setSelectedIndex((s) => ({ ...s, [test.id]: "" }));
     load();
   }

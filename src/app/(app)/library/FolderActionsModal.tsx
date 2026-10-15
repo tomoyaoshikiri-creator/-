@@ -42,7 +42,7 @@ export function FolderActionsModal({
   async function handleRename() {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast("フォルダ名を入力してください");
+      toast.warning("フォルダ名を入力してください");
       return;
     }
     if (trimmed === folder!.name) return;
@@ -54,10 +54,10 @@ export function FolderActionsModal({
       .eq("id", folder!.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("フォルダ名を更新しました");
+    toast.success("フォルダ名を更新しました");
     onRenamed();
   }
 
@@ -72,10 +72,10 @@ export function FolderActionsModal({
     const { error } = await supabase.from("library_folders").delete().eq("id", folder!.id);
     setDeleting(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("フォルダを削除しました。中身は1つ上の階層に移動しました");
+    toast.success("フォルダを削除しました。中身は1つ上の階層に移動しました");
     onDeleted();
   }
 

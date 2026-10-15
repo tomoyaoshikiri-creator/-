@@ -113,7 +113,7 @@ export default function ShootingDrillNewPage() {
 
   function handleStart() {
     if (!selectedPlayerId) {
-      toast("選手を選んでください");
+      toast.warning("選手を選んでください");
       return;
     }
     setShots([]);
@@ -177,10 +177,10 @@ export default function ShootingDrillNewPage() {
     });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("記録を保存しました");
+    toast.success("記録を保存しました");
     router.push("/karte/team/shooting");
   }
 
@@ -228,7 +228,7 @@ export default function ShootingDrillNewPage() {
     const sec = Number(manualSec) || 0;
     const time_sec = Math.round((min * 60 + sec) * 10) / 10;
     if (!manualPlayerId) {
-      toast("選手を選んでください");
+      toast.warning("選手を選んでください");
       return;
     }
     if (
@@ -238,7 +238,7 @@ export default function ShootingDrillNewPage() {
       layup_made > layup_att ||
       time_sec <= 0
     ) {
-      toast("入力内容を確認してください");
+      toast.warning("入力内容を確認してください");
       return;
     }
     setManualSaving(true);
@@ -261,11 +261,11 @@ export default function ShootingDrillNewPage() {
     });
     setManualSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     resetManualForm();
-    toast("記録を保存しました");
+    toast.success("記録を保存しました");
     router.push("/karte/team/shooting");
   }
 

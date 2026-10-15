@@ -195,11 +195,11 @@ export function NewScheduleModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (dates.length === 0) {
-      toast("日付を選択してください");
+      toast.warning("日付を選択してください");
       return;
     }
     setSaving(true);
@@ -230,7 +230,7 @@ export function NewScheduleModal({
           .insert(dates.map((date) => ({ ...base, date, team_id: teamId, created_by: userId })));
     setSaving(false);
     if (error) {
-      toast(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
+      toast.error(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
       return;
     }
     if (!isEdit) reset();
@@ -249,7 +249,7 @@ export function NewScheduleModal({
     setDeleting(false);
     setDeleteConfirm(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     onDeleted?.();

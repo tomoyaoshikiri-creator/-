@@ -138,7 +138,7 @@ export default function DailyReportDetailPage() {
     if (existing) {
       const { error } = await supabase.from("daily_report_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -149,7 +149,7 @@ export default function DailyReportDetailPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -172,7 +172,7 @@ export default function DailyReportDetailPage() {
     if (existing) {
       const { error } = await supabase.from("daily_report_comment_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -183,7 +183,7 @@ export default function DailyReportDetailPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -202,7 +202,7 @@ export default function DailyReportDetailPage() {
     });
     setPostingComment(false);
     if (error) {
-      toast(`コメントの投稿に失敗しました: ${error.message}`);
+      toast.error(`コメントの投稿に失敗しました: ${error.message}`);
       return;
     }
     setCommentDraft("");
@@ -230,7 +230,7 @@ export default function DailyReportDetailPage() {
     const supabase = createClient();
     const { error } = await supabase.from("daily_report_comments").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setComments((prev) => prev.filter((c) => c.id !== id));
@@ -253,7 +253,7 @@ export default function DailyReportDetailPage() {
       .eq("id", id);
     setSavingCommentEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setComments((prev) => prev.map((c) => (c.id === id ? { ...c, body: editCommentBody.trim() } : c)));
@@ -270,7 +270,7 @@ export default function DailyReportDetailPage() {
   async function handleSaveEdit() {
     if (!report) return;
     if (!editBody.trim()) {
-      toast("内容を入力してください");
+      toast.warning("内容を入力してください");
       return;
     }
     setSavingEdit(true);
@@ -281,10 +281,10 @@ export default function DailyReportDetailPage() {
       .eq("id", report.id);
     setSavingEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("チーム日報を更新しました");
+    toast.success("チーム日報を更新しました");
     setEditing(false);
     load();
   }
@@ -304,17 +304,17 @@ export default function DailyReportDetailPage() {
         .remove(attachments.map((a) => a.storage_path));
       if (storageError) {
         setDeleting(false);
-        toast(`削除に失敗しました: ${storageError.message}`);
+        toast.error(`削除に失敗しました: ${storageError.message}`);
         return;
       }
     }
     const { error } = await supabase.from("daily_reports").delete().eq("id", report.id);
     setDeleting(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("チーム日報を削除しました");
+    toast.success("チーム日報を削除しました");
     router.push("/report");
   }
 
