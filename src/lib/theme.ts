@@ -63,6 +63,26 @@ export function onColorFor(backgroundHex: string | null | undefined): string {
   return contrastWithDark >= contrastWithLight ? ON_COLOR_DARK : ON_COLOR_LIGHT;
 }
 
+// チームカラー(teams.theme_primary)を文字色として白背景に直接使うと、明るい色を
+// 選んだチームではWCAG AAの文字コントラスト基準(通常文字4.5:1)を満たせないことがある
+// (アクセシビリティ監査で発見。--on-team-primaryは「背景として使う場合」の安全策は
+// 既にあるが、「文字として使う場合」の安全策がなかった)。色相・彩度をなるべく保ったまま
+// 各チャンネルを均等に縮小していき、白背景に対して目標コントラスト比を満たす濃さまで
+// 暗くする。既に基準を満たす色はそのまま返す。
+export function darkenForTextContrast(hex: string, minRatio = 4.5, backgroundHex = ON_COLOR_LIGHT): string {
+  if (!isValidHexColor(hex)) return hex;
+  const { r, g, b } = hexToRgb(hex);
+  let scale = 1;
+  let current = hex;
+  for (let i = 0; i < 20; i++) {
+    if (contrastRatio(current, backgroundHex) >= minRatio) return current;
+    scale -= 0.05;
+    if (scale <= 0) return ON_COLOR_DARK;
+    current = rgbToHex(r * scale, g * scale, b * scale);
+  }
+  return current;
+}
+
 export interface TeamThemeInput {
   themePrimary?: string | null;
   themeAccent?: string | null;
@@ -73,6 +93,7 @@ export interface TeamThemeTokens {
   teamSecondary: string;
   onTeamPrimary: string;
   onTeamSecondary: string;
+  orangeText: string;
 }
 
 // teams.theme_primary/theme_accentからsemantic tokenを解決する。
@@ -85,6 +106,11 @@ export function resolveTeamTheme({ themePrimary, themeAccent }: TeamThemeInput):
     teamSecondary,
     onTeamPrimary: onColorFor(teamPrimary),
     onTeamSecondary: onColorFor(teamSecondary),
+    // リンク・選択中タブ等、--orangeを白系の背景の上で「文字として」使う箇所専用の
+    // コントラスト安全な濃さ(アクセシビリティ監査で発見。背景として使う分には
+    // --orangeそのままで問題ない)。チームが明るい色をtheme_primaryに設定した場合も、
+    // そのチームの色味を保ったまま読める濃さまで暗くする。
+    orangeText: darkenForTextContrast(teamPrimary),
   };
 }
 
@@ -98,6 +124,7 @@ export function teamThemeStyle(input: TeamThemeInput): Record<string, string> {
     "--team-secondary": tokens.teamSecondary,
     "--on-team-primary": tokens.onTeamPrimary,
     "--on-team-secondary": tokens.onTeamSecondary,
+    "--orange-text": tokens.orangeText,
   };
   if (input.themePrimary) style["--orange"] = input.themePrimary;
   if (input.themeAccent) style["--navy"] = input.themeAccent;

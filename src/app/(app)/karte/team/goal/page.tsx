@@ -73,7 +73,7 @@ export default function KarteTeamGoalPage() {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+              className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
             >
               チーム目標を編集する
             </button>

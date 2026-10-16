@@ -46,7 +46,7 @@ function SortableCategoryRow({
         type="button"
         onClick={() => handleDelete(category.id)}
         className={`flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-          deleteConfirmId === category.id ? "border-danger text-danger bg-danger/8" : "border-line text-ink-soft bg-paper"
+          deleteConfirmId === category.id ? "border-danger text-danger-text bg-danger/8" : "border-line text-ink-soft bg-paper"
         }`}
       >
         {deleteConfirmId === category.id ? "削除確定" : "削除"}
@@ -176,7 +176,7 @@ function CategorySection({
               type="button"
               onClick={handleAdd}
               disabled={saving || !input.trim()}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>

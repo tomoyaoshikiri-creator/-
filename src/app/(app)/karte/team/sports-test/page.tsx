@@ -269,7 +269,7 @@ export default function KarteTeamSportsTestPage() {
                       onClick={() => rankingMode && setSortKey(m.value)}
                       className={`sticky top-0 h-11 bg-paper z-20 w-[54px] min-w-[54px] px-1 border-b border-line font-bold text-center leading-tight ${
                         rankingMode ? "cursor-pointer" : ""
-                      } ${rankingMode && sortKey === m.value ? "text-orange" : "text-ink-soft"}`}
+                      } ${rankingMode && sortKey === m.value ? "text-orange-text" : "text-ink-soft"}`}
                     >
                       <div className="whitespace-nowrap">{m.abbrLines[0]}</div>
                       <div className="whitespace-nowrap">{m.abbrLines[1]}</div>

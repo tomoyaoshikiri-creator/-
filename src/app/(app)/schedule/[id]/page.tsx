@@ -192,7 +192,7 @@ export default function ScheduleDetailPage() {
                   <button
                     type="button"
                     onClick={() => setRosterOpen(true)}
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange bg-orange/8 whitespace-nowrap"
+                    className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange-text bg-orange/8 whitespace-nowrap"
                   >
                     出欠一覧
                   </button>

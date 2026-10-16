@@ -527,7 +527,7 @@ export default function GameDetailPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/game/stats/${selectedMatch.id}/view`)}
-                  className="flex-1 py-2.5 rounded-lg border border-orange text-orange font-bold text-[13px] bg-orange/8 active:opacity-85"
+                  className="flex-1 py-2.5 rounded-lg border border-orange text-orange-text font-bold text-[13px] bg-orange/8 active:opacity-85"
                 >
                   スタッツを見る
                 </button>
@@ -575,9 +575,9 @@ export default function GameDetailPage() {
                     style={{
                       color:
                         matchResult === "勝ち"
-                          ? "var(--green)"
+                          ? "var(--green-text)"
                           : matchResult === "負け"
-                            ? "var(--danger)"
+                            ? "var(--danger-text)"
                             : "var(--ink-soft)",
                     }}
                   >
@@ -612,7 +612,7 @@ export default function GameDetailPage() {
                         href={scorePhotoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="block text-orange font-bold text-xs"
+                        className="block text-orange-text font-bold text-xs"
                       >
                         📎 スコア表を開く
                       </a>
@@ -640,7 +640,7 @@ export default function GameDetailPage() {
                         onClick={handleScorePhotoRemove}
                         disabled={uploadingScorePhoto}
                         className="px-3 py-2 rounded-lg text-[12.5px] font-bold border bg-white disabled:opacity-50"
-                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                       >
                         削除
                       </button>
@@ -659,7 +659,7 @@ export default function GameDetailPage() {
                   className={`mt-2.5 w-full text-center py-2 rounded-lg font-bold text-[12px] border bg-white disabled:opacity-50 ${
                     deleteMatchConfirmId === selectedMatch.id ? "" : "opacity-50"
                   }`}
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deletingMatch
                     ? "削除中…"
@@ -693,7 +693,7 @@ export default function GameDetailPage() {
                           type="button"
                           onClick={() => handleSaveNoteEdit(n.id)}
                           disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
                         >
                           {savingNoteEdit ? "保存中…" : "保存"}
                         </button>
@@ -742,7 +742,7 @@ export default function GameDetailPage() {
                             type="button"
                             onClick={() => handleDeleteNote(n.id)}
                             className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                           >
                             {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
                           </button>

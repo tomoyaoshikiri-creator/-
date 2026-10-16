@@ -77,7 +77,7 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
     <Card style={CARD_STYLE}>
       <div className="flex items-center justify-between">
         <span className="text-[12.5px] text-ink-soft">読み込みに失敗しました</span>
-        <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange flex-shrink-0">
+        <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange-text flex-shrink-0">
           再試行
         </button>
       </div>
@@ -426,9 +426,9 @@ export default function HomePage() {
             <span
               className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
                 (recentMatch.team_score ?? 0) > (recentMatch.opponent_score ?? 0)
-                  ? "bg-orange/10 text-orange"
+                  ? "bg-orange/10 text-orange-text"
                   : (recentMatch.team_score ?? 0) < (recentMatch.opponent_score ?? 0)
-                    ? "bg-danger/10 text-danger"
+                    ? "bg-danger/10 text-danger-text"
                     : "bg-line text-ink-soft"
               }`}
             >
@@ -466,7 +466,7 @@ export default function HomePage() {
           薄く着色し、他のカードより一段目立つ見た目にしている。 */}
       {teamGoal && (
         <div className="rounded-lg border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
-          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange mb-0.5">チーム目標</div>
+          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange-text mb-0.5">チーム目標</div>
           <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
         </div>
       )}
@@ -488,7 +488,7 @@ export default function HomePage() {
                   </span>
                   <span
                     className={`flex-shrink-0 text-[10.5px] font-bold px-2 py-1 rounded-full ${
-                      nextScheduleNeedsAction ? "bg-danger/10 text-danger" : "bg-line text-ink-soft"
+                      nextScheduleNeedsAction ? "bg-danger/10 text-danger-text" : "bg-line text-ink-soft"
                     }`}
                   >
                     {nextScheduleNeedsAction ? "要確認" : "回答済み"}
@@ -546,7 +546,7 @@ export default function HomePage() {
               <div className="text-[12.5px] text-ink-soft text-center py-3">直近の予定はありません</div>
               <Link
                 href="/schedule"
-                className="block text-center text-[12px] font-bold text-orange py-1.5 border-t border-line mt-1"
+                className="block text-center text-[12px] font-bold text-orange-text py-1.5 border-t border-line mt-1"
               >
                 予定を見る
               </Link>
@@ -569,7 +569,7 @@ export default function HomePage() {
               <div className={`flex items-center justify-between py-2 ${i > 0 ? "border-t border-line" : ""}`}>
                 <div className="min-w-0">
                   <div className="text-[12.5px] font-bold flex items-center gap-1.5">
-                    {item.overdue && <span className="text-[9.5px] font-bold text-danger flex-shrink-0">期限超過</span>}
+                    {item.overdue && <span className="text-[9.5px] font-bold text-danger-text flex-shrink-0">期限超過</span>}
                     <span className="truncate">{item.scheduleTitle}</span>
                   </div>
                   <div className="text-[11px] text-ink-soft mt-0.5">

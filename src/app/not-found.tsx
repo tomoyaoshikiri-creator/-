@@ -8,7 +8,7 @@ export default function NotFound() {
         <p className="text-[12.5px] text-ink-soft leading-relaxed mb-8">
           お探しのページは存在しないか、移動または削除された可能性があります。
         </p>
-        <Link href="/" className="text-[12.5px] font-bold text-orange">
+        <Link href="/" className="text-[12.5px] font-bold text-orange-text">
           トップへ戻る
         </Link>
       </div>

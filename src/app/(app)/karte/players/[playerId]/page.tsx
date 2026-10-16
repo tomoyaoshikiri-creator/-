@@ -433,7 +433,7 @@ export default function KartePlayerPage() {
             <button
               type="button"
               onClick={startEdit}
-              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+              className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
             >
               編集する
             </button>
@@ -559,7 +559,7 @@ export default function KartePlayerPage() {
               type="button"
               onClick={handleDelete}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
             </button>
@@ -681,7 +681,7 @@ export default function KartePlayerPage() {
                       <th
                         key={c.key}
                         className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                         }`}
                       >
                         {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
@@ -714,7 +714,7 @@ export default function KartePlayerPage() {
                       <th
                         key={c.key}
                         className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                         }`}
                       >
                         <StatCell statKey={c.key} averages={seasonAverages} />
@@ -820,7 +820,7 @@ export default function KartePlayerPage() {
                         <td
                           key={c.key}
                           className={`${colWidthClass(c.key)} h-9 px-1 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
-                            c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                           }`}
                         >
                           <StatCell statKey={c.key} averages={row.averages} />

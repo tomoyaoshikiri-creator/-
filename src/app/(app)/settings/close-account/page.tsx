@@ -54,7 +54,7 @@ export default function CloseAccountPage() {
           <li>7日以内であれば「設定」からいつでも取り消せます(データは復元されます)</li>
           <li>7日を過ぎると、いかなる理由でも元に戻せません</li>
         </ul>
-        <Link href="/settings/export" className="block mt-3 text-[12.5px] text-orange font-bold underline">
+        <Link href="/settings/export" className="block mt-3 text-[12.5px] text-orange-text font-bold underline">
           退会前にデータをエクスポートする ›
         </Link>
       </Card>
@@ -69,13 +69,13 @@ export default function CloseAccountPage() {
           onChange={(e) => setConfirmText(e.target.value)}
           placeholder={teamName}
         />
-        {error && <div className="mt-3 text-[12.5px] text-danger">{error}</div>}
+        {error && <div className="mt-3 text-[12.5px] text-danger-text">{error}</div>}
         <button
           type="button"
           onClick={handleRequestDeletion}
           disabled={!canSubmit || submitting}
           className="mt-3.5 w-full py-2.5 rounded-lg font-bold text-[13px] active:opacity-85 disabled:opacity-50 border"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "white" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)", background: "white" }}
         >
           {submitting ? "処理中…" : "チームを退会する"}
         </button>

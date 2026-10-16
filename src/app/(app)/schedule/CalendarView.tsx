@@ -24,7 +24,7 @@ function holidayKind(dateStr: string, weekdayIndex: number): "holiday" | "saturd
 const HOLIDAY_TEXT_CLASS: Record<"holiday" | "saturday" | "sunday", string> = {
   holiday: "text-holiday",
   saturday: "text-sky",
-  sunday: "text-danger",
+  sunday: "text-danger-text",
 };
 
 export interface Birthday {
@@ -152,7 +152,7 @@ export function CalendarView({
 
       <div className="grid grid-cols-7 text-center text-[10.5px] font-bold mb-1">
         {["月", "火", "水", "木", "金", "土", "日"].map((w, i) => (
-          <div key={w} className={i === 5 ? "text-sky" : i === 6 ? "text-danger" : "text-ink-soft"}>
+          <div key={w} className={i === 5 ? "text-sky" : i === 6 ? "text-danger-text" : "text-ink-soft"}>
             {w}
           </div>
         ))}

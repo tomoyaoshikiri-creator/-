@@ -261,10 +261,10 @@ export function AttendanceRosterModal({
       ) : (
         <>
           <div className="flex flex-wrap gap-1.5 mb-3">
-            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-green/10 text-green">
+            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-green/10 text-green-text">
               出席 {attendingCount}
             </span>
-            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-danger/10 text-danger">
+            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-danger/10 text-danger-text">
               欠席 {absentCount}
             </span>
             {lateCount > 0 && (
@@ -277,7 +277,7 @@ export function AttendanceRosterModal({
                 見学 {watchCount}
               </span>
             )}
-            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-orange/10 text-orange">
+            <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-orange/10 text-orange-text">
               未回答 {noResponseCount}
             </span>
           </div>

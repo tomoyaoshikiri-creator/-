@@ -290,7 +290,7 @@ export default function PlayerStatsPage() {
                           <th
                             key={c.key}
                             className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                              c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                             }`}
                           >
                             {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
@@ -323,7 +323,7 @@ export default function PlayerStatsPage() {
                           <th
                             key={c.key}
                             className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                              c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                              c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                             }`}
                           >
                             <StatCell statKey={c.key} averages={seasonAverages} />
@@ -429,7 +429,7 @@ export default function PlayerStatsPage() {
                             <td
                               key={c.key}
                               className={`${colWidthClass(c.key)} px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
-                                c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                                c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                               }`}
                             >
                               <StatCell statKey={c.key} averages={row.averages} />

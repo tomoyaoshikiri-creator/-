@@ -11,7 +11,7 @@ export default async function LoginPage({
     <div>
       <AuthHeading />
       {error && (
-        <div className="mb-3 text-[12.5px] text-danger text-center bg-white border border-line rounded-lg p-3">
+        <div className="mb-3 text-[12.5px] text-danger-text text-center bg-white border border-line rounded-lg p-3">
           {error === "confirm_failed" ? "確認リンクが無効か期限切れです。もう一度お試しください。" : error}
         </div>
       )}

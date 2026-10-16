@@ -174,7 +174,7 @@ export default function NewPollPage() {
               type="button"
               onClick={() => toggleRole(r)}
               className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
-                allowedRoles.includes(r) ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                allowedRoles.includes(r) ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
               }`}
             >
               {r}
@@ -188,7 +188,7 @@ export default function NewPollPage() {
           <button
             type="button"
             onClick={() => setPlayerPickerOpen((v) => !v)}
-            className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
           >
             選手名簿から追加
           </button>
@@ -236,7 +236,7 @@ export default function NewPollPage() {
                   type="button"
                   onClick={() => removeOption(i)}
                   className="flex-none font-bold text-[12px]"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)" }}
                 >
                   削除
                 </button>

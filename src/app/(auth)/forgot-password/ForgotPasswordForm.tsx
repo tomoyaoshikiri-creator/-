@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
             required
           />
 
-          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger">{verifyState.error}</div>}
+          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger-text">{verifyState.error}</div>}
 
           <SubmitButton type="submit" disabled={verifying}>
             {verifying ? "確認中…" : "確認する"}
@@ -52,18 +52,18 @@ export function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={resending}
-            className="w-full text-center py-2 text-[12px] font-bold text-orange"
+            className="w-full text-center py-2 text-[12px] font-bold text-orange-text"
           >
             {resending ? "再送中…" : "コードを再送する"}
           </button>
           {resendState.message && (
             <div className="mt-1 text-[11.5px] text-ink-soft text-center">{resendState.message}</div>
           )}
-          {resendState.error && <div className="mt-1 text-[11.5px] text-danger text-center">{resendState.error}</div>}
+          {resendState.error && <div className="mt-1 text-[11.5px] text-danger-text text-center">{resendState.error}</div>}
         </form>
 
         <div className="text-center text-[12px] text-ink-soft mt-4">
-          <Link href="/login" className="text-orange font-bold">
+          <Link href="/login" className="text-orange-text font-bold">
             ログイン画面に戻る
           </Link>
         </div>
@@ -80,14 +80,14 @@ export function ForgotPasswordForm() {
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
       <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "送信中…" : "再設定コードを送信"}
       </SubmitButton>
 
       <div className="text-center text-[12px] text-ink-soft mt-4">
-        <Link href="/login" className="text-orange font-bold">
+        <Link href="/login" className="text-orange-text font-bold">
           ログイン画面に戻る
         </Link>
       </div>

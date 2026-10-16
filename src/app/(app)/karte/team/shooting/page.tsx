@@ -244,7 +244,7 @@ export default function ShootingDrillListPage() {
                       <td className="px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
                         {playerName(row.playerId)}
                       </td>
-                      <td className="px-2 py-2 text-center font-mono font-bold text-orange border-b border-line last:border-b-0 whitespace-nowrap">
+                      <td className="px-2 py-2 text-center font-mono font-bold text-orange-text border-b border-line last:border-b-0 whitespace-nowrap">
                         {formatTime(row.best.time_sec)}
                       </td>
                       <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap">
@@ -289,7 +289,7 @@ export default function ShootingDrillListPage() {
                       </div>
                       <div className="font-mono text-[11px] text-ink-soft mt-0.5">
                         ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
-                        {shotPct !== null && <span className="ml-1.5 font-bold text-orange">{shotPct}%</span>}
+                        {shotPct !== null && <span className="ml-1.5 font-bold text-orange-text">{shotPct}%</span>}
                       </div>
                     </button>
 
@@ -370,7 +370,7 @@ export default function ShootingDrillListPage() {
                           type="button"
                           onClick={() => handleDeleteClick(r.id)}
                           className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                         >
                           {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
                         </button>

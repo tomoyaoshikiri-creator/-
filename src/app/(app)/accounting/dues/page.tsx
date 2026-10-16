@@ -189,7 +189,7 @@ export default function AccountingDuesPage() {
                 ))}
               </select>
               {incomeCategories.length === 0 && (
-                <div className="text-[11px] text-danger mt-1">先に「項目の管理」で収入の項目を追加してください</div>
+                <div className="text-[11px] text-danger-text mt-1">先に「項目の管理」で収入の項目を追加してください</div>
               )}
             </div>
             <SubmitButton onClick={handleCreate} disabled={saving || incomeCategories.length === 0}>

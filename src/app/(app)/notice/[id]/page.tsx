@@ -409,7 +409,7 @@ export default function NoticeDetailPage() {
                       onClick={() => handleRemoveAttachment(a)}
                       disabled={removingId === a.id}
                       className="text-[11px] font-bold"
-                      style={{ color: "var(--danger)" }}
+                      style={{ color: "var(--danger-text)" }}
                     >
                       {removingId === a.id ? "削除中…" : "削除"}
                     </button>
@@ -454,7 +454,7 @@ export default function NoticeDetailPage() {
                         type="button"
                         onClick={() => removeNewFile(kind, i)}
                         className="flex-none font-bold"
-                        style={{ color: "var(--danger)" }}
+                        style={{ color: "var(--danger-text)" }}
                       >
                         削除
                       </button>
@@ -485,7 +485,7 @@ export default function NoticeDetailPage() {
               onClick={handleDeleteNotice}
               disabled={deleting}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このお知らせを削除する"}
             </button>
@@ -554,7 +554,7 @@ export default function NoticeDetailPage() {
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                  className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
                 >
                   編集する
                 </button>

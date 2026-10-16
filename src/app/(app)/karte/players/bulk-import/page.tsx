@@ -148,13 +148,13 @@ export default function PlayerBulkImportPage() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="w-full text-center py-2.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8"
+          className="w-full text-center py-2.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8"
         >
           📎 CSVファイルを選ぶ
         </button>
         {fileName && <div className="text-[11.5px] text-ink-soft mt-2">選択中: {fileName}</div>}
         {mojibakeWarning && (
-          <div className="text-[11px] mt-2" style={{ color: "var(--danger)" }}>
+          <div className="text-[11px] mt-2" style={{ color: "var(--danger-text)" }}>
             文字化けしている可能性があります。Excelで保存する際は「CSV UTF-8」形式をお試しください。
           </div>
         )}
@@ -192,7 +192,7 @@ export default function PlayerBulkImportPage() {
                   <div className="font-bold">
                     {r.rowNumber}行目: {r.input.sei} {r.input.mei}
                   </div>
-                  <ul className="list-disc pl-4 mt-1" style={{ color: "var(--danger)" }}>
+                  <ul className="list-disc pl-4 mt-1" style={{ color: "var(--danger-text)" }}>
                     {r.errors.map((e, i) => (
                       <li key={i}>{e}</li>
                     ))}

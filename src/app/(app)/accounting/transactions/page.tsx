@@ -343,7 +343,7 @@ export default function AccountingTransactionsPage() {
                     </div>
                     <div
                       className="flex-none font-mono font-bold text-[13px]"
-                      style={{ color: cat?.kind === "income" ? "var(--green)" : "var(--danger)" }}
+                      style={{ color: cat?.kind === "income" ? "var(--green-text)" : "var(--danger-text)" }}
                     >
                       {cat?.kind === "income" ? "+" : "-"}
                       {formatYen(Number(t.amount))}
@@ -408,7 +408,7 @@ export default function AccountingTransactionsPage() {
                       type="button"
                       onClick={() => handleDeleteClick(t.id)}
                       className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                     >
                       {deleteConfirmId === t.id ? "もう一度タップで削除確定" : "この記録を削除"}
                     </button>

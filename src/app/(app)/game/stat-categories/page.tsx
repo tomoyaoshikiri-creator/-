@@ -473,7 +473,7 @@ function SortableCategoryRow({
                 onClick={() => handleDelete(category.id)}
                 className={`flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border ${
                   deleteConfirmId === category.id
-                    ? "border-danger text-danger bg-danger/8"
+                    ? "border-danger text-danger-text bg-danger/8"
                     : "border-line text-ink-soft bg-paper"
                 }`}
               >

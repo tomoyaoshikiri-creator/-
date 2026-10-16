@@ -187,7 +187,7 @@ export default function SettingsLogoPage() {
               <button
                 type="button"
                 onClick={() => setEditingName(true)}
-                className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+                className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
               >
                 チーム名を編集する
               </button>
@@ -203,7 +203,7 @@ export default function SettingsLogoPage() {
         <Card>
           <div className="flex items-center gap-2">
             <input readOnly className={inputClass("text-[11px]")} value={`${origin}/login/${slug}`} />
-            <button type="button" onClick={copyLoginUrl} className="flex-none text-orange font-bold text-xs">
+            <button type="button" onClick={copyLoginUrl} className="flex-none text-orange-text font-bold text-xs">
               コピー
             </button>
           </div>

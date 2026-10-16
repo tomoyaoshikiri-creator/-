@@ -50,7 +50,7 @@ export function ActiveTeamErrorScreen({
         <div className="max-w-md mx-auto w-full bg-white border border-line rounded-lg p-5 text-center">
           <div className="font-bold text-[15px] mb-2">{title}</div>
           <div className="text-[12.5px] text-ink-soft leading-relaxed mb-3">{message}</div>
-          {logoutError && <div className="mb-3 text-[12.5px] text-danger">{logoutError}</div>}
+          {logoutError && <div className="mb-3 text-[12.5px] text-danger-text">{logoutError}</div>}
           <SubmitButton onClick={handleRelogin} disabled={loggingOut}>
             {loggingOut ? "処理中…" : "ログインし直す"}
           </SubmitButton>

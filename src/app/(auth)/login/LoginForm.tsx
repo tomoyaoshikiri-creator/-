@@ -37,7 +37,7 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </div>
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "ログイン中…" : "ログイン"}
@@ -51,7 +51,7 @@ export function LoginForm({ next }: { next?: string }) {
 
       <div className="text-center text-[12px] text-ink-soft mt-4">
         はじめての方は{" "}
-        <Link href="/signup" className="text-orange font-bold">
+        <Link href="/signup" className="text-orange-text font-bold">
           こちらから
         </Link>
         チームを作成してください。

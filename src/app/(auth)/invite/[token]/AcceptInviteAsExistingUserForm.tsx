@@ -42,7 +42,7 @@ export function AcceptInviteAsExistingUserForm({
 
       <InvitePlayerPicker players={players} category={category} selectedIds={selectedIds} onChange={setSelectedIds} />
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "参加処理中…" : "このアカウントで参加する"}

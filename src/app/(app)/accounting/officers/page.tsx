@@ -100,7 +100,7 @@ function OfficerRoleSection({
               type="button"
               onClick={handleAdd}
               disabled={saving || !selectedId}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>

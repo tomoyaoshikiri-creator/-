@@ -95,7 +95,7 @@ export function CurrentUserBadge() {
                 type="button"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold text-danger"
+                className="w-full text-left px-3.5 py-2.5 text-[12.5px] font-bold text-danger-text"
               >
                 {loggingOut ? "処理中…" : "ログアウト"}
               </button>

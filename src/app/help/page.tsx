@@ -19,7 +19,7 @@ export default function HelpPage() {
             <a
               key={c.id}
               href={`#${c.id}`}
-              className="text-[11.5px] font-bold text-orange border border-orange rounded-full px-3 py-1.5 bg-orange/8"
+              className="text-[11.5px] font-bold text-orange-text border border-orange rounded-full px-3 py-1.5 bg-orange/8"
             >
               {c.title}
             </a>
@@ -30,7 +30,7 @@ export default function HelpPage() {
 
         <div className="rounded-lg border border-line bg-white p-4 mt-8 text-center">
           <div className="text-[12.5px] text-ink-soft mb-2">このページで解決しなかった場合は、お問い合わせください。</div>
-          <a href="/contact" className="inline-block text-[12.5px] font-bold text-orange underline">
+          <a href="/contact" className="inline-block text-[12.5px] font-bold text-orange-text underline">
             お問い合わせページへ ›
           </a>
         </div>

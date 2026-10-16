@@ -15,7 +15,7 @@ export default function ContactPage() {
 
         <div className="rounded-lg border border-line bg-white p-5 mb-8">
           <div className="text-[11px] text-ink-soft mb-1">お問い合わせ先</div>
-          <a href="mailto:info@faith-creation.jp" className="text-[15px] font-bold text-orange underline">
+          <a href="mailto:info@faith-creation.jp" className="text-[15px] font-bold text-orange-text underline">
             info@faith-creation.jp
           </a>
           <div className="text-[11px] text-ink-soft mt-2">運営: FAITH CREATION</div>
@@ -39,7 +39,7 @@ export default function ContactPage() {
 
         <div className="text-[12px] text-ink-soft">
           操作方法については、先に
-          <a href="/help" className="underline font-bold text-orange">
+          <a href="/help" className="underline font-bold text-orange-text">
             よくある質問
           </a>
           もご確認ください。

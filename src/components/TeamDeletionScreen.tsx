@@ -59,7 +59,7 @@ export function TeamDeletionScreen({
               <div className="text-[12.5px] text-ink-soft leading-relaxed mt-3 mb-1">
                 それまでは「退会を取り消す」からいつでも復旧できます。有料プランをご利用中だった場合、契約は退会申請時点で解約済みのため、取り消し後に改めてお申し込みが必要です。
               </div>
-              {error && <div className="mt-3 text-[12.5px] text-danger">{error}</div>}
+              {error && <div className="mt-3 text-[12.5px] text-danger-text">{error}</div>}
               <SubmitButton onClick={handleRestore} disabled={restoring}>
                 {restoring ? "処理中…" : "退会を取り消す"}
               </SubmitButton>

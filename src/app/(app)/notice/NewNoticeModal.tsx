@@ -285,7 +285,7 @@ export function NewNoticeModal({
                   type="button"
                   onClick={() => removeFile(kind, i)}
                   className="flex-none font-bold"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)" }}
                 >
                   削除
                 </button>

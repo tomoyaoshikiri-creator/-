@@ -87,7 +87,7 @@ export function FolderActionsModal({
           type="button"
           onClick={handleRename}
           disabled={saving || name.trim() === folder.name}
-          className="flex-1 text-[12px] font-bold text-orange border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
+          className="flex-1 text-[12px] font-bold text-orange-text border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
         >
           {saving ? "保存中…" : "名前を保存"}
         </button>
@@ -104,7 +104,7 @@ export function FolderActionsModal({
         onClick={handleDelete}
         disabled={deleting}
         className="w-full mt-3 text-[12px] font-bold border rounded-lg px-3 py-2 bg-white disabled:opacity-40"
-        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
       >
         {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このフォルダを削除する"}
       </button>

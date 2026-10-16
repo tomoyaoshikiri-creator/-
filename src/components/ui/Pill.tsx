@@ -13,14 +13,14 @@ export function Pill({
 }) {
   const cls =
     tone === "ok"
-      ? "bg-green/10 text-green"
+      ? "bg-green/10 text-green-text"
       : tone === "absent"
-        ? "bg-danger/10 text-danger"
+        ? "bg-danger/10 text-danger-text"
         : tone === "late"
           ? "bg-sky/10 text-sky"
           : tone === "watch"
             ? "bg-ink-soft/10 text-ink-soft"
-            : "bg-orange/10 text-orange";
+            : "bg-orange/10 text-orange-text";
   const sizeCls = size === "lg" ? "text-[15px] px-3.5 py-2" : "text-[11px] px-2.5 py-1";
   return (
     <span className={`font-mono font-bold rounded-lg ${sizeCls} ${cls}`}>
@@ -39,12 +39,12 @@ export function TypeTag({
   const color = scheduleTypeColor(type);
   const cls =
     color === "danger"
-      ? "bg-danger/10 text-danger"
+      ? "bg-danger/10 text-danger-text"
       : color === "sky"
         ? "bg-sky/10 text-sky"
         : color === "ink-soft"
           ? "bg-ink-soft/10 text-ink-soft"
-          : "bg-orange/10 text-orange";
+          : "bg-orange/10 text-orange-text";
   const label =
     type === "game" ? (gameCategory ?? "試合") : type === "event" ? "イベント" : type === "other" ? "その他" : "練習";
   return (
@@ -55,7 +55,7 @@ export function TypeTag({
 // 一覧の中の個別項目(コメント・メモ等)が新着であることを示す小さなバッジ。
 export function NewBadge({ className = "" }: { className?: string }) {
   return (
-    <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger ${className}`}>
+    <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text ${className}`}>
       NEW
     </span>
   );

@@ -43,7 +43,7 @@ export default function DataExportPage() {
                 <div className="font-bold text-[12.5px]">{item.label}</div>
                 <div className="text-[11px] text-ink-soft mt-0.5">{item.desc}</div>
               </div>
-              <div className="text-[11px] text-orange font-bold flex-none ml-2">CSV ›</div>
+              <div className="text-[11px] text-orange-text font-bold flex-none ml-2">CSV ›</div>
             </a>
           ))}
         </div>

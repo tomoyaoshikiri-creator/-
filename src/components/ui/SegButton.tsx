@@ -44,7 +44,7 @@ export function TextTab({
     <button
       type="button"
       className={`text-[12.5px] font-bold pb-1 border-b-2 transition-colors ${
-        active ? "text-orange border-orange" : "text-ink-soft border-transparent"
+        active ? "text-orange-text border-orange" : "text-ink-soft border-transparent"
       } ${className}`}
       {...props}
     />

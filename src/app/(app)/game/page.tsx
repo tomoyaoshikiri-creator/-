@@ -65,7 +65,7 @@ export default function GameListPage() {
     <PageShell header={<AppHeader title="試合記録" accessBadge="coach" />}>
       <Link
         href="/game/results"
-        className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-lg border border-orange text-[12.5px] font-bold text-orange bg-orange/8"
+        className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-lg border border-orange text-[12.5px] font-bold text-orange-text bg-orange/8"
       >
         試合結果一覧を見る
         <ChevronRightIcon className="w-3 h-3" />
@@ -119,7 +119,7 @@ export default function GameListPage() {
                   <div>
                     <div className="font-bold text-[14.5px]">
                       {g.game_category && (
-                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger">
+                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger-text">
                           {g.game_category}
                         </span>
                       )}

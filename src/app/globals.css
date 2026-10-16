@@ -27,6 +27,19 @@
   --holiday: #DC2626;
 
   /*
+    アクセシビリティ監査(WCAG AA、通常文字4.5:1)で発見: --orange/--danger/--greenは
+    白系の背景の上に「文字として」使うと基準をわずかに下回る箇所があった(背景・枠線
+    として使う分には問題ない)。元の色味を保ったまま、白背景で基準を満たす濃さに
+    darkenForTextContrast()(src/lib/theme.ts)で算出した色。text-orange-text/
+    text-danger-text/text-green-textとして、既存のtext-orange/text-danger/text-green
+    (背景・枠線用途はそのまま維持)とは別に用意する。--orange-textはteamThemeStyle()
+    経由でチームカラー(theme_primary)に応じて上書きされる。
+  */
+  --orange-text: #0770D8;
+  --danger-text: #CE4145;
+  --green-text: #12823B;
+
+  /*
     APP-WIDE VISUAL REFRESH: --navyは元々「secondary team accent」(ボタン・選択状態・
     バッジ等、teams.theme_accentに追従してよい用途)と「見出し等の落ち着いた中立色」の
     二役を兼ねていた(Functional Improvement Backlog #4)。ここでは後者(team accent
@@ -84,12 +97,15 @@
   --color-navy: var(--navy);
   --color-heading: var(--heading);
   --color-orange: var(--orange);
+  --color-orange-text: var(--orange-text);
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-green: var(--green);
+  --color-green-text: var(--green-text);
   --color-line: var(--line);
   --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
   --color-sky: var(--sky);
   --color-holiday: var(--holiday);
 

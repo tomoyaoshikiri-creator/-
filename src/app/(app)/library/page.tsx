@@ -220,7 +220,7 @@ export default function LibraryPage() {
             />
           </div>
           {usedBytes >= limitBytes && (
-            <div className="text-[11px] mt-1.5" style={{ color: "var(--danger)" }}>
+            <div className="text-[11px] mt-1.5" style={{ color: "var(--danger-text)" }}>
               容量の上限に達しています。新規アップロードするには、ファイルを削除するか上位プランへのアップグレードが必要です。
             </div>
           )}
@@ -228,7 +228,7 @@ export default function LibraryPage() {
       )}
 
       <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3.5">
-        <button type="button" onClick={() => goToFolder(null)} className={currentFolderId === null ? "text-orange" : ""}>
+        <button type="button" onClick={() => goToFolder(null)} className={currentFolderId === null ? "text-orange-text" : ""}>
           ホーム
         </button>
         {crumbs.map((c) => (
@@ -237,7 +237,7 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={() => goToFolder(c.id)}
-              className={currentFolderId === c.id ? "text-orange" : ""}
+              className={currentFolderId === c.id ? "text-orange-text" : ""}
             >
               {c.name}
             </button>
@@ -251,7 +251,7 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={() => setNewFolderOpen(true)}
-              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+              className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
             >
               ＋ フォルダを作成
             </button>

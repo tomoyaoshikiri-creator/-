@@ -50,7 +50,7 @@ export function FreeThrowModal({
   return (
     <Modal open={open} onClose={onClose} title="フリースロー">
       <div className="flex items-center justify-between mb-3">
-        <button type="button" onClick={onClose} className="text-orange font-bold text-[13px]">
+        <button type="button" onClick={onClose} className="text-orange-text font-bold text-[13px]">
           キャンセル
         </button>
         <div className="font-bold text-[13.5px]">{entrantLabel}</div>
@@ -58,7 +58,7 @@ export function FreeThrowModal({
           type="button"
           onClick={handleSave}
           disabled={!canSave}
-          className="text-orange font-bold text-[13px] border border-orange rounded-lg px-3 py-1 disabled:opacity-30 disabled:border-line disabled:text-ink-soft"
+          className="text-orange-text font-bold text-[13px] border border-orange rounded-lg px-3 py-1 disabled:opacity-30 disabled:border-line disabled:text-ink-soft"
         >
           保存
         </button>

@@ -65,7 +65,7 @@ export default async function Home() {
         </div>
 
         <div className="mb-10">
-          <Link href="/pricing" className="text-[12.5px] text-orange font-bold underline">
+          <Link href="/pricing" className="text-[12.5px] text-orange-text font-bold underline">
             料金プランを見る ›
           </Link>
         </div>

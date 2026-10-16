@@ -151,7 +151,7 @@ export default function PlayerAnalysisNoteDetailPage() {
             {formatDateLabel(note.created_at.slice(0, 10))}
             {note.author_id && profiles[note.author_id] ? ` ・ ${profiles[note.author_id]}` : ""}
           </span>
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange-text text-[9.5px] font-bold tracking-wide">
             AI分析
           </span>
         </div>
@@ -163,7 +163,7 @@ export default function PlayerAnalysisNoteDetailPage() {
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={saving}
-                className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
               >
                 {saving ? "保存中…" : "保存"}
               </button>
@@ -194,7 +194,7 @@ export default function PlayerAnalysisNoteDetailPage() {
                   type="button"
                   onClick={handleDelete}
                   className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deleteConfirm ? "再タップで削除確定" : "削除"}
                 </button>

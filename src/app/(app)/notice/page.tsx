@@ -202,7 +202,7 @@ export default function NoticePage() {
       <Card key={n.id} className="cursor-pointer" onClick={() => openNotice(n.id)}>
         <div className="font-bold text-[14.5px]">
           {unseenIds.has(n.id) && (
-            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger">
+            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger-text">
               NEW
             </span>
           )}

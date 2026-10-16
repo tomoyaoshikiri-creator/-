@@ -48,9 +48,9 @@ export function MemberChangeModal({
                 dimmed ? "opacity-40" : ""
               } ${o.checked ? "bg-orange/10" : ""}`}
             >
-              <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange" : "text-ink"}`}>{o.label}</span>
+              <span className={`font-bold text-[13.5px] ${o.checked ? "text-orange-text" : "text-ink"}`}>{o.label}</span>
               {o.disqualified && (
-                <span className="flex-none text-[10.5px] font-bold text-danger ml-2">5ファウル退場</span>
+                <span className="flex-none text-[10.5px] font-bold text-danger-text ml-2">5ファウル退場</span>
               )}
             </button>
           );

@@ -485,7 +485,7 @@ export default function KarteTeamSkillTestDetailPage() {
             <button
               type="button"
               onClick={openSettingsEditor}
-              className="mb-3 text-[11px] font-bold text-orange underline"
+              className="mb-3 text-[11px] font-bold text-orange-text underline"
             >
               設定を編集
             </button>
@@ -529,7 +529,7 @@ export default function KarteTeamSkillTestDetailPage() {
                                 type="button"
                                 disabled={instructors.length === 0}
                                 onClick={() => openRequestModal(p)}
-                                className="text-[11px] font-bold text-orange underline disabled:opacity-40 disabled:no-underline"
+                                className="text-[11px] font-bold text-orange-text underline disabled:opacity-40 disabled:no-underline"
                               >
                                 ランクを申請
                               </button>
@@ -560,7 +560,7 @@ export default function KarteTeamSkillTestDetailPage() {
                           {playerName(r.player_id)} ・ {r.target_level_label}
                         </div>
                         {r.status === "rejected" && r.reject_reason && (
-                          <div className="text-[11px] text-danger mt-0.5">却下理由: {r.reject_reason}</div>
+                          <div className="text-[11px] text-danger-text mt-0.5">却下理由: {r.reject_reason}</div>
                         )}
                       </div>
                       <Pill tone={r.status === "approved" ? "ok" : r.status === "rejected" ? "absent" : "pending"}>
@@ -591,7 +591,7 @@ export default function KarteTeamSkillTestDetailPage() {
                           type="button"
                           disabled={decidingId === r.id}
                           onClick={() => handleApprove(r)}
-                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-orange text-orange disabled:opacity-50"
+                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-orange text-orange-text disabled:opacity-50"
                         >
                           承認
                         </button>
@@ -724,7 +724,7 @@ export default function KarteTeamSkillTestDetailPage() {
                   onClick={handleDeleteTest}
                   disabled={deletingTest}
                   className="mt-3 w-full text-center py-2.5 rounded-lg font-bold text-[13px] border bg-white disabled:opacity-50"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deletingTest ? "削除中…" : confirmingDelete ? "本当に削除しますか?(記録もすべて消えます・もう一度タップで削除)" : "この検定を削除"}
                 </button>

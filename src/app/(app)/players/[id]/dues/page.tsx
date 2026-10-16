@@ -138,7 +138,7 @@ export default function PlayerDuesPage() {
                   </div>
                   <span
                     className={`flex-none px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                      charge.status === "paid" ? "text-green bg-green/8" : "text-danger bg-danger/8"
+                      charge.status === "paid" ? "text-green-text bg-green/8" : "text-danger-text bg-danger/8"
                     }`}
                   >
                     {charge.status === "paid" ? "入金済み" : "未納"}

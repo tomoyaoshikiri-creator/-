@@ -174,7 +174,7 @@ export function NewCoachNoteModal({
             {files.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
                 <span className="truncate">{f.name}</span>
-                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
+                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger-text)" }}>
                   削除
                 </button>
               </div>

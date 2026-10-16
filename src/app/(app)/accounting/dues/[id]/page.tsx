@@ -284,7 +284,7 @@ export default function AccountingDuesItemPage() {
             <span className="font-bold text-[14px]">{item.name}</span>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-none ${
-                item.active ? "bg-green/10 text-green" : "bg-line text-ink-soft"
+                item.active ? "bg-green/10 text-green-text" : "bg-line text-ink-soft"
               }`}
             >
               {item.active ? "有効" : "停止中"}
@@ -405,7 +405,7 @@ export default function AccountingDuesItemPage() {
                   <button
                     type="button"
                     onClick={handleAddBand}
-                    className="flex-1 px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                    className="flex-1 px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
                   >
                     追加
                   </button>
@@ -508,7 +508,7 @@ export default function AccountingDuesItemPage() {
               type="button"
               onClick={handleAddPlayerSetting}
               disabled={!newPlayerId}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>
@@ -625,7 +625,7 @@ export default function AccountingDuesItemPage() {
       <button
         type="button"
         onClick={() => setEditing((v) => !v)}
-        className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8 mb-2.5"
+        className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8 mb-2.5"
       >
         {editing ? "編集を終了する" : "設定を編集する"}
       </button>
@@ -636,7 +636,7 @@ export default function AccountingDuesItemPage() {
           type="button"
           onClick={handleDelete}
           className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
         >
           {deleteConfirm ? "もう一度タップで削除確定" : "この集金項目を削除"}
         </button>

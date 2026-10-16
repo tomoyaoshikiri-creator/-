@@ -41,7 +41,7 @@ export function PlanLimitBanner() {
       href="/settings/plan"
       className="block rounded-lg border-2 border-danger bg-danger/8 px-3 py-2 mb-2.5 active:opacity-85"
     >
-      <div className="font-mono font-bold text-[12px] tracking-[0.05em] text-danger mb-0.5">プランの上限を超えています</div>
+      <div className="font-mono font-bold text-[12px] tracking-[0.05em] text-danger-text mb-0.5">プランの上限を超えています</div>
       <div className="text-[12.5px] text-ink leading-relaxed">
         {overPlayer && (
           <div>
@@ -50,7 +50,7 @@ export function PlanLimitBanner() {
         )}
         {overStorage && <div>ストレージ使用量が上限を超えています。新しいファイルをアップロードできません。</div>}
       </div>
-      <div className="text-[11px] text-danger font-bold mt-1">プランを確認する ›</div>
+      <div className="text-[11px] text-danger-text font-bold mt-1">プランを確認する ›</div>
     </Link>
   );
 }

@@ -293,7 +293,7 @@ export default function ShootingDrillNewPage() {
                     type="button"
                     onClick={() => setSelectedPlayerId(p.id)}
                     className={`text-left px-3 py-2 rounded-lg border font-bold text-[13px] ${
-                      selectedPlayerId === p.id ? "border-orange bg-orange/10 text-orange" : "border-line bg-white text-ink"
+                      selectedPlayerId === p.id ? "border-orange bg-orange/10 text-orange-text" : "border-line bg-white text-ink"
                     }`}
                   >
                     #{p.number ?? "-"} {playerFullName(p)}
@@ -401,13 +401,13 @@ export default function ShootingDrillNewPage() {
                 {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 基準{targetPoints}点
               </div>
               <div className="font-mono text-[44px] font-bold mt-1 tabular-nums">{formatElapsed(elapsedMs)}</div>
-              <div className="font-mono text-[20px] font-bold text-orange mt-1">{summary.total_points}点</div>
+              <div className="font-mono text-[20px] font-bold text-orange-text mt-1">{summary.total_points}点</div>
             </div>
 
             {phase === "running" && upcoming && (
               <div className="mt-4">
                 <div className="text-center text-[13px] font-bold text-ink-soft mb-2">
-                  次: <span className="text-orange text-[18px]">{CATEGORY_LABEL[upcoming]}</span>
+                  次: <span className="text-orange-text text-[18px]">{CATEGORY_LABEL[upcoming]}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -454,7 +454,7 @@ export default function ShootingDrillNewPage() {
                 type="button"
                 onClick={handleUndo}
                 disabled={shots.length === 0}
-                className={`py-2.5 rounded-lg font-bold text-[12.5px] border border-dashed border-danger text-danger bg-white ${
+                className={`py-2.5 rounded-lg font-bold text-[12.5px] border border-dashed border-danger text-danger-text bg-white ${
                   shots.length === 0 ? "opacity-40" : ""
                 }`}
               >

@@ -165,7 +165,7 @@ export default function AccountingBudgetPage() {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+              className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
             >
               予算を編集する
             </button>

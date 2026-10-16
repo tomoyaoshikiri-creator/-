@@ -874,7 +874,7 @@ export default function GameStatsPage() {
                 type="button"
                 onClick={() => setPossession("own")}
                 aria-label="自チームにポゼッション"
-                className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger" : "text-ink-soft"}`}
+                className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
               >
                 ➡︎
               </button>
@@ -882,7 +882,7 @@ export default function GameStatsPage() {
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                  <div className="font-mono text-[28px] font-bold text-orange leading-tight">{liveTeamScore}</div>
+                  <div className="font-mono text-[28px] font-bold text-orange-text leading-tight">{liveTeamScore}</div>
                 </div>
                 <div className="text-ink-soft font-bold text-[16px]">-</div>
                 <div className="text-center">
@@ -895,7 +895,7 @@ export default function GameStatsPage() {
                 type="button"
                 onClick={() => setPossession("opponent")}
                 aria-label="相手チームにポゼッション"
-                className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger" : "text-ink-soft"}`}
+                className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
               >
                 ➡︎
               </button>
@@ -979,7 +979,7 @@ export default function GameStatsPage() {
             className={`w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border bg-white ${
               resetConfirm ? "" : "opacity-50"
             }`}
-            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
           >
             {resetting
               ? "リセット中…"

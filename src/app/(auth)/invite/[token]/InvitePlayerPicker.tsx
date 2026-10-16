@@ -69,7 +69,7 @@ export function InvitePlayerPicker({
         );
       })}
       {selectedIds.length < sortedPlayers.length && (
-        <button type="button" onClick={addRow} className="mt-2 text-[12px] font-bold text-orange">
+        <button type="button" onClick={addRow} className="mt-2 text-[12px] font-bold text-orange-text">
           + もう一人追加
         </button>
       )}

@@ -165,7 +165,7 @@ export default function PollDetailPage() {
             action={
               <span
                 className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
-                  poll.status === "open" ? "bg-orange/10 text-orange" : "bg-line text-ink-soft"
+                  poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
                 }`}
               >
                 {pollStatusLabel(poll.status)}
@@ -219,7 +219,7 @@ export default function PollDetailPage() {
           ) : (
             <Card>
               {(isPrivilegedEarlyView || isPrivilegedAnonymousReveal) && (
-                <div className="text-[10.5px] font-bold mb-2.5" style={{ color: "var(--danger)" }}>
+                <div className="text-[10.5px] font-bold mb-2.5" style={{ color: "var(--danger-text)" }}>
                   ※管理者限定の表示です(他のメンバーには公開されていません)
                 </div>
               )}
@@ -273,7 +273,7 @@ export default function PollDetailPage() {
                   className={`w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-40 ${
                     poll.status === "open" ? "mt-2" : ""
                   }`}
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この投票を削除する"}
                 </button>

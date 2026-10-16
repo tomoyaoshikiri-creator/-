@@ -386,7 +386,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         answer: (
           <>
             お問い合わせページ(
-            <a href="mailto:info@faith-creation.jp" className="underline font-bold text-orange">
+            <a href="mailto:info@faith-creation.jp" className="underline font-bold text-orange-text">
               info@faith-creation.jp
             </a>
             )から連絡してください。

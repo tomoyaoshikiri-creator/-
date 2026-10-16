@@ -362,7 +362,7 @@ export default function DailyReportDetailPage() {
               onClick={handleDelete}
               disabled={deleting}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このチーム日報を削除する"}
             </button>
@@ -376,7 +376,7 @@ export default function DailyReportDetailPage() {
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                  className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
                 >
                   編集する
                 </button>
@@ -396,7 +396,7 @@ export default function DailyReportDetailPage() {
                       <img src={a.url} alt={a.file_name} className="w-full rounded-lg border border-line object-contain" />
                     </a>
                   ) : a.url ? (
-                    <a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="block text-orange font-bold text-xs">
+                    <a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="block text-orange-text font-bold text-xs">
                       📎 {a.file_name}
                     </a>
                   ) : null,
@@ -426,7 +426,7 @@ export default function DailyReportDetailPage() {
                         type="button"
                         onClick={() => handleSaveCommentEdit(c.id)}
                         disabled={savingCommentEdit}
-                        className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-orange text-orange bg-orange/8"
+                        className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-orange text-orange-text bg-orange/8"
                       >
                         {savingCommentEdit ? "保存中…" : "保存"}
                       </button>
@@ -471,7 +471,7 @@ export default function DailyReportDetailPage() {
                           type="button"
                           onClick={() => handleDeleteComment(c.id)}
                           className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border bg-white whitespace-nowrap"
-                          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                         >
                           {deleteCommentConfirmId === c.id ? "再タップで削除確定" : "削除"}
                         </button>
@@ -493,7 +493,7 @@ export default function DailyReportDetailPage() {
                 type="button"
                 onClick={handleAddComment}
                 disabled={postingComment || !commentDraft.trim()}
-                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-orange text-orange bg-orange/8 disabled:opacity-40"
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-orange text-orange-text bg-orange/8 disabled:opacity-40"
               >
                 送信
               </button>

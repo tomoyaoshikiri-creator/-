@@ -49,7 +49,7 @@ export function LockedFeatureCard({
           {description && <div className="text-[11.5px] text-ink-soft mt-1">{description}</div>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <span className="text-[10.5px] font-bold text-orange whitespace-nowrap">
+          <span className="text-[10.5px] font-bold text-orange-text whitespace-nowrap">
             {PLAN_DISPLAY_LABELS[requiredPlan]}プラン以上
           </span>
           <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />

@@ -59,7 +59,7 @@ function TimeoutButton({
   count: number;
   onTap: () => void;
 }) {
-  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange";
+  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange-text";
   return (
     <button
       type="button"
@@ -148,7 +148,7 @@ function ChipRow({
               type="button"
               onClick={onUndo}
               disabled={!canUndo}
-              className={`flex-1 min-h-0 flex items-center justify-center rounded-lg border border-dashed border-danger text-danger font-bold text-[8.5px] ${
+              className={`flex-1 min-h-0 flex items-center justify-center rounded-lg border border-dashed border-danger text-danger-text font-bold text-[8.5px] ${
                 canUndo ? "" : "opacity-40"
               }`}
             >

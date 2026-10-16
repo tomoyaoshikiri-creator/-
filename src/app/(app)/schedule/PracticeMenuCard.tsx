@@ -198,7 +198,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
         </span>
         <span className="flex-1 h-px bg-line" />
         {canManage && menus.length > 0 && !copyOpen && (
-          <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange whitespace-nowrap">
+          <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange-text whitespace-nowrap">
             他の練習日にコピー
           </button>
         )}
@@ -370,7 +370,7 @@ function SortableMenuRow({
                 onClick={() => handleDelete(menu.id)}
                 className={`flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border ${
                   deleteConfirmId === menu.id
-                    ? "border-danger text-danger bg-danger/8"
+                    ? "border-danger text-danger-text bg-danger/8"
                     : "border-line text-ink-soft bg-paper"
                 }`}
               >

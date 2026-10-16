@@ -111,7 +111,7 @@ function TimeoutButton({
   onTap: () => void;
   align: "start" | "end";
 }) {
-  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange";
+  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange-text";
   return (
     <button
       type="button"
@@ -315,7 +315,7 @@ export function GameStatsLandscape({
           <div className="w-[210px] flex flex-col items-end gap-1">
             <div className="flex items-center gap-2.5">
               <span className="text-[16.5px] font-bold text-ink-soft truncate max-w-[130px]">{ownName}</span>
-              <span className="font-mono text-[39px] font-bold leading-none text-orange">{ownScore}</span>
+              <span className="font-mono text-[39px] font-bold leading-none text-orange-text">{ownScore}</span>
             </div>
             <TeamFoulLamps count={ownQuarterFouls} />
           </div>
@@ -360,7 +360,7 @@ export function GameStatsLandscape({
           type="button"
           onClick={() => onSetPossession("own")}
           aria-label="自チームにポゼッション"
-          className={`text-[26px] leading-none -mt-2.5 scale-x-[-1] ${possession === "own" ? "text-danger" : "text-ink-soft"}`}
+          className={`text-[26px] leading-none -mt-2.5 scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
         >
           ➡︎
         </button>
@@ -368,7 +368,7 @@ export function GameStatsLandscape({
           type="button"
           onClick={() => onSetPossession("opponent")}
           aria-label="相手チームにポゼッション"
-          className={`text-[26px] leading-none -mt-2.5 ${possession === "opponent" ? "text-danger" : "text-ink-soft"}`}
+          className={`text-[26px] leading-none -mt-2.5 ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
         >
           ➡︎
         </button>
@@ -376,7 +376,7 @@ export function GameStatsLandscape({
           type="button"
           onClick={onResetAll}
           disabled={resetting}
-          className={`absolute left-4.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-danger text-danger bg-white ${
+          className={`absolute left-4.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-danger text-danger-text bg-white ${
             resetConfirm ? "" : "opacity-50"
           }`}
         >
@@ -427,7 +427,7 @@ export function GameStatsLandscape({
             type="button"
             disabled={!lastEntry}
             onClick={handleUndo}
-            className={`w-full mb-2 py-1.5 rounded-lg border border-dashed border-danger text-danger font-bold text-[12px] ${
+            className={`w-full mb-2 py-1.5 rounded-lg border border-dashed border-danger text-danger-text font-bold text-[12px] ${
               lastEntry ? "" : "opacity-40"
             }`}
           >
@@ -584,7 +584,7 @@ function LogColumn({
               className="w-full text-left text-[12px] leading-[1.4] py-1 px-1.5 rounded-lg border-b border-line"
             >
               {e.pt !== 0 && (
-                <span className={`float-right font-mono font-bold ${e.side === "own" ? "text-orange" : "text-navy"}`}>
+                <span className={`float-right font-mono font-bold ${e.side === "own" ? "text-orange-text" : "text-navy"}`}>
                   {e.pt > 0 ? `+${e.pt}` : e.pt}
                 </span>
               )}
@@ -597,7 +597,7 @@ function LogColumn({
                 type="button"
                 onClick={() => handleDeleteClick(e.id)}
                 className="w-full text-center py-1 mb-1 rounded-lg font-bold text-[10.5px] border bg-white"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
               >
                 {deleteConfirmId === e.id ? "もう一度タップで削除確定" : "この記録を削除"}
               </button>
@@ -635,7 +635,7 @@ function FixEntryOverlay({
     >
       <div className="w-[min(92%,980px)] max-h-[88%] bg-white rounded-[18px] overflow-hidden flex flex-col shadow-2xl">
         <div className="flex-none flex items-center justify-between px-4 py-3 border-b border-line">
-          <button type="button" onClick={onClose} className="text-orange font-bold text-[13px]">
+          <button type="button" onClick={onClose} className="text-orange-text font-bold text-[13px]">
             キャンセル
           </button>
           <div className="text-[13.5px] font-extrabold">プレーヤーまたはプレーを選択してください</div>
@@ -657,7 +657,7 @@ function FixEntryOverlay({
                     <span>
                       #{p.number ?? "-"} {playerFullName(p)}
                     </span>
-                    <span className={`font-extrabold text-orange ${checked ? "" : "invisible"}`}>✓</span>
+                    <span className={`font-extrabold text-orange-text ${checked ? "" : "invisible"}`}>✓</span>
                   </button>
                 );
               })}
@@ -679,7 +679,7 @@ function FixEntryOverlay({
                     }`}
                   >
                     <span>{b.label}</span>
-                    <span className={`font-extrabold text-orange ${checked ? "" : "invisible"}`}>✓</span>
+                    <span className={`font-extrabold text-orange-text ${checked ? "" : "invisible"}`}>✓</span>
                   </button>
                 );
               })}
@@ -712,7 +712,7 @@ function FixEntryOverlay({
           <button
             type="button"
             onClick={onDelete}
-            className="w-full py-2 rounded-lg border border-dashed border-danger text-danger font-bold text-[12.5px] bg-white"
+            className="w-full py-2 rounded-lg border border-dashed border-danger text-danger-text font-bold text-[12.5px] bg-white"
           >
             この記録を削除
           </button>

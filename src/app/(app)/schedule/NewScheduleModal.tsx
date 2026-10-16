@@ -535,7 +535,7 @@ export function NewScheduleModal({
           onClick={handleDelete}
           disabled={saving || deleting}
           className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
         >
           {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この予定を削除する"}
         </button>

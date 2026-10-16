@@ -165,7 +165,7 @@ export default function AccountingDuesUnpaidPage() {
                   <div className="text-[14px] font-bold truncate mt-0.5">{g.label}</div>
                   <div className="text-[11.5px] mt-1">
                     <span className="font-mono font-bold">{formatYen(g.amount)}</span>
-                    {g.daysOverdue > 0 && <span className="text-danger ml-1.5">{g.daysOverdue}日経過</span>}
+                    {g.daysOverdue > 0 && <span className="text-danger-text ml-1.5">{g.daysOverdue}日経過</span>}
                   </div>
                 </div>
                 <button

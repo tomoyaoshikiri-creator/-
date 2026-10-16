@@ -179,7 +179,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
                     type="button"
                     onClick={() => handleRequestLevel(test)}
                     disabled={submittingTestId === test.id}
-                    className="flex-none px-3.5 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                    className="flex-none px-3.5 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
                   >
                     {submittingTestId === test.id ? "申請中…" : "申請"}
                   </button>

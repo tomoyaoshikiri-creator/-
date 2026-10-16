@@ -269,7 +269,7 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => copyInviteUrl(inv.token)}
-                  className="flex-none text-orange font-bold text-xs"
+                  className="flex-none text-orange-text font-bold text-xs"
                 >
                   コピー
                 </button>
@@ -289,7 +289,7 @@ export default function UsersPage() {
                   type="button"
                   onClick={() => sendInviteEmail(inv.id, inv.token)}
                   disabled={sendingEmailId === inv.id}
-                  className="flex-none text-orange font-bold text-xs"
+                  className="flex-none text-orange-text font-bold text-xs"
                 >
                   送信
                 </button>
@@ -299,7 +299,7 @@ export default function UsersPage() {
                   type="button"
                   onClick={() => handleRevoke(inv.id)}
                   className="mt-1.5 text-[11px] font-bold"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)" }}
                 >
                   {revokeConfirmId === inv.id ? "もう一度タップで取り消し確定" : "このリンクを取り消す"}
                 </button>
@@ -414,7 +414,7 @@ export default function UsersPage() {
                         type="button"
                         onClick={() => handleDelete(u.id)}
                         className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                       >
                         {deleteConfirmId === u.id ? "もう一度タップで削除確定" : "このユーザーを削除する"}
                       </button>

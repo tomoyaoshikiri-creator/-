@@ -65,7 +65,7 @@ export function InviteForm({
             required
           />
 
-          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger">{verifyState.error}</div>}
+          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger-text">{verifyState.error}</div>}
 
           <SubmitButton type="submit" disabled={verifying}>
             {verifying ? "確認中…" : "確認する"}
@@ -77,18 +77,18 @@ export function InviteForm({
           <button
             type="submit"
             disabled={resending}
-            className="w-full text-center py-2 text-[12px] font-bold text-orange"
+            className="w-full text-center py-2 text-[12px] font-bold text-orange-text"
           >
             {resending ? "再送中…" : "コードを再送する"}
           </button>
           {resendState.message && (
             <div className="mt-1 text-[11.5px] text-ink-soft text-center">{resendState.message}</div>
           )}
-          {resendState.error && <div className="mt-1 text-[11.5px] text-danger text-center">{resendState.error}</div>}
+          {resendState.error && <div className="mt-1 text-[11.5px] text-danger-text text-center">{resendState.error}</div>}
         </form>
 
         <div className="text-center text-[12px] text-ink-soft mt-4">
-          <Link href="/login" className="text-orange font-bold">
+          <Link href="/login" className="text-orange-text font-bold">
             ログイン画面に戻る
           </Link>
         </div>
@@ -133,7 +133,7 @@ export function InviteForm({
         <TermsAgreementCheckbox />
 
         {state.error && (
-          <div className="mt-3 text-[12.5px] text-danger">
+          <div className="mt-3 text-[12.5px] text-danger-text">
             {state.error}
             <div className="mt-1 text-ink-soft font-normal">すでにアカウントをお持ちの場合はログインしてください。</div>
           </div>
@@ -146,7 +146,7 @@ export function InviteForm({
 
       <div className="mt-3 text-center text-[12px] text-ink-soft">
         すでにアカウントをお持ちの方は
-        <Link href={`/login?next=/invite/${token}`} className="text-orange font-bold">
+        <Link href={`/login?next=/invite/${token}`} className="text-orange-text font-bold">
           ログインしてから
         </Link>
         この招待に参加してください。

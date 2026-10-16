@@ -312,7 +312,7 @@ export default function ShavingDrillPage() {
                           type="button"
                           onClick={() => handleDeleteClick(r.id)}
                           className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                         >
                           {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
                         </button>

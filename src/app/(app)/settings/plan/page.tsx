@@ -99,14 +99,14 @@ export default function SettingsPlanPage() {
         <Card>
           {plan && (
             <div className="mb-2.5">
-              <div className="text-[11px] font-bold text-orange">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
+              <div className="text-[11px] font-bold text-orange-text">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
               {plan === "お試し" && (
                 <div className="text-[11px] text-ink-soft mt-0.5">まずはCIRCLE LINESを試してみたいチーム向け・¥0</div>
               )}
             </div>
           )}
           {pastDue && (
-            <div className="text-[11.5px] text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-2.5">
+            <div className="text-[11.5px] text-danger-text bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-2.5">
               お支払いの確認が取れていません。カード情報をご確認のうえ、お支払い管理ページから更新してください。
             </div>
           )}

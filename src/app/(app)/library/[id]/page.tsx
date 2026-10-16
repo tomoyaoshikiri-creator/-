@@ -213,7 +213,7 @@ export default function LibraryItemDetailPage() {
                     type="button"
                     onClick={() => toggleRole(r)}
                     className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
-                      allowedRoles.includes(r) ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                      allowedRoles.includes(r) ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
                     }`}
                   >
                     {r}
@@ -242,7 +242,7 @@ export default function LibraryItemDetailPage() {
               type="button"
               onClick={handleDelete}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この資料を削除する"}
             </button>
@@ -264,7 +264,7 @@ export default function LibraryItemDetailPage() {
                   <button
                     type="button"
                     onClick={startEdit}
-                    className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                    className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
                   >
                     編集する
                   </button>
@@ -324,7 +324,7 @@ export default function LibraryItemDetailPage() {
                           alt={f.file_name}
                           className="w-full rounded-lg border border-line object-contain"
                         />
-                        <div className="text-orange font-bold text-xs mt-1">📄 {f.file_name}</div>
+                        <div className="text-orange-text font-bold text-xs mt-1">📄 {f.file_name}</div>
                       </a>
                     );
                   }
@@ -335,7 +335,7 @@ export default function LibraryItemDetailPage() {
                         href={f.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block text-orange font-bold text-xs"
+                        className="block text-orange-text font-bold text-xs"
                       >
                         {isPdfFile(f.file_name) ? "📄" : "📎"} {f.file_name}
                       </a>

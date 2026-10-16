@@ -196,7 +196,7 @@ export default function PlayerGrowthPage() {
                 onClick={() => handleDelete(r.id)}
                 className={`flex-shrink-0 ml-2 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
                   deleteConfirmId === r.id
-                    ? "border-danger text-danger bg-danger/8"
+                    ? "border-danger text-danger-text bg-danger/8"
                     : "border-line text-ink-soft bg-paper"
                 }`}
               >

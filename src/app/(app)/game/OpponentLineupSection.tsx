@@ -26,7 +26,7 @@ function OpponentCheckRow({
         dimmed ? "opacity-40" : ""
       } ${checked ? "bg-orange/10" : ""}`}
     >
-      <div className={`font-mono font-bold text-[13.5px] ${checked ? "text-orange" : ""}`}>
+      <div className={`font-mono font-bold text-[13.5px] ${checked ? "text-orange-text" : ""}`}>
         #{opponentPlayer.number}
       </div>
     </button>

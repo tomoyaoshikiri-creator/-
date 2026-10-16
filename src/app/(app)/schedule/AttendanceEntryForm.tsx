@@ -170,7 +170,7 @@ export function AttendanceEntryForm({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="flex-none text-center py-1.5 px-3 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
+                className="flex-none text-center py-1.5 px-3 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
               >
                 編集する
               </button>
@@ -419,7 +419,7 @@ export function AttendanceEntryForm({
                 onClick={handleDelete}
                 disabled={saving}
                 className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
               >
                 {deleteConfirm ? "もう一度タップで削除確定" : "この出欠を削除する"}
               </button>

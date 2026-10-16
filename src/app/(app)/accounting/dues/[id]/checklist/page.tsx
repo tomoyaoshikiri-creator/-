@@ -203,7 +203,7 @@ export default function AccountingDuesChecklistPage() {
           type="button"
           onClick={handleGenerate}
           disabled={generating}
-          className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+          className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
         >
           {generating ? "作成中…" : "本日時点の請求を作成する"}
         </button>
@@ -240,7 +240,7 @@ export default function AccountingDuesChecklistPage() {
                             onClick={() => handleToggleGroup(g)}
                             disabled={toggling === g.groupKey}
                             className={`flex-none px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
-                              g.allPaid ? "border-green text-green bg-green/8" : "border-line text-ink-soft bg-paper"
+                              g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
                             }`}
                           >
                             {g.allPaid ? "入金済み" : "未納"}
