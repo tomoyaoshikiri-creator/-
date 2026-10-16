@@ -44,16 +44,18 @@ export default function SettingsPasswordPage() {
     <PageShell header={<AppHeader title="パスワードの変更" variant="detail" backHref="/settings" />}>
       <SectionLabel>新しいパスワード</SectionLabel>
       <Card>
-        <FieldLabel>新しいパスワード</FieldLabel>
+        <FieldLabel htmlFor="settings-new-password">新しいパスワード</FieldLabel>
         <input
+          id="settings-new-password"
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           className={inputClass()}
         />
         <div className="mt-3">
-          <FieldLabel>新しいパスワード(確認)</FieldLabel>
+          <FieldLabel htmlFor="settings-confirm-password">新しいパスワード(確認)</FieldLabel>
           <input
+            id="settings-confirm-password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

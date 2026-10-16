@@ -43,8 +43,8 @@ export default function SettingsNamePage() {
     <PageShell header={<AppHeader title="表示名の変更" variant="detail" backHref="/settings" />}>
       <SectionLabel>表示名</SectionLabel>
       <Card>
-        <FieldLabel>表示名</FieldLabel>
-        <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass()} />
+        <FieldLabel htmlFor="settings-name">表示名</FieldLabel>
+        <input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass()} />
         <SubmitButton onClick={handleSave} disabled={saving}>
           {saving ? "保存中…" : "保存する"}
         </SubmitButton>

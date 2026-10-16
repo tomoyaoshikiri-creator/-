@@ -93,19 +93,32 @@ export function NewPlayerModal({
     <Modal open={open} onClose={onClose} title="選手を登録">
       <div className="flex gap-2">
         <div className="flex-1">
-          <FieldLabel>氏</FieldLabel>
-          <input className={inputClass()} value={sei} onChange={(e) => setSei(e.target.value)} placeholder="例:田中" />
+          <FieldLabel htmlFor="new-player-sei">氏</FieldLabel>
+          <input
+            id="new-player-sei"
+            className={inputClass()}
+            value={sei}
+            onChange={(e) => setSei(e.target.value)}
+            placeholder="例:田中"
+          />
         </div>
         <div className="flex-1">
-          <FieldLabel>名</FieldLabel>
-          <input className={inputClass()} value={mei} onChange={(e) => setMei(e.target.value)} placeholder="例:陽翔" />
+          <FieldLabel htmlFor="new-player-mei">名</FieldLabel>
+          <input
+            id="new-player-mei"
+            className={inputClass()}
+            value={mei}
+            onChange={(e) => setMei(e.target.value)}
+            placeholder="例:陽翔"
+          />
         </div>
       </div>
 
       <div className="mt-3 flex gap-2">
         <div className="flex-1">
-          <FieldLabel>氏(カナ)</FieldLabel>
+          <FieldLabel htmlFor="new-player-sei-kana">氏(カナ)</FieldLabel>
           <input
+            id="new-player-sei-kana"
             className={inputClass()}
             value={seiKana}
             onChange={(e) => setSeiKana(e.target.value)}
@@ -113,8 +126,9 @@ export function NewPlayerModal({
           />
         </div>
         <div className="flex-1">
-          <FieldLabel>名(カナ)</FieldLabel>
+          <FieldLabel htmlFor="new-player-mei-kana">名(カナ)</FieldLabel>
           <input
+            id="new-player-mei-kana"
             className={inputClass()}
             value={meiKana}
             onChange={(e) => setMeiKana(e.target.value)}
@@ -125,8 +139,13 @@ export function NewPlayerModal({
 
       {gradeOptions.length > 0 ? (
         <div className="mt-3">
-          <FieldLabel>学年</FieldLabel>
-          <select className={inputClass()} value={grade} onChange={(e) => setGrade(e.target.value as Grade | "")}>
+          <FieldLabel htmlFor="new-player-grade">学年</FieldLabel>
+          <select
+            id="new-player-grade"
+            className={inputClass()}
+            value={grade}
+            onChange={(e) => setGrade(e.target.value as Grade | "")}
+          >
             <option value="">選択してください</option>
             {gradeOptions.map((g) => (
               <option key={g.value} value={g.value}>
@@ -147,8 +166,14 @@ export function NewPlayerModal({
       </div>
 
       <div className="mt-3">
-        <FieldLabel>背番号(リバ)</FieldLabel>
-        <input className={inputClass()} value={number} onChange={(e) => setNumber(e.target.value)} placeholder="例:7" />
+        <FieldLabel htmlFor="new-player-number">背番号(リバ)</FieldLabel>
+        <input
+          id="new-player-number"
+          className={inputClass()}
+          value={number}
+          onChange={(e) => setNumber(e.target.value)}
+          placeholder="例:7"
+        />
       </div>
 
       <div className="mt-3">

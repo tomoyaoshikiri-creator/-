@@ -204,8 +204,9 @@ export function NewNoticeModal({
 
   return (
     <Modal open={open} onClose={onClose} title="お知らせを登録">
-      <FieldLabel>タイトル</FieldLabel>
+      <FieldLabel htmlFor="notice-title">タイトル</FieldLabel>
       <input
+        id="notice-title"
         className={inputClass()}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -213,8 +214,9 @@ export function NewNoticeModal({
       />
 
       <div className="mt-3">
-        <FieldLabel>本文</FieldLabel>
+        <FieldLabel htmlFor="notice-body">本文</FieldLabel>
         <textarea
+          id="notice-body"
           rows={3}
           className={inputClass()}
           value={body}

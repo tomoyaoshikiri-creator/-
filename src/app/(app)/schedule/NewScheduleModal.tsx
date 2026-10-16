@@ -318,8 +318,9 @@ export function NewScheduleModal({
 
       {type === "game" && (
         <div className="mt-3">
-          <FieldLabel>年度</FieldLabel>
+          <FieldLabel htmlFor="schedule-fiscal-year">年度</FieldLabel>
           <select
+            id="schedule-fiscal-year"
             className={inputClass()}
             value={fiscalYearOverride}
             onChange={(e) => setFiscalYearOverride(e.target.value)}
@@ -338,8 +339,9 @@ export function NewScheduleModal({
       )}
 
       <div className="mt-3">
-        <FieldLabel>タイトル</FieldLabel>
+        <FieldLabel htmlFor="schedule-title">タイトル</FieldLabel>
         <input
+          id="schedule-title"
           className={inputClass()}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -440,8 +442,9 @@ export function NewScheduleModal({
       )}
 
       <div className="mt-3">
-        <FieldLabel>場所</FieldLabel>
+        <FieldLabel htmlFor="schedule-place">場所</FieldLabel>
         <input
+          id="schedule-place"
           className={inputClass()}
           value={place}
           onChange={(e) => setPlace(e.target.value)}
@@ -463,8 +466,9 @@ export function NewScheduleModal({
 
       {type !== "practice" && attendanceOn && (
         <div className="mt-3">
-          <FieldLabel>出欠登録の期限日(任意)</FieldLabel>
+          <FieldLabel htmlFor="schedule-attendance-deadline">出欠登録の期限日(任意)</FieldLabel>
           <input
+            id="schedule-attendance-deadline"
             type="date"
             className={inputClass()}
             value={attendanceDeadline}
@@ -492,8 +496,13 @@ export function NewScheduleModal({
 
       {category !== "その他" && attendanceOn && (
         <div className="mt-3">
-          <FieldLabel>対象</FieldLabel>
-          <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>
+          <FieldLabel htmlFor="schedule-target-grade">対象</FieldLabel>
+          <select
+            id="schedule-target-grade"
+            className={inputClass()}
+            value={targetGradeMin}
+            onChange={(e) => setTargetGradeMin(e.target.value)}
+          >
             <option value="">全員</option>
             {gradeOptions.map((g) => (
               <option key={g.value} value={g.value}>
@@ -509,8 +518,9 @@ export function NewScheduleModal({
 
       {type === "practice" && (
         <div className="mt-3">
-          <FieldLabel>当番</FieldLabel>
+          <FieldLabel htmlFor="schedule-toban">当番</FieldLabel>
           <input
+            id="schedule-toban"
             className={inputClass()}
             value={toban}
             onChange={(e) => setToban(e.target.value)}

@@ -38,12 +38,13 @@ export function NewTeamForm() {
           新しいチームを作成すると、あなたはそのチームの管理者になります。今の氏名のまま、複数のチームに所属できます。
         </div>
         <form action={formAction}>
-          <FieldLabel>チーム名</FieldLabel>
-          <input name="teamName" className={inputClass()} placeholder="例:〇〇クラブ" required />
+          <FieldLabel htmlFor="new-team-name">チーム名</FieldLabel>
+          <input id="new-team-name" name="teamName" className={inputClass()} placeholder="例:〇〇クラブ" required />
 
           <div className="mt-3">
-            <FieldLabel>カテゴリー</FieldLabel>
+            <FieldLabel htmlFor="new-team-category">カテゴリー</FieldLabel>
             <select
+              id="new-team-category"
               name="category"
               className={inputClass()}
               value={category}
@@ -64,8 +65,9 @@ export function NewTeamForm() {
           </div>
 
           <div className="mt-3">
-            <FieldLabel>競技</FieldLabel>
+            <FieldLabel htmlFor="new-team-sport">競技</FieldLabel>
             <select
+              id="new-team-sport"
               name="sport"
               className={inputClass()}
               value={sport}
