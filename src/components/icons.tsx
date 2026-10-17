@@ -199,3 +199,81 @@ export function InboxIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <line x1="4" y1="12" x2="20" y2="12" />
+      <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" />
+    </svg>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 3a5 5 0 0 0-5 5v3.5L5 15h14l-2-3.5V8a5 5 0 0 0-5-5z" />
+      <path d="M9.5 18a2.5 2.5 0 0 0 5 0" />
+    </svg>
+  );
+}
+
+export function SwitchIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6 7h12l-3.5-3.5" />
+      <path d="M18 17H6l3.5 3.5" />
+    </svg>
+  );
+}
+
+export function UserPlusIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+      <line x1="18" y1="8" x2="18" y2="14" />
+      <line x1="15" y1="11" x2="21" y2="11" />
+    </svg>
+  );
+}
+
+export function BuildingIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 21V6l7-3 7 3v15" />
+      <line x1="5" y1="11" x2="19" y2="11" />
+      <line x1="9" y1="21" x2="9" y2="14" />
+      <line x1="15" y1="21" x2="15" y2="14" />
+    </svg>
+  );
+}
+
+export function CardIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+export function LogoutIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4" />
+      <line x1="21" y1="12" x2="10" y2="12" />
+      <path d="M17 8l4 4-4 4" />
+    </svg>
+  );
+}
