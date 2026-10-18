@@ -210,10 +210,14 @@ export default function ShootingDrillListPage() {
             </Card>
           ) : (
             <Card className="max-h-[50vh] overflow-y-auto">
-              {groupedRecords.map((group) => (
+              {groupedRecords.map((group, groupIndex) => (
                 <div key={group.playerId}>
                   {playerFilter === "all" && (
-                    <div className="pt-2.5 pb-1 text-[11px] font-bold text-ink-soft first:pt-0">
+                    <div
+                      className={`-mx-4 px-4 py-1.5 bg-paper border-b border-line font-bold text-[12.5px] text-ink ${
+                        groupIndex > 0 ? "mt-1.5" : ""
+                      }`}
+                    >
                       {playerName(group.playerId)}
                     </div>
                   )}
@@ -227,16 +231,13 @@ export default function ShootingDrillListPage() {
                         <button
                           type="button"
                           onClick={() => canRecord && openRow(r)}
-                          className="w-full text-left py-2 text-[11.5px] leading-tight"
+                          className="w-full text-left py-2.5 text-[12px] leading-tight"
                         >
-                          <div>
-                            <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
-                            <span className="font-bold">{playerName(r.player_id)}</span>
-                          </div>
-                          <div className="text-ink-soft mt-0.5">
+                          <div className="font-mono font-bold text-ink">{formatFullDateLabel(r.recorded_on)}</div>
+                          <div className="text-ink-soft mt-1">
                             基準{r.target_points}点 / {formatShootingDrillTime(r.time_sec)} / {r.total_points}点
                           </div>
-                          <div className="font-mono text-[11px] text-ink-soft mt-0.5">
+                          <div className="font-mono text-[11px] text-ink-soft mt-1">
                             ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
                             {shotPct !== null && <span className="ml-1.5 font-bold text-orange-text">{shotPct}%</span>}
                           </div>
