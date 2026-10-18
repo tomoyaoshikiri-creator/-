@@ -37,6 +37,13 @@ const robotoMono = Roboto_Mono({
 // viewport-fit=cover / apple-mobile-web-app-status-bar-styleを指定していても
 // env(safe-area-inset-*)が正しく機能しない(常に0扱いになる)ケースがある。
 // otherフィールドで明示的に追加する。
+// statusBarStyle: 以前は"black-translucent"(コンテンツがステータスバー裏まで
+// 伸びる・フチなしヘッダー)だったが、この設定時にiOS側のペースト/自動入力候補
+// バーやキーボード移動ツールバーが画面最上部(ステータスバー付近)に誤表示される
+// 不具合が実機で確認されたため、"default"(ステータスバー領域を不透明の帯として
+// OS側に確保させる)に変更した(ユーザー承認済み)。これによりヘッダーの
+// グラデーションがステータスバー裏まで続く見た目は失われるが、入力欄まわりの
+// 不具合を優先した。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -44,7 +51,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "CIRCLE LINES",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
