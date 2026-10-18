@@ -104,29 +104,6 @@ export default function ShootingDrillListPage() {
 
   const filteredRecords = playerFilter === "all" ? records : records.filter((r) => r.player_id === playerFilter);
 
-  // ベストタイム表(目標21点の記録のみ対象)。選手ごとにベスト(最速)・前回(最新)・
-  // 回数・シュート率(成功本数合計/本数合計)を算出し、ベスト順に並べる。
-  const target21Records = records.filter((r) => r.target_points === 21);
-  const bestTimeRows = playerIdsInRecords
-    .map((playerId) => {
-      const own = target21Records.filter((r) => r.player_id === playerId);
-      if (own.length === 0) return null;
-      const best = own.reduce((a, b) => (a.time_sec <= b.time_sec ? a : b));
-      const last = own.reduce((a, b) => (a.recorded_on + a.created_at >= b.recorded_on + b.created_at ? a : b));
-      const madeTotal = own.reduce((sum, r) => sum + r.three_made + r.mid_made + r.layup_made, 0);
-      const attTotal = own.reduce((sum, r) => sum + r.three_att + r.mid_att + r.layup_att, 0);
-      return {
-        playerId,
-        best,
-        last,
-        count: own.length,
-        shotPct: attTotal > 0 ? Math.round((madeTotal / attTotal) * 100) : null,
-      };
-    })
-    .filter((row): row is NonNullable<typeof row> => row !== null)
-    .filter((row) => playerFilter === "all" || row.playerId === playerFilter)
-    .sort((a, b) => a.best.time_sec - b.best.time_sec);
-
   function openRow(r: ShootingDrillRecord) {
     if (expandedId === r.id) {
       setExpandedId(null);
@@ -220,46 +197,6 @@ export default function ShootingDrillListPage() {
             <FieldLabel>選手で絞り込む</FieldLabel>
             <InlineSelect value={playerFilter} onChange={setPlayerFilter} options={filterOptions} />
           </div>
-
-          <SectionLabel>ベストタイム(基準21点)</SectionLabel>
-          {bestTimeRows.length === 0 ? (
-            <Card>
-              <EmptyState>まだ基準21点の記録がありません</EmptyState>
-            </Card>
-          ) : (
-            <div className="bg-white border border-line rounded-lg overflow-auto mb-3">
-              <table className="border-collapse text-[11.5px] w-full">
-                <thead>
-                  <tr className="bg-paper">
-                    <th className="text-left px-2.5 py-2 border-b border-line whitespace-nowrap">選手</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">ベスト</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">前回</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">回数</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">シュート率</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bestTimeRows.map((row) => (
-                    <tr key={row.playerId}>
-                      <td className="px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
-                        {playerName(row.playerId)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono font-bold text-orange-text border-b border-line last:border-b-0 whitespace-nowrap">
-                        {formatTime(row.best.time_sec)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap">
-                        {formatTime(row.last.time_sec)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0">{row.count}</td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0">
-                        {row.shotPct === null ? "-" : `${row.shotPct}%`}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
 
           <SectionLabel>すべての記録</SectionLabel>
           {filteredRecords.length === 0 ? (
