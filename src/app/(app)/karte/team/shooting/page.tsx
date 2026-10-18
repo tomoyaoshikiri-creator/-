@@ -13,7 +13,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canRecordShootingDrill } from "@/lib/permissions";
 import { hasShootingDrillAccess } from "@/lib/plan";
-import { SHOOTING_DRILL_TARGET_OPTIONS, totalPointsFromCounts } from "@/lib/shootingDrill";
+import { SHOOTING_DRILL_TARGET_OPTIONS, formatShootingDrillTime, totalPointsFromCounts } from "@/lib/shootingDrill";
 import { formatFullDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, ShootingDrillRecord } from "@/lib/database.types";
 
@@ -28,13 +28,6 @@ type EditDraft = {
   layup_made: string;
   layup_att: string;
 };
-
-function formatTime(sec: number): string {
-  const total = Math.round(sec);
-  const m = Math.floor(total / 60);
-  const s = total - m * 60;
-  return m > 0 ? `${m}分${s}秒` : `${s}秒`;
-}
 
 function draftFromRecord(r: ShootingDrillRecord): EditDraft {
   return {
@@ -103,6 +96,18 @@ export default function ShootingDrillListPage() {
   ];
 
   const filteredRecords = playerFilter === "all" ? records : records.filter((r) => r.player_id === playerFilter);
+
+  // 「すべて」表示時は選手ごとにグループ化し、各選手の中では(recordsが既に
+  // recorded_on desc / created_at descで取得済みのため、filterするだけで)
+  // 日付が新しいものが上に積み上がる並びになる。選手を絞り込んでいる場合は
+  // そのまま1グループとして扱う(見た目は従来通り)。
+  const groupedRecords: { playerId: string; records: ShootingDrillRecord[] }[] =
+    playerFilter === "all"
+      ? sortPlayers(players.filter((p) => playerIdsInRecords.includes(p.id))).map((p) => ({
+          playerId: p.id,
+          records: records.filter((r) => r.player_id === p.id),
+        }))
+      : [{ playerId: playerFilter, records: filteredRecords }];
 
   function openRow(r: ShootingDrillRecord) {
     if (expandedId === r.id) {
@@ -205,117 +210,126 @@ export default function ShootingDrillListPage() {
             </Card>
           ) : (
             <Card className="max-h-[50vh] overflow-y-auto">
-              {filteredRecords.map((r) => {
-                const expanded = expandedId === r.id;
-                const totalMade = r.three_made + r.mid_made + r.layup_made;
-                const totalAtt = r.three_att + r.mid_att + r.layup_att;
-                const shotPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 100) : null;
-                return (
-                  <div key={r.id} className="border-b border-line last:border-b-0">
-                    <button
-                      type="button"
-                      onClick={() => canRecord && openRow(r)}
-                      className="w-full text-left py-2 text-[11.5px] leading-tight"
-                    >
-                      <div>
-                        <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
-                        <span className="font-bold">{playerName(r.player_id)}</span>
-                      </div>
-                      <div className="text-ink-soft mt-0.5">
-                        基準{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
-                      </div>
-                      <div className="font-mono text-[11px] text-ink-soft mt-0.5">
-                        ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
-                        {shotPct !== null && <span className="ml-1.5 font-bold text-orange-text">{shotPct}%</span>}
-                      </div>
-                    </button>
-
-                    {expanded && editDraft && canRecord && (
-                      <div className="pb-3">
-                        <div className="mb-2">
-                          <FieldLabel>日付</FieldLabel>
-                          <input
-                            type="date"
-                            className={inputClass()}
-                            value={editDraft.recorded_on}
-                            onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
-                          />
-                        </div>
-                        <div className="mb-2">
-                          <FieldLabel>基準点</FieldLabel>
-                          <select
-                            className={inputClass()}
-                            value={editDraft.target_points}
-                            onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
-                          >
-                            {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
-                              <option key={t} value={t}>
-                                {t}点
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="mb-2">
-                          <FieldLabel>到達タイム(秒)</FieldLabel>
-                          <input
-                            type="number"
-                            step="0.1"
-                            className={inputClass()}
-                            value={editDraft.time_sec}
-                            onChange={(e) => setEditDraft((d) => d && { ...d, time_sec: e.target.value })}
-                          />
-                        </div>
-                        {(
-                          [
-                            ["ロング", "three_made", "three_att"],
-                            ["ミドル", "mid_made", "mid_att"],
-                            ["ゴール下", "layup_made", "layup_att"],
-                          ] as const
-                        ).map(([label, madeKey, attKey]) => (
-                          <div key={label} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 mb-1.5">
-                            <span className="text-[11px] font-bold text-ink-soft w-12">{label}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              className={inputClass()}
-                              value={editDraft[madeKey]}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, [madeKey]: e.target.value })}
-                            />
-                            <span className="text-[11px] text-ink-soft">/</span>
-                            <input
-                              type="number"
-                              min={0}
-                              className={inputClass()}
-                              value={editDraft[attKey]}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, [attKey]: e.target.value })}
-                            />
-                          </div>
-                        ))}
-                        <div className="text-[11px] text-ink-soft mb-2">
-                          総得点(自動計算):{" "}
-                          {totalPointsFromCounts({
-                            three_made: Number(editDraft.three_made) || 0,
-                            mid_made: Number(editDraft.mid_made) || 0,
-                            layup_made: Number(editDraft.layup_made) || 0,
-                          })}
-                          点
-                        </div>
-                        <SubmitButton onClick={() => handleSaveEdit(r.id)} disabled={saving}>
-                          {saving ? "保存中…" : "保存する"}
-                        </SubmitButton>
+              {groupedRecords.map((group) => (
+                <div key={group.playerId}>
+                  {playerFilter === "all" && (
+                    <div className="pt-2.5 pb-1 text-[11px] font-bold text-ink-soft first:pt-0">
+                      {playerName(group.playerId)}
+                    </div>
+                  )}
+                  {group.records.map((r) => {
+                    const expanded = expandedId === r.id;
+                    const totalMade = r.three_made + r.mid_made + r.layup_made;
+                    const totalAtt = r.three_att + r.mid_att + r.layup_att;
+                    const shotPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 100) : null;
+                    return (
+                      <div key={r.id} className="border-b border-line last:border-b-0">
                         <button
                           type="button"
-                          onClick={() => handleDeleteClick(r.id)}
-                          className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                          onClick={() => canRecord && openRow(r)}
+                          className="w-full text-left py-2 text-[11.5px] leading-tight"
                         >
-                          {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
+                          <div>
+                            <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
+                            <span className="font-bold">{playerName(r.player_id)}</span>
+                          </div>
+                          <div className="text-ink-soft mt-0.5">
+                            基準{r.target_points}点 / {formatShootingDrillTime(r.time_sec)} / {r.total_points}点
+                          </div>
+                          <div className="font-mono text-[11px] text-ink-soft mt-0.5">
+                            ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
+                            {shotPct !== null && <span className="ml-1.5 font-bold text-orange-text">{shotPct}%</span>}
+                          </div>
                         </button>
+
+                        {expanded && editDraft && canRecord && (
+                          <div className="pb-3">
+                            <div className="mb-2">
+                              <FieldLabel>日付</FieldLabel>
+                              <input
+                                type="date"
+                                className={inputClass()}
+                                value={editDraft.recorded_on}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
+                              />
+                            </div>
+                            <div className="mb-2">
+                              <FieldLabel>基準点</FieldLabel>
+                              <select
+                                className={inputClass()}
+                                value={editDraft.target_points}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
+                              >
+                                {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
+                                  <option key={t} value={t}>
+                                    {t}点
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="mb-2">
+                              <FieldLabel>到達タイム(秒)</FieldLabel>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className={inputClass()}
+                                value={editDraft.time_sec}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, time_sec: e.target.value })}
+                              />
+                            </div>
+                            {(
+                              [
+                                ["ロング", "three_made", "three_att"],
+                                ["ミドル", "mid_made", "mid_att"],
+                                ["ゴール下", "layup_made", "layup_att"],
+                              ] as const
+                            ).map(([label, madeKey, attKey]) => (
+                              <div key={label} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 mb-1.5">
+                                <span className="text-[11px] font-bold text-ink-soft w-12">{label}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className={inputClass()}
+                                  value={editDraft[madeKey]}
+                                  onChange={(e) => setEditDraft((d) => d && { ...d, [madeKey]: e.target.value })}
+                                />
+                                <span className="text-[11px] text-ink-soft">/</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className={inputClass()}
+                                  value={editDraft[attKey]}
+                                  onChange={(e) => setEditDraft((d) => d && { ...d, [attKey]: e.target.value })}
+                                />
+                              </div>
+                            ))}
+                            <div className="text-[11px] text-ink-soft mb-2">
+                              総得点(自動計算):{" "}
+                              {totalPointsFromCounts({
+                                three_made: Number(editDraft.three_made) || 0,
+                                mid_made: Number(editDraft.mid_made) || 0,
+                                layup_made: Number(editDraft.layup_made) || 0,
+                              })}
+                              点
+                            </div>
+                            <SubmitButton onClick={() => handleSaveEdit(r.id)} disabled={saving}>
+                              {saving ? "保存中…" : "保存する"}
+                            </SubmitButton>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteClick(r.id)}
+                              className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
+                              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                            >
+                              {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
             </Card>
           )}
         </>
