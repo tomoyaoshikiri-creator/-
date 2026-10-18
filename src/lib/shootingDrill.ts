@@ -13,7 +13,7 @@ const POINTS_BY_CATEGORY: Record<ShotCategory, number> = {
   layup: 1,
 };
 
-export const SHOOTING_DRILL_TARGET_OPTIONS = [11, 15, 21] as const;
+export const SHOOTING_DRILL_TARGET_OPTIONS = [11, 15, 18, 21] as const;
 export type ShootingDrillTarget = (typeof SHOOTING_DRILL_TARGET_OPTIONS)[number];
 
 // shots配列中のindex(0始まり)が、3P→ミドル→ゴール下のうちどれに当たるか。
