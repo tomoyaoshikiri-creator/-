@@ -19,7 +19,6 @@ import { GuardedLink } from "@/components/GuardedLink";
 import { createClient } from "@/lib/supabase/client";
 import {
   SettingsIcon,
-  BellIcon,
   SwitchIcon,
   UserPlusIcon,
   UsersIcon,
@@ -81,11 +80,11 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
       // 裏にロゴやログアウトボタンが隠れない・背景の白が物理的な下端まで続くようにする
       // (AppHeaderが右側のメインコンテンツに対して行っているのと同じ考え方)。
       style={{
-        paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)",
+        paddingTop: "calc(env(safe-area-inset-top) + 1rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)",
       }}
     >
-      <div className="flex items-center gap-1.5 px-1.5 mb-6">
+      <div className="flex items-center gap-1.5 px-1.5 mb-4">
         {teamLogoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={teamLogoUrl} alt="" className="w-6 h-6 rounded object-contain bg-paper flex-shrink-0" />
@@ -93,12 +92,12 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
         <span className="font-display font-bold text-[13px] text-ink truncate">{teamName}</span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1">
         {BOTTOM_NAV_TABS.map((tab) => {
           const Icon = TAB_ICONS[tab];
           const href = tabHrefForRole(role, tab);
           const isActive = pathname === href || pathname.startsWith(href + "/");
-          const className = `flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold ${
+          const className = `flex items-center gap-2 px-2.5 py-3 rounded-lg text-[12px] font-bold ${
             isActive ? "bg-orange/10 text-orange-text" : "text-ink-soft"
           }`;
           return (
@@ -119,8 +118,9 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
 
       <SidebarLabel>アカウント</SidebarLabel>
       <div className="flex flex-col gap-0.5">
+        {/* 「通知の受け取り」は/settings内の項目で遷移先が自分の設定と同じため、
+            ここでは1行にまとめる(タブレット横向きで画面からはみ出す対策)。 */}
         <SidebarLink href="/settings" label="自分の設定" icon={SettingsIcon} />
-        <SidebarLink href="/settings" label="通知の受け取り" icon={BellIcon} />
         {hasMultipleTeams && <SidebarLink href="/select-team" label="チームを切り替える" icon={SwitchIcon} />}
       </div>
 
