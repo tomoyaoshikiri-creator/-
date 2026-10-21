@@ -291,13 +291,16 @@ textarea {
   ここで上書きする((auth)/layout.tsxで
   "app-shell auth-shell"の2クラスを併用)。
 */
+/*
+  2026-10: iPad mini Safariで、この画面(ログイン等)のメールアドレス欄をタップした
+  瞬間にSafariごとクラッシュする不具合の調査により、color-mix()を使ったグラデーションが
+  疑わしいと判断し、固定色に置き換えた(AuthHeadingのbackground-clip:text撤去と
+  同じ「position:fixedコンテナ内の複雑な背景描画が、AutoFillのレイアウト再計算時に
+  WebKitごと落ちる」既知の問題群に一致するため)。下記3色は上記color-mix()の
+  計算結果をそのまま固定値にしたもので、見た目は変えていない。
+*/
 .auth-shell {
-  background: linear-gradient(
-    105deg,
-    color-mix(in srgb, var(--brand-blue) 15%, white) 0%,
-    color-mix(in srgb, var(--brand-blue) 8%, white) 55%,
-    color-mix(in srgb, var(--brand-cyan) 3%, white) 100%
-  );
+  background: linear-gradient(105deg, #daebfd 0%, #ebf5fe 55%, #f8fdfe 100%);
 }
 
 /*
