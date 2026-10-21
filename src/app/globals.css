@@ -25,6 +25,12 @@
   --danger: #E5484D;
   --sky: #0A7CD6;
   --holiday: #DC2626;
+  /* --skyの白混ぜトーン(ホームのカード縁取り・ショートカットのグラデーション用)。
+     --skyはチームカラーの影響を受けない固定色のため、color-mix()の計算結果を
+     そのまま固定値にできる(Safariのcolor-mix()クラッシュ対策)。 */
+  --sky-light-35: #A9D1F1;
+  --sky-light-28: #BADAF4;
+  --sky-light-10: #E7F2FB;
 
   /*
     アクセシビリティ監査(WCAG AA、通常文字4.5:1)で発見: --orange/--danger/--greenは
@@ -38,6 +44,16 @@
   --orange-text: #0770D8;
   --danger-text: #CE4145;
   --green-text: #12823B;
+
+  /*
+    SubmitButton等のグラデーション(薄い色側)・Fabのshadow用。以前はCSSの
+    color-mix()を直接使っていたが、iPad mini Safariでクラッシュする不具合が
+    報告されたため、固定値(Brand Blueに対するcolor-mix()の計算結果と同じ値)に
+    した。teamThemeStyle()経由でチームカラー(theme_primary)に応じて
+    上書きされる(src/lib/theme.tsのmixHex/rgbaCssで計算、CSSのcolor-mix()は使わない)。
+  */
+  --orange-light-55: #77B7F7;
+  --orange-shadow-55: rgba(8, 124, 240, 0.55);
 
   /*
     APP-WIDE VISUAL REFRESH: --navyは元々「secondary team accent」(ボタン・選択状態・

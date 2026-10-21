@@ -94,6 +94,8 @@ export interface TeamThemeTokens {
   onTeamPrimary: string;
   onTeamSecondary: string;
   orangeText: string;
+  orangeLight55: string;
+  orangeShadow55: string;
 }
 
 // teams.theme_primary/theme_accentからsemantic tokenを解決する。
@@ -111,6 +113,14 @@ export function resolveTeamTheme({ themePrimary, themeAccent }: TeamThemeInput):
     // --orangeそのままで問題ない)。チームが明るい色をtheme_primaryに設定した場合も、
     // そのチームの色味を保ったまま読める濃さまで暗くする。
     orangeText: darkenForTextContrast(teamPrimary),
+    // SubmitButton等のグラデーション(濃い色→薄い色)の「薄い色」側、およびFabの
+    // boxShadow用。以前はCSSのcolor-mix()をinline styleに直接書いていたが、
+    // iPad mini Safariでcolor-mix()を使った要素がある画面でSafariごとクラッシュする
+    // 不具合が報告されたため、JS側(ここ)で事前に計算した値をCSS custom property
+    // として渡す方式に変更した(mixHex/rgbaCssは本ファイル下部で定義、関数宣言の
+    // hoistingによりここから呼べる)。
+    orangeLight55: mixHex(teamPrimary, "#ffffff", 0.45),
+    orangeShadow55: rgbaCss(teamPrimary, 0.55),
   };
 }
 
@@ -125,6 +135,8 @@ export function teamThemeStyle(input: TeamThemeInput): Record<string, string> {
     "--on-team-primary": tokens.onTeamPrimary,
     "--on-team-secondary": tokens.onTeamSecondary,
     "--orange-text": tokens.orangeText,
+    "--orange-light-55": tokens.orangeLight55,
+    "--orange-shadow-55": tokens.orangeShadow55,
   };
   if (input.themePrimary) style["--orange"] = input.themePrimary;
   if (input.themeAccent) style["--navy"] = input.themeAccent;

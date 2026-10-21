@@ -22,9 +22,9 @@ export function SegButton({ active = false, variant = "default", className = "",
               // 明るいteamPrimaryの場合に文字が読めなくなるため、Modal.tsxのFabと同じ方式)。
               color: "var(--on-team-primary)",
               // SubmitButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
-              // 薄い方は黒を混ぜず、白を混ぜて明るくする。
-              background:
-                "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+              // 薄い方は黒を混ぜず、白を混ぜて明るくする(--orange-light-55、
+              // Safariのcolor-mix()クラッシュ対策でJS側事前計算値に変更済み)。
+              background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
               ...style,
             }
           : style
@@ -69,7 +69,7 @@ export function SubmitButton({
         // 場合に文字が読めなくなるため、Modal.tsxのFabと同じ方式)。
         color: "var(--on-team-primary)",
         // 濃い色(左上)→薄い色(右下)のグラデーション。薄い方は黒を混ぜず、白を混ぜて明るくする。
-        background: "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+        background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
         ...style,
       }}
       {...props}
@@ -91,7 +91,7 @@ export function SubmitLinkButton({
       className={`mt-3.5 block w-full py-2.5 rounded-lg border border-orange text-center font-bold text-[13px] active:opacity-85 ${className}`}
       style={{
         color: "var(--on-team-primary)",
-        background: "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+        background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
         ...style,
       }}
       {...props}

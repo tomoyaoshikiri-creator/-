@@ -69,7 +69,7 @@ export function PushPermissionPrompt() {
             // 同じくコントラスト安全な--on-team-primaryを使う(固定text-whiteだと明るい
             // teamPrimaryの場合に文字が読めなくなる)。
             color: "var(--on-team-primary)",
-            background: "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+            background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
           }}
         >
           許可する

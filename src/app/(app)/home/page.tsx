@@ -54,7 +54,7 @@ function addDaysStr(dateStr: string, days: number): string {
 // 他=orangeとカードごとに色分けしていたが、統一した方が見た目が整うとのフィードバックを受けた)。
 // 縁取りは白と混ぜて彩度を落としたパステル、見出しの縦バーはカード内で最も目立たせたい
 // 要素なので混ぜずそのまま使う。
-const CARD_BORDER = "color-mix(in srgb, var(--sky) 35%, white)";
+const CARD_BORDER = "var(--sky-light-35)";
 const CARD_BAR = "var(--sky)";
 
 const CARD_STYLE = { borderColor: CARD_BORDER };
@@ -641,8 +641,7 @@ export default function HomePage() {
                 href={r.href}
                 className="text-center text-[12px] font-bold py-2.5 rounded-lg border border-sky text-sky"
                 style={{
-                  background:
-                    "linear-gradient(135deg, color-mix(in srgb, var(--sky) 28%, white) 0%, color-mix(in srgb, var(--sky) 10%, white) 100%)",
+                  background: "linear-gradient(135deg, var(--sky-light-28) 0%, var(--sky-light-10) 100%)",
                 }}
               >
                 {r.label}
