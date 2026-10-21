@@ -31,18 +31,21 @@ import {
 type SidebarIcon = (props: { className?: string }) => React.ReactElement;
 
 function SidebarLabel({ children }: { children: React.ReactNode }) {
-  return <div className="px-2.5 mt-4 mb-1 text-[10px] font-bold tracking-wide text-ink-soft/70">{children}</div>;
+  return <div className="px-2.5 mt-3 mb-0.5 text-[10px] font-bold tracking-wide text-ink-soft/70">{children}</div>;
 }
 
+// アカウント・チーム運営・ログアウトは、上の5タブ(主要ナビ、py-3.5)ほど
+// タップ頻度が高くないため、縦方向を切り詰めたコンパクトな行にする
+// (iPad横向きで画面からはみ出し、下の方の項目が見えなくなっていたため)。
 function SidebarLink({ href, label, icon: Icon, active = false }: { href: string; label: string; icon: SidebarIcon; active?: boolean }) {
   return (
     <GuardedLink
       href={href}
-      className={`flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold ${
+      className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-[11.5px] font-bold ${
         active ? "bg-orange/10 text-orange-text" : "text-ink-soft"
       }`}
     >
-      <Icon className="w-4 h-4 flex-shrink-0" />
+      <Icon className="w-3.5 h-3.5 flex-shrink-0" />
       {label}
     </GuardedLink>
   );
@@ -112,10 +115,10 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
         })}
       </div>
 
-      <div className="border-t border-line my-3" />
+      <div className="border-t border-line mt-3 mb-1.5" />
 
       <SidebarLabel>アカウント</SidebarLabel>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-0.5">
         <SidebarLink href="/settings" label="自分の設定" icon={SettingsIcon} />
         <SidebarLink href="/settings" label="通知の受け取り" icon={BellIcon} />
         {hasMultipleTeams && <SidebarLink href="/select-team" label="チームを切り替える" icon={SwitchIcon} />}
@@ -123,9 +126,9 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
 
       {(canShowInvite || canShowUserManagement || canShowTeamSettings) && (
         <>
-          <div className="border-t border-line my-3" />
+          <div className="border-t border-line mt-2 mb-1.5" />
           <SidebarLabel>チーム運営</SidebarLabel>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-0.5">
             {canShowInvite && <SidebarLink href="/users" label="メンバーを招待" icon={UserPlusIcon} />}
             {canShowUserManagement && <SidebarLink href="/users" label="ユーザー管理" icon={UsersIcon} />}
             {canShowTeamSettings && (
@@ -138,16 +141,16 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
         </>
       )}
 
-      <div className="flex-1" />
+      <div className="flex-1 min-h-2" />
 
-      <div className="border-t border-line pt-3 mt-3">
+      <div className="border-t border-line pt-1.5 mt-1.5">
         <button
           type="button"
           onClick={handleLogout}
           disabled={loggingOut}
-          className="w-full flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold text-danger-text"
+          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[11.5px] font-bold text-danger-text"
         >
-          <LogoutIcon className="w-4 h-4 flex-shrink-0" />
+          <LogoutIcon className="w-3.5 h-3.5 flex-shrink-0" />
           {loggingOut ? "処理中…" : "ログアウト"}
         </button>
       </div>

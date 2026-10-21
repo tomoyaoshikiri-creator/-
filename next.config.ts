@@ -45,10 +45,6 @@ const cspHeader = `
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  // 2026-10: iPad mini Safariでのログイン画面クラッシュ調査のため一時的に有効化。
-  // src/app/error.tsxのスタックトレース表示と対になっている(圧縮後のチャンク上の
-  // 位置だけでは元のファイル・行が分からないため)。原因特定後はfalseに戻すこと。
-  productionBrowserSourceMaps: true,
   // Bottom Navigationの調査中、pushしたコード変更が実機のSafari/PWAで反映されず
   // 古いキャッシュが表示され続ける事象が繰り返し発生したため、一時的にno-storeで
   // 全ページの再検証を強制していた。ただしno-storeはブラウザキャッシュへの保存自体を
