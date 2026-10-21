@@ -40,13 +40,16 @@ const robotoMono = Roboto_Mono({
 // statusBarStyle: "default"(ステータスバー領域を不透明の帯としてOS側に確保
 // させる)。以前は"black-translucent"だったが、iPad mini Safariでログイン
 // 画面を開く・入力欄をタップするとSafariごとクラッシュする不具合が実機で
-// 確認され、"default"に変更したところ再現しなくなった(color-mix()除去との
-// 組み合わせで確認済み。一度"black-translucent"に戻して試したところ
-// クラッシュが再発したため、"default"のまま維持する)。これによりヘッダーの
-// グラデーションがステータスバー裏まで続く見た目は失われる。
-// "default"化に伴いSidebar(タブレット幅の左ナビ)がステータスバー領域に
-// めり込む見た目のズレが新たに出たため、Sidebar.tsx側にenv(safe-area-inset-top)
-// を使ったpaddingを追加して対応した(本コメントとセットの変更)。
+// 確認され(原因はiPadOS側の不具合。画面キーボードのレイアウト切り替えと
+// AutoFillの判定処理が重なるタイミングで未処理の例外が発生していることを
+// 実機のクラッシュログで確認済み)、"default"に変更したところ再現しなくなった。
+// 上のコメント(24-32行目)にある通り、viewport-fit=coverは本来
+// black-translucent(コンテンツがステータスバー裏まで伸びる設計)とセットで
+// 使う設定で、"default"(OS側が不透明のステータスバー領域を別途確保する設計)
+// とは本来矛盾する組み合わせ。実際にこの食い違いにより、.app-shell
+// (position:fixed; inset:0)の高さが実機の画面高さと合わず、画面下部に
+// 原因不明の余白ができる不具合が発生したため、"default"化にあわせて
+// viewport-fitも撤去した(cover指定なし=iOS標準のauto)。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -64,7 +67,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
