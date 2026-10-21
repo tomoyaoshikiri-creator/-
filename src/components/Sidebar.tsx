@@ -1,25 +1,86 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Role } from "@/lib/database.types";
-import { BOTTOM_NAV_TABS, TAB_LABELS, tabHrefForRole, type TabKey } from "@/lib/permissions";
+import {
+  BOTTOM_NAV_TABS,
+  TAB_LABELS,
+  tabHrefForRole,
+  canAccessTab,
+  canIssueInvite,
+  canManageSettings,
+  canManageUsers,
+  type TabKey,
+} from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
 import { useSession } from "@/lib/session-context";
 import { GuardedLink } from "@/components/GuardedLink";
+import { createClient } from "@/lib/supabase/client";
+import {
+  SettingsIcon,
+  BellIcon,
+  SwitchIcon,
+  UserPlusIcon,
+  UsersIcon,
+  BuildingIcon,
+  CardIcon,
+  LogoutIcon,
+} from "@/components/icons";
 
+type SidebarIcon = (props: { className?: string }) => React.ReactElement;
+
+function SidebarLabel({ children }: { children: React.ReactNode }) {
+  return <div className="px-2.5 mt-4 mb-1 text-[10px] font-bold tracking-wide text-ink-soft/70">{children}</div>;
+}
+
+function SidebarLink({ href, label, icon: Icon, active = false }: { href: string; label: string; icon: SidebarIcon; active?: boolean }) {
+  return (
+    <GuardedLink
+      href={href}
+      className={`flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold ${
+        active ? "bg-orange/10 text-orange-text" : "text-ink-soft"
+      }`}
+    >
+      <Icon className="w-4 h-4 flex-shrink-0" />
+      {label}
+    </GuardedLink>
+  );
+}
+
+// タブレット幅(min-[700px]以上)では常時この左ナビが出るため、スマホ幅専用の
+// ハンバーガーメニュー(NavDrawer)は入口として重複・不要になる(AppHeader側で
+// min-[700px]:hiddenにして隠している)。そのためNavDrawerに入っていた
+// アカウント・チーム運営・ログアウトの項目も、ここに同じ内容で持たせる。
 export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
-  const { teamName, teamLogoUrl } = useSession();
+  const router = useRouter();
+  const { teamName, teamLogoUrl, hasMultipleTeams } = useSession();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  // NavDrawer.tsxと同じ出し分けロジック。
+  const canShowInvite = canIssueInvite(role) && canAccessTab(role, "users");
+  const canShowUserManagement = canManageUsers(role);
+  const canShowTeamSettings = canManageSettings(role);
 
   return (
     <nav
-      className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 pb-5"
-      // AppHeader(右側のメインコンテンツ)は自前でenv(safe-area-inset-top)分の
-      // paddingを確保しているが、Sidebarには無かったため、タブレット幅の画面で
-      // ロゴ・チーム名がステータスバーの裏に隠れて見える不具合があった
-      // (iPad mini Safariでのログインクラッシュ調査〈statusBarStyle変更〉の
-      // 過程で発見)。AppHeaderと同じ考え方でpaddingTopにenv()を足す。
-      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+      className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 overflow-y-auto"
+      // 上下ともenv(safe-area-inset-*)を足し、ステータスバー・ホームインジケーターの
+      // 裏にロゴやログアウトボタンが隠れない・背景の白が物理的な下端まで続くようにする
+      // (AppHeaderが右側のメインコンテンツに対して行っているのと同じ考え方)。
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)",
+      }}
     >
       <div className="flex items-center gap-1.5 px-1.5 mb-6">
         {teamLogoUrl && (
@@ -49,6 +110,46 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
             </GuardedLink>
           );
         })}
+      </div>
+
+      <div className="border-t border-line my-3" />
+
+      <SidebarLabel>アカウント</SidebarLabel>
+      <div className="flex flex-col gap-1.5">
+        <SidebarLink href="/settings" label="自分の設定" icon={SettingsIcon} />
+        <SidebarLink href="/settings" label="通知の受け取り" icon={BellIcon} />
+        {hasMultipleTeams && <SidebarLink href="/select-team" label="チームを切り替える" icon={SwitchIcon} />}
+      </div>
+
+      {(canShowInvite || canShowUserManagement || canShowTeamSettings) && (
+        <>
+          <div className="border-t border-line my-3" />
+          <SidebarLabel>チーム運営</SidebarLabel>
+          <div className="flex flex-col gap-1.5">
+            {canShowInvite && <SidebarLink href="/users" label="メンバーを招待" icon={UserPlusIcon} />}
+            {canShowUserManagement && <SidebarLink href="/users" label="ユーザー管理" icon={UsersIcon} />}
+            {canShowTeamSettings && (
+              <>
+                <SidebarLink href="/settings/team" label="チーム設定" icon={BuildingIcon} />
+                <SidebarLink href="/settings/plan" label="プラン・お支払い" icon={CardIcon} />
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      <div className="flex-1" />
+
+      <div className="border-t border-line pt-3 mt-3">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full flex items-center gap-2 px-2.5 py-3.5 rounded-lg text-[12px] font-bold text-danger-text"
+        >
+          <LogoutIcon className="w-4 h-4 flex-shrink-0" />
+          {loggingOut ? "処理中…" : "ログアウト"}
+        </button>
       </div>
     </nav>
   );

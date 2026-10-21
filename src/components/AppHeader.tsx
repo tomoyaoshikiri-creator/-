@@ -71,11 +71,13 @@ export function AppHeader({
         className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-1.5 mb-1 leading-tight break-words tracking-wide"
         style={{ color: "var(--header-title-on)" }}
       >
+        {/* タブレット幅(min-[700px]以上)ではSidebarが常時表示され、その中に
+            このメニューの項目も含まれているため、入口が重複しないようここでは隠す。 */}
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
           aria-label="メニューを開く"
-          className="inline-flex items-center justify-center w-8 h-8 rounded-lg -ml-1 flex-shrink-0"
+          className="min-[700px]:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg -ml-1 flex-shrink-0"
           style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
         >
           <MenuIcon className="w-5 h-5" />
