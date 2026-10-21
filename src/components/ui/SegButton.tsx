@@ -128,5 +128,13 @@ export function inputClass(extra = "") {
   // ズームする。以前13pxだったため、ログイン画面のメールアドレス欄をタップした瞬間に
   // 自動ズームでレイアウトが乱れ「タップすると画面が真っ白になって進めない」という
   // 不具合報告につながった。
-  return `w-full border border-line rounded-lg px-2.5 py-2 font-sans text-[16px] bg-white text-ink transition-colors focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:bg-paper disabled:text-ink-soft read-only:bg-paper ${extra}`;
+  //
+  // 2026-10: iPad mini SafariでログインのメールアドレスをタップするとSafariごと
+  // クラッシュする不具合の調査により、focus:ring-orange/20(Tailwind v4で
+  // color-mix(in oklab, var(--orange) 20%, transparent)にコンパイルされる)が
+  // 疑わしいと判断した。:focus発火と同時にbox-shadowがcolor-mix()で再計算される
+  // タイミングが、AutoFill UI表示に伴うレイアウト再計算と重なりWebKitごと
+  // 落ちる既知の問題群に一致するため、ring自体を撤去した。フォーカス時の
+  // 視認性はfocus:border-orange(色のみ変化、color-mix不使用)で引き続き確保する。
+  return `w-full border border-line rounded-lg px-2.5 py-2 font-sans text-[16px] bg-white text-ink transition-colors focus:outline-none focus:border-orange disabled:bg-paper disabled:text-ink-soft read-only:bg-paper ${extra}`;
 }
