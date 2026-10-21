@@ -12,7 +12,15 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
   const { teamName, teamLogoUrl } = useSession();
 
   return (
-    <nav className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 py-5">
+    <nav
+      className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 pb-5"
+      // AppHeader(右側のメインコンテンツ)は自前でenv(safe-area-inset-top)分の
+      // paddingを確保しているが、Sidebarには無かったため、タブレット幅の画面で
+      // ロゴ・チーム名がステータスバーの裏に隠れて見える不具合があった
+      // (iPad mini Safariでのログインクラッシュ調査〈statusBarStyle変更〉の
+      // 過程で発見)。AppHeaderと同じ考え方でpaddingTopにenv()を足す。
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)" }}
+    >
       <div className="flex items-center gap-1.5 px-1.5 mb-6">
         {teamLogoUrl && (
           // eslint-disable-next-line @next/next/no-img-element

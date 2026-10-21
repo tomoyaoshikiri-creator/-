@@ -37,14 +37,16 @@ const robotoMono = Roboto_Mono({
 // viewport-fit=cover / apple-mobile-web-app-status-bar-styleを指定していても
 // env(safe-area-inset-*)が正しく機能しない(常に0扱いになる)ケースがある。
 // otherフィールドで明示的に追加する。
-// statusBarStyle: 一時的に"default"(ステータスバー領域を不透明の帯として
-// OS側に確保させる)へ変更していたが、iPad mini Safariでのログインクラッシュの
-// 真因は別(color-mix()、globals.css/theme.tsの修正を参照)と判明した。
-// "default"のまま残すと、"cover"のままのviewport-fit(下記viewport)と設定が
-// 噛み合わず、ステータスバーの不透明領域とwebviewの描画領域の計算がズレて、
-// 画面全体が上にズレる・下端が切れる不具合が新たに発生したため、
-// "black-translucent"(コンテンツがステータスバー裏まで伸びる・フチなし
-// ヘッダー)に戻した。
+// statusBarStyle: "default"(ステータスバー領域を不透明の帯としてOS側に確保
+// させる)。以前は"black-translucent"だったが、iPad mini Safariでログイン
+// 画面を開く・入力欄をタップするとSafariごとクラッシュする不具合が実機で
+// 確認され、"default"に変更したところ再現しなくなった(color-mix()除去との
+// 組み合わせで確認済み。一度"black-translucent"に戻して試したところ
+// クラッシュが再発したため、"default"のまま維持する)。これによりヘッダーの
+// グラデーションがステータスバー裏まで続く見た目は失われる。
+// "default"化に伴いSidebar(タブレット幅の左ナビ)がステータスバー領域に
+// めり込む見た目のズレが新たに出たため、Sidebar.tsx側にenv(safe-area-inset-top)
+// を使ったpaddingを追加して対応した(本コメントとセットの変更)。
 export const metadata: Metadata = {
   title: "CIRCLE LINES",
   description: "CIRCLE LINES — チーム運営プラットフォーム",
@@ -52,7 +54,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "CIRCLE LINES",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
