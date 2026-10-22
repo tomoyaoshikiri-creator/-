@@ -266,13 +266,18 @@ textarea {
 }
 
 /*
-  【比較検証用・最終試行】viewport-fit=coverを復活。.app-shell自体は画面の物理的な
-  最下端まで覆うinset:0とし、Home Indicator分の追加の余白は確保しない(TabBar側の
-  padding-bottomを理論上の下限にすることで対応する)。
+  iPhone Air / iOS 27のSafari(ホーム画面追加のPWAだけでなく通常のSafariタブでも
+  再現)で、position:fixed; inset:0;のみ(高さを明示していない)だと.app-shellの
+  高さが実機の表示領域と合わず、画面全体が下にズレてタブバーが画面外に切れる
+  不具合が報告された。inset:0のtop/bottom由来の暗黙の高さ計算に頼らず、
+  動的ビューポート(アドレスバーの表示/非表示等)に追従するdvh単位で高さを明示する
+  (100dvh非対応の古いブラウザ向けに100vhもフォールバックとして残す)。
 */
 .app-shell {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
