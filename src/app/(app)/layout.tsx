@@ -11,6 +11,7 @@ import { ActiveTeamErrorScreen } from "@/components/ActiveTeamErrorScreen";
 import { teamLogoUrl } from "@/lib/teamLogo";
 import { headerThemeStyle, teamThemeStyle } from "@/lib/theme";
 import { logError } from "@/lib/logger";
+import { ViewportDebugOverlay } from "@/components/ViewportDebugOverlay";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -102,6 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="app-shell" style={themeStyle as React.CSSProperties}>
+      <ViewportDebugOverlay />
       <SessionProvider
         value={{
           userId: profile.id,
