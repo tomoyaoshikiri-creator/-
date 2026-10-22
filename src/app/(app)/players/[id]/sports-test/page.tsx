@@ -895,7 +895,7 @@ export default function SportsTestPage() {
               <CompareLine current={numOrNull(form.ft_golf)} baseline={baseline?.ft_golf ?? null} baselineQuarter={baseline?.quarter} />
             </div>
             <div className="mt-3">
-              <FieldLabel>ペイント付近シュート(10本中の成功数)</FieldLabel>
+              <FieldLabel>ペイントエリアシュート(10本中の成功数)</FieldLabel>
               <input
                 type="number"
                 min={0}

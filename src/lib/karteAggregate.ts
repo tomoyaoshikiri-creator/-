@@ -631,7 +631,7 @@ export const SPORTS_TEST_RANKING_METRICS: {
   },
   {
     value: "paint_shot",
-    label: "ペイント付近シュート",
+    label: "ペイントエリアシュート",
     abbrLines: ["ペイント", "シュート"],
     unit: "/10",
     direction: "desc",
