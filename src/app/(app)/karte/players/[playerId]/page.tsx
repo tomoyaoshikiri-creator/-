@@ -982,6 +982,30 @@ export default function KartePlayerPage() {
         </>
       )}
 
+      <SectionLabel>身長・体重(週次)</SectionLabel>
+      <Card>
+        {growthRecords.length === 0 ? (
+          <EmptyState>記録がありません</EmptyState>
+        ) : (
+          <div className="text-[13px]">
+            {growthRecords.map((g) => (
+              <div key={g.id} className="flex items-center justify-between py-1 border-b border-line last:border-b-0">
+                <span className="text-ink-soft text-[11px]">{formatDateLabel(g.measured_on)}</span>
+                <span className="font-mono font-bold">
+                  {g.height_cm ?? "-"}cm / {g.weight_kg ?? "-"}kg
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <Link
+          href={`/players/${player.id}/growth`}
+          className="block mt-3 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+        >
+          記録を入力・編集する
+        </Link>
+      </Card>
+
       {hasSportsTestAccess(plan) && (
         <>
       <SectionLabel>スポーツテスト(四半期ごと)</SectionLabel>
@@ -1157,30 +1181,6 @@ export default function KartePlayerPage() {
           </Card>
         </>
       )}
-
-      <SectionLabel>身長・体重(週次)</SectionLabel>
-      <Card>
-        {growthRecords.length === 0 ? (
-          <EmptyState>記録がありません</EmptyState>
-        ) : (
-          <div className="text-[13px]">
-            {growthRecords.map((g) => (
-              <div key={g.id} className="flex items-center justify-between py-1 border-b border-line last:border-b-0">
-                <span className="text-ink-soft text-[11px]">{formatDateLabel(g.measured_on)}</span>
-                <span className="font-mono font-bold">
-                  {g.height_cm ?? "-"}cm / {g.weight_kg ?? "-"}kg
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-        <Link
-          href={`/players/${player.id}/growth`}
-          className="block mt-3 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
-        >
-          記録を入力・編集する
-        </Link>
-      </Card>
 
       {hasAccountingAccess(plan) && (
         <>

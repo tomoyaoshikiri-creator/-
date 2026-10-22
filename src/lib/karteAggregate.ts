@@ -450,14 +450,18 @@ export type SportsTestMetric =
   | "wingspan_cm"
   | "sprint20m"
   | "long_jump"
+  | "change_direction_run"
   | "lane_agility"
   | "side_step"
   | "shuttle_20m_x3"
-  | "ball_throw"
+  | "beep_test_reps"
   | "back_fist_right"
   | "back_fist_left"
+  | "ball_throw"
+  | "course_dribble_dominant"
+  | "course_dribble_opposite"
   | "ft_golf"
-  | "beep_test_reps";
+  | "paint_shot";
 
 function bestOf(v1: number | null, v2: number | null, direction: "asc" | "desc"): number | null {
   const vals = [v1, v2].filter((v): v is number => v !== null);
@@ -481,6 +485,10 @@ export const SPORTS_TEST_RANKING_METRICS: {
   aiMeasuredQuality: string;
   extract: (r: SportsTestRecord) => number | null;
 }[] = [
+  // 記録用紙(1人1枚)と同じジャンル・同じ順番(体格→スピード・瞬発力→アジリティ→
+  // 持久力→柔軟性→ボール操作・シュート)に揃えている。この並びが入力画面・
+  // チームの一覧・選手カルテ・AI分析の全てに反映される(配列の順序がそのまま
+  // 表示順になる設計のため)。
   {
     value: "wingspan_cm",
     label: "ウイングスパン",
@@ -500,6 +508,26 @@ export const SPORTS_TEST_RANKING_METRICS: {
     aiEvaluationDirection: "LOWER_IS_BETTER",
     aiMeasuredQuality: "直線的な走力(スプリント速度)",
     extract: (r) => bestOf(r.sprint20m_1, r.sprint20m_2, "asc"),
+  },
+  {
+    value: "long_jump",
+    label: "立ち幅跳び",
+    abbrLines: ["立ち幅", "跳び"],
+    unit: "cm",
+    direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "下肢の瞬発的なパワー",
+    extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
+  },
+  {
+    value: "change_direction_run",
+    label: "切り替えラン",
+    abbrLines: ["切り替え", "ラン"],
+    unit: "秒",
+    direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "方向転換を伴う走力(切り替えの速さ)",
+    extract: (r) => bestOf(r.change_direction_run_1, r.change_direction_run_2, "asc"),
   },
   {
     value: "lane_agility",
@@ -532,24 +560,14 @@ export const SPORTS_TEST_RANKING_METRICS: {
     extract: (r) => r.shuttle_20m_x3,
   },
   {
-    value: "long_jump",
-    label: "立ち幅跳び",
-    abbrLines: ["立ち幅", "跳び"],
-    unit: "cm",
+    value: "beep_test_reps",
+    label: "20mシャトルラン",
+    abbrLines: ["20シャ", "トルラン"],
+    unit: "回",
     direction: "desc",
     aiEvaluationDirection: "HIGHER_IS_BETTER",
-    aiMeasuredQuality: "下肢の瞬発的なパワー",
-    extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
-  },
-  {
-    value: "ball_throw",
-    label: "ボール投げ",
-    abbrLines: ["ボール", "投げ"],
-    unit: "m",
-    direction: "desc",
-    aiEvaluationDirection: "HIGHER_IS_BETTER",
-    aiMeasuredQuality: "投動作に関わる出力(パワー)",
-    extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
+    aiMeasuredQuality: "心肺持久力",
+    extract: (r) => r.beep_test_reps,
   },
   {
     value: "back_fist_right",
@@ -572,6 +590,36 @@ export const SPORTS_TEST_RANKING_METRICS: {
     extract: (r) => r.back_fist_left,
   },
   {
+    value: "ball_throw",
+    label: "ボール投げ",
+    abbrLines: ["ボール", "投げ"],
+    unit: "m",
+    direction: "desc",
+    aiEvaluationDirection: "HIGHER_IS_BETTER",
+    aiMeasuredQuality: "投動作に関わる出力(パワー)",
+    extract: (r) => bestOf(r.ball_throw_1, r.ball_throw_2, "desc"),
+  },
+  {
+    value: "course_dribble_dominant",
+    label: "コースドリブル(利き手)",
+    abbrLines: ["コース", "利き手"],
+    unit: "秒",
+    direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "利き手でのドリブル操作を伴う走力",
+    extract: (r) => bestOf(r.course_dribble_dominant_1, r.course_dribble_dominant_2, "asc"),
+  },
+  {
+    value: "course_dribble_opposite",
+    label: "コースドリブル(逆手)",
+    abbrLines: ["コース", "逆手"],
+    unit: "秒",
+    direction: "asc",
+    aiEvaluationDirection: "LOWER_IS_BETTER",
+    aiMeasuredQuality: "逆手でのドリブル操作を伴う走力",
+    extract: (r) => bestOf(r.course_dribble_opposite_1, r.course_dribble_opposite_2, "asc"),
+  },
+  {
     value: "ft_golf",
     label: "FTゴルフ",
     abbrLines: ["FT", "ゴルフ"],
@@ -582,14 +630,14 @@ export const SPORTS_TEST_RANKING_METRICS: {
     extract: (r) => r.ft_golf,
   },
   {
-    value: "beep_test_reps",
-    label: "20mシャトルラン",
-    abbrLines: ["20シャ", "トルラン"],
-    unit: "回",
+    value: "paint_shot",
+    label: "ペイント付近シュート",
+    abbrLines: ["ペイント", "シュート"],
+    unit: "/10",
     direction: "desc",
     aiEvaluationDirection: "HIGHER_IS_BETTER",
-    aiMeasuredQuality: "心肺持久力",
-    extract: (r) => r.beep_test_reps,
+    aiMeasuredQuality: "ゴール付近からのシュート成功率(試行数10本と少ないため断定は弱めること)",
+    extract: (r) => r.paint_shot,
   },
 ];
 
