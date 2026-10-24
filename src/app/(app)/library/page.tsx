@@ -202,13 +202,13 @@ export default function LibraryPage() {
       }
     >
       {limitBytes > 0 && (
-        <div className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-3.5">
+        <div className="bg-card border border-border-subtle rounded-card shadow-card px-3.5 py-2.5 mb-3.5">
           <div className="flex items-end justify-between">
-            <div className="font-bold text-[15px]">
+            <div className="font-bold text-sm">
               {formatBytes(usedBytes)}
-              <span className="text-[11px] font-normal text-ink-soft ml-1">使用中</span>
+              <span className="text-caption font-normal text-ink-soft ml-1">使用中</span>
             </div>
-            <div className="text-[11px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
+            <div className="text-caption text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
           </div>
           <div className="mt-2 h-1.5 rounded-full bg-paper overflow-hidden">
             <div
@@ -220,14 +220,14 @@ export default function LibraryPage() {
             />
           </div>
           {usedBytes >= limitBytes && (
-            <div className="text-[11px] mt-1.5" style={{ color: "var(--danger-text)" }}>
+            <div className="text-caption mt-1.5" style={{ color: "var(--danger-text)" }}>
               容量の上限に達しています。新規アップロードするには、ファイルを削除するか上位プランへのアップグレードが必要です。
             </div>
           )}
         </div>
       )}
 
-      <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3.5">
+      <div className="flex items-center gap-1 flex-wrap text-caption font-bold text-ink-soft mb-3.5">
         <button type="button" onClick={() => goToFolder(null)} className={currentFolderId === null ? "text-orange-text" : ""}>
           ホーム
         </button>
@@ -314,11 +314,14 @@ export default function LibraryPage() {
       ) : (
         <>
           {visibleFolders.map((f) => (
-            <div key={f.id} className="bg-white border border-line rounded-lg mb-2.5 flex items-stretch">
+            <div
+              key={f.id}
+              className="bg-card border border-border-subtle rounded-card shadow-card mb-2.5 flex items-stretch"
+            >
               <button
                 type="button"
                 onClick={() => goToFolder(f.id)}
-                className="flex-1 min-w-0 px-4 py-3.5 text-left font-bold text-[14.5px] truncate"
+                className="flex-1 min-w-0 min-h-tap px-4 text-left font-bold text-sm truncate"
               >
                 📁 {f.name}
               </button>
@@ -327,7 +330,7 @@ export default function LibraryPage() {
                   type="button"
                   onClick={() => setFolderActionsTarget(f)}
                   aria-label="フォルダを編集"
-                  className="flex-none flex items-center px-3 border-l border-line text-ink-soft font-bold"
+                  className="flex-none min-w-tap flex items-center justify-center px-3 border-l border-line text-ink-soft font-bold"
                 >
                   ⋯
                 </button>
@@ -338,7 +341,7 @@ export default function LibraryPage() {
             const category = categories.find((c) => c.id === item.category_id);
             const fileUrl = singleFileUrlByItem[item.id];
             const titleContent = (
-              <div className="font-bold text-[14.5px] truncate">
+              <div className="font-bold text-sm truncate">
                 {category && (
                   <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
                     {category.name}
@@ -348,20 +351,23 @@ export default function LibraryPage() {
               </div>
             );
             return (
-              <div key={item.id} className="bg-white border border-line rounded-lg mb-2.5 flex items-stretch">
+              <div
+                key={item.id}
+                className="bg-card border border-border-subtle rounded-card shadow-card mb-2.5 flex items-stretch"
+              >
                 {fileUrl ? (
-                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-0 px-4 py-3.5">
+                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-0 min-h-tap flex items-center px-4">
                     {titleContent}
                   </a>
                 ) : (
-                  <Link href={`/library/${item.id}`} className="flex-1 min-w-0 px-4 py-3.5">
+                  <Link href={`/library/${item.id}`} className="flex-1 min-w-0 min-h-tap flex items-center px-4">
                     {titleContent}
                   </Link>
                 )}
                 <Link
                   href={`/library/${item.id}`}
                   aria-label="資料の詳細を開く"
-                  className="flex-none flex items-center px-3 border-l border-line"
+                  className="flex-none min-w-tap flex items-center justify-center px-3 border-l border-line"
                 >
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </Link>
@@ -373,7 +379,7 @@ export default function LibraryPage() {
               type="button"
               onClick={loadMore}
               disabled={loadingMore}
-              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
             >
               {loadingMore ? "読み込み中…" : "さらに読み込む"}
             </button>
