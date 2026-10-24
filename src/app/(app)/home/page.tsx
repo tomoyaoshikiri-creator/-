@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canRecordGames, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess } from "@/lib/plan";
@@ -62,26 +62,26 @@ const CARD_STYLE = { borderColor: CARD_BORDER };
 // スケルトンと実カードでpadding・行高を揃え、読み込み完了時のレイアウトシフトを防ぐ。
 function CardSkeleton({ lines = 2 }: { lines?: number }) {
   return (
-    <Card style={CARD_STYLE}>
+    <div className={cardClass} style={CARD_STYLE}>
       <div className="animate-pulse space-y-2">
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="h-3.5 rounded bg-line" style={{ width: i === 0 ? "55%" : "85%" }} />
         ))}
       </div>
-    </Card>
+    </div>
   );
 }
 
 function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   return (
-    <Card style={CARD_STYLE}>
+    <div className={cardClass} style={CARD_STYLE}>
       <div className="flex items-center justify-between">
         <span className="text-[12.5px] text-ink-soft">読み込みに失敗しました</span>
         <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange-text flex-shrink-0">
           再試行
         </button>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -411,7 +411,7 @@ export default function HomePage() {
       ? isWithinHoursSinceGameEnd(recentMatch.schedules.date, recentMatch.schedules.end_time, nowIso, 72)
       : false;
   const gameResultNode = showGameResult && recentMatch?.schedules && (
-    <Card style={CARD_STYLE}>
+    <div className={cardClass} style={CARD_STYLE}>
       <CardHeading>直近の試合結果</CardHeading>
       <Link href="/game/results">
         <div className="flex items-center justify-between">
@@ -441,7 +441,7 @@ export default function HomePage() {
           </div>
         </div>
       </Link>
-    </Card>
+    </div>
   );
 
   const upgradeCandidate = pickUpgradeCandidate(role, plan);
@@ -476,7 +476,7 @@ export default function HomePage() {
       {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
       {scheduleStatus === "success" && (
-        <Card style={CARD_STYLE}>
+        <div className={cardClass} style={CARD_STYLE}>
           <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
@@ -552,7 +552,7 @@ export default function HomePage() {
               </Link>
             </>
           )}
-        </Card>
+        </div>
       )}
 
       {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
@@ -560,7 +560,7 @@ export default function HomePage() {
       {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
       {scheduleStatus === "success" && actionItems.length > 0 && (
-        <Card style={CARD_STYLE}>
+        <div className={cardClass} style={CARD_STYLE}>
           <CardHeading count={actionItems.length} barColor="var(--danger)">
             要対応
           </CardHeading>
@@ -587,7 +587,7 @@ export default function HomePage() {
               ほか{actionItemsRest}件
             </Link>
           )}
-        </Card>
+        </div>
       )}
 
       {/* 試合終了から72時間以内は、通常の位置(下記)ではなく「要対応」の直後に
@@ -599,7 +599,7 @@ export default function HomePage() {
       {digestStatus === "loading" && <CardSkeleton lines={3} />}
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
       {digestStatus === "success" && (
-        <Card style={CARD_STYLE}>
+        <div className={cardClass} style={CARD_STYLE}>
           <CardHeading>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
@@ -616,30 +616,30 @@ export default function HomePage() {
           ) : (
             <div className="text-[12.5px] text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ非表示。 */}
       {birthdaysStatus === "loading" && <CardSkeleton lines={1} />}
       {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
       {birthdaysStatus === "success" && birthdays.length > 0 && (
-        <Card style={CARD_STYLE}>
+        <div className={cardClass} style={CARD_STYLE}>
           <CardHeading>今日のチーム情報</CardHeading>
           <div className="text-[12.5px]">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
-        </Card>
+        </div>
       )}
 
       {/* 作成ショートカット: 指導者・管理者のみ。有効な行が1つも無ければカード自体を出さない
           (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
       {isStaff && shortcutRows.length > 0 && (
-        <Card style={CARD_STYLE}>
+        <div className={cardClass} style={CARD_STYLE}>
           <CardHeading>ショートカット</CardHeading>
           <div className="grid grid-cols-2 gap-2">
             {shortcutRows.map((r) => (
               <Link
                 key={r.href}
                 href={r.href}
-                className="text-center text-[12px] font-bold py-2.5 rounded-lg border border-sky text-sky"
+                className="flex min-h-tap items-center justify-center text-center text-[12px] font-bold rounded-lg border border-sky text-sky"
                 style={{
                   background: "linear-gradient(135deg, var(--sky-light-28) 0%, var(--sky-light-10) 100%)",
                 }}
@@ -653,7 +653,7 @@ export default function HomePage() {
               AI分析: 今月あと{Math.max(0, aiUsage.limit - aiUsage.used)}回利用できます
             </div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* 直近の試合結果(通常位置)。72時間以内の昇格表示と両方に出ることはない。 */}

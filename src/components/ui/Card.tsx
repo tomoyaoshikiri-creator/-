@@ -10,6 +10,12 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
   );
 }
 
+// 2026-10-24 UI刷新: PATH KARTE基準(docs/design-system.md)の新しいカードの見た目
+// (角丸14px・shadow-card・bg-card/border-border-subtle)。既存のCard(上記、角丸6px・
+// 枠線のみ)はどの画面でも見た目を変えないためそのまま残し、刷新する画面から順に
+// このclassNameへ置き換えていく(Phase 2以降、画面ごとに適用)。
+export const cardClass = "bg-card border border-border-subtle rounded-card p-3 shadow-card mb-2.5 md:p-4";
+
 export function SectionLabel({
   children,
   align = "left",
