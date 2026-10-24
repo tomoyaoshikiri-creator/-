@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { MonthPicker } from "@/components/MonthPicker";
@@ -150,21 +150,19 @@ export default function ReportPage() {
             showAll={showAll}
             onShowAll={() => setShowAll(true)}
             renderItem={(r) => (
-              <Link key={r.id} href={`/report/${r.id}`}>
-                <Card className="cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-[14.5px] flex items-center gap-1.5">
-                      {unseenIds.has(r.id) && (
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text">
-                          NEW
-                        </span>
-                      )}
-                      {formatFullDateLabel(r.date)}
-                    </div>
-                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              <Link key={r.id} href={`/report/${r.id}`} className={`${cardClass} block min-h-tap`}>
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-sm flex items-center gap-1.5">
+                    {unseenIds.has(r.id) && (
+                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text">
+                        NEW
+                      </span>
+                    )}
+                    {formatFullDateLabel(r.date)}
                   </div>
-                  <ReactionSummary reactions={reactions.filter((rc) => rc.daily_report_id === r.id)} />
-                </Card>
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                </div>
+                <ReactionSummary reactions={reactions.filter((rc) => rc.daily_report_id === r.id)} />
               </Link>
             )}
           />
@@ -173,7 +171,7 @@ export default function ReportPage() {
               type="button"
               onClick={loadMore}
               disabled={loadingMore}
-              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
             >
               {loadingMore ? "読み込み中…" : "さらに読み込む"}
             </button>

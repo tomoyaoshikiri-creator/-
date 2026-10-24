@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { MonthPicker } from "@/components/MonthPicker";
@@ -199,8 +199,8 @@ export default function NoticePage() {
 
   function renderNoticeCard(n: Notice) {
     return (
-      <Card key={n.id} className="cursor-pointer" onClick={() => openNotice(n.id)}>
-        <div className="font-bold text-[14.5px]">
+      <div key={n.id} className={`${cardClass} cursor-pointer`} onClick={() => openNotice(n.id)}>
+        <div className="font-bold text-sm">
           {unseenIds.has(n.id) && (
             <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger-text">
               NEW
@@ -213,7 +213,7 @@ export default function NoticePage() {
           )}
           {n.title}
         </div>
-        <div className="text-xs text-ink-soft mt-0.5">
+        <div className="text-caption text-ink-soft mt-0.5">
           {n.sender_id && profiles[n.sender_id] ? `${profiles[n.sender_id]} · ` : ""}
           {formatDateLabel(n.created_at.slice(0, 10))}配信
         </div>
@@ -234,7 +234,7 @@ export default function NoticePage() {
           onToggle={(type) => toggleReaction(n.id, type)}
           profiles={profiles}
         />
-      </Card>
+      </div>
     );
   }
 
@@ -279,7 +279,7 @@ export default function NoticePage() {
               type="button"
               onClick={loadMore}
               disabled={loadingMore}
-              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
             >
               {loadingMore ? "読み込み中…" : "さらに読み込む"}
             </button>
