@@ -22,8 +22,6 @@ export default function SettingsLogoPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [teamName, setTeamName] = useState("");
   const [savedTeamName, setSavedTeamName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [origin, setOrigin] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
@@ -40,17 +38,12 @@ export default function SettingsLogoPage() {
   }, [role, router]);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("teams").select("logo_path, name, slug").eq("id", teamId).single();
+      const { data } = await supabase.from("teams").select("logo_path, name").eq("id", teamId).single();
       setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
       setTeamName(data?.name ?? "");
       setSavedTeamName(data?.name ?? "");
-      setSlug(data?.slug ?? "");
       setLoading(false);
     })();
   }, [teamId]);
@@ -74,11 +67,6 @@ export default function SettingsLogoPage() {
     setEditingName(false);
     toast.success("チーム名を更新しました");
     router.refresh();
-  }
-
-  function copyLoginUrl() {
-    navigator.clipboard?.writeText(`${origin}/login/${slug}`);
-    toast.success("リンクをコピーしました");
   }
 
   async function handleLogoChange(file: File | undefined) {
@@ -118,7 +106,7 @@ export default function SettingsLogoPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title="ログイン画面" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
+    <PageShell header={<AppHeader title="チーム情報・表示設定" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
       <SectionLabel>ロゴ</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
@@ -160,7 +148,7 @@ export default function SettingsLogoPage() {
                 </button>
               )}
               <div className="text-xs text-ink-soft mt-2">
-                アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
+                アプリ内のヘッダー・サイドバー・ハンバーガーメニューに表示されます(正方形に近い画像がきれいに収まります)。
               </div>
             </div>
           </div>
@@ -193,24 +181,6 @@ export default function SettingsLogoPage() {
               </button>
             </>
           )}
-        </Card>
-      )}
-
-      <SectionLabel>チーム専用ログインURL</SectionLabel>
-      {loading ? (
-        <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-      ) : (
-        <Card>
-          <div className="flex items-center gap-2">
-            <input readOnly className={inputClass("text-[11px]")} value={`${origin}/login/${slug}`} />
-            <button type="button" onClick={copyLoginUrl} className="flex-none text-orange-text font-bold text-xs">
-              コピー
-            </button>
-          </div>
-          <div className="text-xs text-ink-soft mt-2">
-            このチーム専用のログインURLです。現在は表示内容自体は共通のログイン画面(/login)と同じですが、
-            このチームのメンバーに配布する固定リンクとして使えます。
-          </div>
         </Card>
       )}
     </PageShell>

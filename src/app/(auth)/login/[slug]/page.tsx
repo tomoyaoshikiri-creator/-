@@ -1,41 +1,22 @@
-import { createClient } from "@/lib/supabase/server";
-import { AuthHeading } from "../../AuthHeading";
-import { LoginForm } from "../LoginForm";
+import { redirect } from "next/navigation";
 
+// チーム専用ログインURL(/login/[slug])は廃止し、共通ログイン画面(/login)へ
+// リダイレクトする。認証処理自体はもともとslugに依存しておらず(LoginForm/login
+// サーバーアクションはどちらのURLでも同一)、見た目もPhase UI-2A以降は共通ログイン画面と
+// 同じだったため、動作に影響はない。既存にブックマーク・配布済みのURLが
+// 引き続き機能するよう、ルート自体とteams.slugは変更せず残す。
+// error/noticeクエリパラメータ(共通ログイン画面が受け取る値)はそのまま引き継ぐ。
 export default async function TeamLoginPage({
-  params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
-  const { slug } = await params;
   const { error, notice } = await searchParams;
 
-  // Phase UI-2A: ログイン画面はCIRCLE LINESサービスブランドの表示領域とし、チームロゴ/チーム名の
-  // 表示は廃止する(下のAuthHeadingは常にCIRCLE LINESブランド表示のみ)。slugによるチーム特定・
-  // 認証フロー自体は変更しないため、get_team_login_branding(slug)の呼び出しはそのまま維持する
-  // (表示に使わなくなっただけで、削除・変更はしていない)。
-  const supabase = await createClient();
-  const { data } = await supabase.rpc("get_team_login_branding", { p_slug: slug });
-  void data;
+  const query = new URLSearchParams();
+  if (error) query.set("error", error);
+  if (notice) query.set("notice", notice);
+  const queryString = query.toString();
 
-  return (
-    <div>
-      <AuthHeading />
-      {error && (
-        <div className="mb-3 text-[12.5px] text-danger-text text-center bg-white border border-line rounded-lg p-3">
-          {error === "confirm_failed" ? "確認リンクが無効か期限切れです。もう一度お試しください。" : error}
-        </div>
-      )}
-      {notice === "inactivity" && (
-        <div className="mb-3 text-[12.5px] text-ink-soft text-center bg-white border border-line rounded-lg p-3 text-pretty">
-          しばらく操作がなかったため、自動的にログアウトしました。
-          <br />
-          もう一度ログインしてください。
-        </div>
-      )}
-      <LoginForm />
-    </div>
-  );
+  redirect(queryString ? `/login?${queryString}` : "/login");
 }
