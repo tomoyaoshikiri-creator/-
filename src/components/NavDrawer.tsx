@@ -55,7 +55,7 @@ function DrawerLink({
     <GuardedLink
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-3 px-3.5 py-2.5 text-[14px] ${
+      className={`flex min-h-tap items-center gap-3 px-3.5 text-[14px] ${
         active ? "bg-orange/10 text-orange-text font-bold" : "text-ink"
       }`}
     >
@@ -125,7 +125,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
             type="button"
             onClick={onClose}
             aria-label="メニューを閉じる"
-            className="w-9 h-9 rounded-lg flex items-center justify-center bg-paper text-ink-soft"
+            className="min-w-tap min-h-tap rounded-lg flex items-center justify-center bg-paper text-ink-soft"
           >
             <CloseIcon className="w-[18px] h-[18px]" />
           </button>

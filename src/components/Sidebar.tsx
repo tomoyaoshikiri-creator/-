@@ -37,7 +37,7 @@ function SidebarLink({ href, label, icon: Icon, active = false }: { href: string
   return (
     <GuardedLink
       href={href}
-      className={`flex items-center gap-2 px-2.5 py-2.5 rounded-lg text-[12px] font-bold ${
+      className={`flex min-h-tap items-center gap-2 px-2.5 rounded-lg text-[12px] font-bold ${
         active ? "bg-orange/10 text-orange-text" : "text-ink-soft"
       }`}
     >
@@ -94,7 +94,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
           const Icon = TAB_ICONS[tab];
           const href = tabHrefForRole(role, tab);
           const isActive = pathname === href || pathname.startsWith(href + "/");
-          const className = `flex items-center gap-2 px-2.5 py-3 rounded-lg text-[12px] font-bold ${
+          const className = `flex min-h-tap items-center gap-2 px-2.5 rounded-lg text-[12px] font-bold ${
             isActive ? "bg-orange/10 text-orange-text" : "text-ink-soft"
           }`;
           return (
@@ -145,7 +145,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
           type="button"
           onClick={handleLogout}
           disabled={loggingOut}
-          className="w-full flex items-center gap-2 px-2.5 py-2.5 rounded-lg text-[12px] font-bold text-danger-text"
+          className="w-full flex min-h-tap items-center gap-2 px-2.5 rounded-lg text-[12px] font-bold text-danger-text"
         >
           <LogoutIcon className="w-4 h-4 flex-shrink-0" />
           {loggingOut ? "処理中…" : "ログアウト"}
