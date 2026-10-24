@@ -1,5 +1,6 @@
 import type { HTMLAttributes } from "react";
-import { InboxIcon } from "@/components/icons";
+import Link from "next/link";
+import { InboxIcon, ChevronRightIcon } from "@/components/icons";
 
 export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
@@ -15,6 +16,20 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
 // 枠線のみ)はどの画面でも見た目を変えないためそのまま残し、刷新する画面から順に
 // このclassNameへ置き換えていく(Phase 2以降、画面ごとに適用)。
 export const cardClass = "bg-card border border-border-subtle rounded-card p-3 shadow-card mb-2.5 md:p-4";
+
+// 一覧・カードの下部に置く「すべて見る」系の遷移行。タップ領域・見た目を画面間で統一する
+// (2026-10-24 UI刷新)。カード内の最後の要素として使うことを想定し、上に区切り線を持つ。
+export function CardFooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-tap items-center justify-between gap-2 mt-1 pt-2 border-t border-line text-caption font-bold text-orange-text"
+    >
+      <span>{children}</span>
+      <ChevronRightIcon className="w-3.5 h-3.5 flex-shrink-0" />
+    </Link>
+  );
+}
 
 export function SectionLabel({
   children,

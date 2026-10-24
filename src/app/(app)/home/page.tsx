@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { cardClass } from "@/components/ui/Card";
+import { cardClass, CardFooterLink } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canRecordGames, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess } from "@/lib/plan";
@@ -82,20 +82,6 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
         </button>
       </div>
     </div>
-  );
-}
-
-// カード下部の「すべて見る」行。タップ領域・見た目をカード間で統一する
-// (2026-10-24 UI刷新: 従来はカードごとに別々のスタイルの小さな文字リンクだった)。
-function CardFooterLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="flex min-h-tap items-center justify-between gap-2 mt-1 pt-2 border-t border-line text-caption font-bold text-orange-text"
-    >
-      <span>{children}</span>
-      <ChevronRightIcon className="w-3.5 h-3.5 flex-shrink-0" />
-    </Link>
   );
 }
 
