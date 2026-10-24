@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUpTeam, verifySignupCode, resendSignupCode, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
@@ -9,10 +9,14 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 const initialState: FormState = {};
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
+// iPad miniのSafariで、メールアドレス欄とパスワード欄が同じ画面に並ぶと落ちる不具合の対策。
+// 理由はLoginForm.tsx参照。この2段階構成を1画面に戻さないこと。
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signUpTeam, initialState);
   const [verifyState, verifyFormAction, verifying] = useActionState(verifySignupCode, initialState);
   const [resendState, resendFormAction, resending] = useActionState(resendSignupCode, initialState);
+  const [email, setEmail] = useState("");
+  const [step, setStep] = useState<"email" | "password">("email");
 
   // メール確認コードの送信後は、メール内のリンクの代わりに6桁のコードをその場で
   // 入力して完了させる(ネイティブアプリ化時のディープリンク依存を避けるため)。
@@ -72,28 +76,66 @@ export function SignupForm() {
     );
   }
 
-  return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
-      <div className="text-[12.5px] text-ink-soft mb-4">
-        新しくチームを立ち上げます。メールアドレスの確認後、チーム名など詳細を入力していただきます。
-      </div>
+  if (step === "email") {
+    return (
+      <form
+        className="bg-white border border-line rounded-lg p-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (email.trim()) setStep("password");
+        }}
+      >
+        <div className="text-[12.5px] text-ink-soft mb-4">
+          新しくチームを立ち上げます。メールアドレスの確認後、チーム名など詳細を入力していただきます。
+        </div>
 
-      {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
-      <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-      <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
-
-      <div className="mt-3">
-        <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
+        <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
         <input
-          id="password"
-          name="password"
-          type="password"
-          minLength={8}
-          autoComplete="new-password"
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="username"
           className={inputClass()}
           required
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
+
+        <SubmitButton type="submit">次へ</SubmitButton>
+
+        <div className="text-center text-[12px] text-ink-soft mt-4">
+          すでにアカウントをお持ちですか?{" "}
+          <Link href="/login" className="text-orange-text font-bold">
+            ログイン
+          </Link>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+      <input type="hidden" name="email" value={email.trim()} />
+
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[12.5px] text-ink truncate">{email.trim()}</span>
+        <button type="button" onClick={() => setStep("email")} className="text-[11.5px] text-orange-text font-bold flex-shrink-0 ml-2">
+          変更
+        </button>
       </div>
+
+      <FieldLabel htmlFor="password">パスワード(8文字以上)</FieldLabel>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        minLength={8}
+        autoComplete="new-password"
+        className={inputClass()}
+        required
+        autoFocus
+      />
 
       {turnstileSiteKey && <TurnstileWidget siteKey={turnstileSiteKey} />}
 
@@ -102,13 +144,6 @@ export function SignupForm() {
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "送信中…" : "確認メールを送信する"}
       </SubmitButton>
-
-      <div className="text-center text-[12px] text-ink-soft mt-4">
-        すでにアカウントをお持ちですか?{" "}
-        <Link href="/login" className="text-orange-text font-bold">
-          ログイン
-        </Link>
-      </div>
     </form>
   );
 }

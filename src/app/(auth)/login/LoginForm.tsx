@@ -1,41 +1,90 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { login, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 
 const initialState: FormState = {};
 
+// iPad miniのSafariで、メールアドレス欄とパスワード欄が同じ画面(同じDOM)に並ぶと、
+// どちらかの欄をタップした瞬間にSafariごと落ちる不具合が実機で確認されている
+// (姉妹アプリPATH KARTEでの切り分けにより判明。オーナー承認済みの対策方針)。
+// アプリ側のCSS・JS・autoCompleteの書き方では避けられないSafari(iPadOS)側の不具合と
+// みられるため、欄を2画面に分けて同時にDOMへ出さないことで回避する。
+// 1画面目(メールアドレスのみ)→2画面目(パスワードのみ)の順で、2画面目にはメールアドレスを
+// hidden inputで持たせて既存のlogin server actionへそのまま渡す(サーバー側は無変更)。
+// この2段階構成を1画面に戻さないこと。
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const [email, setEmail] = useState("");
+  const [step, setStep] = useState<"email" | "password">("email");
+
+  if (step === "email") {
+    return (
+      <form
+        className="bg-white border border-line rounded-lg p-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (email.trim()) setStep("password");
+        }}
+      >
+        <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="username"
+          className={inputClass()}
+          required
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <SubmitButton type="submit">次へ</SubmitButton>
+
+        <div className="text-center text-[12px] mt-3">
+          <Link href="/forgot-password" className="text-ink-soft font-bold">
+            パスワードをお忘れですか?
+          </Link>
+        </div>
+
+        <div className="text-center text-[12px] text-ink-soft mt-4">
+          はじめての方は{" "}
+          <Link href="/signup" className="text-orange-text font-bold">
+            こちらから
+          </Link>
+          チームを作成してください。
+          <br />
+          招待リンクをお持ちの方はそちらから登録してください。
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form action={formAction} className="bg-white border border-line rounded-lg p-5">
       <input type="hidden" name="next" value={next ?? ""} />
-      {/*
-        autoCompleteを明示するのは、iPadOS Safariでこのフォームをタップした際に
-        Safari側のAutoFill(パスワード提案)処理内でクラッシュする不具合の対策。
-        autoComplete未指定だとSafariが「既存ログインか新規パスワード作成か」を
-        自前で推測しようとし、その判定処理(requiresStrongPasswordAssistance)の
-        先でUIKitのAuto Layout関連のクラッシュ(NSException→abort)を引き起こす
-        実機クラッシュログを確認した。既存ログインであることを明示することで
-        この推測処理自体を避ける狙い。
-      */}
-      <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
-      <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
+      <input type="hidden" name="email" value={email.trim()} />
 
-      <div className="mt-3">
-        <FieldLabel htmlFor="password">パスワード</FieldLabel>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          className={inputClass()}
-          required
-        />
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[12.5px] text-ink truncate">{email.trim()}</span>
+        <button type="button" onClick={() => setStep("email")} className="text-[11.5px] text-orange-text font-bold flex-shrink-0 ml-2">
+          変更
+        </button>
       </div>
+
+      <FieldLabel htmlFor="password">パスワード</FieldLabel>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        className={inputClass()}
+        required
+        autoFocus
+      />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
@@ -47,16 +96,6 @@ export function LoginForm({ next }: { next?: string }) {
         <Link href="/forgot-password" className="text-ink-soft font-bold">
           パスワードをお忘れですか?
         </Link>
-      </div>
-
-      <div className="text-center text-[12px] text-ink-soft mt-4">
-        はじめての方は{" "}
-        <Link href="/signup" className="text-orange-text font-bold">
-          こちらから
-        </Link>
-        チームを作成してください。
-        <br />
-        招待リンクをお持ちの方はそちらから登録してください。
       </div>
     </form>
   );
