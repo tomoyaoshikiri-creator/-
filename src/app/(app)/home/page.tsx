@@ -57,6 +57,12 @@ function addDaysStr(dateStr: string, days: number): string {
 // (このクラス自体にはmargin-bottomを含めない)。
 const homeCardClass = "bg-card border border-border-subtle rounded-card shadow-card p-4";
 
+// CardFooterLink(「すべて見る」等)で終わるカード専用。フッターリンク自体が
+// border-top+paddingを持ち下端の区切りとして機能するため、カード外側の下paddingを
+// 16px→12pxに詰める(2026-10-25 余白調整)。チーム目標・誕生日・ショートカット・
+// 試合結果・空状態(フッターリンクが無いもの)には適用しない(内容に応じた判断)。
+const homeCardClassWithFooter = "bg-card border border-border-subtle rounded-card shadow-card pt-4 px-4 pb-3";
+
 // 見出し左の縦バーの色。通常セクション(次の予定・新着・ショートカット等)は、
 // チームカラーとも意味色とも無関係な中立色(ink-soft)に統一する(2026-10-25 再設計:
 // 以前固定のスカイブルーを使っていたが、チームカラーとの混同を避けるため)。
@@ -172,7 +178,7 @@ function CardHeading({
     return <div className="text-caption font-bold text-ink-soft mb-1.5">{children}</div>;
   }
   return (
-    <div className="flex items-center mb-3">
+    <div className="flex items-center mb-2">
       <span aria-hidden className="w-[3px] h-[20px] rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: barColor }} />
       <span className="font-mono font-bold text-section tracking-[0.05em] text-heading">
         {children}
@@ -560,7 +566,7 @@ export default function HomePage() {
             {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
             {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
             {scheduleStatus === "success" && (
-              <div className={homeCardClass}>
+              <div className={homeCardClassWithFooter}>
                 <CardHeading>次の予定</CardHeading>
                 {nextSchedule ? (
                   <>
@@ -592,7 +598,7 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <div className="text-caption text-ink-soft text-center py-3">直近の予定はありません</div>
+                    <div className="text-caption text-ink-soft text-center py-2">直近の予定はありません</div>
                     <CardFooterLink href="/schedule">予定を見る</CardFooterLink>
                   </>
                 )}
@@ -602,12 +608,13 @@ export default function HomePage() {
             {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに
                 任せ、ここは入口のみ。0件(success)のときはカードを畳んだコンパクトな完了表示に
                 する(以前はカード自体が非表示だったが、「すべて確認済み」の安心材料を示すよう
-                変更)。期限超過の行は薄い警告色の背景で視認性を上げる(行アイコンは追加しない
-                方針のため、文字情報と背景色のみで表現)。 */}
+                変更)。各行は「次の予定」と同じ単純な行+区切り線に統一し(2026-10-25調整:
+                前回追加した角丸・背景色の個別装飾は撤去)、期限超過だけ控えめな警告バッジで
+                区別する。 */}
             {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
             {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
             {scheduleStatus === "success" && actionItems.length > 0 && (
-              <div className={homeCardClass}>
+              <div className={homeCardClassWithFooter}>
                 <CardHeading count={actionItems.length} barColor="var(--danger)">
                   要対応
                 </CardHeading>
@@ -616,13 +623,15 @@ export default function HomePage() {
                     <Link
                       key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
                       href={`/schedule/${item.scheduleId}`}
-                      className={`flex min-h-tap items-center justify-between gap-2 py-2 px-2 -mx-2 rounded-control ${
-                        item.overdue ? "bg-danger/5" : ""
-                      }`}
+                      className="flex min-h-tap items-center justify-between gap-2 py-2"
                     >
                       <div className="min-w-0">
                         <div className="text-sm font-bold flex items-center gap-1.5">
-                          {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
+                          {item.overdue && (
+                            <span className="flex-shrink-0 text-caption font-bold px-2 py-0.5 rounded-full bg-danger/10 text-danger-text">
+                              期限超過
+                            </span>
+                          )}
                           <span className="truncate">{item.scheduleTitle}</span>
                         </div>
                         <div className="text-caption text-ink-soft mt-0.5 truncate">
@@ -641,7 +650,7 @@ export default function HomePage() {
               </div>
             )}
             {scheduleStatus === "success" && actionItems.length === 0 && (
-              <div className={`${homeCardClass} flex min-h-tap items-center`}>
+              <div className={homeCardClass}>
                 <span className="text-sm font-bold text-ink-soft">要対応はありません</span>
               </div>
             )}
@@ -660,7 +669,7 @@ export default function HomePage() {
             {digestStatus === "loading" && <CardSkeleton lines={3} />}
             {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
             {digestStatus === "success" && (
-              <div className={homeCardClass}>
+              <div className={visibleDigest.length > 0 ? homeCardClassWithFooter : homeCardClass}>
                 <CardHeading count={digestItems.length > 0 ? digestItems.length : undefined}>新着</CardHeading>
                 {visibleDigest.length > 0 ? (
                   <>
@@ -680,7 +689,7 @@ export default function HomePage() {
                     )}
                   </>
                 ) : (
-                  <div className="text-caption text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
+                  <div className="text-caption text-ink-soft text-center py-2">新着はありません(すべて確認済みです)</div>
                 )}
               </div>
             )}
@@ -702,7 +711,9 @@ export default function HomePage() {
                 1行は残る)。アイコン+ラベルの縦積みレイアウト。利用頻度による強弱は付けず、
                 4つとも同じ視覚的重要度にする(2026-10-25再設計)。配色はチームカラー連動
                 (--orange系、teams.theme_primaryで上書きされる)に統一し、淡い背景+
-                アイコン/文字のみ着色する(全面塗りつぶしにはしない)。 */}
+                アイコン/文字のみ着色する(全面塗りつぶしにはしない)。ボタンの高さは
+                min-h-tap(44px)を確保しつつ、アイコンとラベルの間隔・上下paddingを
+                詰めて縦の占有を抑える(2026-10-25調整)。 */}
             {isStaff && shortcutRows.length > 0 && (
               <div className={homeCardClass}>
                 <CardHeading>ショートカット</CardHeading>
@@ -711,7 +722,7 @@ export default function HomePage() {
                     <Link
                       key={r.href}
                       href={r.href}
-                      className="flex min-h-tap flex-col items-center justify-center gap-1 rounded-control border border-orange/25 bg-orange/5 text-orange-text py-3 px-2"
+                      className="flex min-h-tap flex-col items-center justify-center gap-0.5 rounded-control border border-orange/25 bg-orange/5 text-orange-text py-2 px-2"
                     >
                       <r.icon className="w-5 h-5" />
                       <span className="text-caption font-bold text-center">{r.label}</span>
