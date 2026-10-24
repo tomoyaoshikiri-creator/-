@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { cardClass, CardFooterLink } from "@/components/ui/Card";
-import { ChevronRightIcon } from "@/components/icons";
+import { CardFooterLink } from "@/components/ui/Card";
+import { CertificateIcon, ChevronRightIcon, CoachNoteIcon, GameIcon, KarteIcon } from "@/components/icons";
 import { canRecordGames, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasCoachNoteAccess, hasKarteTabAccess, hasSkillTestAccess } from "@/lib/plan";
 import { formatDateLabel, gradeLabel, playerFullName, scheduleMeta, todayDateStr } from "@/lib/format";
@@ -49,20 +49,24 @@ function addDaysStr(dateStr: string, days: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// チーム目標だけは(内容の重要度から)専用のorangeを保つが、それ以外のカードは
-// 縁取り・見出しの縦バーとも1色に統一する(以前は次の予定=sky/要対応=danger/新着=green/
-// 他=orangeとカードごとに色分けしていたが、統一した方が見た目が整うとのフィードバックを受けた)。
-// 縁取りは白と混ぜて彩度を落としたパステル、見出しの縦バーはカード内で最も目立たせたい
-// 要素なので混ぜずそのまま使う。
-const CARD_BORDER = "var(--sky-light-35)";
-const CARD_BAR = "var(--sky)";
+// ホーム画面専用のカードの見た目(2026-10-25 再設計)。共通のcardClass(Card.tsx)は
+// 他の移行済み画面(スケジュール一覧・お知らせ等)でも使われているため、今回の指示
+// (「ホーム画面に限定した変更として、共通cardClassは変更しない」)に従い、ここだけの
+// 定数として別に持つ。カード内余白16px・角丸14px・中立の枠線(チームカラーに依存しない)。
+// カード間の余白はmb-*ではなく、呼び出し側のflexコンテナのgap-3(12px)で統一する
+// (このクラス自体にはmargin-bottomを含めない)。
+const homeCardClass = "bg-card border border-border-subtle rounded-card shadow-card p-4";
 
-const CARD_STYLE = { borderColor: CARD_BORDER };
+// 見出し左の縦バーの色。通常セクション(次の予定・新着・ショートカット等)は、
+// チームカラーとも意味色とも無関係な中立色(ink-soft)に統一する(2026-10-25 再設計:
+// 以前固定のスカイブルーを使っていたが、チームカラーとの混同を避けるため)。
+// 「要対応」のような明確な警告状態のときだけCardHeadingのbarColorで上書きする。
+const SECTION_BAR_COLOR = "var(--ink-soft)";
 
 // スケルトンと実カードでpadding・行高を揃え、読み込み完了時のレイアウトシフトを防ぐ。
 function CardSkeleton({ lines = 2 }: { lines?: number }) {
   return (
-    <div className={cardClass} style={CARD_STYLE}>
+    <div className={homeCardClass}>
       <div className="animate-pulse space-y-2">
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="h-3.5 rounded bg-line" style={{ width: i === 0 ? "55%" : "85%" }} />
@@ -74,7 +78,7 @@ function CardSkeleton({ lines = 2 }: { lines?: number }) {
 
 function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className={cardClass} style={CARD_STYLE}>
+    <div className={homeCardClass}>
       <div className="flex items-center justify-between">
         <span className="text-caption text-ink-soft">読み込みに失敗しました</span>
         <button type="button" onClick={onRetry} className="text-caption font-bold text-orange-text flex-shrink-0">
@@ -82,35 +86,6 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
         </button>
       </div>
     </div>
-  );
-}
-
-// 状態サマリー行の1枠。要対応・新着のように「件数そのものに意味がある」情報だけを対象にする
-// (次の予定は件数より日時・内容が重要なためここには含めない、2026-10-24 再設計でユーザー指示)。
-// タップでそのセクション(id)へスクロールする。0件のときは地味な表示に留め、1件以上の
-// ときだけ強調色(danger/orange)を使う。
-function SummaryChip({
-  href,
-  label,
-  count,
-  tone,
-}: {
-  href: string;
-  label: string;
-  count: number;
-  tone: "danger" | "primary";
-}) {
-  const active = count > 0;
-  const toneClass = active
-    ? tone === "danger"
-      ? "border-danger bg-danger/8 text-danger-text"
-      : "border-orange bg-orange/8 text-orange-text"
-    : "border-border-subtle bg-card text-ink-soft";
-  return (
-    <a href={href} className={`flex-1 min-h-tap flex items-center justify-between gap-2 rounded-card border px-3 ${toneClass}`}>
-      <span className="text-caption font-bold">{label}</span>
-      <span className="font-mono font-extrabold text-xl tabular-nums">{count}</span>
-    </a>
   );
 }
 
@@ -151,7 +126,7 @@ function ScheduleRow({
   needsAction: boolean;
 }) {
   return (
-    <Link href={`/schedule/${schedule.id}`} className="flex min-h-tap flex-col justify-center gap-0.5 py-1.5">
+    <Link href={`/schedule/${schedule.id}`} className="flex min-h-tap flex-col justify-center gap-0.5 py-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-bold truncate">{schedule.title}</span>
         <span
@@ -174,17 +149,18 @@ function ScheduleRow({
   );
 }
 
-// ホーム各カードの見出し。左の縦バーは全カード共通でCARD_BARだが、「要対応」だけは
-// 緊急度を示すため赤(--danger)にする(barColorで個別に上書き)。件数(「要対応」専用)は
-// 状態(件数)を表すためのもので、見出し文字自体は他カードと同じtext-heading色のまま
-// (文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
+// ホーム各カードの見出し。左の縦バーは通常セクション共通でSECTION_BAR_COLOR(中立色、
+// チームカラー・意味色いずれとも無関係)。「要対応」だけは緊急度を示すため赤(--danger)に
+// する(barColorで個別に上書き)。件数(「要対応」専用)は状態(件数)を表すためのもので、
+// 見出し文字自体は他カードと同じtext-heading色のまま(文字を赤くはしない)。カード内の
+// 「期限超過」赤ラベルとは独立。
 // plain=trueは誕生日のような受動的な情報専用(2026-10-24 再設計)。バーを省き文字も
 // 控えめにすることで、要対応・次の予定・新着より意図的に目立たなくする。
 // Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
 function CardHeading({
   children,
   count,
-  barColor = CARD_BAR,
+  barColor = SECTION_BAR_COLOR,
   plain = false,
 }: {
   children: React.ReactNode;
@@ -507,7 +483,7 @@ export default function HomePage() {
       ? isWithinHoursSinceGameEnd(recentMatch.schedules.date, recentMatch.schedules.end_time, nowIso, 72)
       : false;
   const gameResultNode = showGameResult && recentMatch?.schedules && (
-    <div className={cardClass} style={CARD_STYLE}>
+    <div className={homeCardClass}>
       <CardHeading>直近の試合結果</CardHeading>
       <Link href="/game/results" className="flex min-h-tap items-center justify-between gap-2">
         <div className="min-w-0">
@@ -542,10 +518,15 @@ export default function HomePage() {
 
   const shortcutRows = isStaff
     ? [
-        { href: "/coach-note", label: "コーチ日報を書く", show: hasCoachNoteAccess(plan) },
-        { href: "/game", label: "試合を記録", show: canRecordGames(role) },
-        { href: "/karte/team/skill-tests", label: "検定管理", show: canViewKarte(role) && hasSkillTestAccess(plan) },
-        { href: "/karte/team", label: "カルテ・分析を開く", show: canViewKarte(role) && hasKarteTabAccess(plan) },
+        { href: "/coach-note", label: "コーチ日報を書く", icon: CoachNoteIcon, show: hasCoachNoteAccess(plan) },
+        { href: "/game", label: "試合を記録", icon: GameIcon, show: canRecordGames(role) },
+        {
+          href: "/karte/team/skill-tests",
+          label: "検定管理",
+          icon: CertificateIcon,
+          show: canViewKarte(role) && hasSkillTestAccess(plan),
+        },
+        { href: "/karte/team", label: "カルテ・分析を開く", icon: KarteIcon, show: canViewKarte(role) && hasKarteTabAccess(plan) },
       ].filter((r) => r.show)
     : [];
 
@@ -555,204 +536,212 @@ export default function HomePage() {
       <OnboardingChecklist />
 
       {/* チーム目標。設定(/karte/team/goal、管理者のみ)が未設定ならカード自体を出さない。
-          他のカードは白背景・グレー見出しの一覧の中に埋もれてしまうため、常設のバナー的な
-          役割を意図してアクセントカラー(--orange、チームごとの基調色)で縁取り・背景を
-          薄く着色し、他のカードより一段目立つ見た目にしている。 */}
+          他のカードと同じ角丸・枠線幅にしつつ、チームカラー(--orange、teams.theme_primary)の
+          薄い背景で常設バナーとしての一段目立つ見た目を保つ(2026-10-25再設計: 以前の太枠は
+          「強い枠線に依存しない」指示に沿い1pxへ変更)。タップ不可のため矢印等は付けない。 */}
       {teamGoal && (
-        <div className="rounded-lg border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
+        <div className="rounded-card border border-orange bg-orange/8 p-4 mb-3">
           <div className="font-mono font-bold text-caption tracking-[0.05em] text-orange-text mb-0.5">チーム目標</div>
           <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
         </div>
       )}
 
-      {/* 状態サマリー行: 要対応・新着のように件数そのものに意味がある情報だけを対象にする
-          (次の予定は日時・内容のほうが重要なため対象外、2026-10-24 再設計)。両方のステータスが
-          確定するまでは出さない(読み込み中の0件表示によるチラつきを避ける)。タップで
-          各セクション(id="action-needed"/"digest")へスクロールする。 */}
-      {scheduleStatus !== "loading" && digestStatus !== "loading" && (
-        <div className="flex gap-2 mb-2.5">
-          <SummaryChip href="#action-needed" label="要対応" count={actionItems.length} tone="danger" />
-          <SummaryChip href="#digest" label="新着" count={digestItems.length} tone="primary" />
-        </div>
-      )}
-
-      {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
-          ここは入口のみ。0件(success)のときはカードを畳んだコンパクトな完了表示にする
-          (以前はカード自体が非表示だったが、「すべて確認済み」の安心材料を示すよう変更)。
-          次の予定より重要度が高いため、2026-10-24 再設計で表示順を次の予定より上にした。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
-      {scheduleStatus === "success" && actionItems.length > 0 && (
-        <div id="action-needed" className={cardClass} style={CARD_STYLE}>
-          <CardHeading count={actionItems.length} barColor="var(--danger)">
-            要対応
-          </CardHeading>
-          <div className="divide-y divide-line">
-            {visibleActionItems.map((item) => (
-              <Link
-                key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
-                href={`/schedule/${item.scheduleId}`}
-                className="flex min-h-tap items-center justify-between gap-2 py-1.5"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-bold flex items-center gap-1.5">
-                    {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
-                    <span className="truncate">{item.scheduleTitle}</span>
-                  </div>
-                  <div className="text-caption text-ink-soft mt-0.5 truncate">
-                    {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
-                    {" ・ "}
-                    {formatDateLabel(item.scheduleDate)}
-                  </div>
-                </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
-          <CardFooterLink href="/schedule">
-            {actionItemsRest > 0 ? `${visibleActionItems.length}件を表示中・ほか${actionItemsRest}件を確認` : "予定で確認する"}
-          </CardFooterLink>
-        </div>
-      )}
-      {scheduleStatus === "success" && actionItems.length === 0 && (
-        <div id="action-needed" className={`${cardClass} flex min-h-tap items-center`} style={CARD_STYLE}>
-          <span className="text-sm font-bold text-ink-soft">要対応の予定はありません</span>
-        </div>
-      )}
-
-      {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
-          カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
-      {scheduleStatus === "success" && (
-        <div id="schedule" className={cardClass} style={CARD_STYLE}>
-          <CardHeading>次の予定</CardHeading>
-          {nextSchedule ? (
-            <>
-              <div className="divide-y divide-line">
-                <ScheduleRow schedule={nextSchedule} needsAction={nextScheduleNeedsAction} />
-                {compressedSchedules.map((s) => (
-                  <ScheduleRow key={s.id} schedule={s} needsAction={actionItems.some((i) => i.scheduleId === s.id)} />
-                ))}
+      {/* 次の予定・要対応(主要情報)と、新着・誕生日・ショートカット・試合結果・アップグレード
+          (補助情報)を役割ごとに分け、タブレット・PC幅ではコンテナクエリ(@container)で
+          2カラムに配置する(2026-10-25再設計)。スマートフォン幅(コンテナ幅600px未満)では
+          単一カラムで、合意済みの表示順(次の予定→要対応→(昇格時のみ試合結果)→新着→
+          誕生日→ショートカット→試合結果→アップグレード)のまま縦に並ぶ。 */}
+      <div className="@container">
+        <div className="flex flex-col gap-3 @[600px]:grid @[600px]:grid-cols-2 @[600px]:items-start">
+          {/* 主要情報列: 次の予定・要対応(・昇格時のみ直近の試合結果) */}
+          <div className="flex flex-col gap-3">
+            {/* 次の予定。0件でも「すべて確認済み」的な安心感のため表示し続ける。
+                カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
+            {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
+            {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+            {scheduleStatus === "success" && (
+              <div className={homeCardClass}>
+                <CardHeading>次の予定</CardHeading>
+                {nextSchedule ? (
+                  <>
+                    <div className="divide-y divide-line">
+                      <ScheduleRow schedule={nextSchedule} needsAction={nextScheduleNeedsAction} />
+                      {compressedSchedules.map((s) => (
+                        <ScheduleRow key={s.id} schedule={s} needsAction={actionItems.some((i) => i.scheduleId === s.id)} />
+                      ))}
+                    </div>
+                    {myPlayers.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-line">
+                        {visiblePlayers.map((p) => (
+                          <Link
+                            key={p.id}
+                            href={`/karte/players/${p.id}`}
+                            className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft"
+                          >
+                            {p.name}・{gradeLabel(p.grade, category)}
+                          </Link>
+                        ))}
+                        {myPlayers.length >= 4 && (
+                          <Link href="/karte/players" className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
+                            ほか{myPlayers.length - visiblePlayers.length}名
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                    <CardFooterLink href="/schedule">予定をすべて見る</CardFooterLink>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-caption text-ink-soft text-center py-3">直近の予定はありません</div>
+                    <CardFooterLink href="/schedule">予定を見る</CardFooterLink>
+                  </>
+                )}
               </div>
-              {myPlayers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-line">
-                  {visiblePlayers.map((p) => (
+            )}
+
+            {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに
+                任せ、ここは入口のみ。0件(success)のときはカードを畳んだコンパクトな完了表示に
+                する(以前はカード自体が非表示だったが、「すべて確認済み」の安心材料を示すよう
+                変更)。期限超過の行は薄い警告色の背景で視認性を上げる(行アイコンは追加しない
+                方針のため、文字情報と背景色のみで表現)。 */}
+            {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
+            {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+            {scheduleStatus === "success" && actionItems.length > 0 && (
+              <div className={homeCardClass}>
+                <CardHeading count={actionItems.length} barColor="var(--danger)">
+                  要対応
+                </CardHeading>
+                <div className="divide-y divide-line">
+                  {visibleActionItems.map((item) => (
                     <Link
-                      key={p.id}
-                      href={`/karte/players/${p.id}`}
-                      className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft"
+                      key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
+                      href={`/schedule/${item.scheduleId}`}
+                      className={`flex min-h-tap items-center justify-between gap-2 py-2 px-2 -mx-2 rounded-control ${
+                        item.overdue ? "bg-danger/5" : ""
+                      }`}
                     >
-                      {p.name}・{gradeLabel(p.grade, category)}
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold flex items-center gap-1.5">
+                          {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
+                          <span className="truncate">{item.scheduleTitle}</span>
+                        </div>
+                        <div className="text-caption text-ink-soft mt-0.5 truncate">
+                          {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
+                          {" ・ "}
+                          {formatDateLabel(item.scheduleDate)}
+                        </div>
+                      </div>
+                      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                     </Link>
                   ))}
-                  {myPlayers.length >= 4 && (
-                    <Link href="/karte/players" className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
-                      ほか{myPlayers.length - visiblePlayers.length}名
-                    </Link>
-                  )}
                 </div>
-              )}
-              <CardFooterLink href="/schedule">予定をすべて見る</CardFooterLink>
-            </>
-          ) : (
-            <>
-              <div className="text-caption text-ink-soft text-center py-3">直近の予定はありません</div>
-              <CardFooterLink href="/schedule">予定を見る</CardFooterLink>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* 試合終了から72時間以内は、通常の位置(下記)ではなく要対応・次の予定の直後に
-          一度だけ昇格表示する(2026-10-24 再設計で要対応の位置が変わったため、
-          「要対応→次の予定→(昇格時のみ)直近の試合結果→新着」の順に合わせて移動)。 */}
-      {elevateGameResult && gameResultNode}
-
-      {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
-          ホームを開いただけでは既読にしない(既読化は各投稿の詳細ページを開いた時のみ行う)。
-          種類タグ(お知らせ/日報/コーチ日報/検定/投票)を追加(2026-10-24 再設計)。
-          表示条件・対象データ(buildDigestItems)自体は変更していない。 */}
-      {digestStatus === "loading" && <CardSkeleton lines={3} />}
-      {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
-      {digestStatus === "success" && (
-        <div id="digest" className={cardClass} style={CARD_STYLE}>
-          <CardHeading count={digestItems.length > 0 ? digestItems.length : undefined}>新着</CardHeading>
-          {visibleDigest.length > 0 ? (
-            <>
-              <div className="divide-y divide-line">
-                {visibleDigest.map((item) => (
-                  <Link key={item.id} href={item.href} className="flex min-h-tap items-center justify-between gap-2 py-1.5">
-                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <DigestTag source={item.source} />
-                      <span className="text-sm font-bold truncate">{item.label}</span>
-                    </span>
-                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                  </Link>
-                ))}
+                <CardFooterLink href="/schedule">
+                  {actionItemsRest > 0 ? `${visibleActionItems.length}件を表示中・ほか${actionItemsRest}件を確認` : "予定で確認する"}
+                </CardFooterLink>
               </div>
-              {digestRest > 0 && (
-                <div className="text-caption text-ink-soft pt-2 mt-1 border-t border-line">ほか{digestRest}件あります</div>
-              )}
-            </>
-          ) : (
-            <div className="text-caption text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
-          )}
-        </div>
-      )}
+            )}
+            {scheduleStatus === "success" && actionItems.length === 0 && (
+              <div className={`${homeCardClass} flex min-h-tap items-center`}>
+                <span className="text-sm font-bold text-ink-soft">要対応はありません</span>
+              </div>
+            )}
 
-      {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ非表示。
-          要対応・次の予定・新着と違い対応を必要としない受動的な情報のため、2026-10-24 再設計で
-          見出しの縦バーを外し(CardHeading plain)、他カードより意図的に目立たなくした。 */}
-      {birthdaysStatus === "loading" && <CardSkeleton lines={1} />}
-      {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
-      {birthdaysStatus === "success" && birthdays.length > 0 && (
-        <div className={cardClass} style={CARD_STYLE}>
-          <CardHeading plain>今日のチーム情報</CardHeading>
-          <div className="text-sm">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
-        </div>
-      )}
-
-      {/* 作成ショートカット: 指導者・管理者のみ。有効な行が1つも無ければカード自体を出さない
-          (チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低1行は残る)。 */}
-      {isStaff && shortcutRows.length > 0 && (
-        <div className={cardClass} style={CARD_STYLE}>
-          <CardHeading>ショートカット</CardHeading>
-          <div className="grid grid-cols-2 gap-2">
-            {shortcutRows.map((r) => (
-              <Link
-                key={r.href}
-                href={r.href}
-                className="flex min-h-tap items-center justify-center text-center text-caption font-bold rounded-lg border border-sky text-sky px-1"
-                style={{
-                  background: "linear-gradient(135deg, var(--sky-light-28) 0%, var(--sky-light-10) 100%)",
-                }}
-              >
-                {r.label}
-              </Link>
-            ))}
+            {/* 試合終了から72時間以内は、通常の位置(補助情報列)ではなく主要情報列の末尾に
+                一度だけ昇格表示する。 */}
+            {elevateGameResult && gameResultNode}
           </div>
-          {aiUsage && (
-            <div className="text-caption text-ink-soft mt-2 text-center">
-              AI分析: 今月あと{Math.max(0, aiUsage.limit - aiUsage.used)}回利用できます
-            </div>
-          )}
+
+          {/* 補助情報列: 新着・誕生日・ショートカット・試合結果(通常)・アップグレード */}
+          <div className="flex flex-col gap-3">
+            {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
+                ホームを開いただけでは既読にしない(既読化は各投稿の詳細ページを開いた時のみ
+                行う)。種類タグ(お知らせ/日報/コーチ日報/検定/投票)を併記する。表示条件・
+                対象データ(buildDigestItems)自体は変更していない。 */}
+            {digestStatus === "loading" && <CardSkeleton lines={3} />}
+            {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
+            {digestStatus === "success" && (
+              <div className={homeCardClass}>
+                <CardHeading count={digestItems.length > 0 ? digestItems.length : undefined}>新着</CardHeading>
+                {visibleDigest.length > 0 ? (
+                  <>
+                    <div className="divide-y divide-line">
+                      {visibleDigest.map((item) => (
+                        <Link key={item.id} href={item.href} className="flex min-h-tap items-center justify-between gap-2 py-2">
+                          <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <DigestTag source={item.source} />
+                            <span className="text-sm font-bold truncate">{item.label}</span>
+                          </span>
+                          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                        </Link>
+                      ))}
+                    </div>
+                    {digestRest > 0 && (
+                      <div className="text-caption text-ink-soft pt-2 mt-1 border-t border-line">ほか{digestRest}件あります</div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-caption text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
+                )}
+              </div>
+            )}
+
+            {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ
+                非表示。要対応・次の予定・新着と違い対応を必要としない受動的な情報のため、
+                見出しの縦バーを外し(CardHeading plain)、他カードより意図的に目立たなくする。 */}
+            {birthdaysStatus === "loading" && <CardSkeleton lines={1} />}
+            {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
+            {birthdaysStatus === "success" && birthdays.length > 0 && (
+              <div className={homeCardClass}>
+                <CardHeading plain>今日のチーム情報</CardHeading>
+                <div className="text-sm">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
+              </div>
+            )}
+
+            {/* 作成ショートカット: 指導者・管理者のみ。有効な行が1つも無ければカード自体を
+                出さない(チーム日報を書くはプラン制限が無いため、isStaffである限り常に最低
+                1行は残る)。アイコン+ラベルの縦積みレイアウト。利用頻度による強弱は付けず、
+                4つとも同じ視覚的重要度にする(2026-10-25再設計)。配色はチームカラー連動
+                (--orange系、teams.theme_primaryで上書きされる)に統一し、淡い背景+
+                アイコン/文字のみ着色する(全面塗りつぶしにはしない)。 */}
+            {isStaff && shortcutRows.length > 0 && (
+              <div className={homeCardClass}>
+                <CardHeading>ショートカット</CardHeading>
+                <div className="grid grid-cols-2 gap-2">
+                  {shortcutRows.map((r) => (
+                    <Link
+                      key={r.href}
+                      href={r.href}
+                      className="flex min-h-tap flex-col items-center justify-center gap-1 rounded-control border border-orange/25 bg-orange/5 text-orange-text py-3 px-2"
+                    >
+                      <r.icon className="w-5 h-5" />
+                      <span className="text-caption font-bold text-center">{r.label}</span>
+                    </Link>
+                  ))}
+                </div>
+                {aiUsage && (
+                  <div className="text-caption text-ink-soft mt-2 text-center">
+                    AI分析: 今月あと{Math.max(0, aiUsage.limit - aiUsage.used)}回利用できます
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 直近の試合結果(通常位置)。72時間以内の昇格表示と両方に出ることはない。 */}
+            {gameResultStatus === "loading" && <CardSkeleton lines={2} />}
+            {gameResultStatus === "error" && <ErrorRetry onRetry={loadGameResult} />}
+            {!elevateGameResult && gameResultNode}
+
+            {/* アップグレード導線: 現ロールが使い得るのに現プランでは使えない機能のうち1件だけを案内する。 */}
+            {upgradeCandidate && (
+              <LockedFeatureCard
+                label={upgradeCandidate.label}
+                description={upgradeCandidate.description}
+                requiredPlan={upgradeCandidate.requiredPlan}
+              />
+            )}
+          </div>
         </div>
-      )}
-
-      {/* 直近の試合結果(通常位置)。72時間以内の昇格表示と両方に出ることはない。 */}
-      {gameResultStatus === "loading" && <CardSkeleton lines={2} />}
-      {gameResultStatus === "error" && <ErrorRetry onRetry={loadGameResult} />}
-      {!elevateGameResult && gameResultNode}
-
-      {/* アップグレード導線: 現ロールが使い得るのに現プランでは使えない機能のうち1件だけを案内する。 */}
-      {upgradeCandidate && (
-        <LockedFeatureCard
-          label={upgradeCandidate.label}
-          description={upgradeCandidate.description}
-          requiredPlan={upgradeCandidate.requiredPlan}
-        />
-      )}
+      </div>
     </PageShell>
   );
 }

@@ -39,10 +39,10 @@ export function PlanLimitBanner() {
   return (
     <Link
       href="/settings/plan"
-      className="block rounded-lg border-2 border-danger bg-danger/8 px-3 py-2 mb-2.5 active:opacity-85"
+      className="block rounded-card border border-danger bg-danger/8 p-4 mb-3 active:opacity-85"
     >
-      <div className="font-mono font-bold text-[12px] tracking-[0.05em] text-danger-text mb-0.5">プランの上限を超えています</div>
-      <div className="text-[12.5px] text-ink leading-relaxed">
+      <div className="font-mono font-bold text-caption tracking-[0.05em] text-danger-text mb-0.5">プランの上限を超えています</div>
+      <div className="text-caption text-ink leading-relaxed">
         {overPlayer && (
           <div>
             選手登録数が上限を超えています({playerCount}/{playerLimit}人)。新しい選手は追加できません。
@@ -50,7 +50,7 @@ export function PlanLimitBanner() {
         )}
         {overStorage && <div>ストレージ使用量が上限を超えています。新しいファイルをアップロードできません。</div>}
       </div>
-      <div className="text-[11px] text-danger-text font-bold mt-1">プランを確認する ›</div>
+      <div className="text-caption text-danger-text font-bold mt-1">プランを確認する ›</div>
     </Link>
   );
 }

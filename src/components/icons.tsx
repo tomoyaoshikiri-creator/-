@@ -84,6 +84,18 @@ export function GameIcon(props: IconProps) {
   );
 }
 
+// 検定・達成・認定を表すアイコン(2026-10-25 ホーム画面ショートカット用に追加)。
+// 円の中にチェックマーク(合格)、下に認定リボンの2本の房を配置する。
+export function CertificateIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="8.5" r="5.5" />
+      <path d="M9.3 8.5l2 2 3.4-3.6" />
+      <path d="M9 13.2L7.5 21l4.5-2.3 4.5 2.3-1.5-7.8" />
+    </svg>
+  );
+}
+
 export function VideoIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

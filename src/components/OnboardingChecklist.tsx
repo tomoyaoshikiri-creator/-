@@ -40,10 +40,10 @@ export function OnboardingChecklist() {
   const doneCount = items.filter((i) => i.done).length;
 
   return (
-    <div className="rounded-lg border border-line bg-white p-3 mb-2.5">
+    <div className="rounded-card border border-border-subtle bg-card p-4 mb-3">
       <div className="flex items-center justify-between mb-2">
-        <div className="font-bold text-[12px]">はじめての設定</div>
-        <div className="text-[10.5px] text-ink-soft">
+        <div className="font-bold text-caption">はじめての設定</div>
+        <div className="text-caption text-ink-soft">
           {doneCount}/{items.length} 完了
         </div>
       </div>
@@ -52,7 +52,7 @@ export function OnboardingChecklist() {
           <Link
             key={item.key}
             href={item.href}
-            className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-[12px] ${
+            className={`flex min-h-tap items-center gap-2 rounded-control px-2.5 text-caption ${
               item.done ? "text-ink-soft" : "text-ink bg-paper active:opacity-80"
             }`}
           >
