@@ -85,6 +85,60 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+// 状態サマリー行の1枠。要対応・新着のように「件数そのものに意味がある」情報だけを対象にする
+// (次の予定は件数より日時・内容が重要なためここには含めない、2026-10-24 再設計でユーザー指示)。
+// タップでそのセクション(id)へスクロールする。0件のときは地味な表示に留め、1件以上の
+// ときだけ強調色(danger/orange)を使う。
+function SummaryChip({
+  href,
+  label,
+  count,
+  tone,
+}: {
+  href: string;
+  label: string;
+  count: number;
+  tone: "danger" | "primary";
+}) {
+  const active = count > 0;
+  const toneClass = active
+    ? tone === "danger"
+      ? "border-danger bg-danger/8 text-danger-text"
+      : "border-orange bg-orange/8 text-orange-text"
+    : "border-border-subtle bg-card text-ink-soft";
+  return (
+    <a href={href} className={`flex-1 min-h-tap flex items-center justify-between gap-2 rounded-card border px-3 ${toneClass}`}>
+      <span className="text-caption font-bold">{label}</span>
+      <span className="font-mono font-extrabold text-xl tabular-nums">{count}</span>
+    </a>
+  );
+}
+
+// 「新着」の行に付ける、情報の種類を示す小さなタグ(2026-10-24 再設計)。検定承認待ち・
+// 投票(未投票)は対応が必要な情報のためaccent色、それ以外(お知らせ・日報・投票結果)は
+// 中立色にする。表示条件・取得データ自体は変更しない(buildDigestItemsのまま)。
+const DIGEST_TAG: Record<DigestItem["source"], { label: string; accent: boolean }> = {
+  notice: { label: "お知らせ", accent: false },
+  report: { label: "日報", accent: false },
+  coachNote: { label: "コーチ日報", accent: false },
+  skillTestRequest: { label: "検定", accent: true },
+  pollOpen: { label: "投票", accent: true },
+  pollClosed: { label: "投票結果", accent: false },
+};
+
+function DigestTag({ source }: { source: DigestItem["source"] }) {
+  const tag = DIGEST_TAG[source];
+  return (
+    <span
+      className={`flex-shrink-0 font-mono text-[10.5px] font-bold px-1.5 py-0.5 rounded-lg ${
+        tag.accent ? "bg-accent/15 text-accent-text" : "bg-line text-ink-soft"
+      }`}
+    >
+      {tag.label}
+    </span>
+  );
+}
+
 // 「次の予定」内の各行。直近の1件・続く2件すべてを同じレイアウトで表示する
 // (以前は直近の1件だけ日付・時間・場所をまとめた表示、続く2件は日付・時間だけの
 // 別レイアウトになっていた不整合を解消)。日付・時間・場所はscheduleMeta()で1行にまとめ、
@@ -124,16 +178,23 @@ function ScheduleRow({
 // 緊急度を示すため赤(--danger)にする(barColorで個別に上書き)。件数(「要対応」専用)は
 // 状態(件数)を表すためのもので、見出し文字自体は他カードと同じtext-heading色のまま
 // (文字を赤くはしない)。カード内の「期限超過」赤ラベルとは独立。
+// plain=trueは誕生日のような受動的な情報専用(2026-10-24 再設計)。バーを省き文字も
+// 控えめにすることで、要対応・次の予定・新着より意図的に目立たなくする。
 // Roboto Mono(font-mono)はweight 500/700のみ読み込み済み(600は無し)のためboldを使う。
 function CardHeading({
   children,
   count,
   barColor = CARD_BAR,
+  plain = false,
 }: {
   children: React.ReactNode;
   count?: number;
   barColor?: string;
+  plain?: boolean;
 }) {
+  if (plain) {
+    return <div className="text-caption font-bold text-ink-soft mb-1.5">{children}</div>;
+  }
   return (
     <div className="flex items-center mb-3">
       <span aria-hidden className="w-[3px] h-[20px] rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: barColor }} />
@@ -504,12 +565,67 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* 状態サマリー行: 要対応・新着のように件数そのものに意味がある情報だけを対象にする
+          (次の予定は日時・内容のほうが重要なため対象外、2026-10-24 再設計)。両方のステータスが
+          確定するまでは出さない(読み込み中の0件表示によるチラつきを避ける)。タップで
+          各セクション(id="action-needed"/"digest")へスクロールする。 */}
+      {scheduleStatus !== "loading" && digestStatus !== "loading" && (
+        <div className="flex gap-2 mb-2.5">
+          <SummaryChip href="#action-needed" label="要対応" count={actionItems.length} tone="danger" />
+          <SummaryChip href="#digest" label="新着" count={digestItems.length} tone="primary" />
+        </div>
+      )}
+
+      {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
+          ここは入口のみ。0件(success)のときはカードを畳んだコンパクトな完了表示にする
+          (以前はカード自体が非表示だったが、「すべて確認済み」の安心材料を示すよう変更)。
+          次の予定より重要度が高いため、2026-10-24 再設計で表示順を次の予定より上にした。 */}
+      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
+      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
+      {scheduleStatus === "success" && actionItems.length > 0 && (
+        <div id="action-needed" className={cardClass} style={CARD_STYLE}>
+          <CardHeading count={actionItems.length} barColor="var(--danger)">
+            要対応
+          </CardHeading>
+          <div className="divide-y divide-line">
+            {visibleActionItems.map((item) => (
+              <Link
+                key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
+                href={`/schedule/${item.scheduleId}`}
+                className="flex min-h-tap items-center justify-between gap-2 py-1.5"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-bold flex items-center gap-1.5">
+                    {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
+                    <span className="truncate">{item.scheduleTitle}</span>
+                  </div>
+                  <div className="text-caption text-ink-soft mt-0.5 truncate">
+                    {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
+                    {" ・ "}
+                    {formatDateLabel(item.scheduleDate)}
+                  </div>
+                </div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+          <CardFooterLink href="/schedule">
+            {actionItemsRest > 0 ? `${visibleActionItems.length}件を表示中・ほか${actionItemsRest}件を確認` : "予定で確認する"}
+          </CardFooterLink>
+        </div>
+      )}
+      {scheduleStatus === "success" && actionItems.length === 0 && (
+        <div id="action-needed" className={`${cardClass} flex min-h-tap items-center`} style={CARD_STYLE}>
+          <span className="text-sm font-bold text-ink-soft">要対応の予定はありません</span>
+        </div>
+      )}
+
       {/* 次の予定(+選手ショートカット)。0件でも「すべて確認済み」的な安心感のため表示し続ける。
           カレンダーはここには置かず、/scheduleへの入口のみに徹する。 */}
       {scheduleStatus === "loading" && <CardSkeleton lines={2} />}
       {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
       {scheduleStatus === "success" && (
-        <div className={cardClass} style={CARD_STYLE}>
+        <div id="schedule" className={cardClass} style={CARD_STYLE}>
           <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
@@ -548,60 +664,29 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 要対応: 未回答・車出し/設営未回答の一覧。回答・確認そのものは既存の/scheduleに任せ、
-          ここは入口のみ。0件(success)の場合はカードごと非表示にする。 */}
-      {scheduleStatus === "loading" && <CardSkeleton lines={3} />}
-      {scheduleStatus === "error" && <ErrorRetry onRetry={loadSchedule} />}
-      {scheduleStatus === "success" && actionItems.length > 0 && (
-        <div className={cardClass} style={CARD_STYLE}>
-          <CardHeading count={actionItems.length} barColor="var(--danger)">
-            要対応
-          </CardHeading>
-          <div className="divide-y divide-line">
-            {visibleActionItems.map((item) => (
-              <Link
-                key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
-                href={`/schedule/${item.scheduleId}`}
-                className="flex min-h-tap items-center justify-between gap-2 py-1.5"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-bold flex items-center gap-1.5">
-                    {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
-                    <span className="truncate">{item.scheduleTitle}</span>
-                  </div>
-                  <div className="text-caption text-ink-soft mt-0.5 truncate">
-                    {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
-                    {" ・ "}
-                    {formatDateLabel(item.scheduleDate)}
-                  </div>
-                </div>
-                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </Link>
-            ))}
-          </div>
-          <CardFooterLink href="/schedule">
-            {actionItemsRest > 0 ? `${visibleActionItems.length}件を表示中・ほか${actionItemsRest}件を確認` : "予定で確認する"}
-          </CardFooterLink>
-        </div>
-      )}
-
-      {/* 試合終了から72時間以内は、通常の位置(下記)ではなく「要対応」の直後に
-          一度だけ昇格表示する。「次の予定」「要対応」は昇格時も常にこのカードより上に来る。 */}
+      {/* 試合終了から72時間以内は、通常の位置(下記)ではなく要対応・次の予定の直後に
+          一度だけ昇格表示する(2026-10-24 再設計で要対応の位置が変わったため、
+          「要対応→次の予定→(昇格時のみ)直近の試合結果→新着」の順に合わせて移動)。 */}
       {elevateGameResult && gameResultNode}
 
       {/* 新着: お知らせ・チーム日報・(指導者/管理者のみ)コーチ日報の未読を時系列統合。
-          ホームを開いただけでは既読にしない(既読化は各投稿の詳細ページを開いた時のみ行う)。 */}
+          ホームを開いただけでは既読にしない(既読化は各投稿の詳細ページを開いた時のみ行う)。
+          種類タグ(お知らせ/日報/コーチ日報/検定/投票)を追加(2026-10-24 再設計)。
+          表示条件・対象データ(buildDigestItems)自体は変更していない。 */}
       {digestStatus === "loading" && <CardSkeleton lines={3} />}
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
       {digestStatus === "success" && (
-        <div className={cardClass} style={CARD_STYLE}>
+        <div id="digest" className={cardClass} style={CARD_STYLE}>
           <CardHeading count={digestItems.length > 0 ? digestItems.length : undefined}>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
               <div className="divide-y divide-line">
                 {visibleDigest.map((item) => (
                   <Link key={item.id} href={item.href} className="flex min-h-tap items-center justify-between gap-2 py-1.5">
-                    <span className="text-sm font-bold truncate">{item.label}</span>
+                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <DigestTag source={item.source} />
+                      <span className="text-sm font-bold truncate">{item.label}</span>
+                    </span>
                     <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                   </Link>
                 ))}
@@ -616,12 +701,14 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ非表示。 */}
+      {/* 今日のチーム情報: 本日誕生日の選手のみ(年齢は表示しない)。該当者がいなければ非表示。
+          要対応・次の予定・新着と違い対応を必要としない受動的な情報のため、2026-10-24 再設計で
+          見出しの縦バーを外し(CardHeading plain)、他カードより意図的に目立たなくした。 */}
       {birthdaysStatus === "loading" && <CardSkeleton lines={1} />}
       {birthdaysStatus === "error" && <ErrorRetry onRetry={retryBirthdays} />}
       {birthdaysStatus === "success" && birthdays.length > 0 && (
         <div className={cardClass} style={CARD_STYLE}>
-          <CardHeading>今日のチーム情報</CardHeading>
+          <CardHeading plain>今日のチーム情報</CardHeading>
           <div className="text-sm">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
         </div>
       )}
@@ -636,7 +723,7 @@ export default function HomePage() {
               <Link
                 key={r.href}
                 href={r.href}
-                className="flex min-h-tap items-center justify-center text-center text-[12px] font-bold rounded-lg border border-sky text-sky"
+                className="flex min-h-tap items-center justify-center text-center text-caption font-bold rounded-lg border border-sky text-sky px-1"
                 style={{
                   background: "linear-gradient(135deg, var(--sky-light-28) 0%, var(--sky-light-10) 100%)",
                 }}

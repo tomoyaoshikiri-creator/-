@@ -123,6 +123,10 @@
   --ds-shadow-card: 0 1px 2px rgba(20, 22, 28, 0.06), 0 1px 3px rgba(20, 22, 28, 0.04);
   --ds-tap-min: 44px;
   --accent: #f59e0b;
+  /* --accentそのまま(amber-500相当)は白地での通常文字コントラストがWCAG AA(4.5:1)を
+     満たさないため、--danger/--danger-textと同じ考え方でより濃いamber-800相当の
+     文字専用色を別に持つ(2026-10-24 ホーム画面再設計、新着の種類タグで使用)。 */
+  --accent-text: #92400e;
 }
 
 @theme inline {
@@ -178,6 +182,7 @@
   --color-primary-text: var(--orange-text);
   --color-secondary: var(--green-text);
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --color-card: #ffffff;
   --color-border-subtle: var(--line);
 
