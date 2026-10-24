@@ -76,12 +76,61 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   return (
     <div className={cardClass} style={CARD_STYLE}>
       <div className="flex items-center justify-between">
-        <span className="text-[12.5px] text-ink-soft">読み込みに失敗しました</span>
-        <button type="button" onClick={onRetry} className="text-[12px] font-bold text-orange-text flex-shrink-0">
+        <span className="text-caption text-ink-soft">読み込みに失敗しました</span>
+        <button type="button" onClick={onRetry} className="text-caption font-bold text-orange-text flex-shrink-0">
           再試行
         </button>
       </div>
     </div>
+  );
+}
+
+// カード下部の「すべて見る」行。タップ領域・見た目をカード間で統一する
+// (2026-10-24 UI刷新: 従来はカードごとに別々のスタイルの小さな文字リンクだった)。
+function CardFooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-tap items-center justify-between gap-2 mt-1 pt-2 border-t border-line text-caption font-bold text-orange-text"
+    >
+      <span>{children}</span>
+      <ChevronRightIcon className="w-3.5 h-3.5 flex-shrink-0" />
+    </Link>
+  );
+}
+
+// 「次の予定」内の各行。直近の1件・続く2件すべてを同じレイアウトで表示する
+// (以前は直近の1件だけ日付・時間・場所をまとめた表示、続く2件は日付・時間だけの
+// 別レイアウトになっていた不整合を解消)。日付・時間・場所はscheduleMeta()で1行にまとめ、
+// 出欠の回答状態は全行に併記する。
+function ScheduleRow({
+  schedule,
+  needsAction,
+}: {
+  schedule: Pick<Schedule, "id" | "title" | "date" | "start_time" | "end_time" | "place" | "is_all_day" | "attendance_deadline">;
+  needsAction: boolean;
+}) {
+  return (
+    <Link href={`/schedule/${schedule.id}`} className="flex min-h-tap flex-col justify-center gap-0.5 py-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-bold truncate">{schedule.title}</span>
+        <span
+          className={`flex-shrink-0 text-caption font-bold px-2 py-0.5 rounded-full ${
+            needsAction ? "bg-danger/10 text-danger-text" : "bg-line text-ink-soft"
+          }`}
+        >
+          {needsAction ? "要確認" : "回答済み"}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-caption text-ink-soft truncate">{scheduleMeta(schedule)}</span>
+        {schedule.attendance_deadline && (
+          <span className="flex-shrink-0 text-caption text-ink-soft">
+            回答期限 {formatDateLabel(schedule.attendance_deadline)}
+          </span>
+        )}
+      </div>
+    </Link>
   );
 }
 
@@ -102,12 +151,12 @@ function CardHeading({
   return (
     <div className="flex items-center mb-3">
       <span aria-hidden className="w-[3px] h-[20px] rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: barColor }} />
-      <span className="font-mono font-bold text-[15px] tracking-[0.05em] text-heading">
+      <span className="font-mono font-bold text-section tracking-[0.05em] text-heading">
         {children}
         {count !== undefined && (
           <>
             {" "}
-            <span className="text-[12.5px] font-medium text-ink-soft">{count}件</span>
+            <span className="text-caption font-medium text-ink-soft">{count}件</span>
           </>
         )}
       </span>
@@ -413,32 +462,30 @@ export default function HomePage() {
   const gameResultNode = showGameResult && recentMatch?.schedules && (
     <div className={cardClass} style={CARD_STYLE}>
       <CardHeading>直近の試合結果</CardHeading>
-      <Link href="/game/results">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <div className="text-[13px] font-bold truncate">vs {recentMatch.opponent ?? "(相手未設定)"}</div>
-            <div className="text-[11.5px] text-ink-soft mt-0.5">{formatDateLabel(recentMatch.schedules.date)}</div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="font-mono font-extrabold text-[18px]">
-              {recentMatch.team_score}-{recentMatch.opponent_score}
-            </span>
-            <span
-              className={`text-[10.5px] font-bold px-2 py-1 rounded-full ${
-                (recentMatch.team_score ?? 0) > (recentMatch.opponent_score ?? 0)
-                  ? "bg-orange/10 text-orange-text"
-                  : (recentMatch.team_score ?? 0) < (recentMatch.opponent_score ?? 0)
-                    ? "bg-danger/10 text-danger-text"
-                    : "bg-line text-ink-soft"
-              }`}
-            >
-              {(recentMatch.team_score ?? 0) > (recentMatch.opponent_score ?? 0)
-                ? "勝ち"
+      <Link href="/game/results" className="flex min-h-tap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-sm font-bold truncate">vs {recentMatch.opponent ?? "(相手未設定)"}</div>
+          <div className="text-caption text-ink-soft mt-0.5">{formatDateLabel(recentMatch.schedules.date)}</div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="font-mono font-extrabold text-[18px]">
+            {recentMatch.team_score}-{recentMatch.opponent_score}
+          </span>
+          <span
+            className={`text-caption font-bold px-2 py-1 rounded-full ${
+              (recentMatch.team_score ?? 0) > (recentMatch.opponent_score ?? 0)
+                ? "bg-orange/10 text-orange-text"
                 : (recentMatch.team_score ?? 0) < (recentMatch.opponent_score ?? 0)
-                  ? "負け"
-                  : "引き分け"}
-            </span>
-          </div>
+                  ? "bg-danger/10 text-danger-text"
+                  : "bg-line text-ink-soft"
+            }`}
+          >
+            {(recentMatch.team_score ?? 0) > (recentMatch.opponent_score ?? 0)
+              ? "勝ち"
+              : (recentMatch.team_score ?? 0) < (recentMatch.opponent_score ?? 0)
+                ? "負け"
+                : "引き分け"}
+          </span>
         </div>
       </Link>
     </div>
@@ -466,7 +513,7 @@ export default function HomePage() {
           薄く着色し、他のカードより一段目立つ見た目にしている。 */}
       {teamGoal && (
         <div className="rounded-lg border-2 border-orange bg-orange/8 px-3 py-1.5 mb-2.5">
-          <div className="font-mono font-bold text-[13px] tracking-[0.05em] text-orange-text mb-0.5">チーム目標</div>
+          <div className="font-mono font-bold text-caption tracking-[0.05em] text-orange-text mb-0.5">チーム目標</div>
           <div className="text-[16px] font-bold leading-relaxed whitespace-pre-wrap text-ink">{teamGoal}</div>
         </div>
       )}
@@ -480,76 +527,36 @@ export default function HomePage() {
           <CardHeading>次の予定</CardHeading>
           {nextSchedule ? (
             <>
-              <Link href={`/schedule/${nextSchedule.id}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[14px] font-bold flex-shrink-0">{nextSchedule.title}</span>
-                  <span className="text-[11.5px] text-ink-soft flex-1 min-w-0 truncate text-center">
-                    {scheduleMeta(nextSchedule)}
-                  </span>
-                  <span
-                    className={`flex-shrink-0 text-[10.5px] font-bold px-2 py-1 rounded-full ${
-                      nextScheduleNeedsAction ? "bg-danger/10 text-danger-text" : "bg-line text-ink-soft"
-                    }`}
-                  >
-                    {nextScheduleNeedsAction ? "要確認" : "回答済み"}
-                  </span>
-                </div>
-                {nextSchedule.attendance_deadline && (
-                  <div className="text-[10.5px] text-ink-soft mt-0.5">
-                    回答期限: {formatDateLabel(nextSchedule.attendance_deadline)}
-                  </div>
-                )}
-              </Link>
-              {compressedSchedules.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-line space-y-1.5">
-                  {compressedSchedules.map((s) => {
-                    let timeLabel = "";
-                    if (s.is_all_day) timeLabel = "終日";
-                    else if (s.start_time && s.end_time) timeLabel = `${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
-                    else if (s.start_time) timeLabel = `${s.start_time.slice(0, 5)}〜`;
-                    return (
-                      <Link key={s.id} href={`/schedule/${s.id}`} className="flex items-center justify-between gap-2">
-                        <span className="text-[11.5px] font-bold truncate">{s.title}</span>
-                        <span className="flex-shrink-0 flex items-center gap-1.5 text-[10.5px] text-ink-soft tabular-nums">
-                          <span className="min-w-[44px] text-right">{formatDateLabel(s.date)}</span>
-                          <span className="min-w-[80px] text-right">{timeLabel || "時間未定"}</span>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="divide-y divide-line">
+                <ScheduleRow schedule={nextSchedule} needsAction={nextScheduleNeedsAction} />
+                {compressedSchedules.map((s) => (
+                  <ScheduleRow key={s.id} schedule={s} needsAction={actionItems.some((i) => i.scheduleId === s.id)} />
+                ))}
+              </div>
               {myPlayers.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-line">
                   {visiblePlayers.map((p) => (
                     <Link
                       key={p.id}
                       href={`/karte/players/${p.id}`}
-                      className="text-[10.5px] font-bold px-2 py-1 rounded-full bg-paper text-ink-soft"
+                      className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft"
                     >
                       {p.name}・{gradeLabel(p.grade, category)}
                     </Link>
                   ))}
                   {myPlayers.length >= 4 && (
-                    <Link href="/karte/players" className="text-[10.5px] font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
+                    <Link href="/karte/players" className="text-caption font-bold px-2 py-1 rounded-full bg-paper text-ink-soft">
                       ほか{myPlayers.length - visiblePlayers.length}名
                     </Link>
                   )}
                 </div>
               )}
-              <Link href="/schedule" className="block text-[11.5px] text-ink-soft pt-2 mt-1 border-t border-line">
-                予定をすべて見る
-              </Link>
+              <CardFooterLink href="/schedule">予定をすべて見る</CardFooterLink>
             </>
           ) : (
             <>
-              <div className="text-[12.5px] text-ink-soft text-center py-3">直近の予定はありません</div>
-              <Link
-                href="/schedule"
-                className="block text-center text-[12px] font-bold text-orange-text py-1.5 border-t border-line mt-1"
-              >
-                予定を見る
-              </Link>
+              <div className="text-caption text-ink-soft text-center py-3">直近の予定はありません</div>
+              <CardFooterLink href="/schedule">予定を見る</CardFooterLink>
             </>
           )}
         </div>
@@ -564,29 +571,31 @@ export default function HomePage() {
           <CardHeading count={actionItems.length} barColor="var(--danger)">
             要対応
           </CardHeading>
-          {visibleActionItems.map((item, i) => (
-            <Link key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`} href={`/schedule/${item.scheduleId}`}>
-              <div className={`flex items-center justify-between py-2 ${i > 0 ? "border-t border-line" : ""}`}>
+          <div className="divide-y divide-line">
+            {visibleActionItems.map((item) => (
+              <Link
+                key={`${item.scheduleId}-${item.targetLabel}-${item.kind}`}
+                href={`/schedule/${item.scheduleId}`}
+                className="flex min-h-tap items-center justify-between gap-2 py-1.5"
+              >
                 <div className="min-w-0">
-                  <div className="text-[12.5px] font-bold flex items-center gap-1.5">
-                    {item.overdue && <span className="text-[9.5px] font-bold text-danger-text flex-shrink-0">期限超過</span>}
+                  <div className="text-sm font-bold flex items-center gap-1.5">
+                    {item.overdue && <span className="text-caption font-bold text-danger-text flex-shrink-0">期限超過</span>}
                     <span className="truncate">{item.scheduleTitle}</span>
                   </div>
-                  <div className="text-[11px] text-ink-soft mt-0.5">
+                  <div className="text-caption text-ink-soft mt-0.5 truncate">
                     {item.targetLabel}の{item.kind === "unanswered" ? "出欠が未回答です" : "車出し/設営が未回答です"}
                     {" ・ "}
                     {formatDateLabel(item.scheduleDate)}
                   </div>
                 </div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-              </div>
-            </Link>
-          ))}
-          {actionItemsRest > 0 && (
-            <Link href="/schedule" className="block text-[11.5px] text-ink-soft pt-1.5 border-t border-line mt-1">
-              ほか{actionItemsRest}件
-            </Link>
-          )}
+              </Link>
+            ))}
+          </div>
+          <CardFooterLink href="/schedule">
+            {actionItemsRest > 0 ? `${visibleActionItems.length}件を表示中・ほか${actionItemsRest}件を確認` : "予定で確認する"}
+          </CardFooterLink>
         </div>
       )}
 
@@ -600,21 +609,23 @@ export default function HomePage() {
       {digestStatus === "error" && <ErrorRetry onRetry={loadDigest} />}
       {digestStatus === "success" && (
         <div className={cardClass} style={CARD_STYLE}>
-          <CardHeading>新着</CardHeading>
+          <CardHeading count={digestItems.length > 0 ? digestItems.length : undefined}>新着</CardHeading>
           {visibleDigest.length > 0 ? (
             <>
-              {visibleDigest.map((item, i) => (
-                <Link key={item.id} href={item.href}>
-                  <div className={`flex items-center justify-between py-2 ${i > 0 ? "border-t border-line" : ""}`}>
-                    <span className="text-[12.5px] font-bold truncate">{item.label}</span>
-                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0 ml-2" />
-                  </div>
-                </Link>
-              ))}
-              {digestRest > 0 && <div className="text-[11.5px] text-ink-soft pt-1.5 border-t border-line mt-1">ほか{digestRest}件</div>}
+              <div className="divide-y divide-line">
+                {visibleDigest.map((item) => (
+                  <Link key={item.id} href={item.href} className="flex min-h-tap items-center justify-between gap-2 py-1.5">
+                    <span className="text-sm font-bold truncate">{item.label}</span>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </Link>
+                ))}
+              </div>
+              {digestRest > 0 && (
+                <div className="text-caption text-ink-soft pt-2 mt-1 border-t border-line">ほか{digestRest}件あります</div>
+              )}
             </>
           ) : (
-            <div className="text-[12.5px] text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
+            <div className="text-caption text-ink-soft text-center py-3">新着はありません(すべて確認済みです)</div>
           )}
         </div>
       )}
@@ -625,7 +636,7 @@ export default function HomePage() {
       {birthdaysStatus === "success" && birthdays.length > 0 && (
         <div className={cardClass} style={CARD_STYLE}>
           <CardHeading>今日のチーム情報</CardHeading>
-          <div className="text-[12.5px]">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
+          <div className="text-sm">🎂 {birthdays.map((b) => b.name).join("・")}さん、お誕生日おめでとうございます</div>
         </div>
       )}
 
@@ -649,7 +660,7 @@ export default function HomePage() {
             ))}
           </div>
           {aiUsage && (
-            <div className="text-[10.5px] text-ink-soft mt-2 text-center">
+            <div className="text-caption text-ink-soft mt-2 text-center">
               AI分析: 今月あと{Math.max(0, aiUsage.limit - aiUsage.used)}回利用できます
             </div>
           )}
