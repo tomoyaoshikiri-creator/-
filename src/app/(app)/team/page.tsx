@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { cardClass, SectionLabel } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { canManageAccounting, canViewAttendanceReport, canViewKarte, canWriteCoachNote } from "@/lib/permissions";
@@ -34,19 +34,15 @@ function HubRow({
   unseen?: boolean;
 }) {
   return (
-    <Link href={href}>
-      <Card className="cursor-pointer">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-bold text-[15px] flex items-center gap-1.5">
-              {unseen && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
-              {label}
-            </div>
-            <div className="text-[11.5px] text-ink-soft mt-1">{description}</div>
-          </div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+    <Link href={href} className={`${cardClass} flex min-h-tap items-center justify-between gap-2`}>
+      <div className="min-w-0">
+        <div className="font-bold text-sm flex items-center gap-1.5">
+          {unseen && <span className="w-[7px] h-[7px] rounded-full bg-danger flex-shrink-0" />}
+          {label}
         </div>
-      </Card>
+        <div className="text-caption text-ink-soft mt-1">{description}</div>
+      </div>
+      <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
     </Link>
   );
 }

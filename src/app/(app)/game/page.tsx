@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
@@ -65,7 +65,7 @@ export default function GameListPage() {
     <PageShell header={<AppHeader title="試合記録" accessBadge="coach" />}>
       <Link
         href="/game/results"
-        className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-lg border border-orange text-[12.5px] font-bold text-orange-text bg-orange/8"
+        className="flex min-h-tap items-center justify-center gap-1 mb-3.5 rounded-lg border border-orange text-caption font-bold text-orange-text bg-orange/8"
       >
         試合結果一覧を見る
         <ChevronRightIcon className="w-3 h-3" />
@@ -74,7 +74,7 @@ export default function GameListPage() {
       {showStatCategoriesLink && (
         <Link
           href="/game/stat-categories"
-          className="flex items-center justify-center gap-1 mb-3.5 py-2.5 rounded-lg border border-line text-[12.5px] font-bold text-ink-soft bg-white"
+          className="flex min-h-tap items-center justify-center gap-1 mb-3.5 rounded-lg border border-line text-caption font-bold text-ink-soft bg-white"
         >
           スタッツ項目を編集
           <ChevronRightIcon className="w-3 h-3" />
@@ -110,29 +110,29 @@ export default function GameListPage() {
         filteredGames.map((g) => {
           const isPast = g.date < todayDateStr();
           return (
-            <Link key={g.id} href={`/game/${g.id}`}>
-              {/* --paperがスキン統一(色調整)で白(bg-white、Cardのデフォルト背景)とほぼ
-                  見分けが付かない値になり、済んだ試合の色分けが実質見えなくなっていたため、
-                  はっきり差が出る--lineに変更した。 */}
-              <Card className="cursor-pointer" style={isPast ? { backgroundColor: "var(--line)" } : undefined}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-[14.5px]">
-                      {g.game_category && (
-                        <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger-text">
-                          {g.game_category}
-                        </span>
-                      )}
-                      {g.title}
-                    </div>
-                    <div className="text-xs text-ink-soft mt-0.5">
-                      {formatDateLabel(g.date)}
-                      {g.place ? ` @ ${g.place}` : ""}
-                    </div>
-                  </div>
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            // --paperがスキン統一(色調整)で白(bg-card)とほぼ見分けが付かない値になり、
+            // 済んだ試合の色分けが実質見えなくなっていたため、はっきり差が出る--lineに変更した。
+            <Link
+              key={g.id}
+              href={`/game/${g.id}`}
+              className={`${cardClass} flex min-h-tap items-center justify-between gap-2`}
+              style={isPast ? { backgroundColor: "var(--line)" } : undefined}
+            >
+              <div className="min-w-0">
+                <div className="font-bold text-sm">
+                  {g.game_category && (
+                    <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-danger/10 text-danger-text">
+                      {g.game_category}
+                    </span>
+                  )}
+                  {g.title}
                 </div>
-              </Card>
+                <div className="text-caption text-ink-soft mt-0.5">
+                  {formatDateLabel(g.date)}
+                  {g.place ? ` @ ${g.place}` : ""}
+                </div>
+              </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </Link>
           );
         })
