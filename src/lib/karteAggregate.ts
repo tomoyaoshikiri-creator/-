@@ -450,7 +450,6 @@ export type SportsTestMetric =
   | "wingspan_cm"
   | "sprint20m"
   | "long_jump"
-  | "change_direction_run"
   | "lane_agility"
   | "side_step"
   | "shuttle_20m_x3"
@@ -518,16 +517,6 @@ export const SPORTS_TEST_RANKING_METRICS: {
     aiEvaluationDirection: "HIGHER_IS_BETTER",
     aiMeasuredQuality: "下肢の瞬発的なパワー",
     extract: (r) => bestOf(r.long_jump_1, r.long_jump_2, "desc"),
-  },
-  {
-    value: "change_direction_run",
-    label: "切り替えラン",
-    abbrLines: ["切り替え", "ラン"],
-    unit: "秒",
-    direction: "asc",
-    aiEvaluationDirection: "LOWER_IS_BETTER",
-    aiMeasuredQuality: "方向転換を伴う走力(切り替えの速さ)",
-    extract: (r) => bestOf(r.change_direction_run_1, r.change_direction_run_2, "asc"),
   },
   {
     value: "lane_agility",

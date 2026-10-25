@@ -26,8 +26,6 @@ interface FormState {
   sprint20m_2: string;
   long_jump_1: string;
   long_jump_2: string;
-  change_direction_run_1: string;
-  change_direction_run_2: string;
   lane_agility_1: string;
   lane_agility_2: string;
   side_step_1: string;
@@ -52,8 +50,6 @@ const EMPTY_FORM: FormState = {
   sprint20m_2: "",
   long_jump_1: "",
   long_jump_2: "",
-  change_direction_run_1: "",
-  change_direction_run_2: "",
   lane_agility_1: "",
   lane_agility_2: "",
   side_step_1: "",
@@ -81,8 +77,6 @@ function recordToForm(r: SportsTestRecord | null): FormState {
     sprint20m_2: toStr(r.sprint20m_2),
     long_jump_1: toStr(r.long_jump_1),
     long_jump_2: toStr(r.long_jump_2),
-    change_direction_run_1: toStr(r.change_direction_run_1),
-    change_direction_run_2: toStr(r.change_direction_run_2),
     lane_agility_1: toStr(r.lane_agility_1),
     lane_agility_2: toStr(r.lane_agility_2),
     side_step_1: toStr(r.side_step_1),
@@ -335,8 +329,6 @@ export default function SportsTestPage() {
           sprint20m_2: notConducted ? null : numOrNull(form.sprint20m_2),
           long_jump_1: notConducted ? null : numOrNull(form.long_jump_1),
           long_jump_2: notConducted ? null : numOrNull(form.long_jump_2),
-          change_direction_run_1: notConducted ? null : numOrNull(form.change_direction_run_1),
-          change_direction_run_2: notConducted ? null : numOrNull(form.change_direction_run_2),
           lane_agility_1: notConducted ? null : numOrNull(form.lane_agility_1),
           lane_agility_2: notConducted ? null : numOrNull(form.lane_agility_2),
           side_step_1: notConducted ? null : numOrNull(form.side_step_1),
@@ -625,39 +617,6 @@ export default function SportsTestPage() {
               <CompareLine
                 current={bestOf(numOrNull(form.long_jump_1), numOrNull(form.long_jump_2), "desc")}
                 baseline={bestOf(baseline?.long_jump_1 ?? null, baseline?.long_jump_2 ?? null, "desc")}
-                baselineQuarter={baseline?.quarter}
-              />
-            </div>
-            <div className="mt-3">
-              <FieldLabel>切り替えラン(秒・2回)</FieldLabel>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    className={inputClass()}
-                    placeholder="1回目"
-                    value={form.change_direction_run_1}
-                    onChange={(e) => setField("change_direction_run_1", e.target.value)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    className={inputClass()}
-                    placeholder="2回目"
-                    value={form.change_direction_run_2}
-                    onChange={(e) => setField("change_direction_run_2", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="text-[10.5px] text-ink-soft mt-1">※小数点第2位まで</div>
-              <CompareLine
-                current={bestOf(numOrNull(form.change_direction_run_1), numOrNull(form.change_direction_run_2), "asc")}
-                baseline={bestOf(baseline?.change_direction_run_1 ?? null, baseline?.change_direction_run_2 ?? null, "asc")}
                 baselineQuarter={baseline?.quarter}
               />
             </div>
