@@ -26,6 +26,9 @@ export default function SettingsCategoryPage() {
   const [savedSport, setSavedSport] = useState<TeamSport>("ミニバスケットボール");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ選択欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。
+  const [editing, setEditing] = useState(false);
 
   const availableSports = SPORTS.filter((s) => s !== "ミニバスケットボール" || isMiniBasketballAllowed(category));
 
@@ -55,7 +58,7 @@ export default function SettingsCategoryPage() {
     setCategory(next);
     if (sport === "ミニバスケットボール" && !isMiniBasketballAllowed(next)) {
       setSport("バスケットボール");
-      toast("ミニバスケットボールは小学生カテゴリー専用のため、競技をバスケットボールに変更しました");
+      toast.success("ミニバスケットボールは小学生カテゴリー専用のため、競技をバスケットボールに変更しました");
     }
   }
 
@@ -68,13 +71,14 @@ export default function SettingsCategoryPage() {
     const { error } = await supabase.from("teams").update({ category, sport: sportToSave }).eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setSport(sportToSave);
     setSavedCategory(category);
     setSavedSport(sportToSave);
-    toast("カテゴリーを保存しました");
+    setEditing(false);
+    toast.success("カテゴリーを保存しました");
     router.refresh();
   }
 
@@ -89,33 +93,55 @@ export default function SettingsCategoryPage() {
             チームの年代カテゴリーです。カテゴリーを変更しても、既に登録済みの選手の学年は自動的には変わりません(範囲外になった場合は選手ごとに個別編集してください)。
           </div>
 
-          <FieldLabel>カテゴリー</FieldLabel>
-          <select
-            className={inputClass()}
-            value={category}
-            onChange={(e) => handleCategoryChange(e.target.value as TeamCategory)}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_DISPLAY_LABELS[c]}
-              </option>
-            ))}
-          </select>
+          {editing ? (
+            <>
+              <FieldLabel>カテゴリー</FieldLabel>
+              <select
+                className={inputClass()}
+                value={category}
+                onChange={(e) => handleCategoryChange(e.target.value as TeamCategory)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_DISPLAY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
 
-          <div className="mt-3">
-            <FieldLabel>競技</FieldLabel>
-            <select className={inputClass()} value={sport} onChange={(e) => setSport(e.target.value as TeamSport)}>
-              {availableSports.map((s) => (
-                <option key={s} value={s}>
-                  {SPORT_DISPLAY_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="mt-3">
+                <FieldLabel>競技</FieldLabel>
+                <select className={inputClass()} value={sport} onChange={(e) => setSport(e.target.value as TeamSport)}>
+                  {availableSports.map((s) => (
+                    <option key={s} value={s}>
+                      {SPORT_DISPLAY_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <SubmitButton onClick={handleSave} disabled={saving}>
-            {saving ? "保存中…" : "保存する"}
-          </SubmitButton>
+              <SubmitButton onClick={handleSave} disabled={saving}>
+                {saving ? "保存中…" : "保存する"}
+              </SubmitButton>
+            </>
+          ) : (
+            <>
+              <div className="text-[13px]">
+                <span className="text-ink-soft">カテゴリー: </span>
+                <span className="font-bold">{CATEGORY_DISPLAY_LABELS[category]}</span>
+              </div>
+              <div className="text-[13px] mt-1.5">
+                <span className="text-ink-soft">競技: </span>
+                <span className="font-bold">{SPORT_DISPLAY_LABELS[sport]}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="w-full mt-4 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
+              >
+                カテゴリーを編集する
+              </button>
+            </>
+          )}
         </Card>
       )}
     </PageShell>

@@ -95,7 +95,11 @@ export default function AccountingDuesItemPage() {
     load();
   }, [load]);
 
-  // 基本設定の編集
+  // 基本設定の編集。ページ全体で表示モード⇄編集モードを1つのボタンで切り替える
+  // (「編集」をタップするまでは読み取り専用で表示してほしいというユーザー指示。
+  // 当初カードごとにボタンを置いたが、1画面に1つでよいとのフィードバックを受けて変更)。
+  // フィールドごとの即時保存(handleSave)の挙動自体は変えない。
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   async function handleSave(patch: DuesItemPatch) {
     if (!item) return;
@@ -109,7 +113,7 @@ export default function AccountingDuesItemPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setItem(data);
@@ -134,7 +138,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_items").delete().eq("id", item.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     router.push("/accounting/dues");
@@ -147,7 +151,7 @@ export default function AccountingDuesItemPage() {
     if (!item) return;
     const amount = Number(bandDraft.monthly_amount);
     if (bandDraft.grade_min > bandDraft.grade_max || !Number.isFinite(amount) || amount <= 0) {
-      toast("学年の範囲・月額を正しく入力してください");
+      toast.warning("学年の範囲・月額を正しく入力してください");
       return;
     }
     const supabase = createClient();
@@ -157,7 +161,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`追加に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setBands((prev) => [...prev, data].sort((a, b) => a.grade_min - b.grade_min));
@@ -167,7 +171,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_grade_bands").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setBands((prev) => prev.filter((b) => b.id !== id));
@@ -186,7 +190,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`追加に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setPlayerSettings((prev) => [...prev, data]);
@@ -201,7 +205,7 @@ export default function AccountingDuesItemPage() {
       .select("*")
       .single();
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setPlayerSettings((prev) => prev.map((s) => (s.id === id ? data : s)));
@@ -210,7 +214,7 @@ export default function AccountingDuesItemPage() {
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_player_settings").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setPlayerSettings((prev) => prev.filter((s) => s.id !== id));
@@ -236,6 +240,13 @@ export default function AccountingDuesItemPage() {
   const pricingMethod = item.pricing_method as DuesPricingMethod;
   const paymentMethods = item.payment_methods as DuesPaymentMethod[];
 
+  // 設定する順番がわかるよう、画面に出てくるカードへ上から通し番号を振る
+  // (ユーザーから「1画面に項目が多すぎて設定する順番がわからない」と指摘を受けた改善)。
+  // 学年帯カードは料金の決め方によって出たり消えたりするため、固定の数字ではなく
+  // レンダー中にインクリメントするカウンタで採番する。
+  let stepNumber = 0;
+  const step = (text: string) => `${++stepNumber}. ${text}`;
+
   return (
     <PageShell header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
       <Link href={`/accounting/dues/${item.id}/checklist`}>
@@ -250,117 +261,88 @@ export default function AccountingDuesItemPage() {
         </Card>
       </Link>
 
-      <SectionLabel>基本設定</SectionLabel>
+      <SectionLabel>{step("名称・状態")}</SectionLabel>
       <Card>
-        <div className="flex items-center justify-between">
-          <FieldLabel>有効</FieldLabel>
-          <Switch checked={item.active} onChange={(v) => handleSave({ active: v })} disabled={saving} />
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>名称</FieldLabel>
-          <input
-            className={inputClass()}
-            defaultValue={item.name}
-            onBlur={(e) => {
-              const v = e.target.value.trim();
-              if (v && v !== item.name) handleSave({ name: v });
-            }}
-          />
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>料金の決め方</FieldLabel>
-          <div className="flex flex-col gap-1.5">
-            {(Object.keys(DUES_PRICING_METHOD_LABELS) as DuesPricingMethod[]).map((m) => (
-              <SegButton key={m} active={pricingMethod === m} onClick={() => handleSave({ pricing_method: m })}>
-                {DUES_PRICING_METHOD_LABELS[m]}
-              </SegButton>
-            ))}
-          </div>
-        </div>
-        {pricingMethod === "flat" && (
-          <div className="mt-2.5">
-            <FieldLabel>月額</FieldLabel>
+        {editing ? (
+          <>
+            <FieldLabel>名称</FieldLabel>
             <input
-              type="number"
-              min={1}
               className={inputClass()}
-              defaultValue={item.flat_monthly_amount ?? ""}
-              onBlur={(e) => {
-                const amount = Number(e.target.value);
-                if (Number.isFinite(amount) && amount > 0 && amount !== item.flat_monthly_amount) {
-                  handleSave({ flat_monthly_amount: amount });
-                }
-              }}
-            />
-          </div>
-        )}
-        <div className="mt-2.5">
-          <FieldLabel>集金の周期</FieldLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {DUES_CYCLE_MONTHS_OPTIONS.map((c) => (
-              <SegButton key={c} active={item.cycle_months === c} onClick={() => handleSave({ cycle_months: c })}>
-                {DUES_CYCLE_MONTHS_LABELS[c as DuesCycleMonths]}
-              </SegButton>
-            ))}
-          </div>
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>支払い方法(複数選択可)</FieldLabel>
-          <div className="flex flex-wrap gap-1.5">
-            {DUES_PAYMENT_METHOD_OPTIONS.map((m) => (
-              <SegButton key={m} active={paymentMethods.includes(m)} onClick={() => togglePaymentMethod(m)}>
-                {DUES_PAYMENT_METHOD_LABELS[m]}
-              </SegButton>
-            ))}
-          </div>
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>請求の単位</FieldLabel>
-          <div className="flex gap-1.5">
-            {(Object.keys(DUES_BILLING_UNIT_LABELS) as DuesBillingUnit[]).map((u) => (
-              <SegButton key={u} active={item.billing_unit === u} onClick={() => handleSave({ billing_unit: u })}>
-                {DUES_BILLING_UNIT_LABELS[u]}
-              </SegButton>
-            ))}
-          </div>
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>計上先の収入項目</FieldLabel>
-          <select
-            className={inputClass()}
-            value={item.income_category_id}
-            onChange={(e) => handleSave({ income_category_id: e.target.value })}
-          >
-            {incomeCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mt-2.5">
-          <FieldLabel>未納通知を送るタイミング(任意)</FieldLabel>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              className={inputClass("w-24 flex-none")}
-              defaultValue={item.reminder_days_after ?? ""}
-              placeholder="未設定"
+              defaultValue={item.name}
               onBlur={(e) => {
                 const v = e.target.value.trim();
-                const days = v === "" ? null : Number(v);
-                if (days === null || (Number.isFinite(days) && days >= 0)) handleSave({ reminder_days_after: days });
+                if (v && v !== item.name) handleSave({ name: v });
               }}
             />
-            <span className="text-[12px] text-ink-soft">日後に自動送信(空欄なら送らない)</span>
+            <div className="flex items-center justify-between mt-2.5">
+              <FieldLabel>有効</FieldLabel>
+              <Switch checked={item.active} onChange={(v) => handleSave({ active: v })} disabled={saving} />
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-[14px]">{item.name}</span>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-none ${
+                item.active ? "bg-green/10 text-green-text" : "bg-line text-ink-soft"
+              }`}
+            >
+              {item.active ? "有効" : "停止中"}
+            </span>
           </div>
-        </div>
+        )}
+      </Card>
+
+      <SectionLabel>{step("料金の決め方")}</SectionLabel>
+      <Card>
+        {editing ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              {(Object.keys(DUES_PRICING_METHOD_LABELS) as DuesPricingMethod[]).map((m) => (
+                <SegButton key={m} active={pricingMethod === m} onClick={() => handleSave({ pricing_method: m })}>
+                  {DUES_PRICING_METHOD_LABELS[m]}
+                </SegButton>
+              ))}
+            </div>
+            {pricingMethod === "flat" && (
+              <div className="mt-2.5">
+                <FieldLabel>月額</FieldLabel>
+                <input
+                  type="number"
+                  min={1}
+                  className={inputClass()}
+                  defaultValue={item.flat_monthly_amount ?? ""}
+                  onBlur={(e) => {
+                    const amount = Number(e.target.value);
+                    if (Number.isFinite(amount) && amount > 0 && amount !== item.flat_monthly_amount) {
+                      handleSave({ flat_monthly_amount: amount });
+                    }
+                  }}
+                />
+              </div>
+            )}
+            {pricingMethod === "grade_band" && (
+              <div className="mt-2.5 text-[11.5px] text-ink-soft">学年帯ごとの月額は、次のステップで設定します。</div>
+            )}
+            {pricingMethod === "per_player" && (
+              <div className="mt-2.5 text-[11.5px] text-ink-soft">選手ごとの月額は、次のステップで全員分を設定します。</div>
+            )}
+          </>
+        ) : (
+          <div>
+            <div className="text-[13px] font-bold">{DUES_PRICING_METHOD_LABELS[pricingMethod]}</div>
+            {pricingMethod === "flat" && (
+              <div className="text-[12px] text-ink-soft mt-1">月額 {formatYen(Number(item.flat_monthly_amount ?? 0))}</div>
+            )}
+            {pricingMethod === "grade_band" && <div className="text-[12px] text-ink-soft mt-1">学年帯ごとの月額は下のカードで設定します。</div>}
+            {pricingMethod === "per_player" && <div className="text-[12px] text-ink-soft mt-1">選手ごとの月額は下のカードで設定します。</div>}
+          </div>
+        )}
       </Card>
 
       {pricingMethod === "grade_band" && (
         <>
-          <SectionLabel>学年帯ごとの月額</SectionLabel>
+          <SectionLabel>{step("学年帯ごとの月額")}</SectionLabel>
           <Card>
             {bands.length === 0 ? (
               <EmptyState>まだ学年帯が設定されていません</EmptyState>
@@ -383,52 +365,58 @@ export default function AccountingDuesItemPage() {
               </ul>
             )}
             {grades.length > 0 && (
-              <div className={bands.length > 0 ? "mt-2.5 flex items-center gap-1.5" : "flex items-center gap-1.5"}>
-                <select
-                  className={inputClass("flex-1")}
-                  value={bandDraft.grade_min}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}
-                >
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      {gradeLabel(String(g), category)}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-[12px] text-ink-soft flex-none">〜</span>
-                <select
-                  className={inputClass("flex-1")}
-                  value={bandDraft.grade_max}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}
-                >
-                  {grades.map((g) => (
-                    <option key={g} value={g}>
-                      {gradeLabel(String(g), category)}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="月額"
-                  className={inputClass("w-24 flex-none")}
-                  value={bandDraft.monthly_amount}
-                  onChange={(e) => setBandDraft((d) => ({ ...d, monthly_amount: e.target.value }))}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddBand}
-                  className="flex-none px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8"
-                >
-                  追加
-                </button>
+              <div className={bands.length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    className={inputClass("flex-1")}
+                    value={bandDraft.grade_min}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}
+                  >
+                    {grades.map((g) => (
+                      <option key={g} value={g}>
+                        {gradeLabel(String(g), category)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[12px] text-ink-soft flex-none">〜</span>
+                  <select
+                    className={inputClass("flex-1")}
+                    value={bandDraft.grade_max}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}
+                  >
+                    {grades.map((g) => (
+                      <option key={g} value={g}>
+                        {gradeLabel(String(g), category)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-24 flex-none">
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="月額"
+                      className={inputClass()}
+                      value={bandDraft.monthly_amount}
+                      onChange={(e) => setBandDraft((d) => ({ ...d, monthly_amount: e.target.value }))}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddBand}
+                    className="flex-1 px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
+                  >
+                    追加
+                  </button>
+                </div>
               </div>
             )}
           </Card>
         </>
       )}
 
-      <SectionLabel>選手ごとの個別設定</SectionLabel>
+      <SectionLabel>{step("選手ごとの個別設定")}</SectionLabel>
       <div className="text-[11.5px] text-ink-soft mb-2">
         {pricingMethod === "per_player"
           ? "この項目は選手ごとに金額を指定する方式のため、ここで全員分の月額を設定してください。"
@@ -520,7 +508,7 @@ export default function AccountingDuesItemPage() {
               type="button"
               onClick={handleAddPlayerSetting}
               disabled={!newPlayerId}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>
@@ -528,13 +516,127 @@ export default function AccountingDuesItemPage() {
         )}
       </Card>
 
+      <SectionLabel>{step("集金の設定")}</SectionLabel>
+      <Card>
+        {editing ? (
+          <>
+            <FieldLabel>集金の周期</FieldLabel>
+            <div className="flex flex-wrap gap-1.5">
+              {DUES_CYCLE_MONTHS_OPTIONS.map((c) => (
+                <SegButton key={c} active={item.cycle_months === c} onClick={() => handleSave({ cycle_months: c })}>
+                  {DUES_CYCLE_MONTHS_LABELS[c as DuesCycleMonths]}
+                </SegButton>
+              ))}
+            </div>
+            <div className="mt-2.5">
+              <FieldLabel>支払い方法(複数選択可)</FieldLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {DUES_PAYMENT_METHOD_OPTIONS.map((m) => (
+                  <SegButton key={m} active={paymentMethods.includes(m)} onClick={() => togglePaymentMethod(m)}>
+                    {DUES_PAYMENT_METHOD_LABELS[m]}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <FieldLabel>請求の単位</FieldLabel>
+              <div className="flex gap-1.5">
+                {(Object.keys(DUES_BILLING_UNIT_LABELS) as DuesBillingUnit[]).map((u) => (
+                  <SegButton key={u} active={item.billing_unit === u} onClick={() => handleSave({ billing_unit: u })}>
+                    {DUES_BILLING_UNIT_LABELS[u]}
+                  </SegButton>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-1.5 text-[12.5px]">
+            <div>
+              <span className="text-ink-soft">周期: </span>
+              <span className="font-bold">{DUES_CYCLE_MONTHS_LABELS[item.cycle_months as DuesCycleMonths]}</span>
+            </div>
+            <div>
+              <span className="text-ink-soft">支払い方法: </span>
+              <span className="font-bold">
+                {paymentMethods.length > 0 ? paymentMethods.map((m) => DUES_PAYMENT_METHOD_LABELS[m]).join("・") : "未設定"}
+              </span>
+            </div>
+            <div>
+              <span className="text-ink-soft">請求の単位: </span>
+              <span className="font-bold">{DUES_BILLING_UNIT_LABELS[item.billing_unit as DuesBillingUnit]}</span>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <SectionLabel>{step("会計への計上")}</SectionLabel>
+      <Card>
+        {editing ? (
+          <>
+            <FieldLabel>計上先の収入項目</FieldLabel>
+            <select className={inputClass()} value={item.income_category_id} onChange={(e) => handleSave({ income_category_id: e.target.value })}>
+              {incomeCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <div className="text-[13px] font-bold">
+            {incomeCategories.find((c) => c.id === item.income_category_id)?.name ?? "(削除済みの項目)"}
+          </div>
+        )}
+      </Card>
+
+      <SectionLabel>{step("未納通知(任意)")}</SectionLabel>
+      <Card>
+        {editing ? (
+          <>
+            <div className="text-[11px] text-ink-soft mb-1.5">
+              集金期間の開始から何日後に、未納の家庭へ自動でお知らせするか。空欄なら自動送信しません。
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-ink-soft flex-none">開始から</span>
+              <div className="w-20 flex-none">
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass()}
+                  defaultValue={item.reminder_days_after ?? ""}
+                  placeholder="未設定"
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    const days = v === "" ? null : Number(v);
+                    if (days === null || (Number.isFinite(days) && days >= 0)) handleSave({ reminder_days_after: days });
+                  }}
+                />
+              </div>
+              <span className="text-[12px] text-ink-soft flex-none">日後</span>
+            </div>
+          </>
+        ) : (
+          <div className="text-[13px] font-bold">
+            {item.reminder_days_after !== null ? `開始から${item.reminder_days_after}日後に自動送信` : "自動送信しない"}
+          </div>
+        )}
+      </Card>
+
+      <button
+        type="button"
+        onClick={() => setEditing((v) => !v)}
+        className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8 mb-2.5"
+      >
+        {editing ? "編集を終了する" : "設定を編集する"}
+      </button>
+
       <SectionLabel>削除</SectionLabel>
       <Card>
         <button
           type="button"
           onClick={handleDelete}
           className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
         >
           {deleteConfirm ? "もう一度タップで削除確定" : "この集金項目を削除"}
         </button>

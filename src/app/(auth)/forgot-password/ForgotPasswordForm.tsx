@@ -21,7 +21,7 @@ export function ForgotPasswordForm() {
     return (
       <div className="bg-white border border-line rounded-lg p-5">
         <div className="text-[12.5px] text-ink-soft mb-1">
-          {email} 宛にパスワード再設定用のコードを送信しました。メールに記載の6桁のコードを入力してください。
+          {email} 宛にパスワード再設定用のコードを送信しました。メールに記載の確認コードを入力してください。
         </div>
         <div className="text-[11px] text-ink-soft mb-4">
           メールが届かない場合は、迷惑メールフォルダもご確認ください。
@@ -29,19 +29,18 @@ export function ForgotPasswordForm() {
 
         <form action={verifyFormAction}>
           <input type="hidden" name="email" value={email} />
-          <FieldLabel htmlFor="code">確認コード(6桁)</FieldLabel>
+          <FieldLabel htmlFor="code">確認コード</FieldLabel>
           <input
             id="code"
             name="code"
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
             className={inputClass()}
             autoFocus
             required
           />
 
-          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger">{verifyState.error}</div>}
+          {verifyState.error && <div className="mt-3 text-[12.5px] text-danger-text">{verifyState.error}</div>}
 
           <SubmitButton type="submit" disabled={verifying}>
             {verifying ? "確認中…" : "確認する"}
@@ -53,18 +52,18 @@ export function ForgotPasswordForm() {
           <button
             type="submit"
             disabled={resending}
-            className="w-full text-center py-2 text-[12px] font-bold text-orange"
+            className="w-full text-center py-2 text-[12px] font-bold text-orange-text"
           >
             {resending ? "再送中…" : "コードを再送する"}
           </button>
           {resendState.message && (
             <div className="mt-1 text-[11.5px] text-ink-soft text-center">{resendState.message}</div>
           )}
-          {resendState.error && <div className="mt-1 text-[11.5px] text-danger text-center">{resendState.error}</div>}
+          {resendState.error && <div className="mt-1 text-[11.5px] text-danger-text text-center">{resendState.error}</div>}
         </form>
 
         <div className="text-center text-[12px] text-ink-soft mt-4">
-          <Link href="/login" className="text-orange font-bold">
+          <Link href="/login" className="text-orange-text font-bold">
             ログイン画面に戻る
           </Link>
         </div>
@@ -81,14 +80,14 @@ export function ForgotPasswordForm() {
       <FieldLabel htmlFor="email">メールアドレス</FieldLabel>
       <input id="email" name="email" type="email" autoComplete="username" className={inputClass()} required />
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "送信中…" : "再設定コードを送信"}
       </SubmitButton>
 
       <div className="text-center text-[12px] text-ink-soft mt-4">
-        <Link href="/login" className="text-orange font-bold">
+        <Link href="/login" className="text-orange-text font-bold">
           ログイン画面に戻る
         </Link>
       </div>

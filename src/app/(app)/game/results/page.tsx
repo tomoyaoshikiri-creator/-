@@ -159,8 +159,8 @@ export default function GameResultsPage() {
           <div className="bg-white border border-line rounded-lg px-4 py-2.5 mb-2.5 text-center">
             <div className="font-extrabold text-[22px] text-heading">
               {matches.length}戦{" "}
-              <span style={{ color: "var(--green)" }}>{winCount}勝</span>{" "}
-              <span style={{ color: "var(--danger)" }}>{loseCount}敗</span>
+              <span style={{ color: "var(--green-text)" }}>{winCount}勝</span>{" "}
+              <span style={{ color: "var(--danger-text)" }}>{loseCount}敗</span>
               {drawCount > 0 && <span className="text-ink-soft"> {drawCount}分</span>}
             </div>
             <div className="text-[13px] font-bold text-ink-soft mt-1">勝率 {winRateLabel}</div>
@@ -183,7 +183,7 @@ export default function GameResultsPage() {
                 {category === "all" && m.schedules?.game_category && (
                   <span
                     className={`font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded-lg flex-shrink-0 ${
-                      m.schedules.game_category === "公式戦" ? "bg-danger/10 text-danger" : "bg-sky/10 text-sky"
+                      m.schedules.game_category === "公式戦" ? "bg-danger/10 text-danger-text" : "bg-sky/10 text-sky"
                     }`}
                   >
                     {m.schedules.game_category}
@@ -208,7 +208,7 @@ export default function GameResultsPage() {
                     className="flex-shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <VideoIcon className="w-[15px] h-[15px] text-orange" />
+                    <VideoIcon className="w-[15px] h-[15px] text-orange-text" />
                   </a>
                 ) : (
                   <span className="flex-shrink-0 w-[15px]" />

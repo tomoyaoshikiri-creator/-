@@ -31,8 +31,8 @@ function PlayerCheckRow({
       } ${checked ? "bg-orange/10" : ""}`}
     >
       <NumChip num={player.number ?? "-"} />
-      <div className={`font-bold text-[13.5px] ${checked ? "text-orange" : ""}`}>{playerFullName(player)}</div>
-      {absent && <span className="text-[10px] font-bold" style={{ color: "var(--danger)" }}>欠席</span>}
+      <div className={`font-bold text-[13.5px] ${checked ? "text-orange-text" : ""}`}>{playerFullName(player)}</div>
+      {absent && <span className="text-[10px] font-bold" style={{ color: "var(--danger-text)" }}>欠席</span>}
     </button>
   );
 }
@@ -64,7 +64,7 @@ export function LineupSection({
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);
     if (!isActive && draft.length >= 5) {
-      toast("スターティングは5人までです");
+      toast.warning("スターティングは5人までです");
       return;
     }
     setDraft(isActive ? draft.filter((x) => x !== id) : [...draft, id]);

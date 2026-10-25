@@ -51,7 +51,7 @@ export function MoveModal({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3">
-        <button type="button" onClick={() => setBrowseFolderId(null)} className={browseFolderId === null ? "text-orange" : ""}>
+        <button type="button" onClick={() => setBrowseFolderId(null)} className={browseFolderId === null ? "text-orange-text" : ""}>
           ホーム
         </button>
         {crumbs.map((c) => (
@@ -60,7 +60,7 @@ export function MoveModal({
             <button
               type="button"
               onClick={() => setBrowseFolderId(c.id)}
-              className={browseFolderId === c.id ? "text-orange" : ""}
+              className={browseFolderId === c.id ? "text-orange-text" : ""}
             >
               {c.name}
             </button>
@@ -90,7 +90,7 @@ export function MoveModal({
         type="button"
         onClick={handleMoveHere}
         disabled={moving || isSameLocation}
-        className="w-full text-center py-2.5 rounded-lg font-bold text-[12.5px] text-orange border border-orange bg-orange/8 disabled:opacity-40"
+        className="w-full text-center py-2.5 rounded-lg font-bold text-[12.5px] text-orange-text border border-orange bg-orange/8 disabled:opacity-40"
       >
         {moving ? "移動中…" : isSameLocation ? "現在の場所です" : "ここに移動する"}
       </button>

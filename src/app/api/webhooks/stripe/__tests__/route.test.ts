@@ -19,18 +19,37 @@ type FakeTeamRow = {
 };
 type FakeAuditLogRow = { team_id: string; actor_id: string | null; action: string; detail: unknown };
 type FakeEmailNotificationRow = { team_id: string; recipient_email: string; event_type: string };
+type FakeBillingSubscriptionRow = {
+  team_id: string;
+  platform: string;
+  external_subscription_id: string;
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+  updated_at: string;
+};
 
-const { webhookEvents, teams, auditLogs, teamMemberships, profiles, emailNotifications, constructEvent, subscriptionsRetrieve } =
-  vi.hoisted(() => ({
-    webhookEvents: new Map<string, FakeWebhookEventRow>(),
-    teams: new Map<string, FakeTeamRow>(),
-    auditLogs: [] as FakeAuditLogRow[],
-    teamMemberships: [] as Array<{ user_id: string; team_id: string; role: string }>,
-    profiles: [] as Array<{ id: string; email: string | null }>,
-    emailNotifications: [] as FakeEmailNotificationRow[],
-    constructEvent: vi.fn(),
-    subscriptionsRetrieve: vi.fn(),
-  }));
+const {
+  webhookEvents,
+  teams,
+  auditLogs,
+  teamMemberships,
+  profiles,
+  emailNotifications,
+  teamBillingSubscriptions,
+  constructEvent,
+  subscriptionsRetrieve,
+} = vi.hoisted(() => ({
+  webhookEvents: new Map<string, FakeWebhookEventRow>(),
+  teams: new Map<string, FakeTeamRow>(),
+  auditLogs: [] as FakeAuditLogRow[],
+  teamMemberships: [] as Array<{ user_id: string; team_id: string; role: string }>,
+  profiles: [] as Array<{ id: string; email: string | null }>,
+  emailNotifications: [] as FakeEmailNotificationRow[],
+  teamBillingSubscriptions: [] as FakeBillingSubscriptionRow[],
+  constructEvent: vi.fn(),
+  subscriptionsRetrieve: vi.fn(),
+}));
 
 function resetFakeDb() {
   webhookEvents.clear();
@@ -39,6 +58,35 @@ function resetFakeDb() {
   teamMemberships.length = 0;
   profiles.length = 0;
   emailNotifications.length = 0;
+  teamBillingSubscriptions.length = 0;
+}
+
+// supabase-jsの.select()/.update()は.eq()を何度でも連ねられ、.single()/.maybeSingle()を
+// 付けても付けなくても(付けなければ配列のまま)await可能、という実際の挙動を簡易再現する
+// 汎用クエリビルダ。本物のクライアントに近い挙動にしておくことで、本番コード側を
+// モック都合で歪めずに済む。
+function fakeQueryBuilder<T extends Record<string, unknown>>(getRows: () => T[]) {
+  const filters: Array<[string, unknown]> = [];
+  function matches(): T[] {
+    return getRows().filter((row) => filters.every(([col, val]) => row[col] === val));
+  }
+  const builder = {
+    eq(col: string, val: unknown) {
+      filters.push([col, val]);
+      return builder;
+    },
+    then(resolve: (v: { data: T[]; error: null }) => void) {
+      resolve({ data: matches(), error: null });
+    },
+    maybeSingle() {
+      return Promise.resolve({ data: matches()[0] ?? null, error: null });
+    },
+    single() {
+      const row = matches()[0];
+      return Promise.resolve(row ? { data: row, error: null } : { data: null, error: { message: "not found" } });
+    },
+  };
+  return builder;
 }
 
 function seedTeam(customerId: string, overrides: Partial<FakeTeamRow> = {}) {
@@ -97,29 +145,49 @@ vi.mock("@supabase/supabase-js", () => ({
         };
       }
       if (table === "teams") {
+        const allTeamRows = () => [...teams.values()];
         return {
           update(patch: Partial<FakeTeamRow>) {
-            return {
-              eq(_col: string, customerId: string) {
-                return {
-                  select() {
-                    const existing = teams.get(customerId);
-                    if (!existing) return Promise.resolve({ data: [], error: null });
-                    teams.set(customerId, { ...existing, ...patch });
-                    return Promise.resolve({ data: [{ id: existing.id }], error: null });
-                  },
-                };
+            const filters: Array<[string, unknown]> = [];
+            const commit = () => {
+              const matched = allTeamRows().filter((row) =>
+                filters.every(([col, val]) => (row as unknown as Record<string, unknown>)[col] === val),
+              );
+              for (const row of matched) teams.set(row.stripe_customer_id, { ...row, ...patch });
+              return matched.map((row) => ({ id: row.id }));
+            };
+            const builder = {
+              eq(col: string, val: unknown) {
+                filters.push([col, val]);
+                return builder;
+              },
+              select() {
+                return Promise.resolve({ data: commit(), error: null });
+              },
+              then(resolve: (v: { data: null; error: null }) => void) {
+                commit();
+                resolve({ data: null, error: null });
               },
             };
+            return builder;
           },
           select() {
-            return {
-              eq(_col: string, customerId: string) {
-                return {
-                  maybeSingle: () => Promise.resolve({ data: teams.get(customerId) ?? null, error: null }),
-                };
-              },
-            };
+            return fakeQueryBuilder(allTeamRows);
+          },
+        };
+      }
+      if (table === "team_billing_subscriptions") {
+        return {
+          upsert(row: FakeBillingSubscriptionRow) {
+            const idx = teamBillingSubscriptions.findIndex(
+              (r) => r.platform === row.platform && r.external_subscription_id === row.external_subscription_id,
+            );
+            if (idx >= 0) teamBillingSubscriptions[idx] = { ...teamBillingSubscriptions[idx], ...row };
+            else teamBillingSubscriptions.push(row);
+            return Promise.resolve({ error: null });
+          },
+          select() {
+            return fakeQueryBuilder(() => teamBillingSubscriptions);
           },
         };
       }
@@ -233,6 +301,36 @@ describe("POST /api/webhooks/stripe", () => {
     expect(auditLogs).toContainEqual(
       expect.objectContaining({ team_id: "team-cus_1", actor_id: null, action: "billing_plan_changed" }),
     );
+    // team_billing_subscriptions側にも、どの決済経路(platform)からの契約かが
+    // 記録されていること(ユーザー指示 項目4、iOS/Android課金追加時に同じ形で
+    // 記録・集計できるようにするための土台)。
+    expect(teamBillingSubscriptions).toContainEqual(
+      expect.objectContaining({
+        team_id: "team-cus_1",
+        platform: "stripe",
+        external_subscription_id: "sub_test",
+        plan: "中間",
+        status: "active",
+      }),
+    );
+  });
+
+  it("Max等の手動付与プランのチームは、万一Stripeのcustomer_idが一致してもplanを書き換えない", async () => {
+    seedTeam("cus_max", { plan: "Max" });
+    const event = subscriptionEvent({
+      id: "evt_max",
+      type: "customer.subscription.updated",
+      customerId: "cus_max",
+      priceId: "price_middle_monthly",
+      status: "active",
+    });
+
+    const res = await postWebhook(event);
+
+    expect(res.status).toBe(200);
+    // stripe_subscription_id/subscription_statusの同期は行われるが、
+    // planは手動付与(Max)のまま変わらない。
+    expect(teams.get("cus_max")).toMatchObject({ plan: "Max", subscription_status: "active" });
   });
 
   it("past_dueへの遷移もそのままsubscription_statusへ反映する(機能制限はlib/planの別ロジックが担う)", async () => {

@@ -13,7 +13,7 @@ import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton"
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canRecordShootingDrill } from "@/lib/permissions";
 import { hasShootingDrillAccess } from "@/lib/plan";
-import { SHOOTING_DRILL_TARGET_OPTIONS, totalPointsFromCounts } from "@/lib/shootingDrill";
+import { SHOOTING_DRILL_TARGET_OPTIONS, formatShootingDrillTime, totalPointsFromCounts } from "@/lib/shootingDrill";
 import { formatFullDateLabel, playerFullName, sortPlayers } from "@/lib/format";
 import type { Player, ShootingDrillRecord } from "@/lib/database.types";
 
@@ -28,12 +28,6 @@ type EditDraft = {
   layup_made: string;
   layup_att: string;
 };
-
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = (sec - m * 60).toFixed(1);
-  return m > 0 ? `${m}分${s}秒` : `${s}秒`;
-}
 
 function draftFromRecord(r: ShootingDrillRecord): EditDraft {
   return {
@@ -103,28 +97,17 @@ export default function ShootingDrillListPage() {
 
   const filteredRecords = playerFilter === "all" ? records : records.filter((r) => r.player_id === playerFilter);
 
-  // ベストタイム表(目標21点の記録のみ対象)。選手ごとにベスト(最速)・前回(最新)・
-  // 回数・シュート率(成功本数合計/本数合計)を算出し、ベスト順に並べる。
-  const target21Records = records.filter((r) => r.target_points === 21);
-  const bestTimeRows = playerIdsInRecords
-    .map((playerId) => {
-      const own = target21Records.filter((r) => r.player_id === playerId);
-      if (own.length === 0) return null;
-      const best = own.reduce((a, b) => (a.time_sec <= b.time_sec ? a : b));
-      const last = own.reduce((a, b) => (a.recorded_on + a.created_at >= b.recorded_on + b.created_at ? a : b));
-      const madeTotal = own.reduce((sum, r) => sum + r.three_made + r.mid_made + r.layup_made, 0);
-      const attTotal = own.reduce((sum, r) => sum + r.three_att + r.mid_att + r.layup_att, 0);
-      return {
-        playerId,
-        best,
-        last,
-        count: own.length,
-        shotPct: attTotal > 0 ? Math.round((madeTotal / attTotal) * 100) : null,
-      };
-    })
-    .filter((row): row is NonNullable<typeof row> => row !== null)
-    .filter((row) => playerFilter === "all" || row.playerId === playerFilter)
-    .sort((a, b) => a.best.time_sec - b.best.time_sec);
+  // 「すべて」表示時は選手ごとにグループ化し、各選手の中では(recordsが既に
+  // recorded_on desc / created_at descで取得済みのため、filterするだけで)
+  // 日付が新しいものが上に積み上がる並びになる。選手を絞り込んでいる場合は
+  // そのまま1グループとして扱う(見た目は従来通り)。
+  const groupedRecords: { playerId: string; records: ShootingDrillRecord[] }[] =
+    playerFilter === "all"
+      ? sortPlayers(players.filter((p) => playerIdsInRecords.includes(p.id))).map((p) => ({
+          playerId: p.id,
+          records: records.filter((r) => r.player_id === p.id),
+        }))
+      : [{ playerId: playerFilter, records: filteredRecords }];
 
   function openRow(r: ShootingDrillRecord) {
     if (expandedId === r.id) {
@@ -153,7 +136,7 @@ export default function ShootingDrillListPage() {
       layup_made > layup_att ||
       time_sec <= 0
     ) {
-      toast("入力内容を確認してください");
+      toast.warning("入力内容を確認してください");
       return;
     }
     setSaving(true);
@@ -177,13 +160,13 @@ export default function ShootingDrillListPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`更新に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`更新に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setRecords((prev) => prev.map((r) => (r.id === id ? data : r)));
     setExpandedId(null);
     setEditDraft(null);
-    toast("記録を修正しました");
+    toast.success("記録を修正しました");
   }
 
   function handleDeleteClick(id: string) {
@@ -197,19 +180,19 @@ export default function ShootingDrillListPage() {
       const supabase = createClient();
       const { error } = await supabase.from("shooting_drill_records").delete().eq("id", id);
       if (error) {
-        toast(`削除に失敗しました: ${error.message}`);
+        toast.error(`削除に失敗しました: ${error.message}`);
         return;
       }
       setRecords((prev) => prev.filter((r) => r.id !== id));
       setExpandedId(null);
-      toast("記録を削除しました");
+      toast.success("記録を削除しました");
     })();
   }
 
   return (
     <PageShell
       header={<AppHeader title="コービーシューティング" variant="list" backHref="/karte/team/workout" accessBadge={canRecord ? "coach" : undefined} />}
-      fab={canRecord && <Fab onClick={() => router.push("/karte/team/shooting/new")} label="計測する" />}
+      fab={canRecord && expandedId === null && <Fab onClick={() => router.push("/karte/team/shooting/new")} label="計測する" />}
     >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
@@ -220,46 +203,6 @@ export default function ShootingDrillListPage() {
             <InlineSelect value={playerFilter} onChange={setPlayerFilter} options={filterOptions} />
           </div>
 
-          <SectionLabel>ベストタイム(目標21点)</SectionLabel>
-          {bestTimeRows.length === 0 ? (
-            <Card>
-              <EmptyState>まだ目標21点の記録がありません</EmptyState>
-            </Card>
-          ) : (
-            <div className="bg-white border border-line rounded-lg overflow-auto mb-3">
-              <table className="border-collapse text-[11.5px] w-full">
-                <thead>
-                  <tr className="bg-paper">
-                    <th className="text-left px-2.5 py-2 border-b border-line whitespace-nowrap">選手</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">ベスト</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">前回</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">回数</th>
-                    <th className="px-2 py-2 border-b border-line whitespace-nowrap">シュート率</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bestTimeRows.map((row) => (
-                    <tr key={row.playerId}>
-                      <td className="px-2.5 py-2 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
-                        {playerName(row.playerId)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono font-bold text-orange border-b border-line last:border-b-0 whitespace-nowrap">
-                        {formatTime(row.best.time_sec)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap">
-                        {formatTime(row.last.time_sec)}
-                      </td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0">{row.count}</td>
-                      <td className="px-2 py-2 text-center font-mono border-b border-line last:border-b-0">
-                        {row.shotPct === null ? "-" : `${row.shotPct}%`}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           <SectionLabel>すべての記録</SectionLabel>
           {filteredRecords.length === 0 ? (
             <Card>
@@ -267,115 +210,127 @@ export default function ShootingDrillListPage() {
             </Card>
           ) : (
             <Card className="max-h-[50vh] overflow-y-auto">
-              {filteredRecords.map((r) => {
-                const expanded = expandedId === r.id;
-                return (
-                  <div key={r.id} className="border-b border-line last:border-b-0">
-                    <button
-                      type="button"
-                      onClick={() => canRecord && openRow(r)}
-                      className="w-full text-left py-2 text-[11.5px] leading-tight flex items-center justify-between gap-2"
+              {groupedRecords.map((group, groupIndex) => (
+                <div key={group.playerId}>
+                  {playerFilter === "all" && (
+                    <div
+                      className={`-mx-4 px-4 py-1.5 bg-paper border-b border-line font-bold text-[12.5px] text-ink ${
+                        groupIndex > 0 ? "mt-1.5" : ""
+                      }`}
                     >
-                      <div>
-                        <span className="font-mono text-ink-soft mr-1.5">{formatFullDateLabel(r.recorded_on)}</span>
-                        <span className="font-bold">{playerName(r.player_id)}</span>
-                        <span className="text-ink-soft ml-1.5">
-                          目標{r.target_points}点 / {formatTime(r.time_sec)} / {r.total_points}点
-                        </span>
-                      </div>
-                      <span className="flex-none font-mono text-[10px] text-ink-soft">
-                        ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
-                      </span>
-                    </button>
-
-                    {expanded && editDraft && canRecord && (
-                      <div className="pb-3">
-                        <div className="grid grid-cols-2 gap-2 mb-2">
-                          <div>
-                            <FieldLabel>日付</FieldLabel>
-                            <input
-                              type="date"
-                              className={inputClass()}
-                              value={editDraft.recorded_on}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <FieldLabel>目標点</FieldLabel>
-                            <select
-                              className={inputClass()}
-                              value={editDraft.target_points}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
-                            >
-                              {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}点
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="mb-2">
-                          <FieldLabel>到達タイム(秒)</FieldLabel>
-                          <input
-                            type="number"
-                            step="0.1"
-                            className={inputClass()}
-                            value={editDraft.time_sec}
-                            onChange={(e) => setEditDraft((d) => d && { ...d, time_sec: e.target.value })}
-                          />
-                        </div>
-                        {(
-                          [
-                            ["ロング", "three_made", "three_att"],
-                            ["ミドル", "mid_made", "mid_att"],
-                            ["ゴール下", "layup_made", "layup_att"],
-                          ] as const
-                        ).map(([label, madeKey, attKey]) => (
-                          <div key={label} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 mb-1.5">
-                            <span className="text-[11px] font-bold text-ink-soft w-12">{label}</span>
-                            <input
-                              type="number"
-                              min={0}
-                              className={inputClass()}
-                              value={editDraft[madeKey]}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, [madeKey]: e.target.value })}
-                            />
-                            <span className="text-[11px] text-ink-soft">/</span>
-                            <input
-                              type="number"
-                              min={0}
-                              className={inputClass()}
-                              value={editDraft[attKey]}
-                              onChange={(e) => setEditDraft((d) => d && { ...d, [attKey]: e.target.value })}
-                            />
-                          </div>
-                        ))}
-                        <div className="text-[11px] text-ink-soft mb-2">
-                          総得点(自動計算):{" "}
-                          {totalPointsFromCounts({
-                            three_made: Number(editDraft.three_made) || 0,
-                            mid_made: Number(editDraft.mid_made) || 0,
-                            layup_made: Number(editDraft.layup_made) || 0,
-                          })}
-                          点
-                        </div>
-                        <SubmitButton onClick={() => handleSaveEdit(r.id)} disabled={saving}>
-                          {saving ? "保存中…" : "保存する"}
-                        </SubmitButton>
+                      {playerName(group.playerId)}
+                    </div>
+                  )}
+                  {group.records.map((r) => {
+                    const expanded = expandedId === r.id;
+                    const totalMade = r.three_made + r.mid_made + r.layup_made;
+                    const totalAtt = r.three_att + r.mid_att + r.layup_att;
+                    const shotPct = totalAtt > 0 ? Math.round((totalMade / totalAtt) * 100) : null;
+                    return (
+                      <div key={r.id} className="border-b border-line last:border-b-0">
                         <button
                           type="button"
-                          onClick={() => handleDeleteClick(r.id)}
-                          className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                          onClick={() => canRecord && openRow(r)}
+                          className="w-full text-left py-2.5 text-[12px] leading-tight"
                         >
-                          {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
+                          <div className="font-mono font-bold text-ink">{formatFullDateLabel(r.recorded_on)}</div>
+                          <div className="text-ink-soft mt-1">
+                            基準{r.target_points}点 / {formatShootingDrillTime(r.time_sec)} / {r.total_points}点
+                          </div>
+                          <div className="font-mono text-[11px] text-ink-soft mt-1">
+                            ロ {r.three_made}/{r.three_att} ミ {r.mid_made}/{r.mid_att} 下 {r.layup_made}/{r.layup_att}
+                            {shotPct !== null && <span className="ml-1.5 font-bold text-orange-text">{shotPct}%</span>}
+                          </div>
                         </button>
+
+                        {expanded && editDraft && canRecord && (
+                          <div className="pb-3">
+                            <div className="mb-2">
+                              <FieldLabel>日付</FieldLabel>
+                              <input
+                                type="date"
+                                className={inputClass()}
+                                value={editDraft.recorded_on}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, recorded_on: e.target.value })}
+                              />
+                            </div>
+                            <div className="mb-2">
+                              <FieldLabel>基準点</FieldLabel>
+                              <select
+                                className={inputClass()}
+                                value={editDraft.target_points}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, target_points: e.target.value })}
+                              >
+                                {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
+                                  <option key={t} value={t}>
+                                    {t}点
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="mb-2">
+                              <FieldLabel>到達タイム(秒)</FieldLabel>
+                              <input
+                                type="number"
+                                step="0.1"
+                                className={inputClass()}
+                                value={editDraft.time_sec}
+                                onChange={(e) => setEditDraft((d) => d && { ...d, time_sec: e.target.value })}
+                              />
+                            </div>
+                            {(
+                              [
+                                ["ロング", "three_made", "three_att"],
+                                ["ミドル", "mid_made", "mid_att"],
+                                ["ゴール下", "layup_made", "layup_att"],
+                              ] as const
+                            ).map(([label, madeKey, attKey]) => (
+                              <div key={label} className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-2 mb-1.5">
+                                <span className="text-[11px] font-bold text-ink-soft w-12">{label}</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className={inputClass()}
+                                  value={editDraft[madeKey]}
+                                  onChange={(e) => setEditDraft((d) => d && { ...d, [madeKey]: e.target.value })}
+                                />
+                                <span className="text-[11px] text-ink-soft">/</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  className={inputClass()}
+                                  value={editDraft[attKey]}
+                                  onChange={(e) => setEditDraft((d) => d && { ...d, [attKey]: e.target.value })}
+                                />
+                              </div>
+                            ))}
+                            <div className="text-[11px] text-ink-soft mb-2">
+                              総得点(自動計算):{" "}
+                              {totalPointsFromCounts({
+                                three_made: Number(editDraft.three_made) || 0,
+                                mid_made: Number(editDraft.mid_made) || 0,
+                                layup_made: Number(editDraft.layup_made) || 0,
+                              })}
+                              点
+                            </div>
+                            <SubmitButton onClick={() => handleSaveEdit(r.id)} disabled={saving}>
+                              {saving ? "保存中…" : "保存する"}
+                            </SubmitButton>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteClick(r.id)}
+                              className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
+                              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                            >
+                              {deleteConfirmId === r.id ? "もう一度タップで削除確定" : "この記録を削除"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
             </Card>
           )}
         </>

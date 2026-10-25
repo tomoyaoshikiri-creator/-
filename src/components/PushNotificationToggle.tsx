@@ -11,13 +11,13 @@ export function PushNotificationToggle() {
   async function handleToggle() {
     if (subscribed) {
       await unsubscribe();
-      toast("通知を無効にしました");
+      toast.success("通知を無効にしました");
       return;
     }
     const result = await subscribe();
-    if (result === "subscribed") toast("通知を有効にしました");
-    else if (result === "permission_denied") toast("通知が許可されませんでした");
-    else toast("通知の登録に失敗しました");
+    if (result === "subscribed") toast.success("通知を有効にしました");
+    else if (result === "permission_denied") toast.warning("通知が許可されませんでした");
+    else toast.error("通知の登録に失敗しました");
   }
 
   if (!supported) return null;

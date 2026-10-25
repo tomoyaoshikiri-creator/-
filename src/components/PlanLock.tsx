@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { LockIcon, ChevronRightIcon } from "@/components/icons";
 import { canManageSettings } from "@/lib/permissions";
 import { PLAN_DISPLAY_LABELS } from "@/lib/format";
@@ -17,10 +17,10 @@ export function useUpgradePrompt() {
   const { role } = useSession();
   return (message: string) => {
     if (canManageSettings(role)) {
-      toast(message);
+      toast.warning(message);
       router.push("/settings/plan");
     } else {
-      toast(`${message}(管理者にご相談ください)`);
+      toast.warning(`${message}(管理者にご相談ください)`);
     }
   };
 }
@@ -36,25 +36,23 @@ export function LockedFeatureCard({
 }) {
   const promptUpgrade = useUpgradePrompt();
   return (
-    <Card
-      className="cursor-pointer opacity-60"
+    <div
+      className={`${cardClass} flex min-h-tap cursor-pointer items-center justify-between opacity-60`}
       onClick={() => promptUpgrade(`${label}は${PLAN_DISPLAY_LABELS[requiredPlan]}プラン以上で利用できます`)}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-bold text-[15px] flex items-center gap-1.5">
-            <LockIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-            {label}
-          </div>
-          {description && <div className="text-[11.5px] text-ink-soft mt-1">{description}</div>}
+      <div className="min-w-0">
+        <div className="font-bold text-sm flex items-center gap-1.5">
+          <LockIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          {label}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <span className="text-[10.5px] font-bold text-orange whitespace-nowrap">
-            {PLAN_DISPLAY_LABELS[requiredPlan]}プラン以上
-          </span>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />
-        </div>
+        {description && <div className="text-caption text-ink-soft mt-1">{description}</div>}
       </div>
-    </Card>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-caption font-bold text-orange-text whitespace-nowrap">
+          {PLAN_DISPLAY_LABELS[requiredPlan]}プラン以上
+        </span>
+        <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />
+      </div>
+    </div>
   );
 }

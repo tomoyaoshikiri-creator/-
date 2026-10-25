@@ -113,7 +113,7 @@ export default function ShootingDrillNewPage() {
 
   function handleStart() {
     if (!selectedPlayerId) {
-      toast("選手を選んでください");
+      toast.warning("選手を選んでください");
       return;
     }
     setShots([]);
@@ -177,10 +177,10 @@ export default function ShootingDrillNewPage() {
     });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("記録を保存しました");
+    toast.success("記録を保存しました");
     router.push("/karte/team/shooting");
   }
 
@@ -228,7 +228,7 @@ export default function ShootingDrillNewPage() {
     const sec = Number(manualSec) || 0;
     const time_sec = Math.round((min * 60 + sec) * 10) / 10;
     if (!manualPlayerId) {
-      toast("選手を選んでください");
+      toast.warning("選手を選んでください");
       return;
     }
     if (
@@ -238,7 +238,7 @@ export default function ShootingDrillNewPage() {
       layup_made > layup_att ||
       time_sec <= 0
     ) {
-      toast("入力内容を確認してください");
+      toast.warning("入力内容を確認してください");
       return;
     }
     setManualSaving(true);
@@ -261,11 +261,11 @@ export default function ShootingDrillNewPage() {
     });
     setManualSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     resetManualForm();
-    toast("記録を保存しました");
+    toast.success("記録を保存しました");
     router.push("/karte/team/shooting");
   }
 
@@ -293,7 +293,7 @@ export default function ShootingDrillNewPage() {
                     type="button"
                     onClick={() => setSelectedPlayerId(p.id)}
                     className={`text-left px-3 py-2 rounded-lg border font-bold text-[13px] ${
-                      selectedPlayerId === p.id ? "border-orange bg-orange/10 text-orange" : "border-line bg-white text-ink"
+                      selectedPlayerId === p.id ? "border-orange bg-orange/10 text-orange-text" : "border-line bg-white text-ink"
                     }`}
                   >
                     #{p.number ?? "-"} {playerFullName(p)}
@@ -303,7 +303,7 @@ export default function ShootingDrillNewPage() {
             )}
 
             <div className="mt-4">
-              <FieldLabel>目標点</FieldLabel>
+              <FieldLabel>基準点</FieldLabel>
               <div className="flex gap-1.5">
                 {SHOOTING_DRILL_TARGET_OPTIONS.map((t) => (
                   <SegButton key={t} active={targetPoints === t} onClick={() => setTargetPoints(t)}>
@@ -345,7 +345,7 @@ export default function ShootingDrillNewPage() {
               <FieldLabel>日付</FieldLabel>
               <input type="date" className={inputClass()} value={manualDate} onChange={(e) => setManualDate(e.target.value)} />
 
-              <FieldLabel>到達タイム(目標21点固定)</FieldLabel>
+              <FieldLabel>到達タイム(基準21点固定)</FieldLabel>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -398,16 +398,16 @@ export default function ShootingDrillNewPage() {
           <Card>
             <div className="text-center">
               <div className="text-[12px] text-ink-soft font-bold">
-                {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 目標{targetPoints}点
+                {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 基準{targetPoints}点
               </div>
               <div className="font-mono text-[44px] font-bold mt-1 tabular-nums">{formatElapsed(elapsedMs)}</div>
-              <div className="font-mono text-[20px] font-bold text-orange mt-1">{summary.total_points}点</div>
+              <div className="font-mono text-[20px] font-bold text-orange-text mt-1">{summary.total_points}点</div>
             </div>
 
             {phase === "running" && upcoming && (
               <div className="mt-4">
                 <div className="text-center text-[13px] font-bold text-ink-soft mb-2">
-                  次: <span className="text-orange text-[18px]">{CATEGORY_LABEL[upcoming]}</span>
+                  次: <span className="text-orange-text text-[18px]">{CATEGORY_LABEL[upcoming]}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -415,14 +415,14 @@ export default function ShootingDrillNewPage() {
                     onClick={() => handleShot(true)}
                     className="py-8 rounded-xl border-2 border-orange bg-orange text-white font-extrabold text-[28px]"
                   >
-                    ○ 決まった
+                    IN
                   </button>
                   <button
                     type="button"
                     onClick={() => handleShot(false)}
                     className="py-8 rounded-xl border-2 border-line bg-white text-ink-soft font-extrabold text-[28px]"
                   >
-                    × 外れた
+                    OUT
                   </button>
                 </div>
               </div>
@@ -454,7 +454,7 @@ export default function ShootingDrillNewPage() {
                 type="button"
                 onClick={handleUndo}
                 disabled={shots.length === 0}
-                className={`py-2.5 rounded-lg font-bold text-[12.5px] border border-dashed border-danger text-danger bg-white ${
+                className={`py-2.5 rounded-lg font-bold text-[12.5px] border border-dashed border-danger text-danger-text bg-white ${
                   shots.length === 0 ? "opacity-40" : ""
                 }`}
               >
@@ -468,6 +468,28 @@ export default function ShootingDrillNewPage() {
                 リセット
               </button>
             </div>
+
+            {phase === "running" && (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ["ロング", "3点", summary.three_made, summary.three_att],
+                    ["ミドル", "2点", summary.mid_made, summary.mid_att],
+                    ["ゴール下", "1点", summary.layup_made, summary.layup_att],
+                  ] as const
+                ).map(([label, points, made, att]) => (
+                  <div key={label} className="rounded-lg border border-line bg-paper py-2.5 text-center">
+                    <div className="text-[11px] font-bold text-ink-soft">
+                      {label}
+                      <span className="ml-1 text-[9.5px] font-normal">{points}</span>
+                    </div>
+                    <div className="font-mono text-[16px] font-bold mt-1">
+                      {made}/{att}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {phase === "done" && (
               <SubmitButton onClick={handleSave} disabled={saving}>

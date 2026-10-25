@@ -1,9 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { acceptInviteAsExistingUser, type AcceptInviteAsExistingUserState } from "./actions";
-import { SubmitButton } from "@/components/ui/SegButton";
+import { SubmitButton, SubmitLinkButton } from "@/components/ui/SegButton";
 import { InvitePlayerPicker, type InvitePlayer } from "./InvitePlayerPicker";
 import type { TeamCategory } from "@/lib/database.types";
 
@@ -29,12 +28,7 @@ export function AcceptInviteAsExistingUserForm({
         <div className="text-[13px] text-ink-soft">
           チームへの参加は完了しましたが、この端末での切り替えに失敗しました。お手数ですが、下のボタンから手動でチームを切り替えてください。
         </div>
-        <Link
-          href="/select-team"
-          className="mt-3.5 block w-full py-2.5 rounded-lg bg-navy text-white font-bold text-[13px] text-center active:opacity-85"
-        >
-          チームを切り替える
-        </Link>
+        <SubmitLinkButton href="/select-team">チームを切り替える</SubmitLinkButton>
       </div>
     );
   }
@@ -48,7 +42,7 @@ export function AcceptInviteAsExistingUserForm({
 
       <InvitePlayerPicker players={players} category={category} selectedIds={selectedIds} onChange={setSelectedIds} />
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "参加処理中…" : "このアカウントで参加する"}

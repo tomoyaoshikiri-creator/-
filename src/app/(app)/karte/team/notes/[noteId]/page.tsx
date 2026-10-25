@@ -62,7 +62,7 @@ export default function TeamAnalysisNoteDetailPage() {
     if (existing) {
       const { error } = await supabase.from("team_analysis_note_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -73,7 +73,7 @@ export default function TeamAnalysisNoteDetailPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -89,7 +89,7 @@ export default function TeamAnalysisNoteDetailPage() {
 
   async function handleSaveEdit() {
     if (!note || !editBody.trim()) {
-      toast("メモを入力してください");
+      toast.warning("メモを入力してください");
       return;
     }
     setSaving(true);
@@ -100,10 +100,10 @@ export default function TeamAnalysisNoteDetailPage() {
       .eq("id", note.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを更新しました");
+    toast.success("メモを更新しました");
     setEditing(false);
     load();
   }
@@ -118,10 +118,10 @@ export default function TeamAnalysisNoteDetailPage() {
     const supabase = createClient();
     const { error } = await supabase.from("team_analysis_notes").delete().eq("id", note.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを削除しました");
+    toast.success("メモを削除しました");
     router.replace("/karte/team/analysis");
   }
 
@@ -149,7 +149,7 @@ export default function TeamAnalysisNoteDetailPage() {
             {formatDateLabel(note.created_at.slice(0, 10))}
             {note.author_id && profiles[note.author_id] ? ` ・ ${profiles[note.author_id]}` : ""}
           </span>
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange-text text-[9.5px] font-bold tracking-wide">
             AI分析
           </span>
         </div>
@@ -161,7 +161,7 @@ export default function TeamAnalysisNoteDetailPage() {
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={saving}
-                className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
               >
                 {saving ? "保存中…" : "保存"}
               </button>
@@ -192,7 +192,7 @@ export default function TeamAnalysisNoteDetailPage() {
                   type="button"
                   onClick={handleDelete}
                   className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deleteConfirm ? "再タップで削除確定" : "削除"}
                 </button>

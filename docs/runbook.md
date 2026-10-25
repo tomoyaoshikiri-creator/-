@@ -46,6 +46,57 @@ CIRCLE LINESの本番運用に関するリファレンス。導入手順自体�
 - **決済まわりの異常**: Stripe Webhook(`/api/webhooks/stripe`)は`stripe_webhook_events`テーブルで受信イベントを冪等化・記録している。処理に失敗すると5xxを返しStripe側が自動再送する設計のため、Stripeダッシュボードの Webhook > Recent deliveries で失敗が続いていないかを確認する
 - **メール送達の異常**: `email_notifications`テーブルの`status='failed'`かつ`attempt_count`が3に達した行は自動再送されなくなる。Resendダッシュボードでドメイン認証・送信制限に問題がないか確認したうえで、必要なら該当行を調査する
 
+## バックアップと復元
+
+このSupabaseプロジェクトは無料プランのため、Supabase側の自動デイリーバックアップ・Point-in-Time Recovery(いずれもPro以上限定)は提供されない。そのため`.github/workflows/db-backup.yml`で独自に毎日バックアップを取得し、GitHub Actionsのアーティファクトとして7日分保持している。
+
+### 取得している内容
+
+- データベース本体(`supabase db dump`。ロール定義・スキーマ定義・データを`roles.sql`/`schema.sql`/`data.sql`に分けて出力)。生の`pg_dump`ではなくこのコマンドを使うのは、Supabase内部スキーマの除外や予約ロールの除去をSupabase側が自動で行ってくれるため(生の`pg_dump`は復元時に権限エラーの原因になる)
+- Supabase Storageの全バケットの全ファイル(`scripts/backup-storage.mjs`。写真・添付資料等)。データベースのダンプにはStorageのファイル本体は含まれないため別途取得している
+
+### 必要なGitHub Actionsシークレット
+
+リポジトリの Settings > Secrets and variables > Actions で設定する(Vercelの環境変数とは別物。VercelとGitHub Actionsは別サービスのため、同じ値でもそれぞれに設定が必要)。
+
+| シークレット名 | 値の取得元 |
+|---|---|
+| `SUPABASE_DB_URL` | Supabaseダッシュボード > Connect > Session pooler の接続文字列(`[YOUR-PASSWORD]`部分をデータベースのパスワードに置き換える。忘れた場合はProject Settings > DatabaseでResetできる) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercelに設定済みの同名の値と同じ値をコピー |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercelに設定済みの同名の値と同じ値をコピー |
+
+### 確認方法・手動実行
+
+GitHub > Actions > "DB Backup" の実行結果から、"circle-lines-backup-<run id>"という名前のアーティファクトをダウンロードできる(7日間のみ保持)。今すぐ実行したい場合は、同じ画面の"Run workflow"から手動実行できる(`workflow_dispatch`)。
+
+### 復元手順
+
+**データベースを復元する場合**(Supabase公式のバックアップ/復元手順に準拠。ダウンロードしたアーティファクト内の`roles.sql`/`schema.sql`/`data.sql`を使う):
+
+```sh
+psql \
+  --single-transaction \
+  --variable ON_ERROR_STOP=1 \
+  --file roles.sql \
+  --file schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file data.sql \
+  --dbname "<復元先のDB接続文字列>"
+```
+
+- `session_replication_role = replica`はトリガーを一時的に無効化する指定(復元中にトリガーが二重に動くのを防ぐ)
+- 本番プロジェクトに直接上書きするのではなく、まず別のSupabaseプロジェクト(または[ブランチ機能](https://supabase.com/docs/guides/platform/branching))に復元して内容を確認してから本番に反映するのが安全
+- 本番プロジェクトに直接復元する場合、作業中はアプリが使えなくなる(ダウンタイムが発生する)ため、事前に利用チームへ連絡すること
+
+**Storageのファイルを復元する場合**:
+
+ダウンロードしたアーティファクト内の`storage/<バケット名>/...`を、Supabaseダッシュボードの Storage からバケットごとに手動アップロードし直すか、Supabase CLI/APIで一括アップロードする。
+
+### 注意
+
+- バックアップには選手・保護者の個人情報が含まれる。アーティファクトを閲覧できるのはこのリポジトリにアクセス権を持つ人だけ(GitHubの権限設定に従う)。共同作業者を追加する際はこの点を踏まえること
+- 7日より前の状態には現状戻せない。必要になった場合は`db-backup.yml`の`retention-days`を増やす、または有料プランのPITRを検討する
+
 ## ローカルでのRLS/マイグレーション検証
 
 Docker無しの環境でも、ローカルにインストール済みのPostgreSQLへ`supabase/migrations/*.sql`を番号順に再生することでSQLレベルの検証ができる(CIの`rls-tests`ジョブと同じ方式)。手順の要点:

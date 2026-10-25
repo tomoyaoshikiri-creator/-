@@ -77,7 +77,7 @@ export default function CustomStatsPage() {
       .single();
     setSavingKey(null);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     if (data) setEntries((prev) => ({ ...prev, [key]: data }));
@@ -104,7 +104,7 @@ export default function CustomStatsPage() {
           {canManageStatCategories(role) && (
             <>
               <br />
-              <Link href="/game/stat-categories" className="text-orange font-bold">
+              <Link href="/game/stat-categories" className="text-orange-text font-bold">
                 スタッツ項目を編集
               </Link>
               から追加してください。

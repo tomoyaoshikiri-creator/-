@@ -42,7 +42,7 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
 
   return {
     message:
-      "入力されたメールアドレス宛にパスワード再設定用のコードを送信しました。メールに記載の6桁のコードを入力してください。",
+      "入力されたメールアドレス宛にパスワード再設定用のコードを送信しました。メールに記載の確認コードを入力してください。",
     awaitingCode: true,
     email,
   };

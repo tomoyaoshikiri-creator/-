@@ -108,7 +108,7 @@ function SealBox({
       {approval ? (
         <div
           className="w-14 h-14 rounded-full mx-auto flex items-center justify-center border-2"
-          style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+          style={{ borderColor: "var(--danger)", color: "var(--danger-text)" }}
         >
           <span className="text-[10px] font-bold leading-tight">承認済</span>
         </div>
@@ -132,7 +132,7 @@ function SealBox({
               type="button"
               onClick={onApprove}
               disabled={busy}
-              className="text-[10px] font-bold text-orange underline disabled:opacity-50"
+              className="text-[10px] font-bold text-orange-text underline disabled:opacity-50"
             >
               確認・承認する
             </button>
@@ -194,10 +194,10 @@ export default function AccountingReportPage() {
     const { error } = await supabase.from("accounting_approvals").insert({ team_id: officers.find((o) => o.id === officerId)!.team_id, fiscal_year: fiscalYear, officer_id: officerId });
     setApprovalBusyId(null);
     if (error) {
-      toast(`承認に失敗しました: ${error.message}`);
+      toast.error(`承認に失敗しました: ${error.message}`);
       return;
     }
-    toast("承認しました");
+    toast.success("承認しました");
     load();
   }
 
@@ -207,10 +207,10 @@ export default function AccountingReportPage() {
     const { error } = await supabase.from("accounting_approvals").delete().eq("id", approvalId);
     setApprovalBusyId(null);
     if (error) {
-      toast(`取り消しに失敗しました: ${error.message}`);
+      toast.error(`取り消しに失敗しました: ${error.message}`);
       return;
     }
-    toast("承認を取り消しました");
+    toast.success("承認を取り消しました");
     load();
   }
 
@@ -247,7 +247,7 @@ export default function AccountingReportPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="w-full mt-2.5 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange bg-orange/8"
+            className="w-full mt-2.5 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
           >
             印刷・PDF保存する
           </button>

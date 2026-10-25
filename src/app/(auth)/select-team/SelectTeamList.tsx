@@ -46,7 +46,7 @@ export function SelectTeamList({ memberships }: { memberships: Membership[] }) {
           </div>
         </button>
       ))}
-      {error && <div className="px-3 pt-2 text-[12.5px] text-danger">{error}</div>}
+      {error && <div className="px-3 pt-2 text-[12.5px] text-danger-text">{error}</div>}
     </div>
   );
 }

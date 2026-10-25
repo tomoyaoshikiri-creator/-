@@ -25,6 +25,7 @@ import type {
   CustomStatGameEntry,
   GameResult,
   PlayerAnalysisData,
+  PlayerShootingDrillData,
   PracticeMenuSummary,
   PracticeParticipationSummary,
   StatsData,
@@ -202,17 +203,41 @@ export async function collectPlayerAnalysisData(
       return effectiveFiscalYear(date, l.game_matches?.schedules?.fiscal_year_override ?? null) === fiscalYear;
     });
     gameCount = seasonLines.length;
+
+    // 出場クォーター数(メンバーチェンジ機能で記録されたstarter/途中出場選手一覧から算出)。
+    // この機能を使っていない試合はgame_recordsの行自体が無いため、tracked=0の試合は
+    // 「出場0クォーター」と区別するためquartersPlayed/quartersTrackedともnullにする。
+    const matchIds = Array.from(new Set(seasonLines.map((l) => l.match_id)));
+    const quartersByMatch = new Map<string, { played: number; tracked: number }>();
+    if (matchIds.length > 0) {
+      const { data: recordRows } = await supabase
+        .from("game_records")
+        .select("match_id, starter_player_ids, sub_player_ids")
+        .in("match_id", matchIds);
+      (recordRows ?? []).forEach((r) => {
+        const cur = quartersByMatch.get(r.match_id) ?? { played: 0, tracked: 0 };
+        cur.tracked += 1;
+        if (r.starter_player_ids.includes(playerId) || r.sub_player_ids.includes(playerId)) cur.played += 1;
+        quartersByMatch.set(r.match_id, cur);
+      });
+    }
+
     stats = {
       kind: "basketball",
       gameCount,
       seasonAverages: basketballSeasonTotalsToRecord(computeSeasonTotals(seasonLines), includeThreePoint),
       games: seasonLines
         .sort((a, b) => (a.game_matches?.schedules?.date ?? "").localeCompare(b.game_matches?.schedules?.date ?? ""))
-        .map((l) => ({
-          label: `${l.game_matches?.schedules?.date ?? "-"} vs ${l.game_matches?.opponent ?? "-"}`,
-          result: matchResult(l.game_matches?.team_score ?? null, l.game_matches?.opponent_score ?? null),
-          averages: basketballAveragesToRecord(computeSeasonAverages([l]), includeThreePoint),
-        })),
+        .map((l) => {
+          const q = quartersByMatch.get(l.match_id);
+          return {
+            label: `${l.game_matches?.schedules?.date ?? "-"} vs ${l.game_matches?.opponent ?? "-"}`,
+            result: matchResult(l.game_matches?.team_score ?? null, l.game_matches?.opponent_score ?? null),
+            averages: basketballAveragesToRecord(computeSeasonAverages([l]), includeThreePoint),
+            quartersPlayed: q && q.tracked > 0 ? q.played : null,
+            quartersTracked: q && q.tracked > 0 ? q.tracked : null,
+          };
+        }),
     };
   } else {
     const [{ data: categories }, { data: entries }] = await Promise.all([
@@ -345,6 +370,29 @@ export async function collectPlayerAnalysisData(
     .map((g) => ({ date: g.measured_on, heightCm: g.height_cm, weightKg: g.weight_kg }))
     .reverse();
 
+  // コービーシューティング(Signature Editionプランのみ記録され得るが、プラン名での
+  // ハードコードはせず、クエリ結果が空かどうかだけで「記録なし」を扱う)。年度を
+  // またいで練習の成果を追う性質上、growthと同様に年度では絞り込まない。
+  const { data: shootingRows } = await supabase
+    .from("shooting_drill_records")
+    .select("*")
+    .eq("player_id", playerId)
+    .order("recorded_on", { ascending: true });
+  const shootingDrills: PlayerShootingDrillData = {
+    records: (shootingRows ?? []).map((r) => ({
+      recordedOn: r.recorded_on,
+      targetPoints: r.target_points,
+      timeSec: r.time_sec,
+      totalPoints: r.total_points,
+      threeMade: r.three_made,
+      threeAtt: r.three_att,
+      midMade: r.mid_made,
+      midAtt: r.mid_att,
+      layupMade: r.layup_made,
+      layupAtt: r.layup_att,
+    })),
+  };
+
   const dataQuality = assessPlayerDataQuality({
     gameCount,
     sportsTestQuarterCount,
@@ -365,6 +413,7 @@ export async function collectPlayerAnalysisData(
     },
     stats,
     sportsTest,
+    shootingDrills,
     practice,
     menus,
     growth,

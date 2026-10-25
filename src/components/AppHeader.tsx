@@ -1,8 +1,10 @@
 "use client";
 
-import { BackIcon, SearchIcon } from "@/components/icons";
+import { useState } from "react";
+import { BackIcon, MenuIcon, SearchIcon } from "@/components/icons";
 import { useSession } from "@/lib/session-context";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
+import { NavDrawer } from "@/components/NavDrawer";
 import { GuardedLink } from "@/components/GuardedLink";
 
 export function AppHeader({
@@ -30,6 +32,7 @@ export function AppHeader({
 }) {
   void variant;
   const { teamName, teamLogoUrl } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div
       className="px-4.5 pb-3.5"
@@ -68,6 +71,17 @@ export function AppHeader({
         className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-1.5 mb-1 leading-tight break-words tracking-wide"
         style={{ color: "var(--header-title-on)" }}
       >
+        {/* タブレット幅(min-[700px]以上)ではSidebarが常時表示され、その中に
+            このメニューの項目も含まれているため、入口が重複しないようここでは隠す。 */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="メニューを開く"
+          className="min-[700px]:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg -ml-1 flex-shrink-0"
+          style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
+        >
+          <MenuIcon className="w-5 h-5" />
+        </button>
         {backHref && (
           <GuardedLink
             href={backHref}
@@ -78,7 +92,7 @@ export function AppHeader({
             // 上回りかねず、h1行の高さがHeader全体の縦占有サイズを押し上げてしまう
             // ため付けない(rounded-lg+背景色自体は、コントラスト救済で
             // surfaceが表示される稀なケースのために維持する)。
-            className="inline-flex items-center -ml-1 rounded-lg"
+            className="inline-flex items-center rounded-lg"
             style={{ background: "var(--header-title-surface)" }}
           >
             <BackIcon className="w-6 h-6" />
@@ -118,6 +132,7 @@ export function AppHeader({
           />
         </div>
       )}
+      <NavDrawer open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   );
 }

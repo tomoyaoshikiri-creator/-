@@ -48,7 +48,7 @@ export default function PollListPage() {
             <div className="flex items-center gap-1.5 flex-none">
               <span
                 className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
-                  poll.status === "open" ? "bg-orange/10 text-orange" : "bg-line text-ink-soft"
+                  poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
                 }`}
               >
                 {pollStatusLabel(poll.status)}

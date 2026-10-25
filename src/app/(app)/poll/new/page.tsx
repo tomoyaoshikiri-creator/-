@@ -85,15 +85,15 @@ export default function NewPollPage() {
     const trimmedTitle = title.trim();
     const trimmedOptions = options.map((o) => o.trim()).filter((o) => o !== "");
     if (!trimmedTitle) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (trimmedOptions.length < 2) {
-      toast("選択肢を2つ以上入力してください");
+      toast.warning("選択肢を2つ以上入力してください");
       return;
     }
     if (allowedRoles.length === 0) {
-      toast("投票できるロールを1つ以上選んでください");
+      toast.warning("投票できるロールを1つ以上選んでください");
       return;
     }
     setSaving(true);
@@ -113,7 +113,7 @@ export default function NewPollPage() {
       .single();
     if (error || !poll) {
       setSaving(false);
-      toast(`作成に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`作成に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     const { error: optionsError } = await supabase
@@ -122,11 +122,11 @@ export default function NewPollPage() {
     if (optionsError) {
       await supabase.from("polls").delete().eq("id", poll.id);
       setSaving(false);
-      toast(`選択肢の登録に失敗しました: ${optionsError.message}`);
+      toast.error(`選択肢の登録に失敗しました: ${optionsError.message}`);
       return;
     }
     setSaving(false);
-    toast("投票を作成しました");
+    toast.success("投票を作成しました");
     sendPushNotification("poll_created", poll.id);
     router.push(`/poll/${poll.id}`);
   }
@@ -174,7 +174,7 @@ export default function NewPollPage() {
               type="button"
               onClick={() => toggleRole(r)}
               className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
-                allowedRoles.includes(r) ? "border-orange text-orange bg-orange/8" : "border-line text-ink-soft bg-paper"
+                allowedRoles.includes(r) ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
               }`}
             >
               {r}
@@ -188,7 +188,7 @@ export default function NewPollPage() {
           <button
             type="button"
             onClick={() => setPlayerPickerOpen((v) => !v)}
-            className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
           >
             選手名簿から追加
           </button>
@@ -236,7 +236,7 @@ export default function NewPollPage() {
                   type="button"
                   onClick={() => removeOption(i)}
                   className="flex-none font-bold text-[12px]"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)" }}
                 >
                   削除
                 </button>

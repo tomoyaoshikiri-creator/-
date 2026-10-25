@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
+import { Pill } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/database.types";
@@ -12,6 +13,14 @@ import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/databa
 // (<select>)で選べるようにする(既存の「学年」選択等と同じ方式)。標準(未選択時)は1人。
 const COUNT_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1); // 1〜10
 const SEAT_OPTIONS = Array.from({ length: 11 }, (_, i) => i); // 0〜10(乗車可能人数のみ0を許容)
+
+// 出欠一覧(AttendanceRosterModal.tsx)の集計バッジと同じ色分けに揃える。
+function statusTone(s: AttendanceStatus): "ok" | "absent" | "late" | "watch" {
+  if (s === "出席") return "ok";
+  if (s === "欠席") return "absent";
+  if (s === "遅刻早退") return "late";
+  return "watch";
+}
 
 export function AttendanceEntryForm({
   scheduleId,
@@ -52,6 +61,9 @@ export function AttendanceEntryForm({
   const [saving, setSaving] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  // 登録済みならデフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。未登録(初回)はそのまま入力できるよう編集状態で始める。
+  const [editing, setEditing] = useState(false);
 
   // statusが選ばれているのにまだ(この内容で)保存されていない状態を「未保存」とみなす。
   useUnsavedChangesGuard(!loading && status !== null && !registered);
@@ -75,13 +87,14 @@ export function AttendanceEntryForm({
       setSetupCount(a?.setup_count?.toString() ?? "1");
       setNote(a?.note ?? "");
       setRegistered(Boolean(a?.status));
+      setEditing(!a?.status);
       setLoading(false);
     })();
   }, [scheduleId, userId, playerId]);
 
   async function handleSubmit() {
     if (!status) {
-      toast("出欠を選択してください");
+      toast.warning("出欠を選択してください");
       return;
     }
     setSaving(true);
@@ -104,11 +117,12 @@ export function AttendanceEntryForm({
     );
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("登録しました");
+    toast.success("登録しました");
     setRegistered(true);
+    setEditing(false);
     onChanged?.();
   }
 
@@ -126,10 +140,10 @@ export function AttendanceEntryForm({
     setSaving(false);
     setDeleteConfirm(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("出欠を削除しました");
+    toast.success("出欠を削除しました");
     setStatus(null);
     setAccompany(null);
     setAccompanyCount("");
@@ -139,6 +153,7 @@ export function AttendanceEntryForm({
     setSetupCount("");
     setNote("");
     setRegistered(false);
+    setEditing(true);
     onChanged?.();
   }
 
@@ -148,6 +163,38 @@ export function AttendanceEntryForm({
       <Card>
         {loading ? (
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
+        ) : !editing ? (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <div>{status && <Pill tone={statusTone(status)} size="lg">{status}</Pill>}</div>
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex-none text-center py-1.5 px-3 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
+              >
+                編集する
+              </button>
+            </div>
+            {isGame && !isSelf && accompany && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                保護者の帯同: {accompany}
+                {accompany === "あり" && `(${accompanyCount}人)`}
+              </div>
+            )}
+            {isGame && isHome && setupAvailable && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                会場設営: {setupAvailable === "あり" ? "可能" : "不可"}
+                {setupAvailable === "あり" && `(${setupCount}人)`}
+              </div>
+            )}
+            {showCarSection && car && (
+              <div className="text-[12.5px] text-ink-soft mt-1">
+                車出し: {car}
+                {car === "可" && `(${seats}人乗車可)`}
+              </div>
+            )}
+            {note && <div className="text-[12.5px] text-ink-soft mt-1">備考: {note}</div>}
+          </>
         ) : (
           <>
             <div className="flex gap-2 flex-wrap">
@@ -372,7 +419,7 @@ export function AttendanceEntryForm({
                 onClick={handleDelete}
                 disabled={saving}
                 className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
-                style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
               >
                 {deleteConfirm ? "もう一度タップで削除確定" : "この出欠を削除する"}
               </button>

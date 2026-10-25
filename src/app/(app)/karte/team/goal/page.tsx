@@ -18,6 +18,9 @@ export default function KarteTeamGoalPage() {
 
   const [teamGoal, setTeamGoal] = useState(savedTeamGoal ?? "");
   const [saving, setSaving] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (role !== "管理者") router.replace("/karte/team");
@@ -35,10 +38,11 @@ export default function KarteTeamGoalPage() {
       .eq("id", teamId);
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
-    toast("チーム目標を更新しました");
+    setEditing(false);
+    toast.success("チーム目標を更新しました");
     router.refresh();
   }
 
@@ -46,20 +50,35 @@ export default function KarteTeamGoalPage() {
     <PageShell header={<AppHeader title="チーム目標" variant="detail" backHref="/karte/team" accessBadge="admin" />}>
       <SectionLabel>チーム目標</SectionLabel>
       <Card>
-        <FieldLabel>ホーム画面に表示する目標</FieldLabel>
-        <textarea
-          rows={3}
-          className={inputClass()}
-          value={teamGoal}
-          onChange={(e) => setTeamGoal(e.target.value)}
-          placeholder="例: 県大会ベスト8"
-        />
-        <div className="text-xs text-ink-soft mt-2">
-          空欄にして保存すると、ホーム画面から目標のカードが消えます。全ロールのホーム画面に表示されます。
-        </div>
-        <SubmitButton onClick={handleSave} disabled={saving}>
-          {saving ? "保存中…" : "保存する"}
-        </SubmitButton>
+        {editing ? (
+          <>
+            <FieldLabel>ホーム画面に表示する目標</FieldLabel>
+            <textarea
+              rows={3}
+              className={inputClass()}
+              value={teamGoal}
+              onChange={(e) => setTeamGoal(e.target.value)}
+              placeholder="例: 県大会ベスト8"
+            />
+            <div className="text-xs text-ink-soft mt-2">
+              空欄にして保存すると、ホーム画面から目標のカードが消えます。全ロールのホーム画面に表示されます。
+            </div>
+            <SubmitButton onClick={handleSave} disabled={saving}>
+              {saving ? "保存中…" : "保存する"}
+            </SubmitButton>
+          </>
+        ) : (
+          <>
+            <div className="text-[13.5px] whitespace-pre-wrap">{teamGoal || "(未設定)"}</div>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
+            >
+              チーム目標を編集する
+            </button>
+          </>
+        )}
       </Card>
     </PageShell>
   );

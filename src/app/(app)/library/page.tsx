@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
@@ -28,13 +29,19 @@ const LIBRARY_PAGE_SIZE = 30;
 
 export default function LibraryPage() {
   const toast = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { teamId, userId, role } = useSession();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [categories, setCategories] = useState<LibraryCategory[]>([]);
   const [folders, setFolders] = useState<LibraryFolder[]>([]);
-  // 現在閲覧中のフォルダ(nullはルート)。フォルダ機能と同じ思想で、カテゴリーの絞り込みは
-  // このフォルダの中の資料に対してのみ働く。
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  // 現在閲覧中のフォルダ(nullはルート)。PCのFinder等と同じ感覚で「戻る」操作が
+  // 1階層ずつ効くよう、ローカルstateではなくURLのクエリparamで管理する
+  // (フォルダに入る=ブラウザ履歴が1件進む、戻る=1階層だけ戻る)。
+  const currentFolderId = searchParams.get("folder");
+  function goToFolder(folderId: string | null) {
+    router.push(folderId ? `/library?folder=${folderId}` : "/library");
+  }
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all">("all");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -161,11 +168,12 @@ export default function LibraryPage() {
   }, [categories, selectedCategoryId]);
 
   // 現在見ているフォルダが(他端末での操作などで)削除された場合、ルートに戻す。
+  // ユーザー操作による移動ではないため、履歴には残さずreplaceする。
   useEffect(() => {
-    if (currentFolderId !== null && !folders.some((f) => f.id === currentFolderId)) {
-      setCurrentFolderId(null);
+    if (currentFolderId !== null && folders.length > 0 && !folders.some((f) => f.id === currentFolderId)) {
+      router.replace("/library");
     }
-  }, [folders, currentFolderId]);
+  }, [folders, currentFolderId, router]);
 
   const visibleItems = selectedCategoryId === "all" ? items : items.filter((i) => i.category_id === selectedCategoryId);
   const crumbs = folderPath(folders, currentFolderId);
@@ -187,20 +195,20 @@ export default function LibraryPage() {
               load();
               loadCategories();
               loadUsage();
-              toast("ファイルを追加しました");
+              toast.success("ファイルを追加しました");
             }}
           />
         </>
       }
     >
       {limitBytes > 0 && (
-        <div className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-3.5">
+        <div className="bg-card border border-border-subtle rounded-card shadow-card px-3.5 py-2.5 mb-3.5">
           <div className="flex items-end justify-between">
-            <div className="font-bold text-[15px]">
+            <div className="font-bold text-sm">
               {formatBytes(usedBytes)}
-              <span className="text-[11px] font-normal text-ink-soft ml-1">使用中</span>
+              <span className="text-caption font-normal text-ink-soft ml-1">使用中</span>
             </div>
-            <div className="text-[11px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
+            <div className="text-caption text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>
           </div>
           <div className="mt-2 h-1.5 rounded-full bg-paper overflow-hidden">
             <div
@@ -212,15 +220,15 @@ export default function LibraryPage() {
             />
           </div>
           {usedBytes >= limitBytes && (
-            <div className="text-[11px] mt-1.5" style={{ color: "var(--danger)" }}>
+            <div className="text-caption mt-1.5" style={{ color: "var(--danger-text)" }}>
               容量の上限に達しています。新規アップロードするには、ファイルを削除するか上位プランへのアップグレードが必要です。
             </div>
           )}
         </div>
       )}
 
-      <div className="flex items-center gap-1 flex-wrap text-[12.5px] font-bold text-ink-soft mb-3.5">
-        <button type="button" onClick={() => setCurrentFolderId(null)} className={currentFolderId === null ? "text-orange" : ""}>
+      <div className="flex items-center gap-1 flex-wrap text-caption font-bold text-ink-soft mb-3.5">
+        <button type="button" onClick={() => goToFolder(null)} className={currentFolderId === null ? "text-orange-text" : ""}>
           ホーム
         </button>
         {crumbs.map((c) => (
@@ -228,8 +236,8 @@ export default function LibraryPage() {
             <span>›</span>
             <button
               type="button"
-              onClick={() => setCurrentFolderId(c.id)}
-              className={currentFolderId === c.id ? "text-orange" : ""}
+              onClick={() => goToFolder(c.id)}
+              className={currentFolderId === c.id ? "text-orange-text" : ""}
             >
               {c.name}
             </button>
@@ -239,16 +247,27 @@ export default function LibraryPage() {
 
       <SectionLabel
         action={
-          <button
-            type="button"
-            onClick={() => setNewFolderOpen(true)}
-            className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-          >
-            ＋ フォルダを作成
-          </button>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => setNewFolderOpen(true)}
+              className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+            >
+              ＋ フォルダを作成
+            </button>
+            {canManage && categories.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setEditCategoriesOpen(true)}
+                className="flex-none text-[11px] font-bold border border-line rounded-full px-2.5 py-1 bg-white text-ink-soft"
+              >
+                カテゴリーを編集
+              </button>
+            )}
+          </div>
         }
       >
-        フォルダ
+        ライブラリ
       </SectionLabel>
       <NewFolderModal
         open={newFolderOpen}
@@ -257,20 +276,52 @@ export default function LibraryPage() {
         onCreated={() => {
           setNewFolderOpen(false);
           loadFolders();
-          toast("フォルダを作成しました");
+          toast.success("フォルダを作成しました");
         }}
       />
+      <EditCategoriesModal
+        open={editCategoriesOpen}
+        categories={categories}
+        onClose={() => setEditCategoriesOpen(false)}
+        onUpdated={loadCategories}
+      />
 
-      {visibleFolders.length === 0 ? (
-        <EmptyState>フォルダはありません</EmptyState>
+      {categories.length > 0 && (
+        <div className="flex gap-2 mb-3.5 flex-wrap">
+          <SegButton variant="small" active={selectedCategoryId === "all"} onClick={() => setSelectedCategoryId("all")}>
+            すべて
+          </SegButton>
+          {categories.map((c) => (
+            <SegButton
+              key={c.id}
+              variant="small"
+              active={selectedCategoryId === c.id}
+              onClick={() => setSelectedCategoryId(c.id)}
+            >
+              {c.name}
+            </SegButton>
+          ))}
+        </div>
+      )}
+
+      {/* フォルダとファイルをPCのファイルマネージャーのような1つのリストにまとめて表示する
+          (フォルダ先頭・ファイル後続、ユーザー指示)。カテゴリーの絞り込みはファイルのみに働く
+          (フォルダは常に表示)。 */}
+      {loading ? (
+        <EmptyState>読み込み中…</EmptyState>
+      ) : visibleFolders.length === 0 && visibleItems.length === 0 ? (
+        <EmptyState>まだフォルダ・ファイルがありません</EmptyState>
       ) : (
-        <div className="space-y-2 mb-3.5">
+        <>
           {visibleFolders.map((f) => (
-            <div key={f.id} className="bg-white border border-line rounded-lg flex items-stretch">
+            <div
+              key={f.id}
+              className="bg-card border border-border-subtle rounded-card shadow-card mb-2.5 flex items-stretch"
+            >
               <button
                 type="button"
-                onClick={() => setCurrentFolderId(f.id)}
-                className="flex-1 min-w-0 px-4 py-3 text-left font-bold text-[14.5px] truncate"
+                onClick={() => goToFolder(f.id)}
+                className="flex-1 min-w-0 min-h-tap px-4 text-left font-bold text-sm truncate"
               >
                 📁 {f.name}
               </button>
@@ -279,15 +330,63 @@ export default function LibraryPage() {
                   type="button"
                   onClick={() => setFolderActionsTarget(f)}
                   aria-label="フォルダを編集"
-                  className="flex-none flex items-center px-3 border-l border-line text-ink-soft font-bold"
+                  className="flex-none min-w-tap flex items-center justify-center px-3 border-l border-line text-ink-soft font-bold"
                 >
                   ⋯
                 </button>
               )}
             </div>
           ))}
-        </div>
+          {visibleItems.map((item) => {
+            const category = categories.find((c) => c.id === item.category_id);
+            const fileUrl = singleFileUrlByItem[item.id];
+            const titleContent = (
+              <div className="font-bold text-sm truncate">
+                {category && (
+                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
+                    {category.name}
+                  </span>
+                )}
+                {item.title}
+              </div>
+            );
+            return (
+              <div
+                key={item.id}
+                className="bg-card border border-border-subtle rounded-card shadow-card mb-2.5 flex items-stretch"
+              >
+                {fileUrl ? (
+                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-0 min-h-tap flex items-center px-4">
+                    {titleContent}
+                  </a>
+                ) : (
+                  <Link href={`/library/${item.id}`} className="flex-1 min-w-0 min-h-tap flex items-center px-4">
+                    {titleContent}
+                  </Link>
+                )}
+                <Link
+                  href={`/library/${item.id}`}
+                  aria-label="資料の詳細を開く"
+                  className="flex-none min-w-tap flex items-center justify-center px-3 border-l border-line"
+                >
+                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                </Link>
+              </div>
+            );
+          })}
+          {hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
+          )}
+        </>
       )}
+
       <FolderActionsModal
         open={folderActionsTarget !== null}
         folder={folderActionsTarget}
@@ -321,108 +420,14 @@ export default function LibraryPage() {
             .update({ parent_folder_id: destinationFolderId, updated_at: new Date().toISOString() })
             .eq("id", moveFolderTarget.id);
           if (error) {
-            toast(`移動に失敗しました: ${error.message}`);
+            toast.error(`移動に失敗しました: ${error.message}`);
             return;
           }
-          toast("フォルダを移動しました");
+          toast.success("フォルダを移動しました");
           setMoveFolderTarget(null);
           loadFolders();
         }}
       />
-
-      {categories.length > 0 && (
-        <div className="flex gap-2 mb-3.5 flex-wrap">
-          <SegButton variant="small" active={selectedCategoryId === "all"} onClick={() => setSelectedCategoryId("all")}>
-            すべて
-          </SegButton>
-          {categories.map((c) => (
-            <SegButton
-              key={c.id}
-              variant="small"
-              active={selectedCategoryId === c.id}
-              onClick={() => setSelectedCategoryId(c.id)}
-            >
-              {c.name}
-            </SegButton>
-          ))}
-        </div>
-      )}
-
-      <SectionLabel
-        action={
-          canManage &&
-          categories.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setEditCategoriesOpen(true)}
-              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-            >
-              カテゴリーを編集
-            </button>
-          )
-        }
-      >
-        共有ファイル
-      </SectionLabel>
-      <EditCategoriesModal
-        open={editCategoriesOpen}
-        categories={categories}
-        onClose={() => setEditCategoriesOpen(false)}
-        onUpdated={loadCategories}
-      />
-
-      {loading ? (
-        <EmptyState>読み込み中…</EmptyState>
-      ) : visibleItems.length === 0 ? (
-        <EmptyState>まだファイルがありません</EmptyState>
-      ) : (
-        <>
-          {visibleItems.map((item) => {
-            const category = categories.find((c) => c.id === item.category_id);
-            const fileUrl = singleFileUrlByItem[item.id];
-            const titleContent = (
-              <div className="font-bold text-[14.5px] truncate">
-                {category && (
-                  <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
-                    {category.name}
-                  </span>
-                )}
-                {item.title}
-              </div>
-            );
-            return (
-              <div key={item.id} className="bg-white border border-line rounded-lg mb-2.5 flex items-stretch">
-                {fileUrl ? (
-                  <a href={fileUrl} target="_blank" rel="noreferrer" className="flex-1 min-w-0 px-4 py-3.5">
-                    {titleContent}
-                  </a>
-                ) : (
-                  <Link href={`/library/${item.id}`} className="flex-1 min-w-0 px-4 py-3.5">
-                    {titleContent}
-                  </Link>
-                )}
-                <Link
-                  href={`/library/${item.id}`}
-                  aria-label="資料の詳細を開く"
-                  className="flex-none flex items-center px-3 border-l border-line"
-                >
-                  <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-                </Link>
-              </div>
-            );
-          })}
-          {hasMore && (
-            <button
-              type="button"
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="block w-full mt-1 mb-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
-            >
-              {loadingMore ? "読み込み中…" : "さらに読み込む"}
-            </button>
-          )}
-        </>
-      )}
     </PageShell>
   );
 }

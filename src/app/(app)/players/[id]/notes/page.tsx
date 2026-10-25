@@ -102,7 +102,7 @@ export default function PlayerNotesPage() {
     if (existing) {
       const { error } = await supabase.from("player_note_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -113,7 +113,7 @@ export default function PlayerNotesPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
@@ -139,7 +139,7 @@ export default function PlayerNotesPage() {
   async function handleAddNote() {
     if (!player) return;
     if (!noteBody.trim()) {
-      toast("メモを入力してください");
+      toast.warning("メモを入力してください");
       return;
     }
     setSavingNote(true);
@@ -160,12 +160,12 @@ export default function PlayerNotesPage() {
     }
     setSavingNote(false);
     if (error || !note) {
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setNoteBody("");
     setModalOpen(false);
-    toast("メモを登録しました");
+    toast.success("メモを登録しました");
     sendPushNotification("player_note_created", note.id);
     load();
   }
@@ -177,7 +177,7 @@ export default function PlayerNotesPage() {
 
   async function handleSaveNoteEdit(noteId: string) {
     if (!editNoteBody.trim()) {
-      toast("メモを入力してください");
+      toast.warning("メモを入力してください");
       return;
     }
     setSavingNoteEdit(true);
@@ -188,10 +188,10 @@ export default function PlayerNotesPage() {
       .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを更新しました");
+    toast.success("メモを更新しました");
     setEditingNoteId(null);
     load();
   }
@@ -206,10 +206,10 @@ export default function PlayerNotesPage() {
     const supabase = createClient();
     const { error } = await supabase.from("player_notes").delete().eq("id", noteId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを削除しました");
+    toast.success("メモを削除しました");
     setExpandedNoteId(null);
     load();
   }
@@ -300,7 +300,7 @@ export default function PlayerNotesPage() {
                       type="button"
                       onClick={() => handleSaveNoteEdit(n.id)}
                       disabled={savingNoteEdit}
-                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                      className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
                     >
                       {savingNoteEdit ? "保存中…" : "保存"}
                     </button>
@@ -349,7 +349,7 @@ export default function PlayerNotesPage() {
                         type="button"
                         onClick={() => handleDeleteNote(n.id)}
                         className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                       >
                         {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
                       </button>

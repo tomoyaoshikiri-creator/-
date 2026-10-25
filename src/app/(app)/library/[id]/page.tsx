@@ -15,7 +15,8 @@ import { formatDateLabel } from "@/lib/format";
 import { canManageLibrary } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { folderPath } from "@/lib/libraryFolders";
-import type { LibraryCategory, LibraryFile, LibraryFolder, LibraryItem } from "@/lib/database.types";
+import { LIBRARY_ROLE_OPTIONS } from "@/lib/library";
+import type { LibraryCategory, LibraryFile, LibraryFolder, LibraryItem, Role } from "@/lib/database.types";
 import { MoveModal } from "../MoveModal";
 
 type FileWithUrl = LibraryFile & { url: string | null; thumbUrl: string | null };
@@ -41,10 +42,19 @@ export default function LibraryItemDetailPage() {
 
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [allowedRoles, setAllowedRoles] = useState<Role[]>([...LIBRARY_ROLE_OPTIONS]);
 
   useUnsavedChangesGuard(
-    editing && item !== null && (title !== item.title || categoryId !== (item.category_id ?? "")),
+    editing &&
+      item !== null &&
+      (title !== item.title ||
+        categoryId !== (item.category_id ?? "") ||
+        allowedRoles.length !== item.allowed_roles.length),
   );
+
+  function toggleRole(r: Role) {
+    setAllowedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  }
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -86,6 +96,7 @@ export default function LibraryItemDetailPage() {
     if (!item) return;
     setTitle(item.title);
     setCategoryId(item.category_id ?? "");
+    setAllowedRoles([...item.allowed_roles] as Role[]);
     setDeleteConfirm(false);
     setEditing(true);
   }
@@ -93,21 +104,25 @@ export default function LibraryItemDetailPage() {
   async function handleSave() {
     if (!item) return;
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
+      return;
+    }
+    if (allowedRoles.length === 0) {
+      toast.warning("閲覧できるロールを1つ以上選んでください");
       return;
     }
     setSaving(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("library_items")
-      .update({ title: title.trim(), category_id: categoryId || null })
+      .update({ title: title.trim(), category_id: categoryId || null, allowed_roles: allowedRoles })
       .eq("id", item.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("更新しました");
+    toast.success("更新しました");
     setEditing(false);
     load();
   }
@@ -124,16 +139,16 @@ export default function LibraryItemDetailPage() {
     if (pathsToRemove.length > 0) {
       const { error: storageError } = await supabase.storage.from("library-files").remove(pathsToRemove);
       if (storageError) {
-        toast(`削除に失敗しました: ${storageError.message}`);
+        toast.error(`削除に失敗しました: ${storageError.message}`);
         return;
       }
     }
     const { error } = await supabase.from("library_items").delete().eq("id", item.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("削除しました");
+    toast.success("削除しました");
     router.push("/library");
   }
 
@@ -145,10 +160,10 @@ export default function LibraryItemDetailPage() {
       .update({ folder_id: destinationFolderId })
       .eq("id", item.id);
     if (error) {
-      toast(`移動に失敗しました: ${error.message}`);
+      toast.error(`移動に失敗しました: ${error.message}`);
       return;
     }
-    toast("移動しました");
+    toast.success("移動しました");
     setMoveOpen(false);
     load();
   }
@@ -157,7 +172,15 @@ export default function LibraryItemDetailPage() {
   const itemFolderCrumbs = item ? folderPath(folders, item.folder_id) : [];
 
   return (
-    <PageShell header={<AppHeader title="資料" variant="detail" backHref="/library" />}>
+    <PageShell
+      header={
+        <AppHeader
+          title="資料"
+          variant="detail"
+          backHref={item?.folder_id ? `/library?folder=${item.folder_id}` : "/library"}
+        />
+      }
+    >
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !item ? (
@@ -181,6 +204,25 @@ export default function LibraryItemDetailPage() {
               </select>
             </div>
 
+            <div className="mt-3">
+              <FieldLabel>閲覧できるロール</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {LIBRARY_ROLE_OPTIONS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => toggleRole(r)}
+                    className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
+                      allowedRoles.includes(r) ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs text-ink-soft mt-1.5">※指定しない場合は全員が閲覧できます</div>
+            </div>
+
             <SubmitButton onClick={handleSave} disabled={saving}>
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>
@@ -200,7 +242,7 @@ export default function LibraryItemDetailPage() {
               type="button"
               onClick={handleDelete}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この資料を削除する"}
             </button>
@@ -222,7 +264,7 @@ export default function LibraryItemDetailPage() {
                   <button
                     type="button"
                     onClick={startEdit}
-                    className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                    className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
                   >
                     編集する
                   </button>
@@ -249,6 +291,11 @@ export default function LibraryItemDetailPage() {
                 <span key={f.id}> › {f.name}</span>
               ))}
             </div>
+            {item.allowed_roles.length < LIBRARY_ROLE_OPTIONS.length && (
+              <div className="text-[11px] text-ink-soft mt-1">
+                👁 閲覧可能: {item.allowed_roles.join("・")}
+              </div>
+            )}
 
             {files.length > 0 && (
               <div className="mt-2.5 space-y-1.5">
@@ -277,7 +324,7 @@ export default function LibraryItemDetailPage() {
                           alt={f.file_name}
                           className="w-full rounded-lg border border-line object-contain"
                         />
-                        <div className="text-orange font-bold text-xs mt-1">📄 {f.file_name}</div>
+                        <div className="text-orange-text font-bold text-xs mt-1">📄 {f.file_name}</div>
                       </a>
                     );
                   }
@@ -288,7 +335,7 @@ export default function LibraryItemDetailPage() {
                         href={f.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block text-orange font-bold text-xs"
+                        className="block text-orange-text font-bold text-xs"
                       >
                         {isPdfFile(f.file_name) ? "📄" : "📎"} {f.file_name}
                       </a>

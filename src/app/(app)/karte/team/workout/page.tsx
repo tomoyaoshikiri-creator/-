@@ -8,24 +8,26 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewWorkout } from "@/lib/permissions";
+import { canViewKarte, canViewWorkout } from "@/lib/permissions";
 import { hasKarteTabAccess, hasShavingDrillAccess, hasShootingDrillAccess } from "@/lib/plan";
 
 // ワークアウトのハブ画面。「いつどんな練習をしたか」の集計(既存)に加え、数値で記録する
 // 個別のドリル(コービーシューティング・シェービングドリル)への入口をカードとして並べる。
 // ドリル2種はSignature Edition限定のため、対象プラン以外には存在自体を表示しない。
-// このハブ自体は運営・指導者・管理者に開放する(canViewWorkout、ユーザー指示。
-// カルテ閲覧全般よりワークアウトだけ一段広く運営にも開放する特別扱い)。
+// このハブ自体は全ロールに開放する(canViewWorkout、ユーザー指示)。
 export default function KarteTeamWorkoutPage() {
   const router = useRouter();
   const { role, plan } = useSession();
+  // 指導者・管理者は「チームカルテ」経由、一般・運営は「チーム」hub経由で来るため、
+  // 戻り先をそれぞれの入口に合わせる。
+  const backHref = canViewKarte(role) ? "/karte/team" : "/team";
 
   useEffect(() => {
     if (!canViewWorkout(role) || !hasKarteTabAccess(plan)) router.replace("/home");
   }, [role, plan, router]);
 
   return (
-    <PageShell header={<AppHeader title="ワークアウト" variant="list" backHref="/karte/team" accessBadge="coach" />}>
+    <PageShell header={<AppHeader title="ワークアウト" variant="list" backHref={backHref} />}>
       <Link href="/karte/team/workout/menu">
         <Card className="cursor-pointer">
           <div className="flex items-center justify-between">

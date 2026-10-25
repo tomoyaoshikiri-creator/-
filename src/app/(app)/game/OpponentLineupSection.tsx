@@ -26,7 +26,7 @@ function OpponentCheckRow({
         dimmed ? "opacity-40" : ""
       } ${checked ? "bg-orange/10" : ""}`}
     >
-      <div className={`font-mono font-bold text-[13.5px] ${checked ? "text-orange" : ""}`}>
+      <div className={`font-mono font-bold text-[13.5px] ${checked ? "text-orange-text" : ""}`}>
         #{opponentPlayer.number}
       </div>
     </button>
@@ -58,7 +58,7 @@ export function OpponentLineupSection({
   function toggleDraft(id: string) {
     const isActive = draft.includes(id);
     if (!isActive && draft.length >= 5) {
-      toast("スターティングは5人までです");
+      toast.warning("スターティングは5人までです");
       return;
     }
     setDraft(isActive ? draft.filter((x) => x !== id) : [...draft, id]);

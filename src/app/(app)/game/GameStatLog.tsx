@@ -68,7 +68,7 @@ export function GameStatLog({
                     {e.delta < 0 ? "(取消)" : ""}
                   </span>
                 </div>
-                {pts !== 0 && <span className="font-mono font-bold text-orange">{pts > 0 ? `+${pts}` : pts}</span>}
+                {pts !== 0 && <span className="font-mono font-bold text-orange-text">{pts > 0 ? `+${pts}` : pts}</span>}
               </div>
               {expanded && (
                 <div className="pb-2.5">
@@ -95,7 +95,7 @@ export function GameStatLog({
                     type="button"
                     onClick={() => handleDeleteClick(e.id)}
                     className="w-full text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                   >
                     {deleteConfirmId === e.id ? "もう一度タップで削除確定" : "この記録を削除"}
                   </button>

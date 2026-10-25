@@ -38,9 +38,9 @@ export function PushPermissionPrompt() {
 
   async function handleAllow() {
     const result = await subscribe();
-    if (result === "subscribed") toast("通知を有効にしました");
-    else if (result === "permission_denied") toast("通知が許可されませんでした");
-    else if (result === "error") toast("通知の登録に失敗しました");
+    if (result === "subscribed") toast.success("通知を有効にしました");
+    else if (result === "permission_denied") toast.warning("通知が許可されませんでした");
+    else if (result === "error") toast.error("通知の登録に失敗しました");
     dismiss();
   }
 
@@ -69,7 +69,7 @@ export function PushPermissionPrompt() {
             // 同じくコントラスト安全な--on-team-primaryを使う(固定text-whiteだと明るい
             // teamPrimaryの場合に文字が読めなくなる)。
             color: "var(--on-team-primary)",
-            background: "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+            background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
           }}
         >
           許可する

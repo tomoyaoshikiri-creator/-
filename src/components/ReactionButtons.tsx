@@ -84,7 +84,7 @@ export function ReactionButtons({
                 draggable={false}
                 className="w-4 h-4 pointer-events-none select-none [-webkit-touch-callout:none]"
               />
-              {active && <span className="text-[10.5px] font-bold text-orange">{forTarget.length}</span>}
+              {active && <span className="text-[10.5px] font-bold text-orange-text">{forTarget.length}</span>}
             </button>
           );
         })}
@@ -117,7 +117,7 @@ export function ReactionSummary({ reactions }: { reactions: ReactionRow[] }) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt={alt} className="w-4 h-4" />
-          <span className="text-[10.5px] font-bold text-orange">{count}</span>
+          <span className="text-[10.5px] font-bold text-orange-text">{count}</span>
         </span>
       ))}
     </div>

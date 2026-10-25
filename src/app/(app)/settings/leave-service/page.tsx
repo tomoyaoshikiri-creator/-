@@ -106,13 +106,13 @@ export default function LeaveServicePage() {
           />
         </div>
 
-        {error && <div className="mt-3 text-[12.5px] text-danger">{error}</div>}
+        {error && <div className="mt-3 text-[12.5px] text-danger-text">{error}</div>}
         <button
           type="button"
           onClick={handleLeave}
           disabled={!canSubmit || submitting}
           className="mt-3.5 w-full py-2.5 rounded-lg font-bold text-[13px] active:opacity-85 disabled:opacity-50 border"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "white" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)", background: "white" }}
         >
           {submitting ? "処理中…" : "このサービスから退会する"}
         </button>

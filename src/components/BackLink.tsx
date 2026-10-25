@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 export function BackLink() {
   const router = useRouter();
   return (
-    <button onClick={() => router.back()} className="text-[12.5px] font-bold text-orange">
+    <button onClick={() => router.back()} className="text-[12.5px] font-bold text-orange-text">
       ← 戻る
     </button>
   );

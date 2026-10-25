@@ -95,7 +95,8 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
   // 文字色は任意のteamPrimaryでも可読性を確保するため、teamThemeStyle()が算出した
   // コントラスト安全な--on-team-primaryをそのまま使う(SubmitButton等の固定text-whiteとは
   // 異なり、ここは明示的にcontrast機構を利用する)。shadowも旧・緑固定値ではなく、
-  // 現在のteamPrimaryと連動する色にする(color-mixで透明度を掛け合わせる)。
+  // 現在のteamPrimaryと連動する色にする(--orange-shadow-55、src/lib/theme.tsで
+  // JS側事前計算。CSSのcolor-mix()はSafariクラッシュ対策のため使わない)。
   return (
     <button
       type="button"
@@ -105,10 +106,10 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
       style={{
         color: "var(--on-team-primary)",
         // SubmitButton/SegButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
-        // 薄い方は黒を混ぜず、白を混ぜて明るくする。
-        background:
-          "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
-        boxShadow: "0 10px 20px -6px color-mix(in srgb, var(--orange) 55%, transparent)",
+        // 薄い方は黒を混ぜず、白を混ぜて明るくする(--orange-light-55/--orange-shadow-55、
+        // Safariのcolor-mix()クラッシュ対策でJS側事前計算値に変更済み)。
+        background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
+        boxShadow: "0 10px 20px -6px var(--orange-shadow-55)",
       }}
     >
       +

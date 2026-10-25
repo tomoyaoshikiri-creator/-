@@ -41,7 +41,7 @@ export function EditCategoriesModal({
   async function handleSave(category: LibraryCategory) {
     const name = (names[category.id] ?? "").trim();
     if (!name) {
-      toast("カテゴリー名を入力してください");
+      toast.warning("カテゴリー名を入力してください");
       return;
     }
     if (name === category.name) return;
@@ -50,10 +50,10 @@ export function EditCategoriesModal({
     const { error } = await supabase.from("library_categories").update({ name }).eq("id", category.id);
     setSavingId(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("カテゴリー名を更新しました");
+    toast.success("カテゴリー名を更新しました");
     onUpdated();
   }
 
@@ -69,10 +69,10 @@ export function EditCategoriesModal({
     const { error } = await supabase.from("library_categories").delete().eq("id", category.id);
     setDeletingId(null);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("カテゴリーを削除しました。このカテゴリーだった資料は「カテゴリーなし」になります");
+    toast.success("カテゴリーを削除しました。このカテゴリーだった資料は「カテゴリーなし」になります");
     onUpdated();
   }
 
@@ -94,7 +94,7 @@ export function EditCategoriesModal({
                   type="button"
                   onClick={() => handleSave(c)}
                   disabled={savingId === c.id || (names[c.id] ?? "").trim() === c.name}
-                  className="flex-1 text-[12px] font-bold text-orange border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
+                  className="flex-1 text-[12px] font-bold text-orange-text border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
                 >
                   {savingId === c.id ? "保存中…" : "保存"}
                 </button>
@@ -103,7 +103,7 @@ export function EditCategoriesModal({
                   onClick={() => handleDelete(c)}
                   disabled={deletingId === c.id}
                   className="flex-1 text-[12px] font-bold border rounded-lg px-3 py-2 bg-white disabled:opacity-40"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deletingId === c.id ? "削除中…" : deleteConfirmId === c.id ? "もう一度タップで削除確定" : "削除"}
                 </button>

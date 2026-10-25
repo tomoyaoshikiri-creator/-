@@ -16,7 +16,15 @@ import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { LineTrendChart } from "@/components/charts/LineTrendChart";
 import { canManagePlayers, canViewKarte } from "@/lib/permissions";
-import { hasAiAnalysisAccess, hasKarteTabAccess, hasSkillTestAccess, hasSportsTestAccess } from "@/lib/plan";
+import {
+  hasAccountingAccess,
+  hasAiAnalysisAccess,
+  hasKarteTabAccess,
+  hasShootingDrillAccess,
+  hasSkillTestAccess,
+  hasSportsTestAccess,
+} from "@/lib/plan";
+import { formatShootingDrillTime } from "@/lib/shootingDrill";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { GRADES_BY_CATEGORY, POSITIONS_BY_SPORT, STATUS_OPTIONS } from "@/lib/playerOptions";
 import { GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
@@ -58,6 +66,7 @@ import type {
   PlayerSkillTestProgress,
   PlayerStatus,
   Position,
+  ShootingDrillRecord,
   SkillTest,
   SportsTestRecord,
   TeamStatCategory,
@@ -122,6 +131,7 @@ export default function KartePlayerPage() {
   const [statCategories, setStatCategories] = useState<TeamStatCategory[]>([]);
   const [statEntries, setStatEntries] = useState<StatEntryWithDate[]>([]);
   const [sportsTestRecords, setSportsTestRecords] = useState<SportsTestRecord[]>([]);
+  const [shootingRecords, setShootingRecords] = useState<ShootingDrillRecord[]>([]);
   const [growthRecords, setGrowthRecords] = useState<PlayerGrowthRecord[]>([]);
   const [skillTests, setSkillTests] = useState<SkillTest[]>([]);
   const [skillProgress, setSkillProgress] = useState<PlayerSkillTestProgress[]>([]);
@@ -203,7 +213,7 @@ export default function KartePlayerPage() {
   async function handleSave() {
     if (!player) return;
     if (!sei.trim() || !mei.trim()) {
-      toast("氏名を入力してください");
+      toast.warning("氏名を入力してください");
       return;
     }
     setSaving(true);
@@ -225,10 +235,10 @@ export default function KartePlayerPage() {
       .eq("id", player.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("選手情報を更新しました");
+    toast.success("選手情報を更新しました");
     setEditing(false);
     load();
   }
@@ -243,10 +253,10 @@ export default function KartePlayerPage() {
     const supabase = createClient();
     const { error } = await supabase.from("players").delete().eq("id", player.id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("選手を削除しました");
+    toast.success("選手を削除しました");
     router.push("/karte/players");
   }
 
@@ -256,41 +266,58 @@ export default function KartePlayerPage() {
     // 検定はスタッフの場合SkillTestPanel(直接編集)を使うため、元データの取得自体が不要。
     // 保護者は従来通り読み取り専用の一覧を表示する(検定ランクの変更は
     // /karte/team/skill-testsの申請フロー経由)。
-    const [{ data: p }, { data: lines }, { data: categories }, { data: entries }, { data: tests }, { data: growth }, { data: skTests }, { data: skProgress }] =
-      await Promise.all([
-        supabase.from("players").select("*").eq("id", params.playerId).single(),
-        supabase
-          .from("game_player_stat_lines")
-          .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
-          .eq("player_id", params.playerId)
-          .returns<StatLineWithDate[]>(),
-        supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
-        supabase
-          .from("game_player_stat_entries")
-          .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
-          .eq("player_id", params.playerId)
-          .returns<StatEntryWithDate[]>(),
-        supabase
-          .from("sports_test_records")
-          .select("*")
-          .eq("player_id", params.playerId)
-          .order("fiscal_year", { ascending: true })
-          .order("quarter", { ascending: true }),
-        supabase
-          .from("player_growth_records")
-          .select("*")
-          .eq("player_id", params.playerId)
-          .order("measured_on", { ascending: false })
-          .limit(6),
-        isStaff ? Promise.resolve({ data: null }) : supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
-        isStaff
-          ? Promise.resolve({ data: null })
-          : supabase
-              .from("player_skill_test_progress")
-              .select("*")
-              .eq("player_id", params.playerId)
-              .order("created_at", { ascending: false }),
-      ]);
+    const [
+      { data: p },
+      { data: lines },
+      { data: categories },
+      { data: entries },
+      { data: tests },
+      { data: growth },
+      { data: shooting },
+      { data: skTests },
+      { data: skProgress },
+    ] = await Promise.all([
+      supabase.from("players").select("*").eq("id", params.playerId).single(),
+      supabase
+        .from("game_player_stat_lines")
+        .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
+        .eq("player_id", params.playerId)
+        .returns<StatLineWithDate[]>(),
+      supabase.from("team_stat_categories").select("*").order("position", { ascending: true }),
+      supabase
+        .from("game_player_stat_entries")
+        .select("*, game_matches(opponent, game_number, schedules(date, fiscal_year_override))")
+        .eq("player_id", params.playerId)
+        .returns<StatEntryWithDate[]>(),
+      supabase
+        .from("sports_test_records")
+        .select("*")
+        .eq("player_id", params.playerId)
+        .order("fiscal_year", { ascending: true })
+        .order("quarter", { ascending: true }),
+      supabase
+        .from("player_growth_records")
+        .select("*")
+        .eq("player_id", params.playerId)
+        .order("measured_on", { ascending: false })
+        .limit(6),
+      // 保護者には紐づく選手の記録のみRLS経由で見える(shooting_drill_records_select、
+      // 指導者・管理者 または 保護者exists-check)。
+      supabase
+        .from("shooting_drill_records")
+        .select("*")
+        .eq("player_id", params.playerId)
+        .order("recorded_on", { ascending: false })
+        .order("created_at", { ascending: false }),
+      isStaff ? Promise.resolve({ data: null }) : supabase.from("skill_tests").select("*").order("created_at", { ascending: true }),
+      isStaff
+        ? Promise.resolve({ data: null })
+        : supabase
+            .from("player_skill_test_progress")
+            .select("*")
+            .eq("player_id", params.playerId)
+            .order("created_at", { ascending: false }),
+    ]);
     setPlayer(p ?? null);
     setSkillTests(skTests ?? []);
     setSkillProgress(skProgress ?? []);
@@ -311,6 +338,7 @@ export default function KartePlayerPage() {
     setStatCategories(categories ?? []);
     setStatEntries(entries ?? []);
     setSportsTestRecords(tests ?? []);
+    setShootingRecords(shooting ?? []);
     setGrowthRecords(growth ?? []);
     setLoading(false);
   }, [params.playerId, isStaff]);
@@ -375,6 +403,22 @@ export default function KartePlayerPage() {
 
   const sportsTestRecordsForYear = sportsTestRecords.filter((r) => r.fiscal_year === fiscalYear);
 
+  // コービーシューティングの記録を日付ごとにグループ化する(shootingRecordsは
+  // 既にrecorded_on desc / created_at descで取得済みのため、日付が新しいものが
+  // 上に積み上がる並びになる)。
+  const shootingRecordsByDate = shootingRecords.reduce<{ date: string; records: ShootingDrillRecord[] }[]>(
+    (groups, r) => {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.date === r.recorded_on) {
+        lastGroup.records.push(r);
+      } else {
+        groups.push({ date: r.recorded_on, records: [r] });
+      }
+      return groups;
+    },
+    [],
+  );
+
   if (loading || !authorized) {
     return (
       <PageShell header={<AppHeader title={isPro ? "カルテ" : "選手一覧"} variant="detail" backHref="/karte/players" accessBadge={isStaff ? "coach" : undefined} />}>
@@ -433,7 +477,7 @@ export default function KartePlayerPage() {
             <button
               type="button"
               onClick={startEdit}
-              className="flex-none text-[11px] font-bold text-orange border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+              className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
             >
               編集する
             </button>
@@ -559,7 +603,7 @@ export default function KartePlayerPage() {
               type="button"
               onClick={handleDelete}
               className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
-              style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
             </button>
@@ -681,7 +725,7 @@ export default function KartePlayerPage() {
                       <th
                         key={c.key}
                         className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                         }`}
                       >
                         {teamAverages ? <StatCell statKey={c.key} averages={teamAverages} /> : "-"}
@@ -714,7 +758,7 @@ export default function KartePlayerPage() {
                       <th
                         key={c.key}
                         className={`sticky top-[72px] h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                         }`}
                       >
                         <StatCell statKey={c.key} averages={seasonAverages} />
@@ -820,7 +864,7 @@ export default function KartePlayerPage() {
                         <td
                           key={c.key}
                           className={`${colWidthClass(c.key)} h-9 px-1 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
-                            c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                           }`}
                         >
                           <StatCell statKey={c.key} averages={row.averages} />
@@ -937,6 +981,30 @@ export default function KartePlayerPage() {
       )}
         </>
       )}
+
+      <SectionLabel>身長・体重(週次)</SectionLabel>
+      <Card>
+        {growthRecords.length === 0 ? (
+          <EmptyState>記録がありません</EmptyState>
+        ) : (
+          <div className="text-[13px]">
+            {growthRecords.map((g) => (
+              <div key={g.id} className="flex items-center justify-between py-1 border-b border-line last:border-b-0">
+                <span className="text-ink-soft text-[11px]">{formatDateLabel(g.measured_on)}</span>
+                <span className="font-mono font-bold">
+                  {g.height_cm ?? "-"}cm / {g.weight_kg ?? "-"}kg
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <Link
+          href={`/players/${player.id}/growth`}
+          className="block mt-3 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
+        >
+          記録を入力・編集する
+        </Link>
+      </Card>
 
       {hasSportsTestAccess(plan) && (
         <>
@@ -1087,29 +1155,46 @@ export default function KartePlayerPage() {
         </>
       )}
 
-      <SectionLabel>身長・体重(週次)</SectionLabel>
-      <Card>
-        {growthRecords.length === 0 ? (
-          <EmptyState>記録がありません</EmptyState>
-        ) : (
-          <div className="text-[13px]">
-            {growthRecords.map((g) => (
-              <div key={g.id} className="flex items-center justify-between py-1 border-b border-line last:border-b-0">
-                <span className="text-ink-soft text-[11px]">{formatDateLabel(g.measured_on)}</span>
-                <span className="font-mono font-bold">
-                  {g.height_cm ?? "-"}cm / {g.weight_kg ?? "-"}kg
-                </span>
+      {hasShootingDrillAccess(plan) && (
+        <>
+          <SectionLabel>コービーシューティング</SectionLabel>
+          <Card>
+            {shootingRecordsByDate.length === 0 ? (
+              <EmptyState>まだ記録がありません</EmptyState>
+            ) : (
+              <div className="text-[12.5px]">
+                {shootingRecordsByDate.map((group) => (
+                  <div key={group.date} className="py-1.5 border-b border-line last:border-b-0">
+                    <div className="text-ink-soft text-[11px] mb-1">{formatFullDateLabel(group.date)}</div>
+                    {group.records.map((r) => (
+                      <div key={r.id} className="flex items-center justify-between py-0.5">
+                        <span className="text-ink-soft">
+                          基準{r.target_points}点 / {formatShootingDrillTime(r.time_sec)}
+                        </span>
+                        <span className="font-mono font-bold text-orange-text">{r.total_points}点</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        <Link
-          href={`/players/${player.id}/growth`}
-          className="block mt-3 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-paper"
-        >
-          記録を入力・編集する
-        </Link>
-      </Card>
+            )}
+          </Card>
+        </>
+      )}
+
+      {hasAccountingAccess(plan) && (
+        <>
+          <SectionLabel>集金</SectionLabel>
+          <Link href={`/players/${player.id}/dues`}>
+            <Card className="cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[13.5px]">集金状況を見る</div>
+                <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+              </div>
+            </Card>
+          </Link>
+        </>
+      )}
 
       {canManagePlayers(role) && (
         <>

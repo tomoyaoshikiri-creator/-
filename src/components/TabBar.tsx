@@ -36,7 +36,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
         const href = tabHrefForRole(role, tab);
         const isActive = pathname === href || pathname.startsWith(href + "/");
         const className = `relative flex-1 min-w-0 text-center text-[9.5px] font-medium flex flex-col items-center gap-1 ${
-          isActive ? "text-orange font-bold" : "text-ink-soft"
+          isActive ? "text-orange-text font-bold" : "text-ink-soft"
         }`;
         return (
           <GuardedLink key={tab} href={href} className={className}>

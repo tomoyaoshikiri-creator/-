@@ -195,11 +195,11 @@ export function NewScheduleModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (dates.length === 0) {
-      toast("日付を選択してください");
+      toast.warning("日付を選択してください");
       return;
     }
     setSaving(true);
@@ -230,7 +230,7 @@ export function NewScheduleModal({
           .insert(dates.map((date) => ({ ...base, date, team_id: teamId, created_by: userId })));
     setSaving(false);
     if (error) {
-      toast(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
+      toast.error(`${isEdit ? "更新" : "登録"}に失敗しました: ${error.message}`);
       return;
     }
     if (!isEdit) reset();
@@ -249,7 +249,7 @@ export function NewScheduleModal({
     setDeleting(false);
     setDeleteConfirm(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     onDeleted?.();
@@ -318,8 +318,9 @@ export function NewScheduleModal({
 
       {type === "game" && (
         <div className="mt-3">
-          <FieldLabel>年度</FieldLabel>
+          <FieldLabel htmlFor="schedule-fiscal-year">年度</FieldLabel>
           <select
+            id="schedule-fiscal-year"
             className={inputClass()}
             value={fiscalYearOverride}
             onChange={(e) => setFiscalYearOverride(e.target.value)}
@@ -338,8 +339,9 @@ export function NewScheduleModal({
       )}
 
       <div className="mt-3">
-        <FieldLabel>タイトル</FieldLabel>
+        <FieldLabel htmlFor="schedule-title">タイトル</FieldLabel>
         <input
+          id="schedule-title"
           className={inputClass()}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -440,8 +442,9 @@ export function NewScheduleModal({
       )}
 
       <div className="mt-3">
-        <FieldLabel>場所</FieldLabel>
+        <FieldLabel htmlFor="schedule-place">場所</FieldLabel>
         <input
+          id="schedule-place"
           className={inputClass()}
           value={place}
           onChange={(e) => setPlace(e.target.value)}
@@ -463,8 +466,9 @@ export function NewScheduleModal({
 
       {type !== "practice" && attendanceOn && (
         <div className="mt-3">
-          <FieldLabel>出欠登録の期限日(任意)</FieldLabel>
+          <FieldLabel htmlFor="schedule-attendance-deadline">出欠登録の期限日(任意)</FieldLabel>
           <input
+            id="schedule-attendance-deadline"
             type="date"
             className={inputClass()}
             value={attendanceDeadline}
@@ -492,8 +496,13 @@ export function NewScheduleModal({
 
       {category !== "その他" && attendanceOn && (
         <div className="mt-3">
-          <FieldLabel>対象</FieldLabel>
-          <select className={inputClass()} value={targetGradeMin} onChange={(e) => setTargetGradeMin(e.target.value)}>
+          <FieldLabel htmlFor="schedule-target-grade">対象</FieldLabel>
+          <select
+            id="schedule-target-grade"
+            className={inputClass()}
+            value={targetGradeMin}
+            onChange={(e) => setTargetGradeMin(e.target.value)}
+          >
             <option value="">全員</option>
             {gradeOptions.map((g) => (
               <option key={g.value} value={g.value}>
@@ -509,8 +518,9 @@ export function NewScheduleModal({
 
       {type === "practice" && (
         <div className="mt-3">
-          <FieldLabel>当番</FieldLabel>
+          <FieldLabel htmlFor="schedule-toban">当番</FieldLabel>
           <input
+            id="schedule-toban"
             className={inputClass()}
             value={toban}
             onChange={(e) => setToban(e.target.value)}
@@ -535,7 +545,7 @@ export function NewScheduleModal({
           onClick={handleDelete}
           disabled={saving || deleting}
           className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-50"
-          style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
         >
           {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この予定を削除する"}
         </button>

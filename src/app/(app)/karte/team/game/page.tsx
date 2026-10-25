@@ -224,7 +224,7 @@ export default function KarteTeamGamePage() {
                           onClick={() => rankingMode && setSortKey("reb")}
                           className={`sticky top-0 h-9 bg-paper z-20 w-[100px] min-w-[100px] px-1 border-b border-line font-bold whitespace-nowrap text-center ${
                             rankingMode ? "cursor-pointer" : ""
-                          } ${rankingMode && sortKey === "reb" ? "text-orange" : "text-ink-soft"}`}
+                          } ${rankingMode && sortKey === "reb" ? "text-orange-text" : "text-ink-soft"}`}
                         >
                           <div>REB</div>
                           <div className="flex justify-center gap-2 text-[8px] leading-none font-bold">
@@ -240,7 +240,7 @@ export default function KarteTeamGamePage() {
                         onClick={() => rankingMode && setSortKey(c.key)}
                         className={`sticky top-0 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 border-b border-line font-bold whitespace-nowrap text-center ${
                           rankingMode ? "cursor-pointer" : ""
-                        } ${rankingMode && sortKey === c.key ? "text-orange" : "text-ink-soft"}`}
+                        } ${rankingMode && sortKey === c.key ? "text-orange-text" : "text-ink-soft"}`}
                       >
                         {c.abbr}
                       </th>
@@ -272,7 +272,7 @@ export default function KarteTeamGamePage() {
                       <th
                         key={c.key}
                         className={`sticky top-9 h-9 bg-paper z-20 ${colWidthClass(c.key)} px-1 text-center font-mono font-bold border-b border-line whitespace-nowrap ${
-                          c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                          c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                         }`}
                       >
                         <StatCell statKey={c.key} averages={teamAverages} />
@@ -310,7 +310,7 @@ export default function KarteTeamGamePage() {
                         <td
                           key={c.key}
                           className={`${colWidthClass(c.key)} px-1 py-2 text-center font-mono border-b border-line last:border-b-0 whitespace-nowrap ${
-                            c.key === "eff" && v !== null && v < 0 ? "text-danger" : ""
+                            c.key === "eff" && v !== null && v < 0 ? "text-danger-text" : ""
                           }`}
                         >
                           <StatCell statKey={c.key} averages={averages} />

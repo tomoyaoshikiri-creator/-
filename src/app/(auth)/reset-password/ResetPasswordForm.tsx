@@ -35,7 +35,7 @@ export function ResetPasswordForm() {
         />
       </div>
 
-      {state.error && <div className="mt-3 text-[12.5px] text-danger">{state.error}</div>}
+      {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
 
       <SubmitButton type="submit" disabled={pending}>
         {pending ? "変更中…" : "パスワードを変更する"}

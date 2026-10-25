@@ -50,7 +50,7 @@ export default function AttendanceReportPage() {
         p_schedule_type: scheduleType,
       });
       if (error) {
-        toast(`集計に失敗しました: ${error.message}`);
+        toast.error(`集計に失敗しました: ${error.message}`);
         return;
       }
       setRows(sortPlayers(data ?? []));
@@ -67,7 +67,7 @@ export default function AttendanceReportPage() {
       const res = await fetch(`/api/attendance-report/export?${params.toString()}`);
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        toast(json?.error ?? "出力に失敗しました");
+        toast.error(json?.error ?? "出力に失敗しました");
         return;
       }
       const blob = await res.blob();

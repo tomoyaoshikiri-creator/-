@@ -1,16 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
-import { EmptyState, SectionLabel } from "@/components/ui/Card";
+import { CardFooterLink, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
-import { ChevronRightIcon } from "@/components/icons";
 import { Fab } from "@/components/ui/Modal";
 import { canWriteSchedule } from "@/lib/permissions";
 import { playerFullName, todayDateStr } from "@/lib/format";
@@ -94,7 +92,7 @@ export default function SchedulePage() {
               onCreated={() => {
                 setModalOpen(false);
                 load();
-                toast("予定を登録しました");
+                toast.success("予定を登録しました");
               }}
               initialDates={
                 view === "calendar" && calendarSelectedDate ? [calendarSelectedDate] : undefined
@@ -123,15 +121,7 @@ export default function SchedulePage() {
           ) : (
             filtered.map((s) => <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />)
           )}
-          {!loading && !query && hasPast && (
-            <Link
-              href="/schedule/history"
-              className="flex items-center justify-center gap-1 mt-2 py-2.5 text-[12.5px] font-bold text-ink-soft"
-            >
-              過去の予定を見る
-              <ChevronRightIcon className="w-3 h-3" />
-            </Link>
-          )}
+          {!loading && !query && hasPast && <CardFooterLink href="/schedule/history">過去の予定を見る</CardFooterLink>}
         </div>
       ) : (
         <CalendarView schedules={schedules} birthdays={birthdays} onSelectDate={setCalendarSelectedDate} />

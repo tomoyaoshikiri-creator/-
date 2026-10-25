@@ -46,7 +46,7 @@ function SortableCategoryRow({
         type="button"
         onClick={() => handleDelete(category.id)}
         className={`flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
-          deleteConfirmId === category.id ? "border-danger text-danger bg-danger/8" : "border-line text-ink-soft bg-paper"
+          deleteConfirmId === category.id ? "border-danger text-danger-text bg-danger/8" : "border-line text-ink-soft bg-paper"
         }`}
       >
         {deleteConfirmId === category.id ? "削除確定" : "削除"}
@@ -95,7 +95,7 @@ function CategorySection({
     const { error } = await supabase.from("accounting_categories").insert({ team_id: teamId, kind, name: trimmed, position: nextPosition });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setInput("");
@@ -111,7 +111,7 @@ function CategorySection({
     const { error } = await supabase.from("accounting_categories").insert(rows);
     setSaving(false);
     if (error) {
-      toast(`テンプレートの追加に失敗しました: ${error.message}`);
+      toast.error(`テンプレートの追加に失敗しました: ${error.message}`);
       return;
     }
     onChanged();
@@ -128,7 +128,7 @@ function CategorySection({
       const supabase = createClient();
       const { error } = await supabase.from("accounting_categories").delete().eq("id", id);
       if (error) {
-        toast(`削除に失敗しました: ${error.message}`);
+        toast.error(`削除に失敗しました: ${error.message}`);
         return;
       }
       onChanged();
@@ -148,7 +148,7 @@ function CategorySection({
     );
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      toast(`並び替えに失敗しました: ${failed.error.message}`);
+      toast.error(`並び替えに失敗しました: ${failed.error.message}`);
     }
     onChanged();
   }
@@ -176,7 +176,7 @@ function CategorySection({
               type="button"
               onClick={handleAdd}
               disabled={saving || !input.trim()}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>

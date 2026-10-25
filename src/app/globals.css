@@ -25,6 +25,35 @@
   --danger: #E5484D;
   --sky: #0A7CD6;
   --holiday: #DC2626;
+  /* --skyの白混ぜトーン(ホームのカード縁取り・ショートカットのグラデーション用)。
+     --skyはチームカラーの影響を受けない固定色のため、color-mix()の計算結果を
+     そのまま固定値にできる(Safariのcolor-mix()クラッシュ対策)。 */
+  --sky-light-35: #A9D1F1;
+  --sky-light-28: #BADAF4;
+  --sky-light-10: #E7F2FB;
+
+  /*
+    アクセシビリティ監査(WCAG AA、通常文字4.5:1)で発見: --orange/--danger/--greenは
+    白系の背景の上に「文字として」使うと基準をわずかに下回る箇所があった(背景・枠線
+    として使う分には問題ない)。元の色味を保ったまま、白背景で基準を満たす濃さに
+    darkenForTextContrast()(src/lib/theme.ts)で算出した色。text-orange-text/
+    text-danger-text/text-green-textとして、既存のtext-orange/text-danger/text-green
+    (背景・枠線用途はそのまま維持)とは別に用意する。--orange-textはteamThemeStyle()
+    経由でチームカラー(theme_primary)に応じて上書きされる。
+  */
+  --orange-text: #0770D8;
+  --danger-text: #CE4145;
+  --green-text: #12823B;
+
+  /*
+    SubmitButton等のグラデーション(薄い色側)・Fabのshadow用。以前はCSSの
+    color-mix()を直接使っていたが、iPad mini Safariでクラッシュする不具合が
+    報告されたため、固定値(Brand Blueに対するcolor-mix()の計算結果と同じ値)に
+    した。teamThemeStyle()経由でチームカラー(theme_primary)に応じて
+    上書きされる(src/lib/theme.tsのmixHex/rgbaCssで計算、CSSのcolor-mix()は使わない)。
+  */
+  --orange-light-55: #77B7F7;
+  --orange-shadow-55: rgba(8, 124, 240, 0.55);
 
   /*
     APP-WIDE VISUAL REFRESH: --navyは元々「secondary team accent」(ボタン・選択状態・
@@ -78,18 +107,41 @@
   --header-title-surface: transparent;
   --header-search-on: #1a1a1a;
   --header-search-surface: rgba(255, 255, 255, 0.22);
+
+  /*
+    共通デザイントークン(2026-10-24 UI刷新 Phase 1)。見た目のルールは別リポジトリ
+    PATH KARTEのdocs/design-system.mdを基準にする。色の値はすでにCIRCLE LINESが本家
+    (PATH KARTE側がこのglobals.cssのチームカラー機構をそのまま複製して使っている)ため、
+    ここで新しく追加するのはカード・ボタン等の形状/余白/文字サイズのトークンと、
+    「注意・未設定・承認待ち」を表す新しい意味色(accent)のみ。既存の--orange/--ink等の
+    token名・値は変更しない(既存画面の見た目は変えない)。
+    --ds- を付けるのは、Tailwindが作る同名の変数(--radius-card等)と重ならないようにするため
+    (PATH KARTE側と同じ命名規則)。
+  */
+  --ds-radius-card: 14px;
+  --ds-radius-control: 12px;
+  --ds-shadow-card: 0 1px 2px rgba(20, 22, 28, 0.06), 0 1px 3px rgba(20, 22, 28, 0.04);
+  --ds-tap-min: 44px;
+  --accent: #f59e0b;
+  /* --accentそのまま(amber-500相当)は白地での通常文字コントラストがWCAG AA(4.5:1)を
+     満たさないため、--danger/--danger-textと同じ考え方でより濃いamber-800相当の
+     文字専用色を別に持つ(2026-10-24 ホーム画面再設計、新着の種類タグで使用)。 */
+  --accent-text: #92400e;
 }
 
 @theme inline {
   --color-navy: var(--navy);
   --color-heading: var(--heading);
   --color-orange: var(--orange);
+  --color-orange-text: var(--orange-text);
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-green: var(--green);
+  --color-green-text: var(--green-text);
   --color-line: var(--line);
   --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
   --color-sky: var(--sky);
   --color-holiday: var(--holiday);
 
@@ -101,7 +153,10 @@
   --color-on-team-primary: var(--on-team-primary);
   --color-on-team-secondary: var(--on-team-secondary);
   --color-background: var(--background);
-  --color-surface: var(--surface);
+  /* 既存の--surface(#ffffff)はclassNameとしての使用箇所が無い(定義のみで未使用)ため、
+     PATH KARTE/design-system.mdの定義(画面の地=paper。カードの地は別途--color-cardで持つ)
+     に意味を確定する。既存画面での使用箇所が無いため見た目への影響はない。 */
+  --color-surface: var(--paper);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
@@ -116,6 +171,40 @@
      上書きするだけでrounded-lgを使っている全箇所(カード・ボタン・入力欄など)に
      一括で反映される(個別ファイルの変更は不要)。 */
   --radius-lg: 6px;
+
+  /*
+    共通デザイントークン(Phase 1)。色は意味の名前で既存tokenへ別名を貼るだけ(値は変えない、
+    PATH KARTEのdocs/design-system.mdと同じ命名)。既存のtext-orange/bg-orange等は維持したまま、
+    新規・刷新するコンポーネントはこちらの意味名を使えるようにする。
+  */
+  --color-primary: var(--orange);
+  --color-on-primary: var(--on-team-primary);
+  --color-primary-text: var(--orange-text);
+  --color-secondary: var(--green-text);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-card: #ffffff;
+  --color-border-subtle: var(--line);
+
+  --radius-card: var(--ds-radius-card);
+  --radius-control: var(--ds-radius-control);
+  --shadow-card: var(--ds-shadow-card);
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+  --text-section: 1.125rem;
+  --text-section--line-height: 1.4;
+  --spacing-tap: var(--ds-tap-min);
+}
+
+/*
+  Primary Action(保存・選択中など)のボタン用ユーティリティ(Phase 1)。既存のSubmitButton/
+  SegButton選択中/Fabと同じグラデーション(135deg、濃い色→薄い色)をクラス名として使えるように
+  する(既存コンポーネントの実装自体はinline styleのまま変更しない。新規・刷新コンポーネント向け)。
+*/
+@utility bg-action {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%);
+  border-color: var(--orange);
+  color: var(--on-team-primary);
 }
 
 html,
@@ -154,6 +243,63 @@ body {
 }
 
 /*
+  タップした瞬間に押し込まれたように見えるフィードバックを、アプリ全体のbutton・
+  リンク(aタグ。SettingsRowやカード一覧行など、ボタンと同じ見た目で使われている
+  箇所が多い)に一括で敷く(個別ファイルごとにactive:scale-*等を足して回らずに
+  済ませるため)。SegButtonの`active`propのような「選択中」の色とは別物。
+  opacityではなくfilter: brightness()にしているのは、白背景のボタン(例:
+  「コービーシューティング」の「外れた」ボタン)だと周囲も白系のため、
+  opacityで薄くしてもほぼ違いが分からなかったため。brightnessなら白背景でも
+  はっきり灰色がかって見え、色付きボタンでも同様に少し暗くなる。
+
+  :active疑似クラスはマウス操作(pointer: fine / hover: hover)限定にする。
+  タッチ環境は.is-pressedクラス(TapFeedback.tsx)だけに任せる。実機タップでは
+  :activeが描画に間に合わないことがあるため元々.is-pressedを主な発火条件に
+  していたが、スクロール開始位置がボタン/リンクの上だった場合、タップ操作を
+  有効化する目的で入れているdocumentのpointerdown購読により、iOS Safariでは
+  指を離さずスクロールしている間ずっと:activeが掛かったままになることがあり、
+  transformが掛かった要素がスクロール中に一瞬非表示になる実機不具合が
+  報告された。
+
+  さらに、transition: transform/filterをbutton・a[href]全要素に常時
+  (押下中かどうかに関わらず)宣言していたこと自体が原因だったことが実機検証で
+  判明した。iOS Safariはtransform/filterをtransition対象に持つ要素を
+  待機中からコンポジットレイヤーに昇格させる傾向があり、スケジュール一覧のように
+  aタグ(カード)が多数並ぶ画面では、高速スクロール中にそのレイヤーの再描画が
+  間に合わず要素が一瞬完全に透明になる(.is-pressedの付け外しとは無関係に、
+  指が触れていないカードでも発生する)。タッチ環境ではtransitionそのものを
+  宣言しないことでレイヤー昇格の起点を断ち、.is-pressedのON/OFFは
+  アニメーションなしで瞬時に切り替える。マウス操作(hover:hover/pointer:fine)は
+  このバグの対象外のためtransitionを維持し、従来通りなめらかに:activeへ遷移する。
+*/
+button:not(:disabled).is-pressed,
+a[href].is-pressed {
+  filter: brightness(0.92);
+}
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled).is-pressed,
+  a[href].is-pressed {
+    transform: scale(0.96);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled),
+  a[href] {
+    transition: transform 0.1s ease-out, filter 0.1s ease-out;
+  }
+  button:not(:disabled):active,
+  a[href]:active {
+    filter: brightness(0.92);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    button:not(:disabled):active,
+    a[href]:active {
+      transform: scale(0.96);
+    }
+  }
+}
+
+/*
   iOS Safariは入力欄の文字が16px未満だとフォーカス時に自動でズームし、
   戻らなくなることがあるため、フォーム要素は常に16px以上にする。
 */
@@ -177,13 +323,18 @@ textarea {
 }
 
 /*
-  【比較検証用・最終試行】viewport-fit=coverを復活。.app-shell自体は画面の物理的な
-  最下端まで覆うinset:0とし、Home Indicator分の追加の余白は確保しない(TabBar側の
-  padding-bottomを理論上の下限にすることで対応する)。
+  iPhone Air / iOS 27のSafari(ホーム画面追加のPWAだけでなく通常のSafariタブでも
+  再現)で、position:fixed; inset:0;のみ(高さを明示していない)だと.app-shellの
+  高さが実機の表示領域と合わず、画面全体が下にズレてタブバーが画面外に切れる
+  不具合が報告された。inset:0のtop/bottom由来の暗黙の高さ計算に頼らず、
+  動的ビューポート(アドレスバーの表示/非表示等)に追従するdvh単位で高さを明示する
+  (100dvh非対応の古いブラウザ向けに100vhもフォールバックとして残す)。
 */
 .app-shell {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   background: var(--paper);
@@ -218,13 +369,16 @@ textarea {
   ここで上書きする((auth)/layout.tsxで
   "app-shell auth-shell"の2クラスを併用)。
 */
+/*
+  2026-10: iPad mini Safariで、この画面(ログイン等)のメールアドレス欄をタップした
+  瞬間にSafariごとクラッシュする不具合の調査により、color-mix()を使ったグラデーションが
+  疑わしいと判断し、固定色に置き換えた(AuthHeadingのbackground-clip:text撤去と
+  同じ「position:fixedコンテナ内の複雑な背景描画が、AutoFillのレイアウト再計算時に
+  WebKitごと落ちる」既知の問題群に一致するため)。下記3色は上記color-mix()の
+  計算結果をそのまま固定値にしたもので、見た目は変えていない。
+*/
 .auth-shell {
-  background: linear-gradient(
-    105deg,
-    color-mix(in srgb, var(--brand-blue) 15%, white) 0%,
-    color-mix(in srgb, var(--brand-blue) 8%, white) 55%,
-    color-mix(in srgb, var(--brand-cyan) 3%, white) 100%
-  );
+  background: linear-gradient(105deg, #daebfd 0%, #ebf5fe 55%, #f8fdfe 100%);
 }
 
 /*

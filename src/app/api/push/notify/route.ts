@@ -4,6 +4,7 @@ import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
 import { playerFullName } from "@/lib/format";
 import { logError } from "@/lib/logger";
+import { sendNativePush } from "@/lib/nativePush";
 import type { Database, Role } from "@/lib/database.types";
 
 // チーム内の自分以外の購読者にWeb Pushを送る。鍵が未設定の環境(このリポジトリの
@@ -305,6 +306,12 @@ export async function POST(request: Request) {
         }
       }
     }),
+  );
+
+  await sendNativePush(
+    adminClient,
+    memberIds.filter((id) => id !== user.id),
+    { title, body, url },
   );
 
   return NextResponse.json({ ok: true, target: (subs ?? []).length, sent, failures });

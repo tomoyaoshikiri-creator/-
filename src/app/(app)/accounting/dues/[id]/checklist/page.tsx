@@ -89,11 +89,11 @@ export default function AccountingDuesChecklistPage() {
     });
     setGenerating(false);
     if (!res.ok) {
-      toast("請求の作成に失敗しました");
+      toast.error("請求の作成に失敗しました");
       return;
     }
     const json = await res.json();
-    toast(json.periodsCreated > 0 ? `${json.periodsCreated}期間分の請求を作成しました` : "新しく作成する請求はありませんでした");
+    toast.success(json.periodsCreated > 0 ? `${json.periodsCreated}期間分の請求を作成しました` : "新しく作成する請求はありませんでした");
     load();
   }
 
@@ -139,7 +139,7 @@ export default function AccountingDuesChecklistPage() {
       .in("id", group.chargeIds);
     setToggling(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setCharges((prev) =>
@@ -166,10 +166,10 @@ export default function AccountingDuesChecklistPage() {
       .in("id", unpaidIds);
     setBulkChecking(null);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast(`${unpaidIds.length}件を入金済みにしました`);
+    toast.success(`${unpaidIds.length}件を入金済みにしました`);
     load();
   }
 
@@ -203,7 +203,7 @@ export default function AccountingDuesChecklistPage() {
           type="button"
           onClick={handleGenerate}
           disabled={generating}
-          className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+          className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
         >
           {generating ? "作成中…" : "本日時点の請求を作成する"}
         </button>
@@ -240,7 +240,7 @@ export default function AccountingDuesChecklistPage() {
                             onClick={() => handleToggleGroup(g)}
                             disabled={toggling === g.groupKey}
                             className={`flex-none px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
-                              g.allPaid ? "border-green text-green bg-green/8" : "border-line text-ink-soft bg-paper"
+                              g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
                             }`}
                           >
                             {g.allPaid ? "入金済み" : "未納"}

@@ -21,10 +21,10 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           お手数ですが、もう一度お試しください。解決しない場合は運営までお問い合わせください。
         </p>
         <div className="flex items-center justify-center gap-5">
-          <button type="button" onClick={() => reset()} className="text-[12.5px] font-bold text-orange">
+          <button type="button" onClick={() => reset()} className="text-[12.5px] font-bold text-orange-text">
             再読み込み
           </button>
-          <Link href="/" className="text-[12.5px] font-bold text-orange">
+          <Link href="/" className="text-[12.5px] font-bold text-orange-text">
             トップへ戻る
           </Link>
         </div>

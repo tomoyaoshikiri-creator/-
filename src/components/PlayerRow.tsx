@@ -73,7 +73,7 @@ export function PlayerRow({
           {hasUnseenNotes && <NewBadge />}
           <span
             className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg border whitespace-nowrap ${
-              hasNotes ? "border-danger text-danger bg-danger/8" : "border-line text-ink-soft bg-white"
+              hasNotes ? "border-danger text-danger-text bg-danger/8" : "border-line text-ink-soft bg-white"
             }`}
           >
             {hasNotes ? "メモあり" : "メモなし"}

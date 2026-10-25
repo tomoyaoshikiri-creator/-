@@ -19,11 +19,20 @@ export function planKindFor(plan: TeamPlan): AiPlanKind | null {
 export type GameResult = "win" | "loss" | "draw" | null;
 
 // バスケットボール・ミニバスケットボール(タップ加算式のGAME_COLUMNS)向けのスタッツ。
+// quartersPlayed/quartersTrackedは選手個人分析でのみ算出する(チーム分析では「誰の
+// 出場か」という単位に意味がないため常にundefined)。試合側でメンバーチェンジ機能
+// (game_records)が使われていない試合はnullとし、「出場0クォーター」と区別する。
 export interface BasketballStatsData {
   kind: "basketball";
   gameCount: number;
   seasonAverages: Record<string, number | null>;
-  games: { label: string; result: GameResult; averages: Record<string, number | null> }[];
+  games: {
+    label: string;
+    result: GameResult;
+    averages: Record<string, number | null>;
+    quartersPlayed?: number | null;
+    quartersTracked?: number | null;
+  }[];
 }
 
 // バスケットボール・ミニバスケットボール以外(チームが自由に定義するカスタム項目)向け。
@@ -172,6 +181,26 @@ export interface GrowthPoint {
   weightKg: number | null;
 }
 
+// コービーシューティング(shooting_drill_records)。Signature Editionプランのみ記録が
+// 存在し得るが、ここでは単にクエリ結果が空かどうかで判定する(プラン名での
+// ハードコードはしない)。
+export interface ShootingDrillRecordLine {
+  recordedOn: string;
+  targetPoints: number;
+  timeSec: number;
+  totalPoints: number;
+  threeMade: number;
+  threeAtt: number;
+  midMade: number;
+  midAtt: number;
+  layupMade: number;
+  layupAtt: number;
+}
+
+export interface PlayerShootingDrillData {
+  records: ShootingDrillRecordLine[];
+}
+
 export interface DataQualityAssessment {
   confidence: "HIGH" | "MEDIUM" | "LOW";
   // ユーザーには毎回見せないが、確信度が低いほどプロンプト側で断定表現を弱めるよう
@@ -192,6 +221,7 @@ export interface PlayerAnalysisData {
   };
   stats: StatsData;
   sportsTest: PlayerSportsTestData | null; // proAiPlusでは常にnull
+  shootingDrills: PlayerShootingDrillData; // 記録が無いチーム・選手ではrecords: []
   practice: PracticeParticipationSummary;
   menus: PracticeMenuSummary[];
   growth: GrowthPoint[];

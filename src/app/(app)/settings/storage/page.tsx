@@ -48,7 +48,7 @@ export default function SettingsStoragePage() {
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
         <Card>
-          {plan && <div className="text-[11px] font-bold text-orange mb-1">{PLAN_DISPLAY_LABELS[plan]}プラン</div>}
+          {plan && <div className="text-[11px] font-bold text-orange-text mb-1">{PLAN_DISPLAY_LABELS[plan]}プラン</div>}
           <div className="flex items-end justify-between">
             <div className="font-bold text-[20px]">{formatBytes(usedBytes)}</div>
             <div className="text-[12.5px] text-ink-soft mb-0.5">/ {formatBytes(limitBytes)}</div>

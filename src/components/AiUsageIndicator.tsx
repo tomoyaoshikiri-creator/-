@@ -21,7 +21,7 @@ export function AiUsageIndicator({ used, limit }: { used: number; limit: number 
       </div>
       <div className="text-[10.5px] text-ink-soft mt-1">チーム全体(選手分析・チーム分析の合計)で月{limit}回まで</div>
       {atLimit && (
-        <div className="text-[11px] mt-1" style={{ color: "var(--danger)" }}>
+        <div className="text-[11px] mt-1" style={{ color: "var(--danger-text)" }}>
           今月のAI分析利用上限(チーム全体で{limit}回)に達しました。翌月1日から再び利用できます。
         </div>
       )}

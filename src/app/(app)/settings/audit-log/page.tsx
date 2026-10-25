@@ -85,7 +85,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
 
       const { data, error } = await query;
       if (error) {
-        toast(`検索に失敗しました: ${error.message}`);
+        toast.error(`検索に失敗しました: ${error.message}`);
         return;
       }
       const fetched = data ?? [];
@@ -119,7 +119,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
       const res = await fetch(`/api/audit-log/export?${params.toString()}`);
       if (!res.ok) {
         const json = await res.json().catch(() => null);
-        toast(json?.error ?? "出力に失敗しました");
+        toast.error(json?.error ?? "出力に失敗しました");
         return;
       }
       const blob = await res.blob();

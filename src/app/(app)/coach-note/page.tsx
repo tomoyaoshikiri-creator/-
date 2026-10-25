@@ -124,7 +124,7 @@ export default function CoachNotePage() {
             onCreated={() => {
               setModalOpen(false);
               load();
-              toast("コーチ日報を登録しました");
+              toast.success("コーチ日報を登録しました");
             }}
           />
         </>
@@ -148,7 +148,7 @@ export default function CoachNotePage() {
                   <div className="flex items-center justify-between">
                     <div className="font-bold text-[14.5px] flex items-center gap-1.5">
                       {unseenIds.has(r.id) && (
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger">
+                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text">
                           NEW
                         </span>
                       )}

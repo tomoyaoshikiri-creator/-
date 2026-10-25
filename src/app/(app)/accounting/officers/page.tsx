@@ -45,7 +45,7 @@ function OfficerRoleSection({
       .insert({ team_id: teamId, user_id: selectedId, officer_role: officerRole });
     setSaving(false);
     if (error) {
-      toast(`登録に失敗しました: ${error.message}`);
+      toast.error(`登録に失敗しました: ${error.message}`);
       return;
     }
     setSelectedId("");
@@ -56,7 +56,7 @@ function OfficerRoleSection({
     const supabase = createClient();
     const { error } = await supabase.from("accounting_officers").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     onChanged();
@@ -100,7 +100,7 @@ function OfficerRoleSection({
               type="button"
               onClick={handleAdd}
               disabled={saving || !selectedId}
-              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange bg-orange/8 disabled:opacity-50"
+              className="flex-none px-3.5 rounded-lg font-bold text-[12.5px] border border-orange text-orange-text bg-orange/8 disabled:opacity-50"
             >
               追加
             </button>

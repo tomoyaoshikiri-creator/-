@@ -42,7 +42,7 @@ export function FolderActionsModal({
   async function handleRename() {
     const trimmed = name.trim();
     if (!trimmed) {
-      toast("フォルダ名を入力してください");
+      toast.warning("フォルダ名を入力してください");
       return;
     }
     if (trimmed === folder!.name) return;
@@ -54,10 +54,10 @@ export function FolderActionsModal({
       .eq("id", folder!.id);
     setSaving(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("フォルダ名を更新しました");
+    toast.success("フォルダ名を更新しました");
     onRenamed();
   }
 
@@ -72,10 +72,10 @@ export function FolderActionsModal({
     const { error } = await supabase.from("library_folders").delete().eq("id", folder!.id);
     setDeleting(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("フォルダを削除しました。中身は1つ上の階層に移動しました");
+    toast.success("フォルダを削除しました。中身は1つ上の階層に移動しました");
     onDeleted();
   }
 
@@ -87,7 +87,7 @@ export function FolderActionsModal({
           type="button"
           onClick={handleRename}
           disabled={saving || name.trim() === folder.name}
-          className="flex-1 text-[12px] font-bold text-orange border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
+          className="flex-1 text-[12px] font-bold text-orange-text border border-orange rounded-lg px-3 py-2 bg-orange/8 disabled:opacity-40"
         >
           {saving ? "保存中…" : "名前を保存"}
         </button>
@@ -104,7 +104,7 @@ export function FolderActionsModal({
         onClick={handleDelete}
         disabled={deleting}
         className="w-full mt-3 text-[12px] font-bold border rounded-lg px-3 py-2 bg-white disabled:opacity-40"
-        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
       >
         {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このフォルダを削除する"}
       </button>

@@ -98,7 +98,7 @@ export default function WorkoutMenuTallyPage() {
 
   return (
     <PageShell
-      header={<AppHeader title="ワークアウトメニュー集計" variant="detail" backHref="/karte/team/workout" accessBadge="coach" />}
+      header={<AppHeader title="ワークアウトメニュー集計" variant="detail" backHref="/karte/team/workout" />}
     >
       <div className="flex items-center gap-2 mb-3.5 flex-wrap">
         {availableYears.length > 0 && (
@@ -166,7 +166,7 @@ export default function WorkoutMenuTallyPage() {
                 onClick={() => setExpandedTheme(expandedTheme === t.theme ? null : t.theme)}
               >
                 <div className="font-bold text-[13.5px] flex-1 min-w-0">{t.theme}</div>
-                <div className="font-mono font-bold text-[13px] text-orange flex-shrink-0">{t.count}回</div>
+                <div className="font-mono font-bold text-[13px] text-orange-text flex-shrink-0">{t.count}回</div>
                 <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px] text-right">
                   {formatDateLabel(t.entries[0].date)}
                 </div>

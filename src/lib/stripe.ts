@@ -1,5 +1,4 @@
 import Stripe from "stripe";
-import type { TeamPlan } from "@/lib/database.types";
 
 // 鍵未設定の環境(このリポジトリのデフォルト状態)ではnullを返すだけにして、
 // 呼び出し元(課金関連のRoute Handler)がそれぞれ「未設定です」を返せるようにする
@@ -28,7 +27,7 @@ export function priceIdForPlan(plan: PaidPlan, interval: BillingInterval = "mont
 
 // 月払い・年払いのどちらのPrice IDでも同じプランとして解決する(teams.planは
 // 契約期間を区別しないため、課金サイクルの違いはStripe側のSubscriptionにのみ残る)。
-export function planForPriceId(priceId: string | null | undefined): TeamPlan | null {
+export function planForPriceId(priceId: string | null | undefined): PaidPlan | null {
   if (!priceId) return null;
   for (const plan of Object.keys(PAID_PLAN_PRICE_ENV) as PaidPlan[]) {
     const envKeys = PAID_PLAN_PRICE_ENV[plan];

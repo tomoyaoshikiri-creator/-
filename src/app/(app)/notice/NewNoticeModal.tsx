@@ -81,7 +81,7 @@ export function NewNoticeModal({
     setFiles((prev) => ({ ...prev, [kind]: [...(prev[kind] ?? []), ...picked] }));
     // 端末側の複数選択が実際に何件渡ってきたかをその場で分かるようにする
     // (一部端末で複数選択したはずが1件しか渡らない事象の切り分け用)。
-    toast(`${picked.length}件を選択しました(${kind})`);
+    toast.success(`${picked.length}件を選択しました(${kind})`);
   }
 
   function removeFile(kind: AttachmentKind, index: number) {
@@ -90,11 +90,11 @@ export function NewNoticeModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (audience === "学年指定" && !targetGradeMin) {
-      toast("対象学年を選択してください");
+      toast.warning("対象学年を選択してください");
       return;
     }
     setSaving(true);
@@ -124,7 +124,7 @@ export function NewNoticeModal({
       if (uploadError) {
         const cleanupOk = await cleanupUploadedObjects(supabase, toObjectRefs(uploaded));
         setSaving(false);
-        toast(
+        toast.error(
           `${kind}のアップロードに失敗しました: ${uploadError.message}` +
             (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -163,7 +163,7 @@ export function NewNoticeModal({
     if (error || !notice) {
       const cleanupOk = await cleanupUploadedObjects(supabase, toObjectRefs(uploaded));
       setSaving(false);
-      toast(
+      toast.error(
         `登録に失敗しました: ${error?.message ?? ""}` +
           (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
       );
@@ -188,7 +188,7 @@ export function NewNoticeModal({
           uploadedObjects: toObjectRefs(uploaded),
         });
         setSaving(false);
-        toast(
+        toast.error(
           `${u.kind}の登録に失敗しました: ${attachError.message}` +
             (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -204,8 +204,9 @@ export function NewNoticeModal({
 
   return (
     <Modal open={open} onClose={onClose} title="お知らせを登録">
-      <FieldLabel>タイトル</FieldLabel>
+      <FieldLabel htmlFor="notice-title">タイトル</FieldLabel>
       <input
+        id="notice-title"
         className={inputClass()}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -213,8 +214,9 @@ export function NewNoticeModal({
       />
 
       <div className="mt-3">
-        <FieldLabel>本文</FieldLabel>
+        <FieldLabel htmlFor="notice-body">本文</FieldLabel>
         <textarea
+          id="notice-body"
           rows={3}
           className={inputClass()}
           value={body}
@@ -285,7 +287,7 @@ export function NewNoticeModal({
                   type="button"
                   onClick={() => removeFile(kind, i)}
                   className="flex-none font-bold"
-                  style={{ color: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)" }}
                 >
                   削除
                 </button>

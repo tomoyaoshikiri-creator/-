@@ -42,7 +42,7 @@ export default function SettingsTeamPage() {
     setSavingAttendanceToggle(false);
     if (error) {
       setAttendanceToggle(!next);
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     router.refresh();
@@ -52,7 +52,7 @@ export default function SettingsTeamPage() {
     <PageShell header={<AppHeader title="チーム設定" variant="detail" backHref="/settings" accessBadge="admin" />}>
       <SectionLabel>チーム</SectionLabel>
       <Card>
-        <SettingsRow href="/settings/logo" label="ログイン画面" />
+        <SettingsRow href="/settings/logo" label="チーム情報・表示設定" />
         <SettingsRow href="/settings/color" label="配色" />
         <SettingsRow href="/settings/storage" label="使用量" />
         <SettingsRow href="/settings/plan" label="プラン" value={`現在のプラン: ${PLAN_DISPLAY_LABELS[plan]}`} />

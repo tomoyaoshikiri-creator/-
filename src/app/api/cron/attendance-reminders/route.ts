@@ -4,8 +4,10 @@ import webpush from "web-push";
 import { formatDateLabel, isTargetEligible, playerFullName } from "@/lib/format";
 import { runBirthdayReminders } from "@/lib/cron/birthdayJob";
 import { runDuesGeneration } from "@/lib/cron/accountingDuesJob";
+import { runDuesReminders } from "@/lib/cron/accountingDuesReminderJob";
 import { logError, withCronCheckIn } from "@/lib/logger";
 import { sendTrackedEmail, retryFailedEmailNotifications } from "@/lib/emailNotify";
+import { sendNativePush } from "@/lib/nativePush";
 import type { Database, ReminderType, Schedule } from "@/lib/database.types";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +23,8 @@ export const dynamic = "force-dynamic";
 // 退会猶予期間を過ぎたチームの完全削除は、
 // push通知(VAPIDキー)の設定有無に処理が左右されないよう、専用cron
 // (/api/cron/team-deletion)に分離している(A-6)。
+// 集金の未納通知(runDuesReminders)も同じ理由でこの日次バッチにまとめる
+// (フェーズ5-3)。
 
 function jstToday(): Date {
   const jstMs = Date.now() + 9 * 60 * 60 * 1000;
@@ -166,6 +170,14 @@ async function sendToRecipients(
     }),
   );
 
+  await Promise.all(
+    [...recipients.keys()].map((userId) => {
+      const labels = recipients.get(userId) ?? [];
+      const body = labels.length > 0 ? `${bodyBase}(対象: ${labels.join("・")})` : bodyBase;
+      return sendNativePush(supabase, [userId], { title, body, url });
+    }),
+  );
+
   // メールフォールバック(B-4)。push購読を1件も持たないユーザーにだけ送る
   // (Pushが届く環境では二重通知にしない)。
   const pushedUserIds = new Set((subs ?? []).map((s) => s.user_id));
@@ -224,6 +236,7 @@ export async function GET(request: Request) {
 
     const birthdayResult = await runBirthdayReminders(supabase, todayStr);
     const duesResult = await runDuesGeneration(supabase, todayStr);
+    const duesReminderResult = await runDuesReminders(supabase, todayStr);
 
     const [{ data: baseline }, { data: deadlineDay }, { data: weekBefore }] = await Promise.all([
       supabase
@@ -257,7 +270,7 @@ export async function GET(request: Request) {
     ];
 
     if (jobs.length === 0) {
-      return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult, dues: duesResult });
+      return NextResponse.json({ ok: true, jobs: 0, birthdays: birthdayResult, dues: duesResult, duesReminders: duesReminderResult });
     }
 
     const { data: existingLogs } = await supabase
@@ -295,6 +308,7 @@ export async function GET(request: Request) {
       results,
       birthdays: birthdayResult,
       dues: duesResult,
+      duesReminders: duesReminderResult,
       emailsRecovered,
     });
   });

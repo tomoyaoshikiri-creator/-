@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { Pill, TypeTag } from "@/components/ui/Pill";
 import { ChevronRightIcon } from "@/components/icons";
 import { scheduleMeta } from "@/lib/format";
@@ -26,23 +26,19 @@ export function ScheduleCard({
   const pillLabel = status ?? "未回答";
 
   return (
-    <Link href={`/schedule/${schedule.id}`}>
-      <Card className="cursor-pointer">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="font-bold text-[14.5px]">
-              <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
-              {schedule.title}
-            </div>
-            <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(schedule)}</div>
-            {schedule.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{schedule.toban}</div>}
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {schedule.requires_attendance && <Pill tone={pillTone}>{pillLabel}</Pill>}
-            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />
-          </div>
+    <Link href={`/schedule/${schedule.id}`} className={`${cardClass} flex min-h-tap items-center justify-between gap-2`}>
+      <div className="min-w-0">
+        <div className="font-bold text-sm truncate">
+          <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
+          {schedule.title}
         </div>
-      </Card>
+        <div className="text-caption text-ink-soft mt-0.5 truncate">{scheduleMeta(schedule)}</div>
+        {schedule.toban && <div className="text-caption text-ink-soft mt-0.5 truncate">当番:{schedule.toban}</div>}
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {schedule.requires_attendance && <Pill tone={pillTone}>{pillLabel}</Pill>}
+        <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft" />
+      </div>
     </Link>
   );
 }

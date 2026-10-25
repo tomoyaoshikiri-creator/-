@@ -43,7 +43,8 @@ export type EmailNotificationEvent =
   | "invite_issued"
   | "attendance_deadline"
   | "billing_payment_failed"
-  | "team_deletion_warning";
+  | "team_deletion_warning"
+  | "dues_unpaid_reminder";
 // 監査ログ(audit_logs)の記録対象イベント種別(B-3)。data_exportは将来のデータ
 // エクスポート機能(B-6)向けに予約済みだが、現時点では発行箇所がない。
 export type AuditAction =
@@ -181,6 +182,37 @@ export interface Database {
         Update: Partial<{
           status: "processing" | "succeeded" | "failed";
           processed_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      team_billing_subscriptions: {
+        Row: {
+          id: string;
+          team_id: string;
+          platform: "stripe" | "apple" | "google";
+          external_subscription_id: string;
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          platform: "stripe" | "apple" | "google";
+          external_subscription_id: string;
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          plan: "お試し" | "中間" | "フル" | "フルプラス";
+          status: "active" | "canceled";
+          current_period_end: string | null;
+          updated_at: string;
         }>;
         Relationships: [];
       };
@@ -601,6 +633,7 @@ export interface Database {
           category_id: string | null;
           folder_id: string | null;
           title: string;
+          allowed_roles: string[];
           created_at: string;
         };
         Insert: {
@@ -610,11 +643,13 @@ export interface Database {
           category_id?: string | null;
           folder_id?: string | null;
           title: string;
+          allowed_roles?: string[];
         };
         Update: Partial<{
           category_id: string | null;
           folder_id: string | null;
           title: string;
+          allowed_roles: string[];
         }>;
         Relationships: [];
       };
@@ -1381,17 +1416,24 @@ export interface Database {
           sprint20m_2: number | null;
           long_jump_1: number | null;
           long_jump_2: number | null;
+          change_direction_run_1: number | null;
+          change_direction_run_2: number | null;
           lane_agility_1: number | null;
           lane_agility_2: number | null;
           side_step_1: number | null;
           side_step_2: number | null;
           shuttle_20m_x3: number | null;
-          ball_throw_1: number | null;
-          ball_throw_2: number | null;
+          beep_test_reps: number | null;
           back_fist_right: number | null;
           back_fist_left: number | null;
+          ball_throw_1: number | null;
+          ball_throw_2: number | null;
+          course_dribble_dominant_1: number | null;
+          course_dribble_dominant_2: number | null;
+          course_dribble_opposite_1: number | null;
+          course_dribble_opposite_2: number | null;
           ft_golf: number | null;
-          beep_test_reps: number | null;
+          paint_shot: number | null;
           not_conducted: boolean;
           recorded_by: string | null;
           updated_at: string;
@@ -1408,17 +1450,24 @@ export interface Database {
           sprint20m_2?: number | null;
           long_jump_1?: number | null;
           long_jump_2?: number | null;
+          change_direction_run_1?: number | null;
+          change_direction_run_2?: number | null;
           lane_agility_1?: number | null;
           lane_agility_2?: number | null;
           side_step_1?: number | null;
           side_step_2?: number | null;
           shuttle_20m_x3?: number | null;
-          ball_throw_1?: number | null;
-          ball_throw_2?: number | null;
+          beep_test_reps?: number | null;
           back_fist_right?: number | null;
           back_fist_left?: number | null;
+          ball_throw_1?: number | null;
+          ball_throw_2?: number | null;
+          course_dribble_dominant_1?: number | null;
+          course_dribble_dominant_2?: number | null;
+          course_dribble_opposite_1?: number | null;
+          course_dribble_opposite_2?: number | null;
           ft_golf?: number | null;
-          beep_test_reps?: number | null;
+          paint_shot?: number | null;
           recorded_by?: string | null;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["sports_test_records"]["Insert"], "player_id" | "fiscal_year" | "quarter">>;
@@ -1700,6 +1749,31 @@ export interface Database {
           endpoint: string;
           p256dh: string;
           auth_key: string;
+        }>;
+        Relationships: [];
+      };
+      device_push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          team_id: string;
+          platform: "ios" | "android";
+          token: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          team_id: string;
+          platform: "ios" | "android";
+          token: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          token: string;
+          updated_at: string;
         }>;
         Relationships: [];
       };
@@ -2231,20 +2305,20 @@ export interface Database {
           record_count: number;
           wingspan_cm: number | null;
           sprint20m: number | null;
+          long_jump: number | null;
+          change_direction_run: number | null;
           lane_agility: number | null;
           side_step: number | null;
           shuttle_20m_x3: number | null;
-          long_jump: number | null;
-          ball_throw: number | null;
+          beep_test_reps: number | null;
           back_fist_right: number | null;
           back_fist_left: number | null;
+          ball_throw: number | null;
+          course_dribble_dominant: number | null;
+          course_dribble_opposite: number | null;
           ft_golf: number | null;
-          beep_test_reps: number | null;
+          paint_shot: number | null;
         }[];
-      };
-      get_default_team_logo_path: {
-        Args: Record<string, never>;
-        Returns: string | null;
       };
       get_team_login_branding: {
         Args: { p_slug: string };
@@ -2479,3 +2553,4 @@ export type AccountingDuesGradeBand = Database["public"]["Tables"]["accounting_d
 export type AccountingDuesPlayerSetting = Database["public"]["Tables"]["accounting_dues_player_settings"]["Row"];
 export type AccountingDuesBillingPeriod = Database["public"]["Tables"]["accounting_dues_billing_periods"]["Row"];
 export type AccountingDuesCharge = Database["public"]["Tables"]["accounting_dues_charges"]["Row"];
+export type TeamBillingSubscription = Database["public"]["Tables"]["team_billing_subscriptions"]["Row"];

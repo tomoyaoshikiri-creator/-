@@ -37,8 +37,8 @@ export default function SettingsPlanPage() {
 
   useEffect(() => {
     const checkout = searchParams.get("checkout");
-    if (checkout === "success") toast("お申し込みが完了しました");
-    if (checkout === "cancel") toast("お申し込みを中断しました");
+    if (checkout === "success") toast.success("お申し込みが完了しました");
+    if (checkout === "cancel") toast.warning("お申し込みを中断しました");
   }, [searchParams, toast]);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function SettingsPlanPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        toast(`お申し込みページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
+        toast.error(`お申し込みページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
         return;
       }
       window.location.href = data.url;
@@ -81,7 +81,7 @@ export default function SettingsPlanPage() {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        toast(`お支払い管理ページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
+        toast.error(`お支払い管理ページの作成に失敗しました${data.error ? `: ${data.error}` : ""}`);
         return;
       }
       window.location.href = data.url;
@@ -99,14 +99,14 @@ export default function SettingsPlanPage() {
         <Card>
           {plan && (
             <div className="mb-2.5">
-              <div className="text-[11px] font-bold text-orange">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
+              <div className="text-[11px] font-bold text-orange-text">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
               {plan === "お試し" && (
                 <div className="text-[11px] text-ink-soft mt-0.5">まずはCIRCLE LINESを試してみたいチーム向け・¥0</div>
               )}
             </div>
           )}
           {pastDue && (
-            <div className="text-[11.5px] text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-2.5">
+            <div className="text-[11.5px] text-danger-text bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-2.5">
               お支払いの確認が取れていません。カード情報をご確認のうえ、お支払い管理ページから更新してください。
             </div>
           )}

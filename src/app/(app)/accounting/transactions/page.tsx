@@ -98,7 +98,7 @@ export default function AccountingTransactionsPage() {
   async function handleCreate() {
     const amount = Number(draft.amount);
     if (!draft.category_id || !draft.payee.trim() || !Number.isFinite(amount) || amount <= 0) {
-      toast("項目・支払先・金額を正しく入力してください");
+      toast.warning("項目・支払先・金額を正しく入力してください");
       return;
     }
     setSaving(true);
@@ -118,14 +118,14 @@ export default function AccountingTransactionsPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setModalOpen(false);
     if (data.fiscal_year === fiscalYear) {
       setTransactions((prev) => [data, ...prev]);
     }
-    toast("記録を保存しました");
+    toast.success("記録を保存しました");
   }
 
   // 一覧の各行の編集・削除
@@ -156,7 +156,7 @@ export default function AccountingTransactionsPage() {
     if (!editDraft) return;
     const amount = Number(editDraft.amount);
     if (!editDraft.category_id || !editDraft.payee.trim() || !Number.isFinite(amount) || amount <= 0) {
-      toast("項目・支払先・金額を正しく入力してください");
+      toast.warning("項目・支払先・金額を正しく入力してください");
       return;
     }
     setEditSaving(true);
@@ -176,13 +176,13 @@ export default function AccountingTransactionsPage() {
       .single();
     setEditSaving(false);
     if (error || !data) {
-      toast(`更新に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`更新に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setTransactions((prev) => prev.map((t) => (t.id === id ? data : t)));
     setExpandedId(null);
     setEditDraft(null);
-    toast("記録を修正しました");
+    toast.success("記録を修正しました");
   }
 
   function handleDeleteClick(id: string) {
@@ -196,12 +196,12 @@ export default function AccountingTransactionsPage() {
       const supabase = createClient();
       const { error } = await supabase.from("accounting_transactions").delete().eq("id", id);
       if (error) {
-        toast(`削除に失敗しました: ${error.message}`);
+        toast.error(`削除に失敗しました: ${error.message}`);
         return;
       }
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       setExpandedId(null);
-      toast("記録を削除しました");
+      toast.success("記録を削除しました");
     })();
   }
 
@@ -343,7 +343,7 @@ export default function AccountingTransactionsPage() {
                     </div>
                     <div
                       className="flex-none font-mono font-bold text-[13px]"
-                      style={{ color: cat?.kind === "income" ? "var(--green)" : "var(--danger)" }}
+                      style={{ color: cat?.kind === "income" ? "var(--green-text)" : "var(--danger-text)" }}
                     >
                       {cat?.kind === "income" ? "+" : "-"}
                       {formatYen(Number(t.amount))}
@@ -408,7 +408,7 @@ export default function AccountingTransactionsPage() {
                       type="button"
                       onClick={() => handleDeleteClick(t.id)}
                       className="w-full mt-2 text-center py-1.5 rounded-lg font-bold text-[11.5px] border bg-white"
-                      style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                      style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                     >
                       {deleteConfirmId === t.id ? "もう一度タップで削除確定" : "この記録を削除"}
                     </button>

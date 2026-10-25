@@ -116,7 +116,7 @@ export default function PlayerAnalysisPage() {
     if (existing) {
       const { error } = await supabase.from("player_analysis_note_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -127,7 +127,7 @@ export default function PlayerAnalysisPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
     }
@@ -148,10 +148,10 @@ export default function PlayerAnalysisPage() {
       });
       const text = buildPlayerCopyText(data, analysisPrompt);
       await navigator.clipboard.writeText(text);
-      toast("分析用テキストをコピーしました");
+      toast.success("分析用テキストをコピーしました");
       setAnalysisOpen(false);
     } catch {
-      toast("コピーに失敗しました");
+      toast.error("コピーに失敗しました");
     } finally {
       setCopyingAnalysis(false);
     }
@@ -182,14 +182,14 @@ export default function PlayerAnalysisPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast(data.error ?? "AI分析の生成に失敗しました");
+        toast.error(data.error ?? "AI分析の生成に失敗しました");
         return;
       }
       setAiUsage({ used: data.usedThisMonth, limit: data.monthlyLimit });
-      toast("AI分析を生成し、フィードバック欄に追加しました");
+      toast.success("AI分析を生成し、フィードバック欄に追加しました");
       loadNotes();
     } catch {
-      toast("AI分析の生成に失敗しました");
+      toast.error("AI分析の生成に失敗しました");
     } finally {
       setAiGenerating(false);
     }
@@ -213,7 +213,7 @@ export default function PlayerAnalysisPage() {
 
   async function handleSaveNoteEdit(noteId: string) {
     if (!editNoteBody.trim()) {
-      toast("メモを入力してください");
+      toast.warning("メモを入力してください");
       return;
     }
     setSavingNoteEdit(true);
@@ -224,10 +224,10 @@ export default function PlayerAnalysisPage() {
       .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを更新しました");
+    toast.success("メモを更新しました");
     setEditingNoteId(null);
     loadNotes();
   }
@@ -242,10 +242,10 @@ export default function PlayerAnalysisPage() {
     const supabase = createClient();
     const { error } = await supabase.from("player_analysis_notes").delete().eq("id", noteId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("メモを削除しました");
+    toast.success("メモを削除しました");
     setExpandedNoteId(null);
     loadNotes();
   }
@@ -289,7 +289,7 @@ export default function PlayerAnalysisPage() {
                     <span className="font-mono text-[11px] font-bold text-ink-soft tracking-wide">
                       {formatDateLabel(n.created_at.slice(0, 10))}
                     </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange text-[9.5px] font-bold tracking-wide">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-orange/12 text-orange-text text-[9.5px] font-bold tracking-wide">
                       AI分析
                     </span>
                   </div>
@@ -323,7 +323,7 @@ export default function PlayerAnalysisPage() {
                   type="button"
                   onClick={() => handleSaveNoteEdit(n.id)}
                   disabled={savingNoteEdit}
-                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                  className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
                 >
                   {savingNoteEdit ? "保存中…" : "保存"}
                 </button>
@@ -374,7 +374,7 @@ export default function PlayerAnalysisPage() {
                     type="button"
                     onClick={() => handleDeleteNote(n.id)}
                     className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                    style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                    style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                   >
                     {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
                   </button>
@@ -391,8 +391,8 @@ export default function PlayerAnalysisPage() {
           onClick={() => setAnalysisOpen(true)}
           className="w-full text-left bg-orange/8 border border-orange rounded-lg px-4 py-[7px] mt-2.5 mb-2.5 flex items-center justify-between"
         >
-          <div className="font-bold text-[12.5px] text-orange">分析用抽出</div>
-          <ChevronRightIcon className="w-3.5 h-3.5 text-orange flex-shrink-0" />
+          <div className="font-bold text-[12.5px] text-orange-text">分析用抽出</div>
+          <ChevronRightIcon className="w-3.5 h-3.5 text-orange-text flex-shrink-0" />
         </button>
       )}
 
@@ -406,7 +406,7 @@ export default function PlayerAnalysisPage() {
             onClose={() => setAddFeedbackOpen(false)}
             onCreated={() => {
               setAddFeedbackOpen(false);
-              toast("フィードバックを登録しました");
+              toast.success("フィードバックを登録しました");
               loadNotes();
             }}
             insert={handleAddNote}
@@ -433,7 +433,7 @@ export default function PlayerAnalysisPage() {
             placeholder="例: 怪我明けなのでコンディション面を中心に見てほしい"
           />
           <div className="text-xs text-ink-soft mt-2.5">
-            選手のスタッツ・スポーツテスト・練習参加状況・身長体重のデータと分析の観点を整理したテキストがコピーされます。外部のAIチャットに貼り付けて利用できます
+            選手のスタッツ・スポーツテスト・コービーシューティングの記録・練習参加状況・身長体重のデータと分析の観点を整理したテキストがコピーされます。外部のAIチャットに貼り付けて利用できます
           </div>
           <SubmitButton onClick={handleCopyAnalysis} disabled={copyingAnalysis}>
             {copyingAnalysis ? "準備中…" : "この内容でコピーする"}

@@ -78,11 +78,11 @@ export default function AccountingDuesPage() {
   async function handleCreate() {
     const flatAmount = Number(draft.flat_monthly_amount);
     if (!draft.name.trim() || !draft.income_category_id) {
-      toast("名称・計上先の項目を入力してください");
+      toast.warning("名称・計上先の項目を入力してください");
       return;
     }
     if (draft.pricing_method === "flat" && (!Number.isFinite(flatAmount) || flatAmount <= 0)) {
-      toast("月額を正しく入力してください");
+      toast.warning("月額を正しく入力してください");
       return;
     }
     setSaving(true);
@@ -104,12 +104,12 @@ export default function AccountingDuesPage() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setModalOpen(false);
     setItems((prev) => [...prev, data]);
-    toast("集金項目を追加しました");
+    toast.success("集金項目を追加しました");
     router.push(`/accounting/dues/${data.id}`);
   }
 
@@ -189,7 +189,7 @@ export default function AccountingDuesPage() {
                 ))}
               </select>
               {incomeCategories.length === 0 && (
-                <div className="text-[11px] text-danger mt-1">先に「項目の管理」で収入の項目を追加してください</div>
+                <div className="text-[11px] text-danger-text mt-1">先に「項目の管理」で収入の項目を追加してください</div>
               )}
             </div>
             <SubmitButton onClick={handleCreate} disabled={saving || incomeCategories.length === 0}>

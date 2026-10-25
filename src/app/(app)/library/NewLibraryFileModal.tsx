@@ -12,7 +12,8 @@ import { cleanupUploadedObjects, rollbackParentAndObjects, type UploadedObjectRe
 import { formatBytes } from "@/lib/format";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
-import type { LibraryCategory } from "@/lib/database.types";
+import { LIBRARY_ROLE_OPTIONS } from "@/lib/library";
+import type { LibraryCategory, Role } from "@/lib/database.types";
 
 const NEW_CATEGORY_VALUE = "__new__";
 
@@ -40,6 +41,7 @@ export function NewLibraryFileModal({
   const [categoryId, setCategoryId] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [allowedRoles, setAllowedRoles] = useState<Role[]>([...LIBRARY_ROLE_OPTIONS]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -64,6 +66,11 @@ export function NewLibraryFileModal({
     setCategoryId("");
     setNewCategoryName("");
     setFiles([]);
+    setAllowedRoles([...LIBRARY_ROLE_OPTIONS]);
+  }
+
+  function toggleRole(r: Role) {
+    setAllowedRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
   }
 
   function addFiles(newFiles: FileList | null) {
@@ -109,11 +116,15 @@ export function NewLibraryFileModal({
 
   async function handleSubmit() {
     if (!title.trim()) {
-      toast("タイトルを入力してください");
+      toast.warning("タイトルを入力してください");
       return;
     }
     if (files.length === 0) {
-      toast("ファイルを選んでください");
+      toast.warning("ファイルを選んでください");
+      return;
+    }
+    if (allowedRoles.length === 0) {
+      toast.warning("閲覧できるロールを1つ以上選んでください");
       return;
     }
     const totalNewBytes = files.reduce((sum, f) => sum + f.size, 0);
@@ -150,7 +161,7 @@ export function NewLibraryFileModal({
       if (uploadError) {
         const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
         setSaving(false);
-        toast(
+        toast.error(
           `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
             (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -179,13 +190,14 @@ export function NewLibraryFileModal({
         category_id: resolvedCategoryId,
         folder_id: folderId,
         title: title.trim(),
+        allowed_roles: allowedRoles,
       })
       .select()
       .single();
     if (error || !item) {
       const cleanupOk = await cleanupUploadedObjects(supabase, uploadedObjectRefs());
       setSaving(false);
-      toast(
+      toast.error(
         `登録に失敗しました: ${error?.message ?? ""}` +
           (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
       );
@@ -209,7 +221,7 @@ export function NewLibraryFileModal({
           uploadedObjects: uploadedObjectRefs(),
         });
         setSaving(false);
-        toast(
+        toast.error(
           `${u.file.name}の登録に失敗しました: ${insertError.message}` +
             (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -254,6 +266,25 @@ export function NewLibraryFileModal({
       </div>
 
       <div className="mt-3">
+        <FieldLabel>閲覧できるロール</FieldLabel>
+        <div className="flex flex-wrap gap-2">
+          {LIBRARY_ROLE_OPTIONS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => toggleRole(r)}
+              className={`px-3 py-1.5 rounded-lg text-[12.5px] font-bold border ${
+                allowedRoles.includes(r) ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="text-xs text-ink-soft mt-1.5">※指定しない場合は全員が閲覧できます</div>
+      </div>
+
+      <div className="mt-3">
         <FieldLabel>画像・資料</FieldLabel>
         <label className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[12.5px] font-bold border border-line bg-paper text-ink-soft cursor-pointer">
           📎 ファイルを選ぶ
@@ -273,7 +304,7 @@ export function NewLibraryFileModal({
             {files.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
                 <span className="truncate">{f.name}</span>
-                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
+                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger-text)" }}>
                   削除
                 </button>
               </div>

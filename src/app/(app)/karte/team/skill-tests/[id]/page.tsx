@@ -269,10 +269,10 @@ export default function KarteTeamSkillTestDetailPage() {
         .single();
       setSubmittingRequest(false);
       if (error || !data) {
-        toast(`登録に失敗しました: ${error?.message ?? ""}`);
+        toast.error(`登録に失敗しました: ${error?.message ?? ""}`);
         return;
       }
-      toast("ランクを登録しました");
+      toast.success("ランクを登録しました");
       setRequestPlayer(null);
       await loadProgress();
       return;
@@ -295,10 +295,10 @@ export default function KarteTeamSkillTestDetailPage() {
       .single();
     setSubmittingRequest(false);
     if (error || !data) {
-      toast(`申請の送信に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`申請の送信に失敗しました: ${error?.message ?? ""}`);
       return;
     }
-    toast("申請を送信しました。承認をお待ちください");
+    toast.success("申請を送信しました。承認をお待ちください");
     sendPushNotification("skill_test_promotion_requested", data.id);
     setRequestPlayer(null);
     await loadProgress();
@@ -313,17 +313,17 @@ export default function KarteTeamSkillTestDetailPage() {
       .eq("id", request.id);
     setDecidingId(null);
     if (error) {
-      toast(`承認に失敗しました: ${error.message}`);
+      toast.error(`承認に失敗しました: ${error.message}`);
       return;
     }
-    toast("承認しました");
+    toast.success("承認しました");
     await loadProgress();
   }
 
   async function handleReject() {
     if (!rejectingRequest) return;
     if (!rejectReason.trim()) {
-      toast("却下理由を入力してください");
+      toast.warning("却下理由を入力してください");
       return;
     }
     setDecidingId(rejectingRequest.id);
@@ -334,10 +334,10 @@ export default function KarteTeamSkillTestDetailPage() {
       .eq("id", rejectingRequest.id);
     setDecidingId(null);
     if (error) {
-      toast(`却下に失敗しました: ${error.message}`);
+      toast.error(`却下に失敗しました: ${error.message}`);
       return;
     }
-    toast("却下しました");
+    toast.success("却下しました");
     setRejectingRequest(null);
     setRejectReason("");
     await loadProgress();
@@ -401,17 +401,17 @@ export default function KarteTeamSkillTestDetailPage() {
   async function saveSettings() {
     if (!test) return;
     if (chapterDrafts.some((c) => !c.name.trim() || c.name.trim().length > 20)) {
-      toast("チャプター名を正しく入力してください");
+      toast.warning("チャプター名を正しく入力してください");
       return;
     }
     if (
       chapterDrafts.some((c) => !Number.isInteger(Number(c.kyuCount)) || Number(c.kyuCount) < 1 || Number(c.kyuCount) > 30)
     ) {
-      toast("チャプター内の級数を正しく入力してください");
+      toast.warning("チャプター内の級数を正しく入力してください");
       return;
     }
     if (chapterDrafts.length === 0 && test.dan_count === 0) {
-      toast("チャプターを1つ以上追加してください");
+      toast.warning("チャプターを1つ以上追加してください");
       return;
     }
     setSavingSettings(true);
@@ -437,12 +437,12 @@ export default function KarteTeamSkillTestDetailPage() {
       .single();
     setSavingSettings(false);
     if (error || !data) {
-      toast(`保存に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setTest(data);
     setEditingSettings(false);
-    toast("検定の設定を更新しました");
+    toast.success("検定の設定を更新しました");
   }
 
   // 検定自体の削除(記録・申請もon delete cascadeで一緒に消える)。誤タップ防止のため2回タップで確定する。
@@ -457,10 +457,10 @@ export default function KarteTeamSkillTestDetailPage() {
     const { error } = await supabase.from("skill_tests").delete().eq("id", test.id);
     setDeletingTest(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("検定を削除しました");
+    toast.success("検定を削除しました");
     router.push("/karte/team/skill-tests");
   }
 
@@ -485,7 +485,7 @@ export default function KarteTeamSkillTestDetailPage() {
             <button
               type="button"
               onClick={openSettingsEditor}
-              className="mb-3 text-[11px] font-bold text-orange underline"
+              className="mb-3 text-[11px] font-bold text-orange-text underline"
             >
               設定を編集
             </button>
@@ -529,7 +529,7 @@ export default function KarteTeamSkillTestDetailPage() {
                                 type="button"
                                 disabled={instructors.length === 0}
                                 onClick={() => openRequestModal(p)}
-                                className="text-[11px] font-bold text-orange underline disabled:opacity-40 disabled:no-underline"
+                                className="text-[11px] font-bold text-orange-text underline disabled:opacity-40 disabled:no-underline"
                               >
                                 ランクを申請
                               </button>
@@ -560,7 +560,7 @@ export default function KarteTeamSkillTestDetailPage() {
                           {playerName(r.player_id)} ・ {r.target_level_label}
                         </div>
                         {r.status === "rejected" && r.reject_reason && (
-                          <div className="text-[11px] text-danger mt-0.5">却下理由: {r.reject_reason}</div>
+                          <div className="text-[11px] text-danger-text mt-0.5">却下理由: {r.reject_reason}</div>
                         )}
                       </div>
                       <Pill tone={r.status === "approved" ? "ok" : r.status === "rejected" ? "absent" : "pending"}>
@@ -591,7 +591,7 @@ export default function KarteTeamSkillTestDetailPage() {
                           type="button"
                           disabled={decidingId === r.id}
                           onClick={() => handleApprove(r)}
-                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-orange text-orange disabled:opacity-50"
+                          className="px-2.5 py-1 rounded-lg font-bold text-[11px] border border-orange text-orange-text disabled:opacity-50"
                         >
                           承認
                         </button>
@@ -724,7 +724,7 @@ export default function KarteTeamSkillTestDetailPage() {
                   onClick={handleDeleteTest}
                   disabled={deletingTest}
                   className="mt-3 w-full text-center py-2.5 rounded-lg font-bold text-[13px] border bg-white disabled:opacity-50"
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deletingTest ? "削除中…" : confirmingDelete ? "本当に削除しますか?(記録もすべて消えます・もう一度タップで削除)" : "この検定を削除"}
                 </button>

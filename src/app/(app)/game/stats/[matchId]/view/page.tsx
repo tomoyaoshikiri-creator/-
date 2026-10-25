@@ -125,7 +125,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
                   <td className="sticky left-0 bg-white z-10 px-2.5 py-1.5 whitespace-nowrap border-b border-line last:border-b-0 font-bold">
                     {r.label}
                   </td>
-                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono font-bold text-orange">
+                  <td className="px-2 py-1.5 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono font-bold text-orange-text">
                     {r.line.pts}
                   </td>
                   <td className="px-2 py-1 min-w-[76px] text-center border-b border-line last:border-b-0 font-mono">
@@ -172,7 +172,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
               ))}
               <tr>
                 <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">合計</td>
-                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange">{total.pts}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange-text">{total.pts}</td>
                 <td className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
                   <div className="font-bold">{fgPct(total)}</div>
                   <div className="text-ink-soft text-[10px]">
@@ -216,7 +216,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
               </tr>
               <tr>
                 <td className="sticky left-0 bg-paper z-10 px-2.5 py-1.5 whitespace-nowrap font-bold">平均</td>
-                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange">{avg(total.pts)}</td>
+                <td className="px-2 py-1.5 min-w-[76px] text-center bg-paper font-mono font-bold text-orange-text">{avg(total.pts)}</td>
                 <td className="px-2 py-1 min-w-[76px] text-center bg-paper font-mono">
                   <div className="font-bold">{fgPct(total)}</div>
                   <div className="text-ink-soft text-[10px]">
@@ -356,7 +356,7 @@ export default function GameStatsViewPage() {
             <div className="flex items-center justify-center gap-6 mt-1.5">
               <div className="text-center">
                 <div className="text-[11px] font-bold text-ink-soft">{teamName || "自チーム"}</div>
-                <div className="font-mono text-[28px] font-bold text-orange leading-tight">{teamScore}</div>
+                <div className="font-mono text-[28px] font-bold text-orange-text leading-tight">{teamScore}</div>
               </div>
               <div className="text-ink-soft font-bold text-[16px]">-</div>
               <div className="text-center">

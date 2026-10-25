@@ -13,7 +13,7 @@ const POINTS_BY_CATEGORY: Record<ShotCategory, number> = {
   layup: 1,
 };
 
-export const SHOOTING_DRILL_TARGET_OPTIONS = [11, 15, 21] as const;
+export const SHOOTING_DRILL_TARGET_OPTIONS = [15, 18, 21] as const;
 export type ShootingDrillTarget = (typeof SHOOTING_DRILL_TARGET_OPTIONS)[number];
 
 // shots配列中のindex(0始まり)が、3P→ミドル→ゴール下のうちどれに当たるか。
@@ -79,4 +79,13 @@ export function isDrillComplete(shots: boolean[], targetPoints: number): boolean
 
 export function pointsForCategory(category: ShotCategory): number {
   return POINTS_BY_CATEGORY[category];
+}
+
+// 到達タイム(秒)の表示用フォーマット。一覧画面(team/shooting)・選手カルテ
+// どちらからも使う。
+export function formatShootingDrillTime(sec: number): string {
+  const total = Math.round(sec);
+  const m = Math.floor(total / 60);
+  const s = total - m * 60;
+  return m > 0 ? `${m}分${s}秒` : `${s}秒`;
 }

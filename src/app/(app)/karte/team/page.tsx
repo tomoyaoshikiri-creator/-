@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
-import { canViewKarte, canViewWorkout } from "@/lib/permissions";
+import { canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 
@@ -70,21 +70,17 @@ export default function KarteTeamPage() {
         </Card>
       </Link>
 
-      {/* ワークアウトだけはカルテ閲覧全般(isStaff)より一段広く、運営にも開放する
-          (canViewWorkout、ユーザー指示)。 */}
-      {canViewWorkout(role) && (
-        <Link href="/karte/team/workout">
-          <Card className="cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-bold text-[15px]">ワークアウト</div>
-                <div className="text-[11.5px] text-ink-soft mt-1">いつどんな練習をしたかの履歴</div>
-              </div>
-              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+      <Link href="/karte/team/workout">
+        <Card className="cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-bold text-[15px]">ワークアウト</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">いつどんな練習をしたかの履歴</div>
             </div>
-          </Card>
-        </Link>
-      )}
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </Card>
+      </Link>
 
       {isStaff && hasAiAnalysisAccess(plan) && (
         <Link href="/karte/team/analysis">

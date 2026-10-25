@@ -197,7 +197,7 @@ export default function GameDetailPage() {
     if (existing) {
       const { error } = await supabase.from("game_match_note_reactions").delete().eq("id", existing.id);
       if (error) {
-        toast(`取り消しに失敗しました: ${error.message}`);
+        toast.error(`取り消しに失敗しました: ${error.message}`);
         return;
       }
     } else {
@@ -208,7 +208,7 @@ export default function GameDetailPage() {
         reaction_type: type,
       });
       if (error) {
-        toast(`スタンプに失敗しました: ${error.message}`);
+        toast.error(`スタンプに失敗しました: ${error.message}`);
         return;
       }
       const authorId = notes.find((n) => n.id === noteId)?.author_id;
@@ -222,7 +222,7 @@ export default function GameDetailPage() {
   async function handleAddNote() {
     if (!selectedMatchId) return;
     if (!noteBody.trim()) {
-      toast("コーチメモを入力してください");
+      toast.warning("コーチメモを入力してください");
       return;
     }
     setSavingNote(true);
@@ -239,12 +239,12 @@ export default function GameDetailPage() {
       .single();
     setSavingNote(false);
     if (error || !note) {
-      toast(`登録に失敗しました: ${error?.message ?? ""}`);
+      toast.error(`登録に失敗しました: ${error?.message ?? ""}`);
       return;
     }
     setNoteBody("");
     setShowAddNote(false);
-    toast("コーチメモを登録しました");
+    toast.success("コーチメモを登録しました");
     sendPushNotification("game_note_created", note.id);
     loadNotes(selectedMatchId);
   }
@@ -257,7 +257,7 @@ export default function GameDetailPage() {
 
   async function handleSaveNoteEdit(noteId: string) {
     if (!editNoteBody.trim()) {
-      toast("コーチメモを入力してください");
+      toast.warning("コーチメモを入力してください");
       return;
     }
     setSavingNoteEdit(true);
@@ -268,10 +268,10 @@ export default function GameDetailPage() {
       .eq("id", noteId);
     setSavingNoteEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
-    toast("コーチメモを更新しました");
+    toast.success("コーチメモを更新しました");
     setEditingNoteId(null);
     loadNotes(selectedMatchId);
   }
@@ -286,10 +286,10 @@ export default function GameDetailPage() {
     const supabase = createClient();
     const { error } = await supabase.from("game_match_notes").delete().eq("id", noteId);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("コーチメモを削除しました");
+    toast.success("コーチメモを削除しました");
     setExpandedNoteId(null);
     loadNotes(selectedMatchId);
   }
@@ -306,7 +306,7 @@ export default function GameDetailPage() {
       .single();
     setAddingMatch(false);
     if (error) {
-      toast(`追加に失敗しました: ${error.message}`);
+      toast.error(`追加に失敗しました: ${error.message}`);
       return;
     }
     if (data) {
@@ -332,7 +332,7 @@ export default function GameDetailPage() {
       .eq("id", selectedMatchId);
     setSavingMatch(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setMatches((prev) =>
@@ -348,13 +348,13 @@ export default function GameDetailPage() {
           : m,
       ),
     );
-    toast("対戦結果を保存しました");
+    toast.success("対戦結果を保存しました");
   }
 
   async function handleScorePhotoChange(file: File | undefined) {
     if (!file || !selectedMatchId) return;
     if (/\.(heic|heif)$/i.test(file.name)) {
-      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      toast.warning("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
       return;
     }
     const supabase = createClient();
@@ -380,18 +380,18 @@ export default function GameDetailPage() {
     const { error: uploadError } = await supabase.storage.from("game-score-photos").upload(path, uploadFile);
     if (uploadError) {
       setUploadingScorePhoto(false);
-      toast(`アップロードに失敗しました: ${uploadError.message}`);
+      toast.error(`アップロードに失敗しました: ${uploadError.message}`);
       return;
     }
     const { error } = await supabase.from("game_matches").update({ score_photo_path: path }).eq("id", selectedMatchId);
     setUploadingScorePhoto(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setScorePhotoPath(path);
     setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: path } : m)));
-    toast("スコア表を登録しました");
+    toast.success("スコア表を登録しました");
   }
 
   async function handleScorePhotoRemove() {
@@ -401,18 +401,18 @@ export default function GameDetailPage() {
     const { error: removeError } = await supabase.storage.from("game-score-photos").remove([scorePhotoPath]);
     if (removeError) {
       setUploadingScorePhoto(false);
-      toast(`削除に失敗しました: ${removeError.message}`);
+      toast.error(`削除に失敗しました: ${removeError.message}`);
       return;
     }
     const { error } = await supabase.from("game_matches").update({ score_photo_path: null }).eq("id", selectedMatchId);
     setUploadingScorePhoto(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setScorePhotoPath(null);
     setMatches((prev) => prev.map((m) => (m.id === selectedMatchId ? { ...m, score_photo_path: null } : m)));
-    toast("スコア表を削除しました");
+    toast.success("スコア表を削除しました");
   }
 
   async function handleDeleteMatch() {
@@ -428,10 +428,10 @@ export default function GameDetailPage() {
     const { error } = await supabase.from("game_matches").delete().eq("id", selectedMatchId);
     setDeletingMatch(false);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
-    toast("試合を削除しました");
+    toast.success("試合を削除しました");
     // 削除した試合が最後の1件だった場合、loadMatches()が自動的に第1試合を作り直す。
     loadMatches(gameId);
   }
@@ -517,8 +517,7 @@ export default function GameDetailPage() {
                   // 同じくコントラスト安全な--on-team-primaryを使う(固定text-whiteだと明るい
                   // teamPrimaryの場合に文字が読めなくなる)。
                   color: "var(--on-team-primary)",
-                  background:
-                    "linear-gradient(135deg, var(--orange) 0%, color-mix(in srgb, var(--orange) 55%, white) 100%)",
+                  background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
                 }}
               >
                 スタッツを入力
@@ -527,7 +526,7 @@ export default function GameDetailPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/game/stats/${selectedMatch.id}/view`)}
-                  className="flex-1 py-2.5 rounded-lg border border-orange text-orange font-bold text-[13px] bg-orange/8 active:opacity-85"
+                  className="flex-1 py-2.5 rounded-lg border border-orange text-orange-text font-bold text-[13px] bg-orange/8 active:opacity-85"
                 >
                   スタッツを見る
                 </button>
@@ -575,9 +574,9 @@ export default function GameDetailPage() {
                     style={{
                       color:
                         matchResult === "勝ち"
-                          ? "var(--green)"
+                          ? "var(--green-text)"
                           : matchResult === "負け"
-                            ? "var(--danger)"
+                            ? "var(--danger-text)"
                             : "var(--ink-soft)",
                     }}
                   >
@@ -612,7 +611,7 @@ export default function GameDetailPage() {
                         href={scorePhotoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="block text-orange font-bold text-xs"
+                        className="block text-orange-text font-bold text-xs"
                       >
                         📎 スコア表を開く
                       </a>
@@ -640,7 +639,7 @@ export default function GameDetailPage() {
                         onClick={handleScorePhotoRemove}
                         disabled={uploadingScorePhoto}
                         className="px-3 py-2 rounded-lg text-[12.5px] font-bold border bg-white disabled:opacity-50"
-                        style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                       >
                         削除
                       </button>
@@ -659,7 +658,7 @@ export default function GameDetailPage() {
                   className={`mt-2.5 w-full text-center py-2 rounded-lg font-bold text-[12px] border bg-white disabled:opacity-50 ${
                     deleteMatchConfirmId === selectedMatch.id ? "" : "opacity-50"
                   }`}
-                  style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deletingMatch
                     ? "削除中…"
@@ -693,7 +692,7 @@ export default function GameDetailPage() {
                           type="button"
                           onClick={() => handleSaveNoteEdit(n.id)}
                           disabled={savingNoteEdit}
-                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange bg-orange/8"
+                          className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border border-orange text-orange-text bg-orange/8"
                         >
                           {savingNoteEdit ? "保存中…" : "保存"}
                         </button>
@@ -742,7 +741,7 @@ export default function GameDetailPage() {
                             type="button"
                             onClick={() => handleDeleteNote(n.id)}
                             className="flex-1 text-center py-1.5 rounded-lg font-bold text-[11px] border bg-white whitespace-nowrap"
-                            style={{ color: "var(--danger)", borderColor: "var(--danger)" }}
+                            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                           >
                             {deleteNoteConfirmId === n.id ? "再タップで削除確定" : "削除"}
                           </button>

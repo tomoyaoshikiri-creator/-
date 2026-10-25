@@ -119,7 +119,7 @@ export default function StatCategoriesPage() {
     });
     setSaving(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setInput("");
@@ -156,7 +156,7 @@ export default function StatCategoriesPage() {
       .eq("id", id);
     setSavingEdit(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setEditingId(null);
@@ -172,7 +172,7 @@ export default function StatCategoriesPage() {
     const supabase = createClient();
     const { error } = await supabase.from("team_stat_categories").delete().eq("id", id);
     if (error) {
-      toast(`削除に失敗しました: ${error.message}`);
+      toast.error(`削除に失敗しました: ${error.message}`);
       return;
     }
     setDeleteConfirmId(null);
@@ -194,7 +194,7 @@ export default function StatCategoriesPage() {
     );
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      toast(`並び替えに失敗しました: ${failed.error.message}`);
+      toast.error(`並び替えに失敗しました: ${failed.error.message}`);
       load();
     }
   }
@@ -473,7 +473,7 @@ function SortableCategoryRow({
                 onClick={() => handleDelete(category.id)}
                 className={`flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border ${
                   deleteConfirmId === category.id
-                    ? "border-danger text-danger bg-danger/8"
+                    ? "border-danger text-danger-text bg-danger/8"
                     : "border-line text-ink-soft bg-paper"
                 }`}
               >

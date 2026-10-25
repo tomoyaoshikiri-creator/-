@@ -58,7 +58,7 @@ export function NewCoachNoteModal({
 
   async function handleSubmit() {
     if (!body.trim()) {
-      toast("内容を入力してください");
+      toast.warning("内容を入力してください");
       return;
     }
     setSaving(true);
@@ -77,7 +77,7 @@ export function NewCoachNoteModal({
           uploaded.map((u) => ({ bucket: "report-attachments", path: u.path })),
         );
         setSaving(false);
-        toast(
+        toast.error(
           `${file.name}のアップロードに失敗しました: ${uploadError.message}` +
             (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -103,7 +103,7 @@ export function NewCoachNoteModal({
         uploaded.map((u) => ({ bucket: "report-attachments", path: u.path })),
       );
       setSaving(false);
-      toast(
+      toast.error(
         `登録に失敗しました: ${error?.message ?? ""}` +
           (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
       );
@@ -126,7 +126,7 @@ export function NewCoachNoteModal({
           uploadedObjects: uploaded.map((x) => ({ bucket: "report-attachments", path: x.path })),
         });
         setSaving(false);
-        toast(
+        toast.error(
           `${u.file.name}の登録に失敗しました: ${attachError.message}` +
             (rollbackOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
         );
@@ -174,7 +174,7 @@ export function NewCoachNoteModal({
             {files.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-2 text-xs text-ink-soft">
                 <span className="truncate">{f.name}</span>
-                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger)" }}>
+                <button type="button" onClick={() => removeFile(i)} className="flex-none font-bold" style={{ color: "var(--danger-text)" }}>
                   削除
                 </button>
               </div>

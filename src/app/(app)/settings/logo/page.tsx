@@ -22,11 +22,12 @@ export default function SettingsLogoPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [teamName, setTeamName] = useState("");
   const [savedTeamName, setSavedTeamName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [origin, setOrigin] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  // デフォルトは読み取り専用、「編集」をタップしたときだけ入力欄を表示する
+  // (他の設定画面と揃えたユーザー指示)。
+  const [editingName, setEditingName] = useState(false);
 
   useUnsavedChangesGuard(!loading && teamName !== savedTeamName);
 
@@ -37,17 +38,12 @@ export default function SettingsLogoPage() {
   }, [role, router]);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
-
-  useEffect(() => {
     (async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("teams").select("logo_path, name, slug").eq("id", teamId).single();
+      const { data } = await supabase.from("teams").select("logo_path, name").eq("id", teamId).single();
       setLogoUrl(teamLogoUrl(supabase, data?.logo_path));
       setTeamName(data?.name ?? "");
       setSavedTeamName(data?.name ?? "");
-      setSlug(data?.slug ?? "");
       setLoading(false);
     })();
   }, [teamId]);
@@ -55,7 +51,7 @@ export default function SettingsLogoPage() {
   async function handleSaveName() {
     const trimmed = teamName.trim();
     if (!trimmed) {
-      toast("チーム名を入力してください");
+      toast.warning("チーム名を入力してください");
       return;
     }
     setSavingName(true);
@@ -63,24 +59,20 @@ export default function SettingsLogoPage() {
     const { error } = await supabase.from("teams").update({ name: trimmed }).eq("id", teamId);
     setSavingName(false);
     if (error) {
-      toast(`保存に失敗しました: ${error.message}`);
+      toast.error(`保存に失敗しました: ${error.message}`);
       return;
     }
     setTeamName(trimmed);
     setSavedTeamName(trimmed);
-    toast("チーム名を更新しました");
+    setEditingName(false);
+    toast.success("チーム名を更新しました");
     router.refresh();
-  }
-
-  function copyLoginUrl() {
-    navigator.clipboard?.writeText(`${origin}/login/${slug}`);
-    toast("リンクをコピーしました");
   }
 
   async function handleLogoChange(file: File | undefined) {
     if (!file) return;
     if (/\.(heic|heif)$/i.test(file.name)) {
-      toast("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
+      toast.warning("HEIC形式の画像はブラウザで表示できません。PNGかJPEGを選んでください。");
       return;
     }
     setUploading(true);
@@ -90,12 +82,12 @@ export default function SettingsLogoPage() {
     const data = await res.json();
     setUploading(false);
     if (!res.ok) {
-      toast(`アップロードに失敗しました: ${data.error ?? ""}`);
+      toast.error(`アップロードに失敗しました: ${data.error ?? ""}`);
       return;
     }
     const supabase = createClient();
     setLogoUrl(teamLogoUrl(supabase, data.path));
-    toast("ロゴを更新しました");
+    toast.success("ロゴを更新しました");
     router.refresh();
   }
 
@@ -105,16 +97,16 @@ export default function SettingsLogoPage() {
     const { error } = await supabase.from("teams").update({ logo_path: null }).eq("id", teamId);
     setUploading(false);
     if (error) {
-      toast(`更新に失敗しました: ${error.message}`);
+      toast.error(`更新に失敗しました: ${error.message}`);
       return;
     }
     setLogoUrl(null);
-    toast("ロゴを削除しました");
+    toast.success("ロゴを削除しました");
     router.refresh();
   }
 
   return (
-    <PageShell header={<AppHeader title="ログイン画面" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
+    <PageShell header={<AppHeader title="チーム情報・表示設定" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
       <SectionLabel>ロゴ</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
@@ -156,7 +148,7 @@ export default function SettingsLogoPage() {
                 </button>
               )}
               <div className="text-xs text-ink-soft mt-2">
-                アプリ内のヘッダーと、ホーム画面に追加した際のアイコンの両方に使われます(正方形に近い画像がきれいに収まります)。
+                アプリ内のヘッダー・サイドバー・ハンバーガーメニューに表示されます(正方形に近い画像がきれいに収まります)。
               </div>
             </div>
           </div>
@@ -168,30 +160,27 @@ export default function SettingsLogoPage() {
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
         <Card>
-          <FieldLabel>チーム名</FieldLabel>
-          <input value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass()} />
-          <div className="text-xs text-ink-soft mt-2">アプリ内のヘッダーなど、画面各所に表示されます。</div>
-          <SubmitButton onClick={handleSaveName} disabled={savingName}>
-            {savingName ? "保存中…" : "保存する"}
-          </SubmitButton>
-        </Card>
-      )}
-
-      <SectionLabel>チーム専用ログインURL</SectionLabel>
-      {loading ? (
-        <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
-      ) : (
-        <Card>
-          <div className="flex items-center gap-2">
-            <input readOnly className={inputClass("text-[11px]")} value={`${origin}/login/${slug}`} />
-            <button type="button" onClick={copyLoginUrl} className="flex-none text-orange font-bold text-xs">
-              コピー
-            </button>
-          </div>
-          <div className="text-xs text-ink-soft mt-2">
-            このチーム専用のログインURLです。現在は表示内容自体は共通のログイン画面(/login)と同じですが、
-            このチームのメンバーに配布する固定リンクとして使えます。
-          </div>
+          {editingName ? (
+            <>
+              <FieldLabel>チーム名</FieldLabel>
+              <input value={teamName} onChange={(e) => setTeamName(e.target.value)} className={inputClass()} />
+              <div className="text-xs text-ink-soft mt-2">アプリ内のヘッダーなど、画面各所に表示されます。</div>
+              <SubmitButton onClick={handleSaveName} disabled={savingName}>
+                {savingName ? "保存中…" : "保存する"}
+              </SubmitButton>
+            </>
+          ) : (
+            <>
+              <div className="text-[14px] font-bold">{teamName}</div>
+              <button
+                type="button"
+                onClick={() => setEditingName(true)}
+                className="w-full mt-3 text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8"
+              >
+                チーム名を編集する
+              </button>
+            </>
+          )}
         </Card>
       )}
     </PageShell>

@@ -44,3 +44,16 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor(ios/・android/ネイティブプロジェクト本体はコミット対象。
+# ビルド成果物・依存関係のキャッシュだけを除外する)
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
