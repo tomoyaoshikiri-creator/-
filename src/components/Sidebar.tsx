@@ -72,7 +72,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
 
   return (
     <nav
-      className="hidden min-[700px]:flex flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 overflow-y-auto"
+      className="hidden min-[700px]:flex h-full flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 overflow-y-auto"
       // 上下ともenv(safe-area-inset-*)を足し、ステータスバー・ホームインジケーターの
       // 裏にロゴやログアウトボタンが隠れない・背景の白が物理的な下端まで続くようにする
       // (AppHeaderが右側のメインコンテンツに対して行っているのと同じ考え方)。
