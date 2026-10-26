@@ -1,7 +1,27 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import type { Database, GamePlayerStatLine, GameOpponentStatLine, StatEvent } from "./database.types";
 
 export type { StatEvent };
+
+// 試合中のスタッツ入力画面は、試合が終わるまで数時間同じ画面を開きっぱなしで
+// 使われる。その間に認証トークンの更新を挟むと、active_team_sessions側の
+// 「今どのチームの指導者/管理者か」という情報が古いままになり、record_game_stat等が
+// 「permission denied」で失敗することが実機で確認された(2026-10-26)。
+// 対象のRPCがこのエラーで失敗した場合に限り、initialize_active_team()で
+// セッション情報を再同期してから1回だけ自動的に再試行する(権限が無い場合の
+// 本来のpermission deniedは再試行後も同じエラーになるだけなので、誤って
+// 権限を回避することにはならない)。
+async function withSessionResync<R extends { error: PostgrestError | null }>(
+  supabase: SupabaseClient<Database>,
+  call: () => PromiseLike<R>,
+): Promise<R> {
+  const first = await call();
+  if (first.error?.message.includes("permission denied")) {
+    await supabase.rpc("initialize_active_team");
+    return call();
+  }
+  return first;
+}
 
 // 自チーム(GamePlayerStatLine)・相手チーム(GameOpponentStatLine)どちらも
 // 集計値としてはこの形をしているため、表示・計算ロジックはこの型だけを見て共通化する。
@@ -234,13 +254,15 @@ export function recordGameStat(
   event: StatEvent,
   delta: number,
 ) {
-  return supabase.rpc("record_game_stat", {
-    p_match_id: matchId,
-    p_player_id: playerId,
-    p_quarter: quarter,
-    p_event: event,
-    p_delta: delta,
-  });
+  return withSessionResync(supabase, () =>
+    supabase.rpc("record_game_stat", {
+      p_match_id: matchId,
+      p_player_id: playerId,
+      p_quarter: quarter,
+      p_event: event,
+      p_delta: delta,
+    }),
+  );
 }
 
 export function recordOpponentGameStat(
@@ -251,25 +273,27 @@ export function recordOpponentGameStat(
   event: StatEvent,
   delta: number,
 ) {
-  return supabase.rpc("record_opponent_game_stat", {
-    p_match_id: matchId,
-    p_opponent_player_id: opponentPlayerId,
-    p_quarter: quarter,
-    p_event: event,
-    p_delta: delta,
-  });
+  return withSessionResync(supabase, () =>
+    supabase.rpc("record_opponent_game_stat", {
+      p_match_id: matchId,
+      p_opponent_player_id: opponentPlayerId,
+      p_quarter: quarter,
+      p_event: event,
+      p_delta: delta,
+    }),
+  );
 }
 
 export function deleteGameStatEvent(supabase: SupabaseClient<Database>, eventId: string) {
-  return supabase.rpc("delete_game_stat_event", { p_event_id: eventId });
+  return withSessionResync(supabase, () => supabase.rpc("delete_game_stat_event", { p_event_id: eventId }));
 }
 
 export function deleteOpponentGameStatEvent(supabase: SupabaseClient<Database>, eventId: string) {
-  return supabase.rpc("delete_opponent_game_stat_event", { p_event_id: eventId });
+  return withSessionResync(supabase, () => supabase.rpc("delete_opponent_game_stat_event", { p_event_id: eventId }));
 }
 
 export function resetMatchStats(supabase: SupabaseClient<Database>, matchId: string) {
-  return supabase.rpc("reset_match_stats", { p_match_id: matchId });
+  return withSessionResync(supabase, () => supabase.rpc("reset_match_stats", { p_match_id: matchId }));
 }
 
 // タイムアウトは選手に紐づかないチーム単位の記録のため、他のスタッツとは別のRPCを使う。
@@ -279,11 +303,13 @@ export function recordGameTimeout(
   side: "own" | "opponent",
   quarter: number,
 ) {
-  return supabase.rpc("record_game_timeout", { p_match_id: matchId, p_side: side, p_quarter: quarter });
+  return withSessionResync(supabase, () =>
+    supabase.rpc("record_game_timeout", { p_match_id: matchId, p_side: side, p_quarter: quarter }),
+  );
 }
 
 export function deleteGameTimeoutEvent(supabase: SupabaseClient<Database>, eventId: string) {
-  return supabase.rpc("delete_game_timeout_event", { p_event_id: eventId });
+  return withSessionResync(supabase, () => supabase.rpc("delete_game_timeout_event", { p_event_id: eventId }));
 }
 
 // 指定クォーターのチームファウル数(選手個人のfoulsイベントをチーム単位で合算)。
