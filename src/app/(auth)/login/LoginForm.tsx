@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { login, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { diagCheckpoint } from "@/lib/diag/log";
 
 const initialState: FormState = {};
 
@@ -19,6 +20,17 @@ export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
+
+  // ホワイトスクリーン問題調査用。「login-form-client-mount」はこのコンポーネントの
+  // useEffectがこの時点まで到達した事実のみを示し、Hydration全体の完了を意味しない。
+  // NEXT_PUBLIC_DIAG_ENABLED未設定時はdiagCheckpointが常にno-opになる。
+  useEffect(() => {
+    diagCheckpoint("login-form-client-mount");
+    const raf = requestAnimationFrame(() => {
+      diagCheckpoint("login-form-mount-plus-1-frame");
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   if (step === "email") {
     return (
