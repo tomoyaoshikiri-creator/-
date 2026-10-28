@@ -46,10 +46,9 @@ export function LoginForm({ next }: { next?: string }) {
           id="email"
           name="email"
           type="email"
-          autoComplete="username"
+          autoComplete="off"
           className={inputClass()}
           required
-          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -95,7 +94,6 @@ export function LoginForm({ next }: { next?: string }) {
         autoComplete="current-password"
         className={inputClass()}
         required
-        autoFocus
       />
 
       {state.error && <div className="mt-3 text-[12.5px] text-danger-text">{state.error}</div>}
