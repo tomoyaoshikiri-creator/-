@@ -1,7 +1,91 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant, Noto_Sans_JP, Roboto_Mono } from "next/font/google";
+import Script from "next/script";
 import { TapFeedback } from "@/components/TapFeedback";
 import "./globals.css";
+
+// ログイン画面の白画面問題(2026-10)調査用の診断ログ。NEXT_PUBLIC_DIAG_ENABLED=1を
+// 明示的に設定した場合のみビルドに含まれ、本番環境では設定しないため常にこのif分岐が
+// 丸ごと除去される想定だが、除去の有無は前提とせず実際のビルド生成物で確認すること
+// (報告時に記載)。記録はlocalStorageのみ(diag.v1キー)、個人情報・認証トークン・
+// Cookieは扱わない。詳細はsrc/app/diag-preview/page.tsx・src/lib/diag/log.ts参照。
+const DIAG_ENABLED = process.env.NEXT_PUBLIC_DIAG_ENABLED === "1";
+
+const DIAG_EARLY_SCRIPT = `
+(function () {
+  try {
+    var KEY = "diag.v1";
+    var MAX_SESSIONS = 20;
+    var MAX_EVENTS = 50;
+
+    function sanitize(s) {
+      s = String(s == null ? "" : s);
+      s = s.slice(0, 200);
+      s = s.replace(/[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}/g, "[email]");
+      s = s.replace(/[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}/g, "[jwt]");
+      s = s.replace(/[A-Za-z0-9+/]{32,}={0,2}/g, "[token]");
+      return s;
+    }
+
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) {}
+    var data;
+    try { data = raw ? JSON.parse(raw) : { sessions: [] }; } catch (e) { data = { sessions: [] }; }
+    if (!data || !Array.isArray(data.sessions)) data = { sessions: [] };
+
+    var session = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      startedAt: Date.now(),
+      path: (location && location.pathname) || "",
+      events: [{ t: Date.now(), k: "early-script-executed" }],
+      ended: false,
+      endReason: null
+    };
+    data.sessions.push(session);
+    while (data.sessions.length > MAX_SESSIONS) data.sessions.shift();
+
+    function save() {
+      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+    }
+    save();
+
+    function addEvent(k) {
+      try {
+        session.events.push({ t: Date.now(), k: sanitize(k) });
+        while (session.events.length > MAX_EVENTS) session.events.shift();
+        save();
+      } catch (e) {}
+    }
+
+    function markEnded(reason) {
+      try {
+        session.ended = true;
+        session.endReason = sanitize(reason);
+        save();
+      } catch (e) {}
+    }
+
+    try {
+      window.addEventListener("error", function (e) {
+        addEvent("js-error:" + sanitize((e && (e.message || (e.error && e.error.message))) || ""));
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e && e.reason;
+        addEvent("unhandled-rejection:" + sanitize((r && r.message) || r || ""));
+      });
+      document.addEventListener("visibilitychange", function () {
+        addEvent("visibility:" + document.visibilityState);
+      });
+      window.addEventListener("pagehide", function () { markEnded("pagehide"); });
+      window.addEventListener("beforeunload", function () { markEnded("beforeunload"); });
+    } catch (e) {}
+
+    window.__diag = {
+      checkpoint: function (name) { addEvent(sanitize(name)); }
+    };
+  } catch (e) {}
+})();
+`;
 
 const cormorant = Cormorant({
   variable: "--font-display-serif",
@@ -82,6 +166,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${cormorant.variable} ${notoSansJP.variable} ${robotoMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
+        {DIAG_ENABLED && (
+          <Script id="diag-early" strategy="beforeInteractive">
+            {DIAG_EARLY_SCRIPT}
+          </Script>
+        )}
         <TapFeedback />
         {children}
       </body>
