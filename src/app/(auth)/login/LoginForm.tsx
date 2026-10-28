@@ -46,7 +46,7 @@ export function LoginForm({ next }: { next?: string }) {
           id="email"
           name="email"
           type="email"
-          autoComplete="username"
+          autoComplete="off"
           className={inputClass()}
           required
           autoFocus
