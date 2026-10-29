@@ -143,7 +143,7 @@ export default function CoachNotePage() {
             showAll={showAll}
             onShowAll={() => setShowAll(true)}
             renderItem={(r) => (
-              <Link key={r.id} href={`/coach-note/${r.id}`} className={`${cardClass} block min-h-tap`}>
+              <Link key={r.id} href={`/coach-note/${r.id}`} className={`${cardClass} block min-h-tap py-2 md:py-3`}>
                 <div className="flex min-w-0 items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     {unseenIds.has(r.id) && (
