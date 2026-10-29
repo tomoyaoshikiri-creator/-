@@ -356,22 +356,6 @@ textarea {
 }
 
 /*
-  iPad mini A17 Pro / iPadOS 27.2、ホーム画面起動時の実機計測:
-  横向き vh/lvh=744 に対して dvh/svh/innerHeight=712、
-  縦向き vh/lvh=1133 に対して dvh/svh/innerHeight=1101。
-  top=0 の .app-shell に100dvhを使うと、下端に32px不足が生じる。
-  ステータスバー分のSafe AreaはHeader/Sidebarが内側で処理するため、
-  画面枠自体は実測でフルサイズだったlvhを使う。
-  通常のSafariタブとモバイルのTabBar配置にはこの補正を適用しない。
-*/
-@media (display-mode: standalone) and (min-width: 700px) {
-  .app-shell {
-    height: 100vh;
-    height: 100lvh;
-  }
-}
-
-/*
   MASTER SPECIFICATION #32: Login/Registration等の認証画面はTeam Brand Screen
   ではなく常にCIRCLE LINES Brand Screen。アプリ本体(.app-shellの--paper、
   暖色系off-white)とは別に、ヘッダー(--header-gradient)・ロゴマークと同じ
