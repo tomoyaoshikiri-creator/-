@@ -41,7 +41,7 @@ export default function PollListPage() {
       <Link href={`/poll/${poll.id}`} className={`${cardClass} block min-h-tap py-2 md:py-3`}>
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="font-bold text-sm truncate">{poll.title}</div>
+            <div className="font-bold text-sm line-clamp-2">{poll.title}</div>
             <div className="text-xs text-ink-soft mt-0.5">{formatDateLabel(poll.created_at.slice(0, 10))}</div>
           </div>
           <div className="flex items-center gap-1.5 flex-none">
