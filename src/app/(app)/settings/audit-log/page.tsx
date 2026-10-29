@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -17,6 +17,7 @@ import { AUDIT_ACTION_LABELS, describeAuditDetail } from "@/lib/auditLogDisplay"
 import type { AuditAction } from "@/lib/database.types";
 
 const FILTER_PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 // "YYYY-MM-DD"の翌日を返す(終了日の境界を[from, to)の排他的上限にするため)。
 function nextDayStr(dateStr: string): string {
@@ -225,11 +226,16 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
 
 export default function AuditLogPage() {
   const router = useRouter();
+  const toast = useToast();
   const { role, plan } = useSession();
   const [rows, setRows] = useState<AuditLogRow[]>([]);
   const [actorNames, setActorNames] = useState<Map<string, string>>(new Map());
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const knownActorIds = useRef<Set<string>>(new Set());
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     if (!canManageSettings(role)) {
@@ -237,33 +243,65 @@ export default function AuditLogPage() {
     }
   }, [role, router]);
 
+  // PAGE_SIZE(20)件単位のサーバー側ページング。次ページの有無はPAGE_SIZE+1件先読みして
+  // 判定し(21件目が取れれば次がある)、先読み分は表示に含めない。次回の取得開始位置は
+  // 常に「これまでに表示した件数」そのもの(rows.length)にするため、ページ境界での
+  // 欠落・重複は起きない。並び順はcreated_at降順に加えid降順を第2キーにし、同時刻の
+  // 行が複数あっても取得順が一定になるようにする(idは既存スキーマで一意なため)。
+  async function loadPage(offset: number, append: boolean) {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("id, actor_id, action, detail, created_at")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(offset, offset + PAGE_SIZE);
+      if (error) {
+        toast.error(`取得に失敗しました: ${error.message}`);
+        return;
+      }
+      const fetched = data ?? [];
+      const pageRows = fetched.slice(0, PAGE_SIZE);
+      setHasMore(fetched.length > PAGE_SIZE);
+      setRows((prev) => (append ? [...prev, ...pageRows] : pageRows));
+
+      const newActorIds = [
+        ...new Set(pageRows.map((r) => r.actor_id).filter((id): id is string => id !== null)),
+      ].filter((id) => !knownActorIds.current.has(id));
+      if (newActorIds.length > 0) {
+        for (const id of newActorIds) knownActorIds.current.add(id);
+        const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", newActorIds);
+        setActorNames((prev) => {
+          const next = new Map(prev);
+          for (const p of profiles ?? []) next.set(p.id, p.name);
+          return next;
+        });
+      }
+    } finally {
+      fetchingRef.current = false;
+      if (append) setLoadingMore(false);
+      else setLoading(false);
+    }
+  }
+
   useEffect(() => {
+    loadPage(0, false);
     (async () => {
       const supabase = createClient();
-      const [{ data }, { data: teamMembers }] = await Promise.all([
-        supabase
-          .from("audit_logs")
-          .select("id, actor_id, action, detail, created_at")
-          .order("created_at", { ascending: false })
-          .limit(200),
-        supabase.rpc("list_team_members"),
-      ]);
-      const logs = data ?? [];
-      setRows(logs);
+      const { data: teamMembers } = await supabase.rpc("list_team_members");
       setMembers((teamMembers ?? []).map((m) => ({ id: m.id, name: m.name })));
-
-      const actorIds = [...new Set(logs.map((l) => l.actor_id).filter((id): id is string => id !== null))];
-      if (actorIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, name").in("id", actorIds);
-        setActorNames(new Map((profiles ?? []).map((p) => [p.id, p.name])));
-      }
-      setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <PageShell header={<AppHeader title="監査ログ" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
-      <SectionLabel>操作履歴(直近200件)</SectionLabel>
+      <SectionLabel>操作履歴</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : rows.length === 0 ? (
@@ -280,6 +318,16 @@ export default function AuditLogPage() {
             ))}
           </ul>
         </Card>
+      )}
+      {!loading && hasMore && (
+        <button
+          type="button"
+          onClick={() => loadPage(rows.length, true)}
+          disabled={loadingMore}
+          className="w-full text-center py-2.5 rounded-lg font-bold text-[12.5px] border border-line bg-paper text-ink-soft mb-2.5"
+        >
+          {loadingMore ? "読み込み中…" : "さらに20件表示"}
+        </button>
       )}
 
       {hasAdvancedAuditLogAccess(plan) ? (
