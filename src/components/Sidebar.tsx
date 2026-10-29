@@ -72,6 +72,7 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
 
   return (
     <nav
+      data-sidebar-scroll
       className="hidden min-[700px]:flex min-[700px]:h-full flex-col w-[145px] flex-shrink-0 border-r border-line bg-white px-2 overflow-y-auto"
       // 上下ともenv(safe-area-inset-*)を足し、ステータスバー・ホームインジケーターの
       // 裏にロゴやログアウトボタンが隠れない・背景の白が物理的な下端まで続くようにする

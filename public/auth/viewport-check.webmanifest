@@ -1,0 +1,13 @@
+{
+  "id": "/auth/viewport-check",
+  "name": "CIRCLE LINES 表示確認",
+  "short_name": "CL表示確認",
+  "start_url": "/auth/viewport-check?viewport_debug=1",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAFBFC",
+  "theme_color": "#FAFBFC",
+  "icons": [
+    { "src": "/brand/circle-lines-icon.png", "sizes": "any", "type": "image/png" }
+  ]
+}
