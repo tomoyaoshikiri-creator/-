@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
 import { canCreatePoll } from "@/lib/permissions";
@@ -38,25 +38,23 @@ export default function PollListPage() {
 
   function PollRow({ poll }: { poll: Poll }) {
     return (
-      <Link href={`/poll/${poll.id}`}>
-        <Card className="cursor-pointer">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="font-bold text-[14.5px] truncate">{poll.title}</div>
-              <div className="text-[11px] text-ink-soft mt-0.5">{formatDateLabel(poll.created_at.slice(0, 10))}</div>
-            </div>
-            <div className="flex items-center gap-1.5 flex-none">
-              <span
-                className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
-                  poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
-                }`}
-              >
-                {pollStatusLabel(poll.status)}
-              </span>
-              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
-            </div>
+      <Link href={`/poll/${poll.id}`} className={`${cardClass} block min-h-tap py-2 md:py-3`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-bold text-sm truncate">{poll.title}</div>
+            <div className="text-xs text-ink-soft mt-0.5">{formatDateLabel(poll.created_at.slice(0, 10))}</div>
           </div>
-        </Card>
+          <div className="flex items-center gap-1.5 flex-none">
+            <span
+              className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
+                poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
+              }`}
+            >
+              {pollStatusLabel(poll.status)}
+            </span>
+            <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+          </div>
+        </div>
       </Link>
     );
   }
@@ -71,24 +69,28 @@ export default function PollListPage() {
       ) : polls.length === 0 ? (
         <EmptyState>まだ投票がありません</EmptyState>
       ) : (
-        <>
+        <div className="@container">
           {openPolls.length > 0 && (
             <>
               <SectionLabel>受付中</SectionLabel>
-              {openPolls.map((p) => (
-                <PollRow key={p.id} poll={p} />
-              ))}
+              <div className="grid grid-cols-1 gap-x-3 @[640px]:grid-cols-2">
+                {openPolls.map((p) => (
+                  <PollRow key={p.id} poll={p} />
+                ))}
+              </div>
             </>
           )}
           {closedPolls.length > 0 && (
             <>
               <SectionLabel>締切済み</SectionLabel>
-              {closedPolls.map((p) => (
-                <PollRow key={p.id} poll={p} />
-              ))}
+              <div className="grid grid-cols-1 gap-x-3 @[640px]:grid-cols-2">
+                {closedPolls.map((p) => (
+                  <PollRow key={p.id} poll={p} />
+                ))}
+              </div>
             </>
           )}
-        </>
+        </div>
       )}
     </PageShell>
   );
