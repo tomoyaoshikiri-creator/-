@@ -144,20 +144,20 @@ export default function CoachNotePage() {
             onShowAll={() => setShowAll(true)}
             renderItem={(r) => (
               <Link key={r.id} href={`/coach-note/${r.id}`} className={`${cardClass} block min-h-tap`}>
-                <div className="flex items-center justify-between">
-                  <div className="font-bold text-sm flex items-center gap-1.5">
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     {unseenIds.has(r.id) && (
-                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text">
+                      <span className="shrink-0 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-danger/10 text-danger-text">
                         NEW
                       </span>
                     )}
-                    {formatFullDateLabel(r.date)}
+                    <span className="shrink-0 font-bold text-sm">{formatFullDateLabel(r.date)}</span>
+                    {r.author_id && profiles[r.author_id] && (
+                      <span className="min-w-0 truncate text-xs text-ink-soft">{profiles[r.author_id]}</span>
+                    )}
                   </div>
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
-                {r.author_id && profiles[r.author_id] && (
-                  <div className="text-xs text-ink-soft mt-0.5">{profiles[r.author_id]}</div>
-                )}
                 <ReactionSummary reactions={reactions.filter((rc) => rc.report_id === r.id)} />
               </Link>
             )}
