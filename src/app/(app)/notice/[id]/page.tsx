@@ -342,7 +342,7 @@ export default function NoticeDetailPage() {
   }
 
   return (
-    <PageShell header={<AppHeader title={notice?.title ?? "お知らせ"} variant="detail" backHref="/notice" />}>
+    <PageShell header={<AppHeader title="お知らせ詳細" variant="detail" backHref="/notice" />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !notice ? (
@@ -498,12 +498,14 @@ export default function NoticeDetailPage() {
         </>
       ) : (
         <>
-          {/* 1. 本文: このページで最も重要な情報のため、最初に表示する。
-              「編集する」(canWriteNotice、全ロール共通)は本文セクションの
-              見出しに添え、閲覧コンテンツ(本文カード自体)とは明確に区別する。 */}
-          <SectionLabel
-            action={
-              canWriteNotice(role) && (
+          {/* LINEノートのように、タイトル→投稿情報→添付→本文を1枚の連続したカードで
+              上から自然に読める構成にする(セクション見出し・カードの入れ子を減らす)。
+              「編集する」(canWriteNotice、全ロール共通)はタイトル行の右側に添え、
+              閲覧内容とは視覚的に区別する。 */}
+          <div className={cardClass}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="font-bold text-base break-words flex-1 min-w-0">{notice.title}</div>
+              {canWriteNotice(role) && (
                 <button
                   type="button"
                   onClick={startEdit}
@@ -511,73 +513,52 @@ export default function NoticeDetailPage() {
                 >
                   編集する
                 </button>
-              )
-            }
-          >
-            本文
-          </SectionLabel>
-          <div className={cardClass}>
-            <div className="text-sm whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
-          </div>
+              )}
+            </div>
 
-          {/* 2. お知らせの情報: 発信者・配信日・公開範囲を1つのカードにまとめ、
-              本文の補足情報として本文の直後に表示する(従来は3つの個別カードに
-              分散していたものを統合)。 */}
-          <SectionLabel>お知らせの情報</SectionLabel>
-          <div className={cardClass}>
-            <div className="text-caption text-ink-soft">
-              <span className="font-bold text-ink">発信者:</span> {senderName || "(不明)"}
-            </div>
             <div className="text-caption text-ink-soft mt-1">
-              <span className="font-bold text-ink">配信日:</span> {formatDateLabel(notice.created_at.slice(0, 10))}配信
+              {senderName || "(不明)"} · {formatDateLabel(notice.created_at.slice(0, 10))}配信
+              {notice.audience !== "全員" &&
+                ` · ${notice.audience}${
+                  notice.audience === "学年指定" && notice.target_grade_min
+                    ? `(${gradeLabel(notice.target_grade_min, category)}以上)`
+                    : ""
+                }`}
             </div>
-            {notice.audience !== "全員" && (
-              <div className="text-caption text-ink-soft mt-1">
-                <span className="font-bold text-ink">公開範囲:</span> {notice.audience}
-                {notice.audience === "学年指定" && notice.target_grade_min
-                  ? `(${gradeLabel(notice.target_grade_min, category)}以上)`
-                  : ""}
+
+            {attachments.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {attachments.map((a) => {
+                  const isImage = isImageFile(a.file_name);
+                  const thumbSrc = isImage ? a.url : a.thumbUrl;
+                  return (
+                    <a
+                      key={a.id}
+                      href={a.url ?? undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${a.kind}:${a.file_name}`}
+                      className={`w-20 h-20 flex-shrink-0 rounded-control border border-line overflow-hidden ${
+                        a.url ? "" : "pointer-events-none opacity-50"
+                      }`}
+                    >
+                      {thumbSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={thumbSrc} alt={a.file_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-paper text-ink-soft text-[10.5px] font-bold">
+                          {isPdfFile(a.file_name) ? "📄 PDF" : "📎"}
+                        </div>
+                      )}
+                    </a>
+                  );
+                })}
               </div>
             )}
+
+            <div className="mt-3 text-sm leading-relaxed whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
           </div>
 
-          {/* 3. 添付資料: 本文を補足する資料のため、本文・お知らせの情報の後に表示する。 */}
-          {attachments.length > 0 && (
-            <>
-              <SectionLabel>添付資料</SectionLabel>
-              <div className={cardClass}>
-                <div className="flex flex-wrap gap-2">
-                  {attachments.map((a) => {
-                    const isImage = isImageFile(a.file_name);
-                    const thumbSrc = isImage ? a.url : a.thumbUrl;
-                    return (
-                      <a
-                        key={a.id}
-                        href={a.url ?? undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${a.kind}:${a.file_name}`}
-                        className={`w-20 h-20 flex-shrink-0 rounded-control border border-line overflow-hidden ${
-                          a.url ? "" : "pointer-events-none opacity-50"
-                        }`}
-                      >
-                        {thumbSrc ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={thumbSrc} alt={a.file_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-paper text-ink-soft text-[10.5px] font-bold">
-                            {isPdfFile(a.file_name) ? "📄 PDF" : "📎"}
-                          </div>
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* 4. スタンプ: 本文・添付を読んだ後の反応のため、最後に表示する(従来と同じ位置)。 */}
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
         </>
       )}
