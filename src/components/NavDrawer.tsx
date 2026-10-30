@@ -159,7 +159,7 @@ export function NavDrawer({ open, onClose }: { open: boolean; onClose: () => voi
         <div className="border-t border-line" />
 
         <Section label="アカウント">
-          <DrawerLink href="/settings" label="自分の設定" icon={SettingsIcon} onNavigate={onClose} />
+          <DrawerLink href="/settings" label="設定" icon={SettingsIcon} onNavigate={onClose} />
           <DrawerLink href="/settings" label="通知の受け取り" icon={BellIcon} onNavigate={onClose} />
           {hasMultipleTeams && (
             <DrawerLink href="/select-team" label="チームを切り替える" icon={SwitchIcon} onNavigate={onClose} />
