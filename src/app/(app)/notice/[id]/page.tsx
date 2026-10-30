@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { markItemSeen } from "@/lib/itemBadges";
@@ -349,8 +349,10 @@ export default function NoticeDetailPage() {
         <EmptyState>お知らせが見つかりません</EmptyState>
       ) : editing ? (
         <>
+          {/* 編集フォーム: 項目の並び自体は既存のまま(タイトル→本文→公開範囲→
+              既存添付→新規添付→保存/キャンセル)、見た目のみ現行デザインへ統一。 */}
           <SectionLabel>お知らせを編集</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>タイトル</FieldLabel>
             <input className={inputClass()} value={title} onChange={(e) => setTitle(e.target.value)} />
             <div className="mt-3">
@@ -400,15 +402,18 @@ export default function NoticeDetailPage() {
                 <div className="text-xs text-ink-soft">添付資料はありません</div>
               ) : (
                 attachments.map((a) => (
-                  <div key={a.id} className="flex items-center justify-between py-1.5 border-b border-line last:border-b-0">
-                    <div className="text-xs text-ink-soft">
+                  <div
+                    key={a.id}
+                    className="flex min-h-tap items-center justify-between gap-2 py-1.5 border-b border-line last:border-b-0"
+                  >
+                    <div className="text-xs text-ink-soft truncate">
                       📎 {a.kind}:{a.file_name}
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(a)}
                       disabled={removingId === a.id}
-                      className="text-[11px] font-bold"
+                      className="flex-shrink-0 min-h-tap px-2 text-xs font-bold"
                       style={{ color: "var(--danger-text)" }}
                     >
                       {removingId === a.id ? "削除中…" : "削除"}
@@ -424,7 +429,7 @@ export default function NoticeDetailPage() {
                 {KINDS.map(({ kind, emoji }) => (
                   <label
                     key={kind}
-                    className={`flex-none px-3 py-2 rounded-lg text-[12.5px] font-bold border inline-flex items-center gap-1 cursor-pointer ${
+                    className={`flex-none min-h-tap px-3 rounded-control text-xs font-bold border inline-flex items-center gap-1 cursor-pointer ${
                       (newFiles[kind]?.length ?? 0) > 0 ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
                     }`}
                   >
@@ -472,52 +477,75 @@ export default function NoticeDetailPage() {
               type="button"
               onClick={() => setEditing(false)}
               disabled={saving}
-              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              className="w-full mt-2.5 min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border border-line bg-white text-ink-soft"
             >
               キャンセル
             </button>
-          </Card>
+          </div>
 
-          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
-          <Card>
+          <SectionLabel>削除</SectionLabel>
+          <div className={cardClass}>
             <button
               type="button"
               onClick={handleDeleteNotice}
               disabled={deleting}
-              className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
+              className="w-full min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border bg-white"
               style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このお知らせを削除する"}
             </button>
-          </Card>
+          </div>
         </>
       ) : (
         <>
-          <SectionLabel>発信者</SectionLabel>
-          <Card>
-            <div className="text-xs text-ink-soft">{senderName || "(不明)"}</div>
-          </Card>
-          <SectionLabel>配信日</SectionLabel>
-          <Card>
-            <div className="text-xs text-ink-soft">{formatDateLabel(notice.created_at.slice(0, 10))}配信</div>
-          </Card>
-          {notice.audience !== "全員" && (
-            <>
-              <SectionLabel>公開範囲</SectionLabel>
-              <Card>
-                <div className="text-xs text-ink-soft">
-                  {notice.audience}
-                  {notice.audience === "学年指定" && notice.target_grade_min
-                    ? `(${gradeLabel(notice.target_grade_min, category)}以上)`
-                    : ""}
-                </div>
-              </Card>
-            </>
-          )}
+          {/* 1. 本文: このページで最も重要な情報のため、最初に表示する。
+              「編集する」(canWriteNotice、全ロール共通)は本文セクションの
+              見出しに添え、閲覧コンテンツ(本文カード自体)とは明確に区別する。 */}
+          <SectionLabel
+            action={
+              canWriteNotice(role) && (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex-shrink-0 whitespace-nowrap min-h-tap flex items-center text-caption font-bold text-orange-text"
+                >
+                  編集する
+                </button>
+              )
+            }
+          >
+            本文
+          </SectionLabel>
+          <div className={cardClass}>
+            <div className="text-sm whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
+          </div>
+
+          {/* 2. お知らせの情報: 発信者・配信日・公開範囲を1つのカードにまとめ、
+              本文の補足情報として本文の直後に表示する(従来は3つの個別カードに
+              分散していたものを統合)。 */}
+          <SectionLabel>お知らせの情報</SectionLabel>
+          <div className={cardClass}>
+            <div className="text-caption text-ink-soft">
+              <span className="font-bold text-ink">発信者:</span> {senderName || "(不明)"}
+            </div>
+            <div className="text-caption text-ink-soft mt-1">
+              <span className="font-bold text-ink">配信日:</span> {formatDateLabel(notice.created_at.slice(0, 10))}配信
+            </div>
+            {notice.audience !== "全員" && (
+              <div className="text-caption text-ink-soft mt-1">
+                <span className="font-bold text-ink">公開範囲:</span> {notice.audience}
+                {notice.audience === "学年指定" && notice.target_grade_min
+                  ? `(${gradeLabel(notice.target_grade_min, category)}以上)`
+                  : ""}
+              </div>
+            )}
+          </div>
+
+          {/* 3. 添付資料: 本文を補足する資料のため、本文・お知らせの情報の後に表示する。 */}
           {attachments.length > 0 && (
             <>
               <SectionLabel>添付資料</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 <div className="flex flex-wrap gap-2">
                   {attachments.map((a) => {
                     const isImage = isImageFile(a.file_name);
@@ -529,7 +557,7 @@ export default function NoticeDetailPage() {
                         target="_blank"
                         rel="noreferrer"
                         aria-label={`${a.kind}:${a.file_name}`}
-                        className={`w-20 h-20 flex-shrink-0 rounded-lg border border-line overflow-hidden ${
+                        className={`w-20 h-20 flex-shrink-0 rounded-control border border-line overflow-hidden ${
                           a.url ? "" : "pointer-events-none opacity-50"
                         }`}
                       >
@@ -545,28 +573,11 @@ export default function NoticeDetailPage() {
                     );
                   })}
                 </div>
-              </Card>
+              </div>
             </>
           )}
-          <SectionLabel
-            action={
-              canWriteNotice(role) && (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-                >
-                  編集する
-                </button>
-              )
-            }
-          >
-            本文
-          </SectionLabel>
-          <Card>
-            <div className="font-medium text-[14.5px] whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
-          </Card>
 
+          {/* 4. スタンプ: 本文・添付を読んだ後の反応のため、最後に表示する(従来と同じ位置)。 */}
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
         </>
       )}
