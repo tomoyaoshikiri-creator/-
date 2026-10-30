@@ -304,7 +304,7 @@ function PollDetailPreviewMockInner() {
         <SectionLabel
           action={
             <span
-              className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
+              className={`flex-shrink-0 whitespace-nowrap text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
                 poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
               }`}
             >
