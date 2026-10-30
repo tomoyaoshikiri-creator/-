@@ -115,9 +115,9 @@ export function Sidebar({ role, badges = {} }: { role: Role; badges?: Partial<Re
 
       <SidebarLabel>アカウント</SidebarLabel>
       <div className="flex flex-col gap-1">
-        {/* 「通知の受け取り」は/settings内の項目で遷移先が自分の設定と同じため、
+        {/* 「通知の受け取り」は/settings内の項目で遷移先が設定と同じため、
             ここでは1行にまとめる。 */}
-        <SidebarLink href="/settings" label="自分の設定" icon={SettingsIcon} />
+        <SidebarLink href="/settings" label="設定" icon={SettingsIcon} />
         {hasMultipleTeams && <SidebarLink href="/select-team" label="チームを切り替える" icon={SwitchIcon} />}
       </div>
 
