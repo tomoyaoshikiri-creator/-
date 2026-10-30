@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -62,7 +62,6 @@ export default function DailyReportDetailPage() {
   const [editCommentBody, setEditCommentBody] = useState("");
   const [savingCommentEdit, setSavingCommentEdit] = useState(false);
   const [deleteCommentConfirmId, setDeleteCommentConfirmId] = useState<string | null>(null);
-  const [expandedCommentId, setExpandedCommentId] = useState<string | null>(null);
 
   useUnsavedChangesGuard(
     editing && report !== null && (editBody !== report.body || editDateValue !== report.date),
@@ -234,13 +233,11 @@ export default function DailyReportDetailPage() {
       return;
     }
     setComments((prev) => prev.filter((c) => c.id !== id));
-    setExpandedCommentId(null);
   }
 
   function startEditComment(c: DailyReportComment) {
     setEditingCommentId(c.id);
     setEditCommentBody(c.body);
-    setExpandedCommentId(null);
   }
 
   async function handleSaveCommentEdit(id: string) {
@@ -335,7 +332,7 @@ export default function DailyReportDetailPage() {
       ) : editing ? (
         <>
           <SectionLabel>チーム日報を編集</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>日付</FieldLabel>
             <DateSelect value={editDateValue} onChange={setEditDateValue} />
             <div className="mt-3">
@@ -349,34 +346,37 @@ export default function DailyReportDetailPage() {
               type="button"
               onClick={() => setEditing(false)}
               disabled={savingEdit}
-              className="w-full mt-2.5 text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft"
+              className="w-full mt-2.5 min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border border-line bg-white text-ink-soft"
             >
               キャンセル
             </button>
-          </Card>
+          </div>
 
-          <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
-          <Card>
+          <SectionLabel>削除</SectionLabel>
+          <div className={cardClass}>
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white"
+              className="w-full min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border bg-white"
               style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
             >
               {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "このチーム日報を削除する"}
             </button>
-          </Card>
+          </div>
         </>
       ) : (
         <>
+          {/* 内容: 日報本体(本文・添付・投稿者・スタンプ)を1枚のカードにまとめる。
+              「編集する」(投稿者本人、または指導者・管理者のみ、既存のcanEditReportの
+              条件のまま)は見出しに添え、閲覧内容とは視覚的に区別する。 */}
           <SectionLabel
             action={
               canEditReport(report) && (
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
+                  className="flex-shrink-0 whitespace-nowrap min-h-tap flex items-center text-caption font-bold text-orange-text"
                 >
                   編集する
                 </button>
@@ -385,30 +385,42 @@ export default function DailyReportDetailPage() {
           >
             内容
           </SectionLabel>
-          <Card>
-            <div className="text-[14.5px] leading-relaxed whitespace-pre-wrap">{report.body}</div>
+          <div className={cardClass}>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">{report.body}</div>
             {attachments.length > 0 && (
               <div className="mt-3 space-y-1.5">
                 {attachments.map((a) =>
                   a.url && isImageFile(a.file_name) ? (
                     <a key={a.id} href={a.url} target="_blank" rel="noreferrer">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={a.url} alt={a.file_name} className="w-full rounded-lg border border-line object-contain" />
+                      <img src={a.url} alt={a.file_name} className="w-full rounded-control border border-line object-contain" />
                     </a>
                   ) : a.url ? (
-                    <a key={a.id} href={a.url} target="_blank" rel="noreferrer" className="block text-orange-text font-bold text-xs">
+                    <a
+                      key={a.id}
+                      href={a.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-tap items-center text-orange-text font-bold text-xs"
+                    >
                       📎 {a.file_name}
                     </a>
                   ) : null,
                 )}
               </div>
             )}
-            <div className="text-xs text-ink-soft mt-2.5">{report.author_id ? (profiles[report.author_id] ?? "") : ""}</div>
+            <div className="text-caption text-ink-soft mt-2.5">
+              {report.author_id ? (profiles[report.author_id] ?? "") : ""}
+            </div>
             <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
-          </Card>
+          </div>
 
+          {/* コメント: 日報本体とは別の、独立した会話の積み重ねのため別カードに分ける。
+              自分のコメントの編集・削除は、従来のタップで展開する方式(タッチ端末では
+              cursor-pointerの効果がなく発見しにくかった)から、常時表示のリンクに変更した
+              (結果としてできることは従来と同一: 自分のコメントのみ編集・削除できる)。 */}
           <SectionLabel>コメント</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             {comments.length === 0 ? (
               <div className="text-xs text-ink-soft">まだコメントがありません</div>
             ) : (
@@ -426,7 +438,7 @@ export default function DailyReportDetailPage() {
                         type="button"
                         onClick={() => handleSaveCommentEdit(c.id)}
                         disabled={savingCommentEdit}
-                        className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-orange text-orange-text bg-orange/8"
+                        className="flex-1 min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border border-orange text-orange-text bg-orange/8"
                       >
                         {savingCommentEdit ? "保存中…" : "保存"}
                       </button>
@@ -434,7 +446,7 @@ export default function DailyReportDetailPage() {
                         type="button"
                         onClick={() => setEditingCommentId(null)}
                         disabled={savingCommentEdit}
-                        className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-line text-ink-soft bg-white"
+                        className="flex-1 min-h-tap flex items-center justify-center text-center rounded-control font-bold text-xs border border-line text-ink-soft bg-white"
                       >
                         キャンセル
                       </button>
@@ -442,10 +454,7 @@ export default function DailyReportDetailPage() {
                   </div>
                 ) : (
                   <div key={c.id} className="mb-3 last:mb-0">
-                    <div
-                      className={`text-[12.5px] ${c.profile_id === userId ? "cursor-pointer" : ""}`}
-                      onClick={() => c.profile_id === userId && setExpandedCommentId(expandedCommentId === c.id ? null : c.id)}
-                    >
+                    <div className="text-sm">
                       {c.profile_id !== userId &&
                         isNewSincePrevious(prevSeenAt, c.updated_at > c.created_at ? c.updated_at : c.created_at) && (
                           <NewBadge className="mr-1" />
@@ -458,20 +467,20 @@ export default function DailyReportDetailPage() {
                       onToggle={(type) => toggleCommentReaction(c.id, type)}
                       profiles={profiles}
                     />
-                    {c.profile_id === userId && expandedCommentId === c.id && (
-                      <div className="flex gap-2 mt-1.5">
+                    {c.profile_id === userId && (
+                      <div className="flex gap-3 mt-1">
                         <button
                           type="button"
                           onClick={() => startEditComment(c)}
-                          className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border border-line text-ink-soft bg-paper"
+                          className="min-h-tap flex items-center text-caption font-bold text-ink-soft"
                         >
                           編集
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteComment(c.id)}
-                          className="flex-1 text-center py-1 rounded-lg font-bold text-[10.5px] border bg-white whitespace-nowrap"
-                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                          className="min-h-tap flex items-center whitespace-nowrap text-caption font-bold"
+                          style={{ color: "var(--danger-text)" }}
                         >
                           {deleteCommentConfirmId === c.id ? "再タップで削除確定" : "削除"}
                         </button>
@@ -493,12 +502,12 @@ export default function DailyReportDetailPage() {
                 type="button"
                 onClick={handleAddComment}
                 disabled={postingComment || !commentDraft.trim()}
-                className="flex-shrink-0 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-orange text-orange-text bg-orange/8 disabled:opacity-40"
+                className="flex-shrink-0 min-h-tap flex items-center px-3 rounded-control text-xs font-bold border border-orange text-orange-text bg-orange/8 disabled:opacity-40"
               >
                 送信
               </button>
             </div>
-          </Card>
+          </div>
         </>
       )}
     </PageShell>
