@@ -36,3 +36,9 @@ export function usesDetailedBasketballStats(sport: TeamSport): boolean {
 export function usesThreePointScoring(sport: TeamSport): boolean {
   return sport === "バスケットボール";
 }
+
+// 1クォーター・1チームあたりのタイムアウト上限。ミニバスケットボールのみ1回に制限し、
+// それ以外(バスケットボール等)は上限を設けない(nullは無制限)。
+export function maxTimeoutsPerQuarter(sport: TeamSport): number | null {
+  return sport === "ミニバスケットボール" ? 1 : null;
+}

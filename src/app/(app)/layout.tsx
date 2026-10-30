@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SessionProvider, type SessionInfo } from "@/lib/session-context";
 import { NavigationGuardProvider } from "@/lib/navigationGuard";
+import { FocusModeProvider } from "@/lib/focusMode";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppNav } from "@/components/AppNav";
 import { InactivityLogout } from "@/components/InactivityLogout";
@@ -120,9 +121,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       >
         <ToastProvider>
           <NavigationGuardProvider>
-            <InactivityLogout />
-            <PushPermissionPrompt />
-            <AppNav role={role}>{children}</AppNav>
+            <FocusModeProvider>
+              <InactivityLogout />
+              <PushPermissionPrompt />
+              <AppNav role={role}>{children}</AppNav>
+            </FocusModeProvider>
           </NavigationGuardProvider>
         </ToastProvider>
       </SessionProvider>
