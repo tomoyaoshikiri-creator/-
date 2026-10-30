@@ -171,7 +171,7 @@ export default function ScheduleDetailPage() {
 
   return (
     <PageShell
-      header={<AppHeader title={schedule?.title ?? "予定"} variant="detail" backHref="/schedule" />}
+      header={<AppHeader title="スケジュール詳細" variant="detail" backHref="/schedule" />}
       fab={
         schedule ? (
           <div className="absolute left-4 right-4 bottom-4 z-10 flex gap-2">
