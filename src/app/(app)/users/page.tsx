@@ -342,9 +342,9 @@ export default function UsersPage() {
               <EmptyState>読み込み中…</EmptyState>
             ) : (
               sortedProfiles.map((u) => (
-                <div key={u.id}>
+                <div key={u.id} className="border-b border-line last:border-b-0">
                   <div
-                    className="flex min-h-tap items-center gap-2.5 py-2.5 border-b border-line last:border-b-0 cursor-pointer"
+                    className="flex min-h-tap items-center gap-2.5 py-2 cursor-pointer"
                     onClick={() => setExpandedId(expandedId === u.id ? null : u.id)}
                   >
                     <div className="flex-1">
@@ -406,7 +406,7 @@ export default function UsersPage() {
                       {players.length === 0 ? (
                         <div className="text-xs text-ink-soft mb-2.5">在籍中の選手がいません</div>
                       ) : (
-                        <div className="flex gap-1.5 flex-wrap mb-2.5">
+                        <div className="flex gap-1 flex-wrap mb-2.5">
                           {players.map((p) => {
                             const linked = (guardianLinks[u.id] ?? []).includes(p.id);
                             return (
@@ -417,7 +417,7 @@ export default function UsersPage() {
                                   e.stopPropagation();
                                   toggleGuardian(u.id, p.id);
                                 }}
-                                className={`flex-none min-h-tap px-3 py-1.5 rounded-control text-[11px] font-bold border ${
+                                className={`flex-none min-h-tap px-3 py-1 rounded-control text-[11px] font-bold border ${
                                   linked ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
                                 }`}
                               >
