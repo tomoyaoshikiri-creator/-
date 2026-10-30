@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SubmitButton } from "@/components/ui/SegButton";
 import { loadProfilesMap } from "@/lib/profiles";
 import { markItemSeen } from "@/lib/itemBadges";
@@ -164,7 +164,7 @@ export default function PollDetailPage() {
           <SectionLabel
             action={
               <span
-                className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
+                className={`flex-shrink-0 whitespace-nowrap text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
                   poll.status === "open" ? "bg-orange/10 text-orange-text" : "bg-line text-ink-soft"
                 }`}
               >
@@ -174,21 +174,24 @@ export default function PollDetailPage() {
           >
             {poll.title}
           </SectionLabel>
-          <Card>
-            {poll.description && <div className="text-[12.5px] text-ink-soft mb-2 whitespace-pre-wrap">{poll.description}</div>}
-            <div className="text-[11px] text-ink-soft">
+          <div className={cardClass}>
+            {poll.description && <div className="text-xs text-ink-soft mb-2 whitespace-pre-wrap">{poll.description}</div>}
+            <div className="text-xs text-ink-soft">
               {formatFullDateLabel(poll.created_at.slice(0, 10))} ・ {poll.multi_select ? "複数選択可" : "単一選択"}
               {poll.anonymous && " ・ 匿名投票"}
             </div>
-          </Card>
+          </div>
 
           {canVote && (
             <>
               <SectionLabel>{myVotedOptionIds.size > 0 ? "投票を変更する" : "投票する"}</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 <div className="space-y-2">
                   {options.map((o) => (
-                    <label key={o.id} className="flex items-center gap-2.5 text-[13.5px] font-bold">
+                    <label
+                      key={o.id}
+                      className="flex min-h-tap items-center gap-2.5 rounded-control border border-line px-3 py-2 text-sm font-bold"
+                    >
                       <input
                         type={poll.multi_select ? "checkbox" : "radio"}
                         checked={selected.has(o.id)}
@@ -201,25 +204,25 @@ export default function PollDetailPage() {
                 <SubmitButton onClick={handleVote} disabled={voting}>
                   {voting ? "送信中…" : myVotedOptionIds.size > 0 ? "投票を更新する" : "投票する"}
                 </SubmitButton>
-              </Card>
+              </div>
             </>
           )}
 
           {!canVote && poll.status === "open" && (
-            <Card>
-              <div className="text-[12.5px] text-ink-soft text-center py-1">あなたのロールはこの投票の対象外です</div>
-            </Card>
+            <div className={cardClass}>
+              <div className="text-xs text-ink-soft text-center py-1">あなたのロールはこの投票の対象外です</div>
+            </div>
           )}
 
           <SectionLabel>結果</SectionLabel>
           {results === null ? (
-            <Card>
-              <div className="text-[12.5px] text-ink-soft text-center py-1">結果は締め切り後に公開されます</div>
-            </Card>
+            <div className={cardClass}>
+              <div className="text-xs text-ink-soft text-center py-1">結果は締め切り後に公開されます</div>
+            </div>
           ) : (
-            <Card>
+            <div className={cardClass}>
               {(isPrivilegedEarlyView || isPrivilegedAnonymousReveal) && (
-                <div className="text-[10.5px] font-bold mb-2.5" style={{ color: "var(--danger-text)" }}>
+                <div className="text-xs font-bold mb-2.5" style={{ color: "var(--danger-text)" }}>
                   ※管理者限定の表示です(他のメンバーには公開されていません)
                 </div>
               )}
@@ -230,7 +233,7 @@ export default function PollDetailPage() {
                   const voterIds = r?.voter_ids ?? null;
                   return (
                     <div key={o.id}>
-                      <div className="flex items-center justify-between text-[13px] font-bold">
+                      <div className="flex items-center justify-between text-sm font-bold">
                         <span className="truncate">{o.label}</span>
                         <span className="font-mono text-ink-soft flex-none ml-2">{count}票</span>
                       </div>
@@ -241,7 +244,7 @@ export default function PollDetailPage() {
                         />
                       </div>
                       {voterIds && voterIds.length > 0 && (
-                        <div className="text-[10.5px] text-ink-soft mt-1">
+                        <div className="text-xs text-ink-soft mt-1">
                           {voterIds.map((id) => profiles[id] ?? "不明なユーザー").join("・")}
                         </div>
                       )}
@@ -249,19 +252,19 @@ export default function PollDetailPage() {
                   );
                 })}
               </div>
-            </Card>
+            </div>
           )}
 
           {canManage && (
             <>
               <SectionLabel>管理</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 {poll.status === "open" && (
                   <button
                     type="button"
                     onClick={handleClose}
                     disabled={closing}
-                    className="w-full text-center py-2 rounded-lg font-bold text-[12.5px] border border-line bg-white text-ink-soft disabled:opacity-40"
+                    className="w-full min-h-tap text-center py-2 rounded-control font-bold text-xs border border-line bg-white text-ink-soft disabled:opacity-40"
                   >
                     {closing ? "締め切り中…" : closeConfirm ? "もう一度タップで締め切り確定" : "この投票を締め切る"}
                   </button>
@@ -270,14 +273,14 @@ export default function PollDetailPage() {
                   type="button"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className={`w-full text-center py-2 rounded-lg font-bold text-[12.5px] border bg-white disabled:opacity-40 ${
+                  className={`w-full min-h-tap text-center py-2 rounded-control font-bold text-xs border bg-white disabled:opacity-40 ${
                     poll.status === "open" ? "mt-2" : ""
                   }`}
                   style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                 >
                   {deleting ? "削除中…" : deleteConfirm ? "もう一度タップで削除確定" : "この投票を削除する"}
                 </button>
-              </Card>
+              </div>
             </>
           )}
         </>
