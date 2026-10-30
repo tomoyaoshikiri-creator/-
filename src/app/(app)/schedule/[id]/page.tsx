@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { isTargetEligible, playerFullName, scheduleMeta, sortPlayers } from "@/lib/format";
@@ -151,12 +151,12 @@ export default function ScheduleDetailPage() {
               <Link
                 href={`/schedule/${prevId}`}
                 aria-label="前の予定"
-                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+                className="min-w-tap min-h-tap rounded-control bg-white border border-line flex items-center justify-center text-base text-heading"
               >
                 ‹
               </Link>
             ) : (
-              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+              <span className="min-w-tap min-h-tap rounded-control bg-white border border-line flex items-center justify-center text-base text-line">
                 ‹
               </span>
             )}
@@ -164,26 +164,26 @@ export default function ScheduleDetailPage() {
               <Link
                 href={`/schedule/${nextId}`}
                 aria-label="次の予定"
-                className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+                className="min-w-tap min-h-tap rounded-control bg-white border border-line flex items-center justify-center text-base text-heading"
               >
                 ›
               </Link>
             ) : (
-              <span className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-line">
+              <span className="min-w-tap min-h-tap rounded-control bg-white border border-line flex items-center justify-center text-base text-line">
                 ›
               </span>
             )}
           </div>
 
           <SectionLabel>予定の内容</SectionLabel>
-          <Card className="!py-[11px]">
-            <div className="font-bold text-[16.5px]">
+          <div className={cardClass}>
+            <div className="font-bold text-base break-words">
               <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
               {schedule.title}
             </div>
-            <div className="text-[14.5px] text-ink mt-1.5">{scheduleMeta(schedule)}</div>
-            {schedule.toban && <div className="text-[14.5px] text-ink mt-1.5">当番:{schedule.toban}</div>}
-          </Card>
+            <div className="text-caption text-ink-soft mt-1.5">{scheduleMeta(schedule)}</div>
+            {schedule.toban && <div className="text-caption text-ink-soft mt-1.5">当番:{schedule.toban}</div>}
+          </div>
 
           {canWriteSchedule(role) && (
             <>
@@ -192,7 +192,7 @@ export default function ScheduleDetailPage() {
                   <button
                     type="button"
                     onClick={() => setRosterOpen(true)}
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-orange text-[11px] font-bold text-orange-text bg-orange/8 whitespace-nowrap"
+                    className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-orange text-xs font-bold text-orange-text bg-orange/8"
                   >
                     出欠一覧
                   </button>
@@ -200,14 +200,14 @@ export default function ScheduleDetailPage() {
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-line text-[11px] font-bold text-ink-soft bg-paper whitespace-nowrap"
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
                 >
                   編集
                 </button>
                 <button
                   type="button"
                   onClick={() => setCopyOpen(true)}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-line text-[11px] font-bold text-ink-soft bg-paper"
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
                 >
                   コピーして登録
                 </button>
@@ -273,7 +273,7 @@ export default function ScheduleDetailPage() {
           {schedule.requires_attendance && role === "管理者" && proxyPlayers.length > 0 && (
             <>
               <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 <FieldLabel>選手を選ぶ</FieldLabel>
                 <select
                   className={inputClass()}
@@ -287,7 +287,7 @@ export default function ScheduleDetailPage() {
                     </option>
                   ))}
                 </select>
-              </Card>
+              </div>
               {proxyPlayerId && (
                 <AttendanceEntryForm
                   key={proxyPlayerId}
@@ -306,7 +306,7 @@ export default function ScheduleDetailPage() {
           {schedule.requires_attendance && role === "管理者" && unlinkedGuardians.length > 0 && (
             <>
               <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 <FieldLabel>保護者を選ぶ</FieldLabel>
                 <select
                   className={inputClass()}
@@ -320,7 +320,7 @@ export default function ScheduleDetailPage() {
                     </option>
                   ))}
                 </select>
-              </Card>
+              </div>
               {unlinkedGuardianId && (
                 <AttendanceEntryForm
                   key={unlinkedGuardianId}
