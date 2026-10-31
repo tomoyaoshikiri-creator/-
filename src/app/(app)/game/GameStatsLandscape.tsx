@@ -58,7 +58,7 @@ function SquareChip({
     <button
       type="button"
       onClick={onSelect}
-      className={`relative flex-none w-[68px] h-[78px] flex flex-col items-center justify-center rounded-lg border font-bold ${
+      className={`relative flex-none w-[68px] h-[66px] flex flex-col items-center justify-center rounded-lg border font-bold ${
         active ? activeClass : idleClass
       }`}
     >
@@ -252,7 +252,7 @@ export function GameStatsLandscape({
 
   return (
     <div className="relative">
-      <div className="relative flex items-center justify-center py-2">
+      <div className="relative flex items-center justify-center py-1">
         <div className="absolute left-0 top-1/2 -translate-y-1/2">
           <div className="font-mono text-[10px] font-bold text-ink-soft opacity-65">
             {schedule ? formatSlashDateLabel(schedule.date) : ""}
@@ -306,7 +306,7 @@ export function GameStatsLandscape({
         </div>
       </div>
 
-      <div className="relative flex items-center justify-center gap-2.5 py-1.5 border-t border-b border-line">
+      <div className="relative flex items-center justify-center gap-2.5 py-1 border-t border-b border-line">
         <button
           type="button"
           onClick={() => onSetPossession("own")}
@@ -326,7 +326,7 @@ export function GameStatsLandscape({
       </div>
 
       <div
-        className="grid gap-2.5 pt-3 pb-4"
+        className="grid gap-2.5 pt-2 pb-2"
         style={{ gridTemplateColumns: "minmax(150px,190px) 112fr 540fr 112fr minmax(150px,190px)" }}
       >
         <LogColumn
@@ -338,8 +338,8 @@ export function GameStatsLandscape({
         />
 
         <div className="flex flex-col items-center min-h-0">
-          <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">自チーム</div>
-          <div className="flex flex-col gap-1.5 items-center">
+          <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1">自チーム</div>
+          <div className="flex flex-col gap-1 items-center">
             {ownEntrants.map((e) => (
               <SquareChip
                 key={e.id}
@@ -357,8 +357,8 @@ export function GameStatsLandscape({
 
         <div className="flex flex-col items-center min-h-0">
           <div
-            className="grid grid-cols-2 gap-1.5 w-full"
-            style={{ gridAutoRows: "78px" }}
+            className="grid grid-cols-2 gap-1 w-full"
+            style={{ gridAutoRows: "66px" }}
           >
             {gridCells.map((cell) => {
               if (cell.type === "ft") {
@@ -400,8 +400,8 @@ export function GameStatsLandscape({
         </div>
 
         <div className="flex flex-col items-center min-h-0">
-          <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">相手チーム</div>
-          <div className="flex flex-col gap-1.5 items-center">
+          <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1">相手チーム</div>
+          <div className="flex flex-col gap-1 items-center">
             {opponentEntrants.map((e) => (
               <SquareChip
                 key={e.id}

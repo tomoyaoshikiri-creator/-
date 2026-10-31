@@ -26,10 +26,14 @@ export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitesp
 // 加算せず、大きい方を採用するmax()に変更する。これにより、safe-area-inset-bottomが
 // 大きい端末でも最低限それを下回らず、かつ0や小さい環境(Android Chrome等)では
 // 単純に下端から0.875rem(14px、目安の12〜16pxの範囲内)になる。
+// iPad横画面等、画面幅が広い場合はleft-3/right-3のままだとピルが画面幅いっぱいに
+// 伸びてしまう。max-widthを設け、かつleft/right(両方指定)+mx-auto(margin:auto)の
+// 組み合わせで、幅がmax-widthを下回る間(iPhone等)は従来通りlef-3/right-3の
+// 余白まで伸び、上回る場合(iPad横画面等)はその最大幅のまま中央に固定される。
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
     <div
-      className="absolute left-3 right-3 z-10"
+      className="absolute left-3 right-3 z-10 mx-auto max-w-[480px]"
       style={{ bottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
     >
       {children}
