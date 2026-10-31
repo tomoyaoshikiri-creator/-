@@ -293,138 +293,146 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
-          {/* 4. 予定の管理操作: 編集・コピー・代理登録・未紐付け保護者の修正を集約した折りたたみセクション
-              (既定で閉じる)。各操作の表示条件(canWriteSchedule/role==="管理者")は無変更。 */}
+          {/* 4. 予定の編集・コピー: 以前は折りたたみ内に隠れていたため見つけられず編集できないという
+              不具合報告があったため、canWriteSchedule(role)のまま常時表示に戻す(表示条件は無変更)。 */}
           {canWriteSchedule(role) && (
             <>
-              <button
-                type="button"
-                onClick={() => setManageOpen((v) => !v)}
-                className="w-full min-h-tap flex items-center justify-between gap-2 mb-2"
-              >
-                <span className="font-mono text-[10.5px] font-bold tracking-widest uppercase text-ink-soft">
-                  予定の管理操作
-                </span>
-                <ChevronRightIcon
-                  className={`w-3.5 h-3.5 text-ink-soft flex-shrink-0 transition-transform ${
-                    manageOpen ? "rotate-90" : ""
-                  }`}
-                />
-              </button>
-
-              {manageOpen && (
-                <>
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditOpen(true)}
-                      className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
-                    >
-                      編集
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCopyOpen(true)}
-                      className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
-                    >
-                      コピーして登録
-                    </button>
-                  </div>
-                  <NewScheduleModal
-                    open={editOpen}
-                    onClose={() => setEditOpen(false)}
-                    editSchedule={schedule}
-                    onCreated={() => {
-                      setEditOpen(false);
-                      load();
-                    }}
-                    onDeleted={() => {
-                      setEditOpen(false);
-                      toast.success("予定を削除しました");
-                      router.push("/schedule");
-                    }}
-                  />
-                  <NewScheduleModal
-                    open={copyOpen}
-                    onClose={() => setCopyOpen(false)}
-                    copySource={schedule}
-                    onCreated={() => {
-                      setCopyOpen(false);
-                      toast.success("予定をコピーして登録しました");
-                      router.push("/schedule");
-                    }}
-                  />
-
-                  {schedule.requires_attendance && role === "管理者" && proxyPlayers.length > 0 && (
-                    <>
-                      <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
-                      <div className={cardClass}>
-                        <FieldLabel>選手を選ぶ</FieldLabel>
-                        <select
-                          className={inputClass()}
-                          value={proxyPlayerId}
-                          onChange={(e) => setProxyPlayerId(e.target.value)}
-                        >
-                          <option value="">選手を選択してください</option>
-                          {proxyPlayers.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {playerFullName(p)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {proxyPlayerId && (
-                        <AttendanceEntryForm
-                          key={proxyPlayerId}
-                          scheduleId={schedule.id}
-                          userId={userId}
-                          playerId={proxyPlayerId}
-                          label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
-                          isGame={isGame}
-                          venueType={schedule.venue_type}
-                          collectCarInfo={schedule.collect_car_info}
-                        />
-                      )}
-                    </>
-                  )}
-
-                  {schedule.requires_attendance && role === "管理者" && unlinkedGuardians.length > 0 && (
-                    <>
-                      <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
-                      <div className={cardClass}>
-                        <FieldLabel>保護者を選ぶ</FieldLabel>
-                        <select
-                          className={inputClass()}
-                          value={unlinkedGuardianId}
-                          onChange={(e) => setUnlinkedGuardianId(e.target.value)}
-                        >
-                          <option value="">保護者を選択してください</option>
-                          {unlinkedGuardians.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {unlinkedGuardianId && (
-                        <AttendanceEntryForm
-                          key={unlinkedGuardianId}
-                          scheduleId={schedule.id}
-                          userId={unlinkedGuardianId}
-                          playerId={null}
-                          label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
-                          isGame={isGame}
-                          venueType={schedule.venue_type}
-                          collectCarInfo={schedule.collect_car_info}
-                          allowDelete
-                        />
-                      )}
-                    </>
-                  )}
-                </>
-              )}
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                >
+                  編集
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCopyOpen(true)}
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                >
+                  コピーして登録
+                </button>
+              </div>
+              <NewScheduleModal
+                open={editOpen}
+                onClose={() => setEditOpen(false)}
+                editSchedule={schedule}
+                onCreated={() => {
+                  setEditOpen(false);
+                  load();
+                }}
+                onDeleted={() => {
+                  setEditOpen(false);
+                  toast.success("予定を削除しました");
+                  router.push("/schedule");
+                }}
+              />
+              <NewScheduleModal
+                open={copyOpen}
+                onClose={() => setCopyOpen(false)}
+                copySource={schedule}
+                onCreated={() => {
+                  setCopyOpen(false);
+                  toast.success("予定をコピーして登録しました");
+                  router.push("/schedule");
+                }}
+              />
             </>
           )}
+
+          {/* 4b. 代理登録・未紐付け保護者の修正を集約した折りたたみセクション(既定で閉じる、管理者のみ)。
+              表示条件(role==="管理者"/schedule.requires_attendance)は無変更。 */}
+          {role === "管理者" &&
+            schedule.requires_attendance &&
+            (proxyPlayers.length > 0 || unlinkedGuardians.length > 0) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setManageOpen((v) => !v)}
+                  className="w-full min-h-tap flex items-center justify-between gap-2 mb-2"
+                >
+                  <span className="font-mono text-[10.5px] font-bold tracking-widest uppercase text-ink-soft">
+                    予定の管理操作
+                  </span>
+                  <ChevronRightIcon
+                    className={`w-3.5 h-3.5 text-ink-soft flex-shrink-0 transition-transform ${
+                      manageOpen ? "rotate-90" : ""
+                    }`}
+                  />
+                </button>
+
+                {manageOpen && (
+                  <>
+                    {proxyPlayers.length > 0 && (
+                      <>
+                        <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
+                        <div className={cardClass}>
+                          <FieldLabel>選手を選ぶ</FieldLabel>
+                          <select
+                            className={inputClass()}
+                            value={proxyPlayerId}
+                            onChange={(e) => setProxyPlayerId(e.target.value)}
+                          >
+                            <option value="">選手を選択してください</option>
+                            {proxyPlayers.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {playerFullName(p)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {proxyPlayerId && (
+                          <AttendanceEntryForm
+                            key={proxyPlayerId}
+                            scheduleId={schedule.id}
+                            userId={userId}
+                            playerId={proxyPlayerId}
+                            label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
+                            isGame={isGame}
+                            venueType={schedule.venue_type}
+                            collectCarInfo={schedule.collect_car_info}
+                          />
+                        )}
+                      </>
+                    )}
+
+                    {unlinkedGuardians.length > 0 && (
+                      <>
+                        <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
+                        <div className={cardClass}>
+                          <FieldLabel>保護者を選ぶ</FieldLabel>
+                          <select
+                            className={inputClass()}
+                            value={unlinkedGuardianId}
+                            onChange={(e) => setUnlinkedGuardianId(e.target.value)}
+                          >
+                            <option value="">保護者を選択してください</option>
+                            {unlinkedGuardians.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {unlinkedGuardianId && (
+                          <AttendanceEntryForm
+                            key={unlinkedGuardianId}
+                            scheduleId={schedule.id}
+                            userId={unlinkedGuardianId}
+                            playerId={null}
+                            label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
+                            isGame={isGame}
+                            venueType={schedule.venue_type}
+                            collectCarInfo={schedule.collect_car_info}
+                            allowDelete
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            )}
 
           {/* 5. 前後予定ナビゲーション(PageShellのfabスロット、画面下部に固定表示)は上のreturn先頭で定義。
               固定バーの下に隠れないよう、最後の要素の下に余白を確保する。 */}

@@ -330,7 +330,7 @@ export default function UsersPage() {
   );
 
   return (
-    <PageShell header={<AppHeader title="ユーザー管理" variant="detail" backHref="/home" />}>
+    <PageShell header={<AppHeader title={isAdmin ? "ユーザー管理" : "メンバーを招待"} variant="detail" backHref="/home" />}>
       {isAdmin && (
         <>
           <SectionLabel>メンバー</SectionLabel>
