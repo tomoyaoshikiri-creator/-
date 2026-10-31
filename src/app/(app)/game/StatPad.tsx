@@ -162,65 +162,69 @@ export function StatPad({
     setSelected(null);
   }
 
+  // 自チーム選手エリア・スタッツ入力エリア・相手チーム選手エリアの3領域を、同じCard
+  // (外枠・角丸・白背景)で揃えて自然な関係に見せる。スタッツ入力ボタン・選手チップ
+  // 自体のサイズ(タップ領域)は変更せず、各エリアの外枠と間隔(Cardのmb-2.5による
+  // 均等な段差)だけを調整している。
   return (
     <>
       <SectionLabel>自チームのスタッツ</SectionLabel>
-      <ChipRow
-        entrants={ownEntrants}
-        statLines={ownStatLines}
-        active={(id) => selected?.side === "own" && selected.id === id}
-        showName
-        onSelect={(id) => setSelected({ side: "own", id })}
-      />
+      <Card>
+        <ChipRow
+          entrants={ownEntrants}
+          statLines={ownStatLines}
+          active={(id) => selected?.side === "own" && selected.id === id}
+          showName
+          onSelect={(id) => setSelected({ side: "own", id })}
+        />
+      </Card>
 
       {ownEntrants.length === 0 && opponentEntrants.length === 0 ? (
         <EmptyState>スタメンを登録するか、下部の「交代」から選手を選んでください</EmptyState>
       ) : (
-        <>
-          <Card className="mt-2">
-            <div className="grid grid-cols-2 gap-1.5">
-              {gridCells.map((cell) => {
-                if (cell.type === "ft") {
-                  return (
-                    <button
-                      key="ft"
-                      type="button"
-                      disabled={!selected}
-                      onClick={() => setFtModalOpen(true)}
-                      className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
-                        selected ? "" : "opacity-45"
-                      }`}
-                    >
-                      <div className="text-[12px] font-bold">FT(フリースロー)</div>
-                      <div className="font-mono text-[17px] font-bold">
-                        {row ? `${row.ft_made}/${row.ft_att}` : "-"}
-                      </div>
-                    </button>
-                  );
-                }
-                const { event, label } = cell;
-                const count = row ? statEventCount(row, event) : null;
+        <Card>
+          <div className="grid grid-cols-2 gap-1.5">
+            {gridCells.map((cell) => {
+              if (cell.type === "ft") {
                 return (
                   <button
-                    key={event}
+                    key="ft"
                     type="button"
                     disabled={!selected}
-                    onClick={() => handleTap(event)}
+                    onClick={() => setFtModalOpen(true)}
                     className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
                       selected ? "" : "opacity-45"
                     }`}
                   >
-                    <div className="text-[12px] font-bold">{label}</div>
-                    <div className="font-mono text-[17px] font-bold">{count ?? "-"}</div>
+                    <div className="text-[12px] font-bold">FT(フリースロー)</div>
+                    <div className="font-mono text-[17px] font-bold">
+                      {row ? `${row.ft_made}/${row.ft_att}` : "-"}
+                    </div>
                   </button>
                 );
-              })}
-            </div>
-          </Card>
-        </>
+              }
+              const { event, label } = cell;
+              const count = row ? statEventCount(row, event) : null;
+              return (
+                <button
+                  key={event}
+                  type="button"
+                  disabled={!selected}
+                  onClick={() => handleTap(event)}
+                  className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
+                    selected ? "" : "opacity-45"
+                  }`}
+                >
+                  <div className="text-[12px] font-bold">{label}</div>
+                  <div className="font-mono text-[17px] font-bold">{count ?? "-"}</div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
-      <div className="mt-2">
+      <Card>
         <ChipRow
           entrants={opponentEntrants}
           statLines={opponentStatLines}
@@ -228,8 +232,8 @@ export function StatPad({
           activeColor="navy"
           onSelect={(id) => setSelected({ side: "opponent", id })}
         />
-        <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
-      </div>
+      </Card>
+      <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
 
       {selectedEntrant && (
         <FreeThrowModal

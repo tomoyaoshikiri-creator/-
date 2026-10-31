@@ -289,3 +289,37 @@ export function LogoutIcon(props: IconProps) {
     </svg>
   );
 }
+
+// スタッツ入力画面の専用操作バー「取り消し」用。直前の記録を元に戻すUndoを表す
+// 反時計回りの矢印。
+export function UndoIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 10h9a5.5 5.5 0 0 1 0 11h-3" />
+      <path d="M9 6L5 10l4 4" />
+    </svg>
+  );
+}
+
+// スタッツ入力画面の専用操作バー「タイムアウト」用の時計アイコン。
+export function TimerIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l3 2" />
+      <path d="M9 2h6" />
+    </svg>
+  );
+}
+
+// スタッツ入力画面の専用操作バー「その他」用。横並びの3点リーダーで、ナビゲーション先を
+// 持つMenuIcon(3本線のハンバーガー)とは視覚的に区別する。
+export function MoreIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}

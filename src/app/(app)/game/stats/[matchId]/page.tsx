@@ -9,6 +9,8 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
+import { PillNavPosition, PillNavBar, PillNavButton, PillNavDivider } from "@/components/PillNavBar";
+import { UndoIcon, SwitchIcon, TimerIcon, MoreIcon } from "@/components/icons";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { GameStatsLandscape } from "../../GameStatsLandscape";
@@ -835,160 +837,135 @@ export default function GameStatsPage() {
       }
       fab={
         !loading && match && !isLandscapeWide ? (
-          <div
-            className="absolute left-0 right-0 bottom-0 z-10 bg-white border-t border-line"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          >
-            {barPanel === "none" && (
-              <div className="flex">
-                <button
-                  type="button"
-                  onClick={handleUndo}
-                  disabled={!canUndo}
-                  className={`flex-1 min-h-tap flex flex-col items-center justify-center gap-0.5 py-2 font-bold text-xs ${
-                    canUndo ? "text-danger-text" : "text-ink-soft opacity-40"
-                  }`}
-                >
-                  取り消し
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("sub")}
-                  className="flex-1 min-h-tap flex flex-col items-center justify-center gap-0.5 py-2 border-l border-line font-bold text-xs text-ink-soft"
-                >
-                  交代
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("timeout")}
-                  className="flex-1 min-h-tap flex flex-col items-center justify-center gap-0.5 py-2 border-l border-line font-bold text-xs text-ink-soft"
-                >
-                  タイムアウト
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("more")}
-                  className="flex-1 min-h-tap flex flex-col items-center justify-center gap-0.5 py-2 border-l border-line font-bold text-xs text-ink-soft"
-                >
-                  その他
-                </button>
-              </div>
-            )}
+          <PillNavPosition>
+            {barPanel === "none" ? (
+              <PillNavBar>
+                <PillNavButton icon={UndoIcon} label="取り消し" onClick={handleUndo} disabled={!canUndo} tone="danger" />
+                <PillNavDivider />
+                <PillNavButton icon={SwitchIcon} label="交代" onClick={() => setBarPanel("sub")} />
+                <PillNavDivider />
+                <PillNavButton icon={TimerIcon} label="タイムアウト" onClick={() => setBarPanel("timeout")} />
+                <PillNavDivider />
+                <PillNavButton icon={MoreIcon} label="その他" onClick={() => setBarPanel("more")} />
+              </PillNavBar>
+            ) : (
+              <div className="rounded-card border border-line bg-white shadow-card p-3">
+                {barPanel === "sub" && (
+                  <>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOwnMemberModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs"
+                      >
+                        自チームの交代
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOpponentMemberModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs"
+                      >
+                        相手チームの交代
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </>
+                )}
 
-            {barPanel === "sub" && (
-              <div className="p-3">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBarPanel("none");
-                      setOwnMemberModalOpen(true);
-                    }}
-                    className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs"
-                  >
-                    自チームの交代
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBarPanel("none");
-                      setOpponentMemberModalOpen(true);
-                    }}
-                    className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs"
-                  >
-                    相手チームの交代
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("none")}
-                  className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
-                >
-                  戻る
-                </button>
-              </div>
-            )}
+                {barPanel === "timeout" && (
+                  <>
+                    <div className="text-center text-caption text-ink-soft mb-1.5">{quarter}Qのタイムアウト</div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleTimeout("own")}
+                        disabled={ownTimeoutAtLimit}
+                        className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs ${
+                          ownTimeoutAtLimit ? "opacity-40" : ""
+                        }`}
+                      >
+                        <span>自チーム</span>
+                        <span className="font-mono">
+                          {ownTimeoutCount}
+                          {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeout("opponent")}
+                        disabled={opponentTimeoutAtLimit}
+                        className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs ${
+                          opponentTimeoutAtLimit ? "opacity-40" : ""
+                        }`}
+                      >
+                        <span>相手チーム</span>
+                        <span className="font-mono">
+                          {opponentTimeoutCount}
+                          {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
+                        </span>
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </>
+                )}
 
-            {barPanel === "timeout" && (
-              <div className="p-3">
-                <div className="text-center text-caption text-ink-soft mb-1.5">{quarter}Qのタイムアウト</div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleTimeout("own")}
-                    disabled={ownTimeoutAtLimit}
-                    className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs ${
-                      ownTimeoutAtLimit ? "opacity-40" : ""
-                    }`}
-                  >
-                    <span>自チーム</span>
-                    <span className="font-mono">
-                      {ownTimeoutCount}
-                      {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTimeout("opponent")}
-                    disabled={opponentTimeoutAtLimit}
-                    className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs ${
-                      opponentTimeoutAtLimit ? "opacity-40" : ""
-                    }`}
-                  >
-                    <span>相手チーム</span>
-                    <span className="font-mono">
-                      {opponentTimeoutCount}
-                      {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
-                    </span>
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("none")}
-                  className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
-                >
-                  戻る
-                </button>
+                {barPanel === "more" && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBarPanel("none");
+                        setStartingLineupModalOpen(true);
+                      }}
+                      className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      スターティングの編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetStats}
+                      disabled={resetting}
+                      className={`w-full min-h-tap flex items-center justify-center rounded-control border bg-white font-bold text-xs ${
+                        resetConfirm ? "" : "opacity-50"
+                      }`}
+                      style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                    >
+                      {resetting
+                        ? "リセット中…"
+                        : resetConfirm
+                          ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
+                          : "この試合のスタッツ・スタメンをオールリセット"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-
-            {barPanel === "more" && (
-              <div className="p-3 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBarPanel("none");
-                    setStartingLineupModalOpen(true);
-                  }}
-                  className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
-                >
-                  スターティングの編集
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResetStats}
-                  disabled={resetting}
-                  className={`w-full min-h-tap flex items-center justify-center rounded-control border bg-white font-bold text-xs ${
-                    resetConfirm ? "" : "opacity-50"
-                  }`}
-                  style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
-                >
-                  {resetting
-                    ? "リセット中…"
-                    : resetConfirm
-                      ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
-                      : "この試合のスタッツ・スタメンをオールリセット"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBarPanel("none")}
-                  className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
-                >
-                  戻る
-                </button>
-              </div>
-            )}
-          </div>
+          </PillNavPosition>
         ) : undefined
       }
     >
@@ -1170,8 +1147,9 @@ export default function GameStatsPage() {
           />
 
           {/* スターティングの編集・オールリセットは下部の専用操作バー(その他)へ移設した。
-              機能・確認仕様は変更していない。 */}
-          <div className="h-20" aria-hidden />
+              機能・確認仕様は変更していない。ピル型ナビは下端から浮いている分、以前の
+              全幅バーより高さがあるため、本文最下部が隠れないよう余白を広めに確保する。 */}
+          <div className="h-28" aria-hidden />
 
           <MemberChangeModal
             open={ownMemberModalOpen}
