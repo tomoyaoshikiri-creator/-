@@ -1,17 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { GuardedLink } from "@/components/GuardedLink";
 
-type PillNavIcon = (props: { className?: string }) => React.ReactElement;
+export type PillNavIcon = (props: { className?: string }) => React.ReactElement;
 
-// CIRCLE LINESの新しい共通ボトムナビデザイン「フローティング型のピル型ナビゲーション」。
+// CIRCLE LINESの共通ボトムナビデザイン「フローティング型のピル型ナビゲーション」。
 // 画面下部に左右の余白を設けて浮かせる横長ピル・白系背景・控えめな境界線と影・
 // アイコン上/ラベル下、という見た目をここに集約する。
 //
-// 今回はスタッツ入力画面の専用4ボタン(操作バー)にのみ適用し、通常の下部5タブ
-// (TabBar.tsx/Sidebar.tsx)は変更しない。ただしPhase 3で5タブ側にも同じ見た目を
-// 適用する前提で、サイズ定数とこの外枠コンポーネントを再利用できる形にしている。
-// TabBar(アイコン23px/ラベル9.5px)と同じ値を使う。
+// スタッツ入力画面の専用4ボタン(操作バー、PillNavButton)と、Phase 3で刷新した
+// 通常画面の下部5タブ(TabBar.tsx、PillNavLink)の両方がこの見た目を共有する。
+// サイズ定数(アイコン23px/ラベル9.5px)も両者で共通。
 
 export const PILL_NAV_ICON_CLASS = "w-[23px] h-[23px]";
 export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitespace-nowrap";
@@ -87,4 +87,43 @@ export function PillNavButton({
 // 別のdivとして各ボタンの間にだけ挿入する(最初のボタンの前には入れない)。
 export function PillNavDivider() {
   return <div className="w-px bg-line self-stretch my-2" aria-hidden />;
+}
+
+// 通常画面の下部5タブ用のナビリンク。PillNavButton(操作ボタン、常時ハイライトなし)
+// とは異なり、選択中のタブだけアイコン背後にピル状のハイライトを常時表示し、
+// 非選択タブは控えめな表示にする(確定仕様3)。タブ同士の区切り線は入れない
+// (操作ボタン群とは見た目を区別し、連続した1つのタブ群として見せるため)。
+export function PillNavLink({
+  href,
+  icon: Icon,
+  label,
+  active,
+  badge = false,
+}: {
+  href: string;
+  icon: PillNavIcon;
+  label: string;
+  active: boolean;
+  badge?: boolean;
+}) {
+  return (
+    <GuardedLink
+      href={href}
+      className={`relative flex-1 min-w-0 min-h-tap flex flex-col items-center justify-center gap-1 py-2 ${
+        active ? "text-orange-text" : "text-ink-soft"
+      }`}
+    >
+      <span
+        className={`relative inline-flex items-center justify-center rounded-full px-3 py-1 ${
+          active ? "bg-orange/12" : ""
+        }`}
+      >
+        <Icon className={PILL_NAV_ICON_CLASS} />
+        {badge && (
+          <span className="absolute top-0 right-0.5 w-[8px] h-[8px] rounded-full bg-danger border border-white" />
+        )}
+      </span>
+      <span className={`${PILL_NAV_LABEL_CLASS} ${active ? "font-bold" : ""}`}>{label}</span>
+    </GuardedLink>
+  );
 }
