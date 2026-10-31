@@ -15,13 +15,15 @@ export type TabKey =
 
 // ナビ再設計v3(ボトムナビ5タブ化)で、bottom nav上のラベルのみ「予定」「試合」に変更した
 // (中身のページ自体・PAGE_TITLESとしての用途は変えていない。両者を意図的に揃えている)。
+// Phase 3(共通ナビゲーション刷新)で、ボトムナビ上の表記をさらに「スケジュール」
+// 「NEWS」「ゲーム」に変更した。PAGE_TITLES側(各ページ自体の見出し)は変更していない。
 export const TAB_LABELS: Record<TabKey, string> = {
   home: "ホーム",
-  schedule: "予定",
-  notice: "お知らせ",
+  schedule: "スケジュール",
+  notice: "NEWS",
   report: "チーム日報",
   coachNote: "コーチ日報",
-  game: "試合",
+  game: "ゲーム",
   karte: "カルテ",
   library: "ライブラリ",
   users: "管理",

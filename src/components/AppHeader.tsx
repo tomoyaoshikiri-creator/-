@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { BackIcon, MenuIcon, SearchIcon } from "@/components/icons";
 import { useSession } from "@/lib/session-context";
-import { useFocusModeState } from "@/lib/focusMode";
 import { CurrentUserBadge } from "@/components/CurrentUserBadge";
 import { NavDrawer } from "@/components/NavDrawer";
 import { GuardedLink } from "@/components/GuardedLink";
@@ -34,10 +33,6 @@ export function AppHeader({
   void variant;
   const { teamName, teamLogoUrl } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-  // 専用作業画面(focusMode)ではSidebar自体を隠すため、タブレット幅以上でも
-  // ハンバーガーメニューが唯一のナビ導線になる。通常画面(focusMode=false)では
-  // 従来通りmin-[700px]:hiddenのまま(Sidebarが導線を担うため変更なし)。
-  const { focusMode } = useFocusModeState();
   return (
     <div
       className="px-4.5 pb-3.5"
@@ -76,13 +71,13 @@ export function AppHeader({
         className="flex items-center flex-wrap gap-2 font-sans font-bold text-[22px] mt-1.5 mb-1 leading-tight break-words tracking-wide"
         style={{ color: "var(--header-title-on)" }}
       >
-        {/* タブレット幅(min-[700px]以上)ではSidebarが常時表示され、その中に
-            このメニューの項目も含まれているため、入口が重複しないようここでは隠す。 */}
+        {/* Phase 3で常時表示サイドバーを廃止したため、画面幅・向きを問わず
+            ハンバーガーメニューがNavDrawerへの唯一の入口になる。 */}
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
           aria-label="メニューを開く"
-          className={`${focusMode ? "" : "min-[700px]:hidden"} inline-flex items-center justify-center w-8 h-8 rounded-lg -ml-1 flex-shrink-0`}
+          className="inline-flex items-center justify-center w-8 h-8 rounded-lg -ml-1 flex-shrink-0"
           style={{ background: "var(--header-chip-surface)", color: "var(--header-chip-on)" }}
         >
           <MenuIcon className="w-5 h-5" />
