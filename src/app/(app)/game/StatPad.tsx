@@ -65,8 +65,12 @@ function ChipRow({
   const activeClass = activeColor === "navy" ? "border-navy bg-navy text-white" : "border-orange bg-orange text-white";
   // 出場中の選手であることがひと目で分かるよう、選択中でなくても枠線は常にチームカラーで色付けする。
   const idleClass = activeColor === "navy" ? "border-navy bg-white text-ink" : "border-orange bg-white text-ink";
+  // スタメン5人ちょうどの場合だけ、利用可能な横幅を5等分して配置する(右側に不要な
+  // 空白ができないようにするため)。5人未満は従来通りの固定幅・自然な左詰めのまま、
+  // 6人以上(途中出場の重複表示等)は従来通り固定幅+横スクロールを維持する。
+  const fillEqually = entrants.length === 5;
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
+    <div className={`flex gap-1.5 pb-1 ${fillEqually ? "" : "overflow-x-auto"}`}>
       {entrants.map((e) => {
         const r = statLines[e.id];
         const isActive = active(e.id);
@@ -76,9 +80,9 @@ function ChipRow({
             key={e.id}
             type="button"
             onClick={() => onSelect(e.id)}
-            className={`relative flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
-              isActive ? activeClass : idleClass
-            }`}
+            className={`relative min-w-0 flex flex-col items-center justify-center ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
+              fillEqually ? "flex-1" : "flex-none w-14"
+            } ${isActive ? activeClass : idleClass}`}
           >
             {fouledOut && (
               <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded-full bg-danger text-white text-[7px] font-bold leading-none">
@@ -94,8 +98,12 @@ function ChipRow({
                 {e.name}
               </span>
             )}
-            <span className="text-[15px] leading-none mt-0.5">{e.number ?? "-"}</span>
-            <span className={`text-[9.5px] mt-0.5 leading-none ${isActive ? "text-white/85" : "text-ink-soft"}`}>
+            <span className="w-full px-0.5 text-[15px] leading-none mt-0.5 truncate text-center">
+              {e.number ?? "-"}
+            </span>
+            <span
+              className={`w-full px-0.5 text-[9.5px] mt-0.5 leading-none truncate text-center ${isActive ? "text-white/85" : "text-ink-soft"}`}
+            >
               {r?.pts ?? 0}pts
             </span>
           </button>
