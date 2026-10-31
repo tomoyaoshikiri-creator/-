@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-// スタッツ入力画面等の「専用作業画面」がマウント中だけ、通常の下部ナビゲーション
-// (TabBar/Sidebar)を隠し、画面側が用意する専用操作バーに置き換えるための仕組み。
-// AppNav.tsxがこのContextを読んで出し分けるだけで、TabBar/Sidebar自体の内部実装は
-// 変更しない。
+// 「専用作業画面」(スタッツ入力画面・スケジュール詳細画面等、下部5タブ・サイドバーを隠し
+// 戻る+ハンバーガーのみにする画面)用の最小限のContext。Sidebar.tsx/TabBar.tsx自体は
+// 変更せず、AppNav.tsxがこの状態を見て表示/非表示を切り替える。マウントしているページだけが
+// useFocusMode(true)の間だけ有効。
 const FocusModeContext = createContext<{ focusMode: boolean; setFocusMode: (v: boolean) => void } | null>(null);
 
 export function FocusModeProvider({ children }: { children: React.ReactNode }) {

@@ -12,6 +12,7 @@ import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
+import { useFocusMode } from "@/lib/focusMode";
 import { formatDateLabel, isTargetEligible, playerFullName, sortPlayers } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
 import type { Player, Schedule } from "@/lib/database.types";
@@ -24,6 +25,14 @@ interface AttendanceSubject {
   key: string;
   playerId: string | null;
   label: string;
+}
+
+interface AttendanceSummary {
+  attending: number;
+  absent: number;
+  late: number;
+  watch: number;
+  noResponse: number;
 }
 
 // scheduleMeta()(@/lib/format、一覧画面等で共通利用)と同じ時刻表示ロジックだが、
@@ -43,10 +52,15 @@ export default function ScheduleDetailPage() {
   const { userId, role, requireUnlinkedGuardianAttendance } = useSession();
   const toast = useToast();
 
+  // 詳細画面(専用作業画面)のため、通常の下部5タブ・サイドバーは表示しない
+  // (戻る・ハンバーガーのみ。AppHeader側の導線は無変更)。
+  useFocusMode(true);
+
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [subjects, setSubjects] = useState<AttendanceSubject[]>([]);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [excludedLinkedCount, setExcludedLinkedCount] = useState(0);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const [proxyPlayers, setProxyPlayers] = useState<Player[]>([]);
   const [proxyPlayerId, setProxyPlayerId] = useState("");
   const [unlinkedGuardians, setUnlinkedGuardians] = useState<{ id: string; name: string }[]>([]);
@@ -132,6 +146,42 @@ export default function ScheduleDetailPage() {
       setAnsweredCount(0);
     }
 
+    // 出欠状況カードの「出席・欠席・未回答」集計。チーム全体(選手・指導者・管理者・出欠済みの
+    // 未紐付け保護者)が対象で、AttendanceRosterModal(出欠一覧)の既存の集計仕様(対象者の
+    // 組み立て方・ステータス区分)と同じ考え方で読み取り専用に再計算する。モーダル自体の
+    // ロジック・表示は変更していない。
+    if (s && s.requires_attendance) {
+      const [{ data: rosterPlayers }, { data: members }, { data: summaryAttendanceRows }] = await Promise.all([
+        supabase.rpc("list_roster_players"),
+        supabase.rpc("list_team_members"),
+        supabase.from("attendances").select("status, player_id, user_id").eq("schedule_id", s.id),
+      ]);
+      const eligiblePlayerIds = (rosterPlayers ?? [])
+        .filter((p) => isTargetEligible(p.grade, s.target_grade_min))
+        .map((p) => p.id);
+      const staffIds = new Set(
+        (members ?? []).filter((m) => m.role === "指導者" || m.role === "管理者").map((m) => m.id),
+      );
+      const attByPlayer = new Map(
+        (summaryAttendanceRows ?? []).filter((a) => a.player_id).map((a) => [a.player_id as string, a]),
+      );
+      const attByUser = new Map((summaryAttendanceRows ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
+      const otherIds = (members ?? []).filter((m) => !staffIds.has(m.id) && attByUser.has(m.id)).map((m) => m.id);
+      const statuses = [
+        ...eligiblePlayerIds.map((id) => attByPlayer.get(id)?.status ?? null),
+        ...[...staffIds].map((id) => attByUser.get(id)?.status ?? null),
+        ...otherIds.map((id) => attByUser.get(id)?.status ?? null),
+      ];
+      const attending = statuses.filter((st) => st === "出席").length;
+      const absent = statuses.filter((st) => st === "欠席").length;
+      const late = statuses.filter((st) => st === "遅刻早退").length;
+      const watch = statuses.filter((st) => st === "見学").length;
+      const noResponse = statuses.length - attending - absent - late - watch;
+      setAttendanceSummary({ attending, absent, late, watch, noResponse });
+    } else {
+      setAttendanceSummary(null);
+    }
+
     if (role === "管理者") {
       const { data: allPlayers } = await supabase.from("players").select("*").eq("status", "在籍");
       const coveredIds = new Set(eligibleLinked.map((p) => p.id));
@@ -170,50 +220,15 @@ export default function ScheduleDetailPage() {
   const isGame = schedule?.type === "game";
 
   return (
-    <PageShell
-      header={<AppHeader title="スケジュール詳細" variant="detail" backHref="/schedule" />}
-      fab={
-        schedule ? (
-          <div className="absolute left-4 right-4 bottom-4 z-10 flex gap-2">
-            {prevId ? (
-              <Link
-                href={`/schedule/${prevId}`}
-                className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-heading shadow-card"
-              >
-                <span aria-hidden>‹</span>
-                <span>前の予定</span>
-              </Link>
-            ) : (
-              <span className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-line shadow-card">
-                <span aria-hidden>‹</span>
-                <span>前の予定</span>
-              </span>
-            )}
-            {nextId ? (
-              <Link
-                href={`/schedule/${nextId}`}
-                className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-heading shadow-card"
-              >
-                <span>次の予定</span>
-                <span aria-hidden>›</span>
-              </Link>
-            ) : (
-              <span className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-line shadow-card">
-                <span>次の予定</span>
-                <span aria-hidden>›</span>
-              </span>
-            )}
-          </div>
-        ) : undefined
-      }
-    >
+    <PageShell header={<AppHeader title="スケジュール詳細" variant="detail" backHref="/schedule" />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !schedule ? (
         <EmptyState>予定が見つかりません</EmptyState>
       ) : (
         <>
-          {/* 1. 予定概要: 種別・タイトル・日時・場所・当番。日時/場所/当番を行分けして表示する。 */}
+          {/* 1. 予定情報カード: 種別・タイトル・日時・場所・当番と、予定の編集・コピーを
+              カード内に横並びで配置する(以前のように折りたたみ内に隠さない)。 */}
           <SectionLabel>予定の内容</SectionLabel>
           <div className={cardClass}>
             <div className="font-bold text-base break-words">
@@ -233,13 +248,61 @@ export default function ScheduleDetailPage() {
                 <span className="font-bold text-ink">当番:</span> {schedule.toban}
               </div>
             )}
+            {canWriteSchedule(role) && (
+              <div className="flex gap-2 mt-3 pt-3 border-t border-line">
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                >
+                  予定を編集
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCopyOpen(true)}
+                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                >
+                  コピーして登録
+                </button>
+              </div>
+            )}
           </div>
+          {canWriteSchedule(role) && (
+            <>
+              <NewScheduleModal
+                open={editOpen}
+                onClose={() => setEditOpen(false)}
+                editSchedule={schedule}
+                onCreated={() => {
+                  setEditOpen(false);
+                  load();
+                }}
+                onDeleted={() => {
+                  setEditOpen(false);
+                  toast.success("予定を削除しました");
+                  router.push("/schedule");
+                }}
+              />
+              <NewScheduleModal
+                open={copyOpen}
+                onClose={() => setCopyOpen(false)}
+                copySource={schedule}
+                onCreated={() => {
+                  setCopyOpen(false);
+                  toast.success("予定をコピーして登録しました");
+                  router.push("/schedule");
+                }}
+              />
+            </>
+          )}
 
-          {/* 2. 練習メニュー: 練習予定の場合のみ、予定概要の直後に表示する(PracticeMenuCard自体は無変更)。 */}
+          {/* 2. 実施メニューカード: 練習予定の場合のみ(PracticeMenuCard内部の表示/編集モードは
+              自己完結。呼び出し方自体は無変更)。 */}
           {schedule.type === "practice" && <PracticeMenuCard scheduleId={schedule.id} scheduleDate={schedule.date} />}
 
-          {/* 3. 本人・家族の出欠: 出欠一覧を見る(対象者数に関わらず表示)・進捗サマリー(2名以上の場合のみ)・
-              各対象者ごとの既存AttendanceEntryForm(未回答者の自動展開等は無変更)。 */}
+          {/* 3. 出欠状況カード: 集計(出席/欠席/未回答)・出欠一覧への導線・進捗サマリーを
+              1枚のカードにまとめる。本人・家族ごとのAttendanceEntryForm(既存の自動展開等)は
+              このカードの下に、これまでと同じ形で個別に並べる(無変更)。 */}
           {schedule.requires_attendance && (
             <>
               <SectionLabel
@@ -256,19 +319,43 @@ export default function ScheduleDetailPage() {
                 出欠
               </SectionLabel>
 
-              {excludedLinkedCount > 0 && (
-                <div className="text-xs text-ink-soft text-center mt-1 mb-2">
-                  ※この予定の対象学年外のため、出欠登録の対象外のお子さまがいます
-                </div>
-              )}
+              <div className={cardClass}>
+                {excludedLinkedCount > 0 && (
+                  <div className="text-xs text-ink-soft text-center mb-2.5">
+                    ※この予定の対象学年外のため、出欠登録の対象外のお子さまがいます
+                  </div>
+                )}
 
-              {subjects.length > 1 && (
-                <div className={cardClass}>
+                {attendanceSummary && (
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-green/10 text-green-text">
+                      出席 {attendanceSummary.attending}
+                    </span>
+                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-danger/10 text-danger-text">
+                      欠席 {attendanceSummary.absent}
+                    </span>
+                    {attendanceSummary.late > 0 && (
+                      <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky/10 text-sky">
+                        遅刻早退 {attendanceSummary.late}
+                      </span>
+                    )}
+                    {attendanceSummary.watch > 0 && (
+                      <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-ink-soft/10 text-ink-soft">
+                        見学 {attendanceSummary.watch}
+                      </span>
+                    )}
+                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-orange/10 text-orange-text">
+                      未回答 {attendanceSummary.noResponse}
+                    </span>
+                  </div>
+                )}
+
+                {subjects.length > 1 && (
                   <div className="text-sm font-bold text-center">
                     {subjects.length}名中{answeredCount}名回答済み
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {subjects.map((subject) => (
                 <AttendanceEntryForm
@@ -293,142 +380,133 @@ export default function ScheduleDetailPage() {
             </>
           )}
 
-          {/* 4. 予定の管理操作: 編集・コピー・代理登録・未紐付け保護者の修正を集約した折りたたみセクション
-              (既定で閉じる)。各操作の表示条件(canWriteSchedule/role==="管理者")は無変更。 */}
-          {canWriteSchedule(role) && (
-            <>
-              <button
-                type="button"
-                onClick={() => setManageOpen((v) => !v)}
-                className="w-full min-h-tap flex items-center justify-between gap-2 mb-2"
+          {/* 4. 管理者専用操作: 代理登録・未紐付け保護者の修正を集約した折りたたみセクション
+              (既定で閉じる、管理者のみ)。表示条件(role==="管理者"/schedule.requires_attendance)は
+              無変更。予定の編集・コピーはこの中に戻さない。 */}
+          {role === "管理者" &&
+            schedule.requires_attendance &&
+            (proxyPlayers.length > 0 || unlinkedGuardians.length > 0) && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setManageOpen((v) => !v)}
+                  className="w-full min-h-tap flex items-center justify-between gap-2 mb-2"
+                >
+                  <span className="font-mono text-[10.5px] font-bold tracking-widest uppercase text-ink-soft">
+                    管理者専用操作
+                  </span>
+                  <ChevronRightIcon
+                    className={`w-3.5 h-3.5 text-ink-soft flex-shrink-0 transition-transform ${
+                      manageOpen ? "rotate-90" : ""
+                    }`}
+                  />
+                </button>
+
+                {manageOpen && (
+                  <>
+                    {proxyPlayers.length > 0 && (
+                      <>
+                        <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
+                        <div className={cardClass}>
+                          <FieldLabel>選手を選ぶ</FieldLabel>
+                          <select
+                            className={inputClass()}
+                            value={proxyPlayerId}
+                            onChange={(e) => setProxyPlayerId(e.target.value)}
+                          >
+                            <option value="">選手を選択してください</option>
+                            {proxyPlayers.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {playerFullName(p)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {proxyPlayerId && (
+                          <AttendanceEntryForm
+                            key={proxyPlayerId}
+                            scheduleId={schedule.id}
+                            userId={userId}
+                            playerId={proxyPlayerId}
+                            label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
+                            isGame={isGame}
+                            venueType={schedule.venue_type}
+                            collectCarInfo={schedule.collect_car_info}
+                          />
+                        )}
+                      </>
+                    )}
+
+                    {unlinkedGuardians.length > 0 && (
+                      <>
+                        <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
+                        <div className={cardClass}>
+                          <FieldLabel>保護者を選ぶ</FieldLabel>
+                          <select
+                            className={inputClass()}
+                            value={unlinkedGuardianId}
+                            onChange={(e) => setUnlinkedGuardianId(e.target.value)}
+                          >
+                            <option value="">保護者を選択してください</option>
+                            {unlinkedGuardians.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {unlinkedGuardianId && (
+                          <AttendanceEntryForm
+                            key={unlinkedGuardianId}
+                            scheduleId={schedule.id}
+                            userId={unlinkedGuardianId}
+                            playerId={null}
+                            label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
+                            isGame={isGame}
+                            venueType={schedule.venue_type}
+                            collectCarInfo={schedule.collect_car_info}
+                            allowDelete
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
+          {/* 5. 前後の予定: 画面下部への固定表示はせず、通常のコンテンツ最下部に横並びで配置する
+              (遷移対象の判定・prevId/nextIdの取得ロジックは無変更)。 */}
+          <div className="flex gap-2 mt-5">
+            {prevId ? (
+              <Link
+                href={`/schedule/${prevId}`}
+                className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-heading"
               >
-                <span className="font-mono text-[10.5px] font-bold tracking-widest uppercase text-ink-soft">
-                  予定の管理操作
-                </span>
-                <ChevronRightIcon
-                  className={`w-3.5 h-3.5 text-ink-soft flex-shrink-0 transition-transform ${
-                    manageOpen ? "rotate-90" : ""
-                  }`}
-                />
-              </button>
-
-              {manageOpen && (
-                <>
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditOpen(true)}
-                      className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
-                    >
-                      編集
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCopyOpen(true)}
-                      className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
-                    >
-                      コピーして登録
-                    </button>
-                  </div>
-                  <NewScheduleModal
-                    open={editOpen}
-                    onClose={() => setEditOpen(false)}
-                    editSchedule={schedule}
-                    onCreated={() => {
-                      setEditOpen(false);
-                      load();
-                    }}
-                    onDeleted={() => {
-                      setEditOpen(false);
-                      toast.success("予定を削除しました");
-                      router.push("/schedule");
-                    }}
-                  />
-                  <NewScheduleModal
-                    open={copyOpen}
-                    onClose={() => setCopyOpen(false)}
-                    copySource={schedule}
-                    onCreated={() => {
-                      setCopyOpen(false);
-                      toast.success("予定をコピーして登録しました");
-                      router.push("/schedule");
-                    }}
-                  />
-
-                  {schedule.requires_attendance && role === "管理者" && proxyPlayers.length > 0 && (
-                    <>
-                      <SectionLabel>選手の出欠を代理登録(管理者)</SectionLabel>
-                      <div className={cardClass}>
-                        <FieldLabel>選手を選ぶ</FieldLabel>
-                        <select
-                          className={inputClass()}
-                          value={proxyPlayerId}
-                          onChange={(e) => setProxyPlayerId(e.target.value)}
-                        >
-                          <option value="">選手を選択してください</option>
-                          {proxyPlayers.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {playerFullName(p)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {proxyPlayerId && (
-                        <AttendanceEntryForm
-                          key={proxyPlayerId}
-                          scheduleId={schedule.id}
-                          userId={userId}
-                          playerId={proxyPlayerId}
-                          label={playerFullName(proxyPlayers.find((p) => p.id === proxyPlayerId)!)}
-                          isGame={isGame}
-                          venueType={schedule.venue_type}
-                          collectCarInfo={schedule.collect_car_info}
-                        />
-                      )}
-                    </>
-                  )}
-
-                  {schedule.requires_attendance && role === "管理者" && unlinkedGuardians.length > 0 && (
-                    <>
-                      <SectionLabel>未紐付けの保護者の出欠を修正・削除(管理者)</SectionLabel>
-                      <div className={cardClass}>
-                        <FieldLabel>保護者を選ぶ</FieldLabel>
-                        <select
-                          className={inputClass()}
-                          value={unlinkedGuardianId}
-                          onChange={(e) => setUnlinkedGuardianId(e.target.value)}
-                        >
-                          <option value="">保護者を選択してください</option>
-                          {unlinkedGuardians.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {unlinkedGuardianId && (
-                        <AttendanceEntryForm
-                          key={unlinkedGuardianId}
-                          scheduleId={schedule.id}
-                          userId={unlinkedGuardianId}
-                          playerId={null}
-                          label={unlinkedGuardians.find((p) => p.id === unlinkedGuardianId)!.name}
-                          isGame={isGame}
-                          venueType={schedule.venue_type}
-                          collectCarInfo={schedule.collect_car_info}
-                          allowDelete
-                        />
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          )}
-
-          {/* 5. 前後予定ナビゲーション(PageShellのfabスロット、画面下部に固定表示)は上のreturn先頭で定義。
-              固定バーの下に隠れないよう、最後の要素の下に余白を確保する。 */}
-          <div className="h-16" aria-hidden />
+                <span aria-hidden>‹</span>
+                <span>前の予定</span>
+              </Link>
+            ) : (
+              <span className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-line">
+                <span aria-hidden>‹</span>
+                <span>前の予定</span>
+              </span>
+            )}
+            {nextId ? (
+              <Link
+                href={`/schedule/${nextId}`}
+                className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-heading"
+              >
+                <span>次の予定</span>
+                <span aria-hidden>›</span>
+              </Link>
+            ) : (
+              <span className="flex-1 min-h-tap flex items-center justify-center gap-1 rounded-control border border-line bg-white text-xs font-bold text-line">
+                <span>次の予定</span>
+                <span aria-hidden>›</span>
+              </span>
+            )}
+          </div>
         </>
       )}
     </PageShell>

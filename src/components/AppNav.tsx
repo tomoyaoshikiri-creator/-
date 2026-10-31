@@ -12,8 +12,9 @@ import { TabBar } from "@/components/TabBar";
 export function AppNav({ role, children }: { role: Role; children: React.ReactNode }) {
   const { userId, teamId } = useSession();
   const badges = useTabBadges(userId, teamId, role);
-  // スタッツ入力画面等の「専用作業画面」がuseFocusMode(true)を呼んでいる間だけ、
-  // 通常のSidebar/TabBarを非表示にする(画面側は専用操作バーに置き換える)。
+  // スタッツ入力画面・スケジュール詳細画面等の「専用作業画面」がuseFocusMode(true)を
+  // 呼んでいる間だけ、通常のSidebar/TabBarを非表示にする(画面側は戻る+ハンバーガーや
+  // 専用操作バーに置き換える)。
   const { focusMode } = useFocusModeState();
 
   return (
@@ -28,6 +29,9 @@ export function AppNav({ role, children }: { role: Role; children: React.ReactNo
             不具合を起こした(2026-10-25 発覚・修正)。Sidebar自体がmin-[700px]:flexで
             700px未満は非表示になるのと同じ条件に絞ることで、スマホ幅ではこのdivに
             高さの指定を一切効かせない。 */}
+        {/* focusMode(詳細画面などの専用作業画面)では、戻る+ハンバーガーのみにするため
+            Sidebar自体を隠す(タブレット幅でのみ出るSidebarの代替導線はヘッダーの
+            ハンバーガーメニューが担う)。 */}
         {!focusMode && (
           <div className="print:hidden min-[700px]:h-full">
             <Sidebar role={role} badges={badges} />
