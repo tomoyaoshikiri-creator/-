@@ -91,10 +91,11 @@ export default function GameStatsPage() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const isLandscapeWide = useMediaQuery("(orientation: landscape) and (min-width: 900px)");
-  // 専用作業画面: 縦向きの入力に集中できるよう、通常のナビゲーションを隠して
-  // 専用操作バー(取り消し/交代/タイムアウト/その他)に置き換える。横向きの
-  // 既存レイアウト(GameStatsLandscape)は今回の対象外のため変更しない。
-  useFocusMode(!isLandscapeWide);
+  // 専用作業画面: 縦向き・横向きどちらでも入力に集中できるよう、通常のナビゲーション
+  // (サイドバー・下部5タブ)を隠し、専用操作バー(取り消し/交代/タイムアウト/その他)に
+  // 統一する。横向きのサイドバー常時表示だけを隠すぶん、ハンバーガーメニューは
+  // AppHeader側でfocusMode中は幅に関わらず表示するようにしている(他画面は無変更)。
+  useFocusMode(true);
   const [barPanel, setBarPanel] = useState<"none" | "sub" | "timeout" | "more">("none");
 
   useEffect(() => {
@@ -836,7 +837,7 @@ export default function GameStatsPage() {
         />
       }
       fab={
-        !loading && match && !isLandscapeWide ? (
+        !loading && match ? (
           <PillNavPosition>
             {barPanel === "none" ? (
               <PillNavBar>
@@ -994,18 +995,11 @@ export default function GameStatsPage() {
             onOpponentTap={handleOpponentStatTap}
             onOwnFreeThrowTrip={handleFreeThrowTrip}
             onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
-            onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
-            onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
             players={players}
             opponentPlayers={opponentPlayers}
             onDeleteStatEvent={handleDeleteStatEvent}
             onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
-            resetConfirm={resetConfirm}
-            resetting={resetting}
-            onResetAll={handleResetStats}
             timeoutEvents={timeoutEvents}
-            onOwnTimeout={() => handleTimeout("own")}
-            onOpponentTimeout={() => handleTimeout("opponent")}
             onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
             possession={possession}
             onSetPossession={setPossession}
@@ -1020,13 +1014,10 @@ export default function GameStatsPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
-          >
-            スターティングの編集
-          </button>
+          {/* 取り消し/交代/タイムアウト/その他(スターティング編集・オールリセット含む)は
+              縦向きと共通の下部専用操作バー(PillNavBar)に統一した。横向き専用の
+              重複ボタンは撤去している。 */}
+          <div className="h-28" aria-hidden />
 
           <MemberChangeModal
             open={ownMemberModalOpen}

@@ -96,33 +96,6 @@ interface LogRowData {
   kind: "stat" | "timeout";
 }
 
-// 自チーム/相手チームの選手チップ列の見出しの上に、中央から遠い側(外側)へ寄せて置く。
-// 選手選択の有無に関わらずタップでその場のクォーターのタイムアウトを記録する。
-// 列自体はitems-centerで子要素を中央寄せするため、self-start/self-endで個別に
-// 端へ寄せる(見出しラベル自体は影響を受けず、中央のまま)。
-function TimeoutButton({
-  color,
-  count,
-  onTap,
-  align,
-}: {
-  color: "orange" | "navy";
-  count: number;
-  onTap: () => void;
-  align: "start" | "end";
-}) {
-  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange-text";
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className={`${align === "start" ? "self-start" : "self-end"} mb-1 px-2 py-1 rounded-lg border bg-white font-bold text-[9.5px] whitespace-nowrap ${colorClass}`}
-    >
-      タイムアウト{count > 0 ? ` ${count}` : ""}
-    </button>
-  );
-}
-
 export function GameStatsLandscape({
   quarter,
   onQuarterChange,
@@ -142,18 +115,11 @@ export function GameStatsLandscape({
   onOpponentTap,
   onOwnFreeThrowTrip,
   onOpponentFreeThrowTrip,
-  onOpenOwnMemberChange,
-  onOpenOpponentMemberChange,
   players,
   opponentPlayers,
   onDeleteStatEvent,
   onDeleteOpponentStatEvent,
-  resetConfirm,
-  resetting,
-  onResetAll,
   timeoutEvents,
-  onOwnTimeout,
-  onOpponentTimeout,
   onDeleteTimeoutEvent,
   possession,
   onSetPossession,
@@ -176,18 +142,11 @@ export function GameStatsLandscape({
   onOpponentTap: (entrantId: string, event: StatEvent) => void;
   onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
   onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  onOpenOwnMemberChange: () => void;
-  onOpenOpponentMemberChange: () => void;
   players: Player[];
   opponentPlayers: GameOpponentPlayer[];
   onDeleteStatEvent: (eventId: string) => Promise<void>;
   onDeleteOpponentStatEvent: (eventId: string) => Promise<void>;
-  resetConfirm: boolean;
-  resetting: boolean;
-  onResetAll: () => void;
   timeoutEvents: GameTimeoutEvent[];
-  onOwnTimeout: () => void;
-  onOpponentTimeout: () => void;
   onDeleteTimeoutEvent: (eventId: string) => Promise<void>;
   possession: "own" | "opponent" | null;
   onSetPossession: (side: "own" | "opponent") => void;
@@ -264,20 +223,12 @@ export function GameStatsLandscape({
       kind: "timeout" as const,
     })),
   ];
+  // 取り消し・交代・タイムアウトの操作ボタンは縦向きと共通の下部専用操作バーに統一した
+  // (重複表示をなくすため、この画面独自のボタンは撤去)。ここでのallEvents/
+  // currentQuarterEventsはLogColumn(記録ログ表示)のためだけに残している。
   const currentQuarterEvents = allEvents
     .filter((e) => e.quarter === quarter)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const lastEntry = currentQuarterEvents[0];
-
-  async function handleUndo() {
-    if (!lastEntry) return;
-    if (lastEntry.kind === "timeout") await onDeleteTimeoutEvent(lastEntry.id);
-    else if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
-    else await onDeleteOpponentStatEvent(lastEntry.id);
-  }
-
-  const ownTimeoutCount = timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter).length;
-  const opponentTimeoutCount = timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter).length;
 
   async function reassignEntry(newSide: Side, newPlayerId: string, newEvent: StatEvent) {
     if (!correcting) return;
@@ -372,16 +323,6 @@ export function GameStatsLandscape({
         >
           ➡︎
         </button>
-        <button
-          type="button"
-          onClick={onResetAll}
-          disabled={resetting}
-          className={`absolute left-4.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-danger text-danger-text bg-white ${
-            resetConfirm ? "" : "opacity-50"
-          }`}
-        >
-          {resetting ? "リセット中…" : resetConfirm ? "もう一度タップでリセット確定" : "オールリセット"}
-        </button>
       </div>
 
       <div
@@ -397,7 +338,6 @@ export function GameStatsLandscape({
         />
 
         <div className="flex flex-col items-center min-h-0">
-          <TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} align="start" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">自チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {ownEntrants.map((e) => (
@@ -413,26 +353,9 @@ export function GameStatsLandscape({
               />
             ))}
           </div>
-          <button
-            type="button"
-            onClick={onOpenOwnMemberChange}
-            className="mt-2 w-[68px] py-1.5 rounded-lg border border-dashed border-line text-ink-soft font-bold text-[10px]"
-          >
-            ⇄ 交代
-          </button>
         </div>
 
         <div className="flex flex-col items-center min-h-0">
-          <button
-            type="button"
-            disabled={!lastEntry}
-            onClick={handleUndo}
-            className={`w-full mb-2 py-1.5 rounded-lg border border-dashed border-danger text-danger-text font-bold text-[12px] ${
-              lastEntry ? "" : "opacity-40"
-            }`}
-          >
-            取消
-          </button>
           <div
             className="grid grid-cols-2 gap-1.5 w-full"
             style={{ gridAutoRows: "78px" }}
@@ -477,7 +400,6 @@ export function GameStatsLandscape({
         </div>
 
         <div className="flex flex-col items-center min-h-0">
-          <TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} align="end" />
           <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-ink-soft mb-1.5">相手チーム</div>
           <div className="flex flex-col gap-1.5 items-center">
             {opponentEntrants.map((e) => (
@@ -493,13 +415,6 @@ export function GameStatsLandscape({
               />
             ))}
           </div>
-          <button
-            type="button"
-            onClick={onOpenOpponentMemberChange}
-            className="mt-2 w-[68px] py-1.5 rounded-lg border border-dashed border-line text-ink-soft font-bold text-[10px]"
-          >
-            ⇄ 交代
-          </button>
         </div>
 
         <LogColumn
