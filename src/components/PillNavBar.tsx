@@ -18,11 +18,19 @@ export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitesp
 
 // 画面下部に浮かせる位置決めだけを担う外枠(左右マージン・セーフエリア対応)。
 // 中身の形(ピル/サブパネルのカード)を問わず共通で使う。
+//
+// 実機確認で、下端からの余白がcalc(0.875rem + env(safe-area-inset-bottom))だと
+// 離れすぎて見えることが判明した。TabBar.tsx側の過去の調査(ホームインジケーター
+// 領域はpadding-bottom等で追加の余白を確保しても見た目の保護領域が増えず、
+// 単に余白だけが増える)と同じ理由と考えられるため、固定の余白とsafe-area-inset-bottomを
+// 加算せず、大きい方を採用するmax()に変更する。これにより、safe-area-inset-bottomが
+// 大きい端末でも最低限それを下回らず、かつ0や小さい環境(Android Chrome等)では
+// 単純に下端から0.875rem(14px、目安の12〜16pxの範囲内)になる。
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
     <div
       className="absolute left-3 right-3 z-10"
-      style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      style={{ bottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
     >
       {children}
     </div>
