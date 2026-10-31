@@ -7,8 +7,10 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { cardClass, EmptyState } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
+import { PillNavPosition, PillNavBar, PillNavButton, PillNavDivider } from "@/components/PillNavBar";
+import { UndoIcon, SwitchIcon, TimerIcon, MoreIcon } from "@/components/icons";
 import { StatPad, type StatEntrant } from "../../StatPad";
 import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { GameStatsLandscape } from "../../GameStatsLandscape";
@@ -17,9 +19,10 @@ import { TeamFoulLamps } from "@/components/TeamFoulLamps";
 import { StartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
-import { usesDetailedBasketballStats } from "@/lib/sport";
+import { usesDetailedBasketballStats, maxTimeoutsPerQuarter } from "@/lib/sport";
 import { playerFullName, sortPlayers, sortOpponentPlayers } from "@/lib/format";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import { useFocusMode } from "@/lib/focusMode";
 import {
   emptyStatLine,
   emptyOpponentStatLine,
@@ -53,7 +56,7 @@ export default function GameStatsPage() {
   const params = useParams<{ matchId: string }>();
   const matchId = params.matchId;
   const router = useRouter();
-  const { teamId, role, sport } = useSession();
+  const { teamId, role, sport, teamName } = useSession();
   const toast = useToast();
 
   useEffect(() => {
@@ -88,6 +91,12 @@ export default function GameStatsPage() {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const isLandscapeWide = useMediaQuery("(orientation: landscape) and (min-width: 900px)");
+  // 専用作業画面: 縦向き・横向きどちらでも入力に集中できるよう、通常のナビゲーション
+  // (サイドバー・下部5タブ)を隠し、専用操作バー(取り消し/交代/タイムアウト/その他)に
+  // 統一する。横向きのサイドバー常時表示だけを隠すぶん、ハンバーガーメニューは
+  // AppHeader側でfocusMode中は幅に関わらず表示するようにしている(他画面は無変更)。
+  useFocusMode(true);
+  const [barPanel, setBarPanel] = useState<"none" | "sub" | "timeout" | "more">("none");
 
   useEffect(() => {
     (async () => {
@@ -576,6 +585,7 @@ export default function GameStatsPage() {
 
   async function handleTimeout(side: "own" | "opponent") {
     if (!matchId) return;
+    if (side === "own" ? ownTimeoutAtLimit : opponentTimeoutAtLimit) return;
     const supabase = createClient();
     const { data, error } = await recordGameTimeout(supabase, matchId, side, quarter);
     if (error) {
@@ -606,6 +616,44 @@ export default function GameStatsPage() {
   async function handleDeleteOpponentLogEntry(id: string) {
     if (timeoutEvents.some((e) => e.id === id && e.side === "opponent")) await handleDeleteTimeoutEvent(id);
     else await handleDeleteOpponentStatEvent(id);
+  }
+
+  // 専用操作バーの「取り消し」: 選手選択の有無にかかわらず、自チーム・相手チームの
+  // スタッツ+タイムアウトを通じて直前に記録された1件を取り消す(以前はStatPad内に
+  // あった処理をそのまま移設したもの。対象の判定・取消処理自体は変更していない)。
+  async function handleUndo() {
+    const ownLast = statEvents.find((e) => e.quarter === quarter);
+    const opponentLast = opponentStatEvents.find((e) => e.quarter === quarter);
+    const ownTimeoutLast = timeoutEvents.find((e) => e.side === "own" && e.quarter === quarter);
+    const opponentTimeoutLast = timeoutEvents.find((e) => e.side === "opponent" && e.quarter === quarter);
+
+    type LastEntry = { kind: "stat" | "timeout"; side: "own" | "opponent"; id: string; createdAt: string };
+    const candidates: LastEntry[] = [
+      ownLast && { kind: "stat" as const, side: "own" as const, id: ownLast.id, createdAt: ownLast.created_at },
+      opponentLast && {
+        kind: "stat" as const,
+        side: "opponent" as const,
+        id: opponentLast.id,
+        createdAt: opponentLast.created_at,
+      },
+      ownTimeoutLast && {
+        kind: "timeout" as const,
+        side: "own" as const,
+        id: ownTimeoutLast.id,
+        createdAt: ownTimeoutLast.created_at,
+      },
+      opponentTimeoutLast && {
+        kind: "timeout" as const,
+        side: "opponent" as const,
+        id: opponentTimeoutLast.id,
+        createdAt: opponentTimeoutLast.created_at,
+      },
+    ].filter((x): x is LastEntry => !!x);
+    const lastEntry = candidates.length === 0 ? null : candidates.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b));
+    if (!lastEntry) return;
+    if (lastEntry.kind === "timeout") await handleDeleteTimeoutEvent(lastEntry.id);
+    else if (lastEntry.side === "own") await handleDeleteStatEvent(lastEntry.id);
+    else await handleDeleteOpponentStatEvent(lastEntry.id);
   }
 
   async function handleResetStats() {
@@ -765,6 +813,19 @@ export default function GameStatsPage() {
   const ownQuarterFouls = teamFoulCount(statEvents, quarter);
   const opponentQuarterFouls = teamFoulCount(opponentStatEvents, quarter);
 
+  const canUndo =
+    statEvents.some((e) => e.quarter === quarter) ||
+    opponentStatEvents.some((e) => e.quarter === quarter) ||
+    timeoutEvents.some((e) => e.quarter === quarter);
+
+  // タイムアウトの取得済み回数・残り回数。上限はミニバスケットボールのみ1回/クォーター
+  // (バスケットボール等、既存仕様に上限がない競技はnull=無制限のまま)。
+  const timeoutLimit = maxTimeoutsPerQuarter(sport);
+  const ownTimeoutCount = timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter).length;
+  const opponentTimeoutCount = timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter).length;
+  const ownTimeoutAtLimit = timeoutLimit !== null && ownTimeoutCount >= timeoutLimit;
+  const opponentTimeoutAtLimit = timeoutLimit !== null && opponentTimeoutCount >= timeoutLimit;
+
   return (
     <PageShell
       header={
@@ -774,6 +835,139 @@ export default function GameStatsPage() {
           backHref={schedule ? `/game/${schedule.id}` : "/game"}
           accessBadge="coach"
         />
+      }
+      fab={
+        !loading && match ? (
+          <PillNavPosition>
+            {barPanel === "none" ? (
+              <PillNavBar>
+                <PillNavButton icon={UndoIcon} label="取り消し" onClick={handleUndo} disabled={!canUndo} tone="danger" />
+                <PillNavDivider />
+                <PillNavButton icon={SwitchIcon} label="交代" onClick={() => setBarPanel("sub")} />
+                <PillNavDivider />
+                <PillNavButton icon={TimerIcon} label="タイムアウト" onClick={() => setBarPanel("timeout")} />
+                <PillNavDivider />
+                <PillNavButton icon={MoreIcon} label="その他" onClick={() => setBarPanel("more")} />
+              </PillNavBar>
+            ) : (
+              <div className="rounded-card border border-line bg-white shadow-card p-3">
+                {barPanel === "sub" && (
+                  <>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOwnMemberModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs"
+                      >
+                        自チームの交代
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOpponentMemberModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs"
+                      >
+                        相手チームの交代
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </>
+                )}
+
+                {barPanel === "timeout" && (
+                  <>
+                    <div className="text-center text-caption text-ink-soft mb-1.5">{quarter}Qのタイムアウト</div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleTimeout("own")}
+                        disabled={ownTimeoutAtLimit}
+                        className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs ${
+                          ownTimeoutAtLimit ? "opacity-40" : ""
+                        }`}
+                      >
+                        <span>自チーム</span>
+                        <span className="font-mono">
+                          {ownTimeoutCount}
+                          {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTimeout("opponent")}
+                        disabled={opponentTimeoutAtLimit}
+                        className={`flex-1 min-h-tap flex flex-col items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs ${
+                          opponentTimeoutAtLimit ? "opacity-40" : ""
+                        }`}
+                      >
+                        <span>相手チーム</span>
+                        <span className="font-mono">
+                          {opponentTimeoutCount}
+                          {timeoutLimit !== null ? `/${timeoutLimit}` : ""}回
+                        </span>
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap mt-2 flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </>
+                )}
+
+                {barPanel === "more" && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBarPanel("none");
+                        setStartingLineupModalOpen(true);
+                      }}
+                      className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      スターティングの編集
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetStats}
+                      disabled={resetting}
+                      className={`w-full min-h-tap flex items-center justify-center rounded-control border bg-white font-bold text-xs ${
+                        resetConfirm ? "" : "opacity-50"
+                      }`}
+                      style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                    >
+                      {resetting
+                        ? "リセット中…"
+                        : resetConfirm
+                          ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
+                          : "この試合のスタッツ・スタメンをオールリセット"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBarPanel("none")}
+                      className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
+                    >
+                      戻る
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </PillNavPosition>
+        ) : undefined
       }
     >
       {loading ? (
@@ -801,18 +995,11 @@ export default function GameStatsPage() {
             onOpponentTap={handleOpponentStatTap}
             onOwnFreeThrowTrip={handleFreeThrowTrip}
             onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
-            onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
-            onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
             players={players}
             opponentPlayers={opponentPlayers}
             onDeleteStatEvent={handleDeleteStatEvent}
             onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
-            resetConfirm={resetConfirm}
-            resetting={resetting}
-            onResetAll={handleResetStats}
             timeoutEvents={timeoutEvents}
-            onOwnTimeout={() => handleTimeout("own")}
-            onOpponentTimeout={() => handleTimeout("opponent")}
             onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
             possession={possession}
             onSetPossession={setPossession}
@@ -827,13 +1014,10 @@ export default function GameStatsPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
-          >
-            スターティングの編集
-          </button>
+          {/* 取り消し/交代/タイムアウト/その他(スターティング編集・オールリセット含む)は
+              縦向きと共通の下部専用操作バー(PillNavBar)に統一した。横向き専用の
+              重複ボタンは撤去している。 */}
+          <div className="h-28" aria-hidden />
 
           <MemberChangeModal
             open={ownMemberModalOpen}
@@ -865,47 +1049,64 @@ export default function GameStatsPage() {
         </>
       ) : (
         <>
-          <Card>
-            <div className="font-bold text-[13.5px] text-center">
-              第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
+          <div className={cardClass}>
+            {/* 試合番号・大会名/予定名は得点領域と分け、カード上部にまとめる
+                (得点領域を圧迫しないようにするため)。 */}
+            <div className="text-center">
+              <div className="font-bold text-sm truncate">第{match.game_number}試合</div>
+              {schedule?.title && (
+                <div className="text-[10.5px] text-ink-soft truncate mt-0.5">{schedule.title}</div>
+              )}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1.5">
-              <button
-                type="button"
-                onClick={() => setPossession("own")}
-                aria-label="自チームにポゼッション"
-                className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
-              >
-                ➡︎
-              </button>
-              <TeamFoulLamps direction="column" count={ownQuarterFouls} />
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
-                  <div className="font-mono text-[28px] font-bold text-orange-text leading-tight">{liveTeamScore}</div>
-                </div>
-                <div className="text-ink-soft font-bold text-[16px]">-</div>
-                <div className="text-center">
-                  <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
-                  <div className="font-mono text-[28px] font-bold leading-tight">{liveOpponentScore}</div>
+
+            {/* 自チーム/相手チームの列幅を1fr同士で揃えたgridにし、チーム名の長さや
+                得点の桁数に関わらず、中央の「-」を基準に得点が左右対称の位置に来るように
+                する。各列は名前→得点→(矢印+ファウルランプ)を縦に積むだけの単純な構造にし、
+                横に並ぶ要素(前回の矢印・ランプ)が列内の余白を奪って得点の中心をずらす
+                ことがないようにした。チーム名はtruncateで列幅を超えないようにする。
+                自チーム名はこれまでschedule.title(予定名)を誤って表示していたため、
+                useSession()のteamName(チーム設定の正式名称)に修正した。 */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 mt-2">
+              <div className="text-center min-w-0">
+                <div className="text-[11px] font-bold text-ink-soft truncate">{teamName || "自チーム"}</div>
+                <div className="font-mono text-[28px] font-bold text-orange-text leading-tight">{liveTeamScore}</div>
+                <div className="flex items-center justify-center gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setPossession("own")}
+                    aria-label="自チームにポゼッション"
+                    className={`flex-none text-[18px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
+                  >
+                    ➡︎
+                  </button>
+                  <TeamFoulLamps count={ownQuarterFouls} />
                 </div>
               </div>
-              <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
-              <button
-                type="button"
-                onClick={() => setPossession("opponent")}
-                aria-label="相手チームにポゼッション"
-                className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
-              >
-                ➡︎
-              </button>
+
+              <div className="flex-none text-ink-soft font-bold text-[16px] mt-2.5">-</div>
+
+              <div className="text-center min-w-0">
+                <div className="text-[11px] font-bold text-ink-soft truncate">{match.opponent || "相手"}</div>
+                <div className="font-mono text-[28px] font-bold leading-tight">{liveOpponentScore}</div>
+                <div className="flex items-center justify-center gap-1.5 mt-1">
+                  <TeamFoulLamps count={opponentQuarterFouls} />
+                  <button
+                    type="button"
+                    onClick={() => setPossession("opponent")}
+                    aria-label="相手チームにポゼッション"
+                    className={`flex-none text-[18px] leading-none ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
+                  >
+                    ➡︎
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="text-[10px] text-ink-soft text-center mt-1">
+            <div className="text-[10px] text-ink-soft text-center mt-1.5">
               スタッツの記録から集計した得点です。
               <br />
               試合結果の得点は試合詳細画面で編集してください
             </div>
-          </Card>
+          </div>
 
           <div className="mt-3 flex items-center gap-2">
             <span className="flex-none text-[11.5px] text-ink-soft font-bold">クォーター</span>
@@ -920,25 +1121,14 @@ export default function GameStatsPage() {
 
           <div className="mt-4">
             <StatPad
-              quarter={quarter}
               ownEntrants={ownEntrants}
               ownStatLines={statLines}
-              ownStatEvents={statEvents}
               onOwnTap={handleStatTap}
               onOwnFreeThrowTrip={handleFreeThrowTrip}
-              onOpenOwnMemberChange={() => setOwnMemberModalOpen(true)}
               opponentEntrants={opponentEntrants}
               opponentStatLines={opponentStatLines}
-              opponentStatEvents={opponentStatEvents}
               onOpponentTap={handleOpponentStatTap}
               onOpponentFreeThrowTrip={handleOpponentFreeThrowTrip}
-              onOpenOpponentMemberChange={() => setOpponentMemberModalOpen(true)}
-              onDeleteStatEvent={handleDeleteStatEvent}
-              onDeleteOpponentStatEvent={handleDeleteOpponentStatEvent}
-              timeoutEvents={timeoutEvents}
-              onOwnTimeout={() => handleTimeout("own")}
-              onOpponentTimeout={() => handleTimeout("opponent")}
-              onDeleteTimeoutEvent={handleDeleteTimeoutEvent}
             />
           </div>
 
@@ -964,29 +1154,10 @@ export default function GameStatsPage() {
             onDelete={handleDeleteOpponentLogEntry}
           />
 
-          <button
-            type="button"
-            onClick={() => setStartingLineupModalOpen(true)}
-            className="w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border border-line text-ink-soft bg-white"
-          >
-            スターティングの編集
-          </button>
-
-          <button
-            type="button"
-            onClick={handleResetStats}
-            disabled={resetting}
-            className={`w-full mt-4 text-center py-2 rounded-lg font-bold text-[12px] border bg-white ${
-              resetConfirm ? "" : "opacity-50"
-            }`}
-            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
-          >
-            {resetting
-              ? "リセット中…"
-              : resetConfirm
-                ? "もう一度タップでこの試合のスタッツ・スタメンを全てリセット"
-                : "この試合のスタッツ・スタメンをオールリセット"}
-          </button>
+          {/* スターティングの編集・オールリセットは下部の専用操作バー(その他)へ移設した。
+              機能・確認仕様は変更していない。ピル型ナビは下端から浮いている分、以前の
+              全幅バーより高さがあるため、本文最下部が隠れないよう余白を広めに確保する。 */}
+          <div className="h-28" aria-hidden />
 
           <MemberChangeModal
             open={ownMemberModalOpen}

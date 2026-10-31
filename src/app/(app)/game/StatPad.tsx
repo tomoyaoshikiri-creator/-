@@ -6,7 +6,6 @@ import { useSession } from "@/lib/session-context";
 import { usesThreePointScoring } from "@/lib/sport";
 import { FreeThrowModal } from "./FreeThrowModal";
 import { STAT_BUTTONS, isFouledOut, statEventCount, type StatEvent, type StatTotals } from "@/lib/gameStats";
-import type { GameStatEvent, GameOpponentStatEvent, GameTimeoutEvent } from "@/lib/database.types";
 
 export interface StatEntrant {
   id: string;
@@ -48,29 +47,6 @@ export function buildGridCells(showThreePoint: boolean): GridCell[] {
   return [BASE_GRID_CELLS[0], BASE_GRID_CELLS[1], ...THREE_POINT_CELLS, ...BASE_GRID_CELLS.slice(2)];
 }
 
-// SectionLabelのactionスロットに置く、チーム単位のタイムアウト記録ボタン。
-// 選手の選択状態に関わらず常にタップでき、その場でクォーターのタイムアウト回数を1つ記録する。
-function TimeoutButton({
-  color,
-  count,
-  onTap,
-}: {
-  color: "orange" | "navy";
-  count: number;
-  onTap: () => void;
-}) {
-  const colorClass = color === "navy" ? "border-navy text-navy" : "border-orange text-orange-text";
-  return (
-    <button
-      type="button"
-      onClick={onTap}
-      className={`flex-none normal-case tracking-normal px-2.5 py-1 rounded-lg border bg-white font-bold text-[11px] ${colorClass}`}
-    >
-      タイムアウト{count > 0 ? ` ${count}` : ""}
-    </button>
-  );
-}
-
 function ChipRow({
   entrants,
   statLines,
@@ -78,9 +54,6 @@ function ChipRow({
   activeColor = "orange",
   showName = false,
   onSelect,
-  onOpenMemberChange,
-  onUndo,
-  canUndo,
 }: {
   entrants: StatEntrant[];
   statLines: Record<string, StatTotals>;
@@ -88,17 +61,16 @@ function ChipRow({
   activeColor?: "orange" | "navy";
   showName?: boolean;
   onSelect: (id: string) => void;
-  onOpenMemberChange?: () => void;
-  // 直前の記録を1件取り消す(チーム共通の操作)。渡された側の交代ボタンの
-  // すぐ下に、交代ボタンと同じ大きさで並べて配置する。
-  onUndo?: () => void;
-  canUndo?: boolean;
 }) {
   const activeClass = activeColor === "navy" ? "border-navy bg-navy text-white" : "border-orange bg-orange text-white";
   // 出場中の選手であることがひと目で分かるよう、選択中でなくても枠線は常にチームカラーで色付けする。
   const idleClass = activeColor === "navy" ? "border-navy bg-white text-ink" : "border-orange bg-white text-ink";
+  // スタメン5人ちょうどの場合だけ、利用可能な横幅を5等分して配置する(右側に不要な
+  // 空白ができないようにするため)。5人未満は従来通りの固定幅・自然な左詰めのまま、
+  // 6人以上(途中出場の重複表示等)は従来通り固定幅+横スクロールを維持する。
+  const fillEqually = entrants.length === 5;
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
+    <div className={`flex gap-1.5 pb-1 ${fillEqually ? "" : "overflow-x-auto"}`}>
       {entrants.map((e) => {
         const r = statLines[e.id];
         const isActive = active(e.id);
@@ -108,9 +80,9 @@ function ChipRow({
             key={e.id}
             type="button"
             onClick={() => onSelect(e.id)}
-            className={`relative flex-none flex flex-col items-center justify-center w-14 ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
-              isActive ? activeClass : idleClass
-            }`}
+            className={`relative min-w-0 flex flex-col items-center justify-center ${showName ? "h-16" : "h-14"} rounded-lg border font-bold ${
+              fillEqually ? "flex-1" : "flex-none w-14"
+            } ${isActive ? activeClass : idleClass}`}
           >
             {fouledOut && (
               <span className="absolute -top-1.5 -right-1.5 px-1 py-0.5 rounded-full bg-danger text-white text-[7px] font-bold leading-none">
@@ -126,81 +98,39 @@ function ChipRow({
                 {e.name}
               </span>
             )}
-            <span className="text-[15px] leading-none mt-0.5">{e.number ?? "-"}</span>
-            <span className={`text-[9.5px] mt-0.5 leading-none ${isActive ? "text-white/85" : "text-ink-soft"}`}>
+            <span className="w-full px-0.5 text-[15px] leading-none mt-0.5 truncate text-center">
+              {e.number ?? "-"}
+            </span>
+            <span
+              className={`w-full px-0.5 text-[9.5px] mt-0.5 leading-none truncate text-center ${isActive ? "text-white/85" : "text-ink-soft"}`}
+            >
               {r?.pts ?? 0}pts
             </span>
           </button>
         );
       })}
-      {onOpenMemberChange && (
-        <div className="flex-none w-14 h-14 flex flex-col gap-0.5">
-          <button
-            type="button"
-            onClick={onOpenMemberChange}
-            className="flex-1 min-h-0 flex flex-col items-center justify-center rounded-lg border border-dashed border-line text-ink-soft font-bold"
-          >
-            <span className="text-[12px] leading-none">⇄</span>
-            <span className="text-[7px] mt-0.5 leading-none">交代</span>
-          </button>
-          {onUndo && (
-            <button
-              type="button"
-              onClick={onUndo}
-              disabled={!canUndo}
-              className={`flex-1 min-h-0 flex items-center justify-center rounded-lg border border-dashed border-danger text-danger-text font-bold text-[8.5px] ${
-                canUndo ? "" : "opacity-40"
-              }`}
-            >
-              取消
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
 export function StatPad({
-  quarter,
   ownEntrants,
   ownStatLines,
-  ownStatEvents,
   onOwnTap,
   onOwnFreeThrowTrip,
-  onOpenOwnMemberChange,
   opponentEntrants,
   opponentStatLines,
-  opponentStatEvents,
   onOpponentTap,
   onOpponentFreeThrowTrip,
-  onOpenOpponentMemberChange,
-  onDeleteStatEvent,
-  onDeleteOpponentStatEvent,
-  timeoutEvents,
-  onOwnTimeout,
-  onOpponentTimeout,
-  onDeleteTimeoutEvent,
 }: {
-  quarter: number;
   ownEntrants: StatEntrant[];
   ownStatLines: Record<string, StatTotals>;
-  ownStatEvents: GameStatEvent[];
   onOwnTap: (entrantId: string, event: StatEvent) => void;
   onOwnFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  onOpenOwnMemberChange: () => void;
   opponentEntrants: StatEntrant[];
   opponentStatLines: Record<string, StatTotals>;
-  opponentStatEvents: GameOpponentStatEvent[];
   onOpponentTap: (entrantId: string, event: StatEvent) => void;
   onOpponentFreeThrowTrip: (entrantId: string, makes: number, attempts: number) => void;
-  onOpenOpponentMemberChange: () => void;
-  onDeleteStatEvent: (eventId: string) => Promise<void>;
-  onDeleteOpponentStatEvent: (eventId: string) => Promise<void>;
-  timeoutEvents: GameTimeoutEvent[];
-  onOwnTimeout: () => void;
-  onOpponentTimeout: () => void;
-  onDeleteTimeoutEvent: (eventId: string) => Promise<void>;
 }) {
   const { sport } = useSession();
   const gridCells = buildGridCells(usesThreePointScoring(sport));
@@ -240,130 +170,79 @@ export function StatPad({
     setSelected(null);
   }
 
-  // 選手選択の有無にかかわらず、自チーム・相手チームのスタッツ+タイムアウトを通じて
-  // 直前に記録された1件を取り消す。各イベント配列は作成日時の降順で読み込まれている前提で、
-  // それぞれの先頭同士を比較する。
-  const ownLast = ownStatEvents.find((e) => e.quarter === quarter);
-  const opponentLast = opponentStatEvents.find((e) => e.quarter === quarter);
-  const ownTimeoutLast = timeoutEvents.find((e) => e.side === "own" && e.quarter === quarter);
-  const opponentTimeoutLast = timeoutEvents.find((e) => e.side === "opponent" && e.quarter === quarter);
-
-  type LastEntry = { kind: "stat" | "timeout"; side: Side; id: string; createdAt: string };
-  const undoCandidates: LastEntry[] = [
-    ownLast && { kind: "stat" as const, side: "own" as const, id: ownLast.id, createdAt: ownLast.created_at },
-    opponentLast && {
-      kind: "stat" as const,
-      side: "opponent" as const,
-      id: opponentLast.id,
-      createdAt: opponentLast.created_at,
-    },
-    ownTimeoutLast && {
-      kind: "timeout" as const,
-      side: "own" as const,
-      id: ownTimeoutLast.id,
-      createdAt: ownTimeoutLast.created_at,
-    },
-    opponentTimeoutLast && {
-      kind: "timeout" as const,
-      side: "opponent" as const,
-      id: opponentTimeoutLast.id,
-      createdAt: opponentTimeoutLast.created_at,
-    },
-  ].filter((x): x is LastEntry => !!x);
-  const lastEntry =
-    undoCandidates.length === 0
-      ? null
-      : undoCandidates.reduce((a, b) => (a.createdAt >= b.createdAt ? a : b));
-
-  async function handleUndo() {
-    if (!lastEntry) return;
-    if (lastEntry.kind === "timeout") await onDeleteTimeoutEvent(lastEntry.id);
-    else if (lastEntry.side === "own") await onDeleteStatEvent(lastEntry.id);
-    else await onDeleteOpponentStatEvent(lastEntry.id);
-  }
-
-  const ownTimeoutCount = timeoutEvents.filter((e) => e.side === "own" && e.quarter === quarter).length;
-  const opponentTimeoutCount = timeoutEvents.filter((e) => e.side === "opponent" && e.quarter === quarter).length;
-
+  // 自チーム選手エリア・スタッツ入力エリア・相手チーム選手エリアの3領域を、同じCard
+  // (外枠・角丸・白背景)で揃えて自然な関係に見せる。スタッツ入力ボタン・選手チップ
+  // 自体のサイズ(タップ領域)は変更せず、各エリアの外枠と間隔(Cardのmb-2.5による
+  // 均等な段差)だけを調整している。
   return (
     <>
-      <SectionLabel action={<TimeoutButton color="orange" count={ownTimeoutCount} onTap={onOwnTimeout} />}>
-        自チームのスタッツ
-      </SectionLabel>
-      <ChipRow
-        entrants={ownEntrants}
-        statLines={ownStatLines}
-        active={(id) => selected?.side === "own" && selected.id === id}
-        showName
-        onSelect={(id) => setSelected({ side: "own", id })}
-        onOpenMemberChange={onOpenOwnMemberChange}
-        onUndo={handleUndo}
-        canUndo={!!lastEntry}
-      />
+      <SectionLabel>自チームのスタッツ</SectionLabel>
+      <Card>
+        <ChipRow
+          entrants={ownEntrants}
+          statLines={ownStatLines}
+          active={(id) => selected?.side === "own" && selected.id === id}
+          showName
+          onSelect={(id) => setSelected({ side: "own", id })}
+        />
+      </Card>
 
       {ownEntrants.length === 0 && opponentEntrants.length === 0 ? (
-        <EmptyState>スタメンを登録するか、交代ボタンから選手を選んでください</EmptyState>
+        <EmptyState>スタメンを登録するか、下部の「交代」から選手を選んでください</EmptyState>
       ) : (
-        <>
-          <Card className="mt-2">
-            <div className="grid grid-cols-2 gap-1.5">
-              {gridCells.map((cell) => {
-                if (cell.type === "ft") {
-                  return (
-                    <button
-                      key="ft"
-                      type="button"
-                      disabled={!selected}
-                      onClick={() => setFtModalOpen(true)}
-                      className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
-                        selected ? "" : "opacity-45"
-                      }`}
-                    >
-                      <div className="text-[12px] font-bold">FT(フリースロー)</div>
-                      <div className="font-mono text-[17px] font-bold">
-                        {row ? `${row.ft_made}/${row.ft_att}` : "-"}
-                      </div>
-                    </button>
-                  );
-                }
-                const { event, label } = cell;
-                const count = row ? statEventCount(row, event) : null;
+        <Card>
+          <div className="grid grid-cols-2 gap-1.5">
+            {gridCells.map((cell) => {
+              if (cell.type === "ft") {
                 return (
                   <button
-                    key={event}
+                    key="ft"
                     type="button"
                     disabled={!selected}
-                    onClick={() => handleTap(event)}
+                    onClick={() => setFtModalOpen(true)}
                     className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
                       selected ? "" : "opacity-45"
                     }`}
                   >
-                    <div className="text-[12px] font-bold">{label}</div>
-                    <div className="font-mono text-[17px] font-bold">{count ?? "-"}</div>
+                    <div className="text-[12px] font-bold">FT(フリースロー)</div>
+                    <div className="font-mono text-[17px] font-bold">
+                      {row ? `${row.ft_made}/${row.ft_att}` : "-"}
+                    </div>
                   </button>
                 );
-              })}
-            </div>
-          </Card>
-        </>
+              }
+              const { event, label } = cell;
+              const count = row ? statEventCount(row, event) : null;
+              return (
+                <button
+                  key={event}
+                  type="button"
+                  disabled={!selected}
+                  onClick={() => handleTap(event)}
+                  className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 rounded-lg border border-line bg-paper ${
+                    selected ? "" : "opacity-45"
+                  }`}
+                >
+                  <div className="text-[12px] font-bold">{label}</div>
+                  <div className="font-mono text-[17px] font-bold">{count ?? "-"}</div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
       )}
 
-      <div className="mt-2">
+      <Card>
         <ChipRow
           entrants={opponentEntrants}
           statLines={opponentStatLines}
           active={(id) => selected?.side === "opponent" && selected.id === id}
           activeColor="navy"
           onSelect={(id) => setSelected({ side: "opponent", id })}
-          onOpenMemberChange={onOpenOpponentMemberChange}
         />
-        <SectionLabel
-          align="right"
-          action={<TimeoutButton color="navy" count={opponentTimeoutCount} onTap={onOpponentTimeout} />}
-        >
-          相手チームのスタッツ
-        </SectionLabel>
-      </div>
+      </Card>
+      {/* 自チーム側と同じ配置ルール(左寄せ)に統一する。 */}
+      <SectionLabel>相手チームのスタッツ</SectionLabel>
 
       {selectedEntrant && (
         <FreeThrowModal
