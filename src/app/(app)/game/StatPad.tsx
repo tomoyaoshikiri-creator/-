@@ -233,7 +233,8 @@ export function StatPad({
           onSelect={(id) => setSelected({ side: "opponent", id })}
         />
       </Card>
-      <SectionLabel align="right">相手チームのスタッツ</SectionLabel>
+      {/* 自チーム側と同じ配置ルール(左寄せ)に統一する。 */}
+      <SectionLabel>相手チームのスタッツ</SectionLabel>
 
       {selectedEntrant && (
         <FreeThrowModal

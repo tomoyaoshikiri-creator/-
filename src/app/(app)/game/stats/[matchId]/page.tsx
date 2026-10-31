@@ -1050,39 +1050,47 @@ export default function GameStatsPage() {
       ) : (
         <>
           <div className={cardClass}>
-            <div className="font-bold text-sm text-center">
+            <div className="font-bold text-sm text-center truncate">
               第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-1.5">
-              <button
-                type="button"
-                onClick={() => setPossession("own")}
-                aria-label="自チームにポゼッション"
-                className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
-              >
-                ➡︎
-              </button>
-              <TeamFoulLamps direction="column" count={ownQuarterFouls} />
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-[11px] font-bold text-ink-soft">{schedule?.title ?? "自チーム"}</div>
+            {/* 自チーム/相手チームの列幅を1fr同士で揃えたgridにし、チーム名の長さや
+                得点の桁数に関わらず、中央の区切り線を基準に得点が左右対称の位置に来る
+                ようにする(各列の中では矢印・ファウルランプ・名前+得点をjustify-end/
+                startで区切り線側に寄せ、名前はtruncateで列幅を超えないようにする)。 */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mt-1.5">
+              <div className="flex items-center justify-end gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setPossession("own")}
+                  aria-label="自チームにポゼッション"
+                  className={`flex-none text-[22px] leading-none scale-x-[-1] ${possession === "own" ? "text-danger-text" : "text-ink-soft"}`}
+                >
+                  ➡︎
+                </button>
+                <TeamFoulLamps direction="column" count={ownQuarterFouls} />
+                <div className="text-center min-w-0">
+                  <div className="text-[11px] font-bold text-ink-soft truncate">{schedule?.title ?? "自チーム"}</div>
                   <div className="font-mono text-[28px] font-bold text-orange-text leading-tight">{liveTeamScore}</div>
                 </div>
-                <div className="text-ink-soft font-bold text-[16px]">-</div>
-                <div className="text-center">
-                  <div className="text-[11px] font-bold text-ink-soft">{match.opponent || "相手"}</div>
+              </div>
+
+              <div className="flex-none text-ink-soft font-bold text-[16px]">-</div>
+
+              <div className="flex items-center justify-start gap-2 min-w-0">
+                <div className="text-center min-w-0">
+                  <div className="text-[11px] font-bold text-ink-soft truncate">{match.opponent || "相手"}</div>
                   <div className="font-mono text-[28px] font-bold leading-tight">{liveOpponentScore}</div>
                 </div>
+                <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
+                <button
+                  type="button"
+                  onClick={() => setPossession("opponent")}
+                  aria-label="相手チームにポゼッション"
+                  className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
+                >
+                  ➡︎
+                </button>
               </div>
-              <TeamFoulLamps direction="column" count={opponentQuarterFouls} />
-              <button
-                type="button"
-                onClick={() => setPossession("opponent")}
-                aria-label="相手チームにポゼッション"
-                className={`flex-none text-[22px] leading-none ${possession === "opponent" ? "text-danger-text" : "text-ink-soft"}`}
-              >
-                ➡︎
-              </button>
             </div>
             <div className="text-[10px] text-ink-soft text-center mt-1">
               スタッツの記録から集計した得点です。
