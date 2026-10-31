@@ -14,9 +14,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { DragHandleIcon } from "@/components/icons";
+import { CloseIcon, DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { hasPracticeMenuAccess } from "@/lib/plan";
@@ -30,6 +30,14 @@ interface CopyTarget {
   title: string;
 }
 
+// 編集モード中だけ存在する作業用の行データ。既存DB行はisNew:false・idはそのままのUUID、
+// 新規追加した未保存行はisNew:true・idは一時的なローカル文字列(保存時にinsertへ変換)。
+interface DraftMenu {
+  id: string;
+  theme: string;
+  isNew: boolean;
+}
+
 export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: string; scheduleDate: string }) {
   const { teamId, userId, role, plan } = useSession();
   const toast = useToast();
@@ -37,23 +45,19 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
   const hasAccess = hasPracticeMenuAccess(plan);
 
   const [menus, setMenus] = useState<PracticeMenu[]>([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<DraftMenu[]>([]);
+  const [savingAll, setSavingAll] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyTargets, setCopyTargets] = useState<CopyTarget[]>([]);
   const [copyTargetId, setCopyTargetId] = useState("");
   const [copying, setCopying] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  useUnsavedChangesGuard(input.trim() !== "");
-  const editingMenu = menus.find((m) => m.id === editingId);
-  useUnsavedChangesGuard(editingMenu !== undefined && editValue !== (editingMenu.theme ?? ""));
+  // 編集モード中(保存/キャンセルで確定するまでDBに反映されない)は、離脱確認で保護する。
+  useUnsavedChangesGuard(editing);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,77 +75,77 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
     load();
   }, [load]);
 
-  async function handleAdd() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    const supabase = createClient();
-    const nextPosition = menus.length > 0 ? Math.max(...menus.map((m) => m.position)) + 1 : 0;
-    const { error } = await supabase.from("practice_menus").insert({
-      team_id: teamId,
-      schedule_id: scheduleId,
-      theme: trimmed,
-      created_by: userId,
-      position: nextPosition,
-    });
-    setSaving(false);
-    if (error) {
-      toast.error(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-    setInput("");
-    load();
+  function handleStartEdit() {
+    setDraft(menus.map((m) => ({ id: m.id, theme: m.theme ?? "", isNew: false })));
+    setSaveError(null);
+    setEditing(true);
   }
 
-  async function handleEditSave(id: string) {
-    const trimmed = editValue.trim();
-    if (!trimmed) return;
-    setSavingEdit(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("practice_menus").update({ theme: trimmed }).eq("id", id);
-    setSavingEdit(false);
-    if (error) {
-      toast.error(`更新に失敗しました: ${error.message}`);
-      return;
-    }
-    setEditingId(null);
-    load();
+  function handleCancelEdit() {
+    setEditing(false);
+    setDraft([]);
+    setSaveError(null);
+    setCopyOpen(false);
+    setCopyTargetId("");
   }
 
-  async function handleDelete(id: string) {
-    if (deleteConfirmId !== id) {
-      setDeleteConfirmId(id);
-      setTimeout(() => setDeleteConfirmId((cur) => (cur === id ? null : cur)), 3000);
-      return;
-    }
-    const supabase = createClient();
-    const { error } = await supabase.from("practice_menus").delete().eq("id", id);
-    if (error) {
-      toast.error(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setDeleteConfirmId(null);
-    setExpandedId(null);
-    load();
+  function handleAddRow() {
+    setDraft((cur) => [...cur, { id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`, theme: "", isNew: true }]);
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  function handleRemoveRow(id: string) {
+    setDraft((cur) => cur.filter((d) => d.id !== id));
+  }
+
+  function handleDraftThemeChange(id: string, value: string) {
+    setDraft((cur) => cur.map((d) => (d.id === id ? { ...d, theme: value } : d)));
+  }
+
+  function handleDraftDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = menus.findIndex((m) => m.id === active.id);
-    const newIndex = menus.findIndex((m) => m.id === over.id);
+    const oldIndex = draft.findIndex((d) => d.id === active.id);
+    const newIndex = draft.findIndex((d) => d.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(menus, oldIndex, newIndex);
-    setMenus(reordered);
+    setDraft((cur) => arrayMove(cur, oldIndex, newIndex));
+  }
+
+  // 追加・変更・削除・並び替えをまとめて1回で反映する(「保存」でまとめて保存)。
+  // 失敗した場合は編集内容(draft)をそのまま維持し、エラーだけ表示する。
+  async function handleSaveAll() {
+    setSavingAll(true);
+    setSaveError(null);
     const supabase = createClient();
-    const results = await Promise.all(
-      reordered.map((m, idx) => supabase.from("practice_menus").update({ position: idx }).eq("id", m.id)),
-    );
+    const finalDraft = draft.filter((d) => d.theme.trim() !== "");
+    const keptIds = new Set(finalDraft.filter((d) => !d.isNew).map((d) => d.id));
+    const deletedIds = menus.filter((m) => !keptIds.has(m.id)).map((m) => m.id);
+
+    const ops = [
+      ...deletedIds.map((id) => supabase.from("practice_menus").delete().eq("id", id)),
+      ...finalDraft.map((d, idx) =>
+        d.isNew
+          ? supabase.from("practice_menus").insert({
+              team_id: teamId,
+              schedule_id: scheduleId,
+              theme: d.theme.trim(),
+              created_by: userId,
+              position: idx,
+            })
+          : supabase.from("practice_menus").update({ theme: d.theme.trim(), position: idx }).eq("id", d.id),
+      ),
+    ];
+    const results = await Promise.all(ops);
+    setSavingAll(false);
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      toast.error(`並び替えに失敗しました: ${failed.error.message}`);
-      load();
+      setSaveError(`保存に失敗しました: ${failed.error.message}`);
+      return;
     }
+    setEditing(false);
+    setDraft([]);
+    setCopyOpen(false);
+    setCopyTargetId("");
+    load();
   }
 
   async function openCopy() {
@@ -197,112 +201,124 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
           実施メニュー
         </span>
         <span className="flex-1 h-px bg-line" />
-        {canManage && menus.length > 0 && !copyOpen && (
-          <button type="button" onClick={openCopy} className="text-[12px] font-bold text-orange-text whitespace-nowrap">
-            他の練習日にコピー
+        {canManage && hasAccess && !editing && (
+          <button type="button" onClick={handleStartEdit} className="text-[12px] font-bold text-orange-text whitespace-nowrap">
+            編集
           </button>
         )}
       </div>
-      <Card>
-        {canManage && menus.length > 0 && copyOpen && (
-          <div className="border-b border-line pb-2.5 mb-2.5">
-            <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
-            <select className={inputClass()} value={copyTargetId} onChange={(e) => setCopyTargetId(e.target.value)}>
-              <option value="">選択してください</option>
-              {copyTargets.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {formatDateLabel(s.date)} {s.title}
-                </option>
-              ))}
-            </select>
-            <div className="flex gap-2 mt-2">
-              <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="!mt-0 flex-1">
-                {copying ? "コピー中…" : "コピーする"}
+      <div className={cardClass}>
+        {!editing ? (
+          menus.length === 0 ? (
+            <div className="text-xs text-ink-soft text-center py-1">まだメニューがありません</div>
+          ) : (
+            menus.map((m, idx) => (
+              <div key={m.id} className="flex items-start gap-2 py-1 border-b border-line last:border-b-0">
+                <span className="font-mono text-ink-soft text-[11px] flex-shrink-0 pt-[3px] w-4 text-right">
+                  {idx + 1}
+                </span>
+                <div className="flex-1 text-[12.5px] font-bold break-words leading-snug py-[3px]">{m.theme}</div>
+              </div>
+            ))
+          )
+        ) : (
+          <>
+            {saveError && <div className="text-xs font-bold text-danger-text mb-2.5">{saveError}</div>}
+            {draft.length === 0 ? (
+              <div className="text-xs text-ink-soft text-center py-1 mb-2">まだメニューがありません</div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDraftDragEnd}>
+                <SortableContext items={draft.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                  {draft.map((d, idx) => (
+                    <DraftMenuRow
+                      key={d.id}
+                      item={d}
+                      idx={idx}
+                      onChangeTheme={(v) => handleDraftThemeChange(d.id, v)}
+                      onRemove={() => handleRemoveRow(d.id)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
+            <button
+              type="button"
+              onClick={handleAddRow}
+              className="w-full min-h-tap flex items-center justify-center rounded-control border border-dashed border-line text-xs font-bold text-ink-soft mt-1 mb-3"
+            >
+              + メニューを追加
+            </button>
+
+            {menus.length > 0 && !copyOpen && (
+              <button
+                type="button"
+                onClick={openCopy}
+                className="block text-[12px] font-bold text-orange-text mb-3"
+              >
+                他の練習日にコピー
+              </button>
+            )}
+            {copyOpen && (
+              <div className="border-t border-line pt-2.5 mb-3">
+                <FieldLabel>コピー先の練習を選ぶ</FieldLabel>
+                <select className={inputClass()} value={copyTargetId} onChange={(e) => setCopyTargetId(e.target.value)}>
+                  <option value="">選択してください</option>
+                  {copyTargets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {formatDateLabel(s.date)} {s.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2 mt-2">
+                  <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="!mt-0 flex-1">
+                    {copying ? "コピー中…" : "コピーする"}
+                  </SubmitButton>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCopyOpen(false);
+                      setCopyTargetId("");
+                    }}
+                    className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                  >
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <SubmitButton onClick={handleSaveAll} disabled={savingAll} className="!mt-0 flex-1">
+                {savingAll ? "保存中…" : "保存"}
               </SubmitButton>
               <button
                 type="button"
-                onClick={() => {
-                  setCopyOpen(false);
-                  setCopyTargetId("");
-                }}
+                onClick={handleCancelEdit}
+                disabled={savingAll}
                 className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
               >
                 キャンセル
               </button>
             </div>
-          </div>
+          </>
         )}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={menus.map((m) => m.id)} strategy={verticalListSortingStrategy}>
-            {menus.map((m, idx) => (
-              <SortableMenuRow
-                key={m.id}
-                menu={m}
-                idx={idx}
-                canManage={canManage}
-                editingId={editingId}
-                editValue={editValue}
-                setEditValue={setEditValue}
-                savingEdit={savingEdit}
-                handleEditSave={handleEditSave}
-                setEditingId={setEditingId}
-                expandedId={expandedId}
-                setExpandedId={setExpandedId}
-                deleteConfirmId={deleteConfirmId}
-                handleDelete={handleDelete}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-        {canManage && hasAccess && (
-          <div>
-            <FieldLabel>入力欄</FieldLabel>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className={inputClass()}
-              placeholder="例: シュート強化"
-            />
-            <SubmitButton onClick={handleAdd} disabled={saving || !input.trim()}>
-              {saving ? "保存中…" : "保存する"}
-            </SubmitButton>
-          </div>
-        )}
-      </Card>
+      </div>
     </>
   );
 }
 
-function SortableMenuRow({
-  menu,
+function DraftMenuRow({
+  item,
   idx,
-  canManage,
-  editingId,
-  editValue,
-  setEditValue,
-  savingEdit,
-  handleEditSave,
-  setEditingId,
-  expandedId,
-  setExpandedId,
-  deleteConfirmId,
-  handleDelete,
+  onChangeTheme,
+  onRemove,
 }: {
-  menu: PracticeMenu;
+  item: DraftMenu;
   idx: number;
-  canManage: boolean;
-  editingId: string | null;
-  editValue: string;
-  setEditValue: (v: string) => void;
-  savingEdit: boolean;
-  handleEditSave: (id: string) => void;
-  setEditingId: (id: string | null) => void;
-  expandedId: string | null;
-  setExpandedId: (id: string | null) => void;
-  deleteConfirmId: string | null;
-  handleDelete: (id: string) => void;
+  onChangeTheme: (value: string) => void;
+  onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: menu.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -313,73 +329,33 @@ function SortableMenuRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="border-b border-line pb-2.5 mb-2.5 last:border-b-0 last:mb-0 last:pb-0"
+      className="flex items-center gap-1.5 border-b border-line pb-2 mb-2 last:border-b-0 last:mb-0 last:pb-0"
     >
-      {editingId === menu.id ? (
-        <div>
-          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={inputClass()} />
-          <div className="flex gap-2 mt-2">
-            <SubmitButton onClick={() => handleEditSave(menu.id)} disabled={savingEdit} className="!mt-0 flex-1">
-              {savingEdit ? "保存中…" : "保存する"}
-            </SubmitButton>
-            <button
-              type="button"
-              onClick={() => setEditingId(null)}
-              className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
-            >
-              キャンセル
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div
-          className={canManage ? "cursor-pointer" : ""}
-          onClick={canManage ? () => setExpandedId(expandedId === menu.id ? null : menu.id) : undefined}
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-ink-soft text-[12px] flex-shrink-0">{idx + 1}</span>
-            <div className="flex-1 text-[13.5px] font-bold">{menu.theme}</div>
-            {canManage && (
-              <button
-                type="button"
-                {...attributes}
-                {...listeners}
-                onClick={(e) => e.stopPropagation()}
-                className="w-7 h-7 flex items-center justify-center text-ink-soft flex-shrink-0 cursor-grab active:cursor-grabbing"
-                style={{ touchAction: "none" }}
-                aria-label="ドラッグして並び替え"
-              >
-                <DragHandleIcon className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          {canManage && expandedId === menu.id && (
-            <div className="flex gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(menu.id);
-                  setEditValue(menu.theme ?? "");
-                }}
-                className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
-              >
-                編集
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(menu.id)}
-                className={`flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border ${
-                  deleteConfirmId === menu.id
-                    ? "border-danger text-danger-text bg-danger/8"
-                    : "border-line text-ink-soft bg-paper"
-                }`}
-              >
-                {deleteConfirmId === menu.id ? "もう一度タップで削除" : "削除"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <span className="font-mono text-ink-soft text-[11px] flex-shrink-0 w-4 text-right">{idx + 1}</span>
+      <input
+        value={item.theme}
+        onChange={(e) => onChangeTheme(e.target.value)}
+        className={inputClass("flex-1")}
+        placeholder="例: シュート強化"
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="w-7 h-7 flex items-center justify-center text-ink-soft flex-shrink-0"
+        aria-label="この行を削除"
+      >
+        <CloseIcon className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="w-7 h-7 flex items-center justify-center text-ink-soft flex-shrink-0 cursor-grab active:cursor-grabbing"
+        style={{ touchAction: "none" }}
+        aria-label="ドラッグして並び替え"
+      >
+        <DragHandleIcon className="w-4 h-4" />
+      </button>
     </div>
   );
 }
