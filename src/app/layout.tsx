@@ -157,6 +157,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // PR #213(共通ナビゲーション刷新)の実機フィードバック調査により追加。
+  // <meta name="theme-color">に相当するものがこれまで未設定だったため、Safari
+  // 通常タブのアドレスバー等は常にOS標準色のままだった。manifest.tsのtheme_color、
+  // および--header-gradient(ヘッダーのブランドグラデーション)の中間色として
+  // 既に使われているブランドブルーと同じ値を指定し、Safari自身のUIとページの
+  // ブランド配色に一体感を持たせる。viewport-fit/statusBarStyle等、他の設定・
+  // Safe Area関連CSSは変更していない。
+  themeColor: "#087cf0",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
