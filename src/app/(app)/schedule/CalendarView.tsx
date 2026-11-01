@@ -1,13 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import holiday_jp from "@holiday-jp/holiday_jp";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { TypeTag } from "@/components/ui/Pill";
-import { scheduleMeta, todayDateStr } from "@/lib/format";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { todayDateStr } from "@/lib/format";
 import { scheduleTypeColor } from "@/lib/scheduleColor";
-import type { Schedule } from "@/lib/database.types";
+import { ScheduleCard } from "./ScheduleCard";
+import type { Attendance, Schedule } from "@/lib/database.types";
+
+// UI刷新(作業1): カレンダー本体(月切替・曜日見出し・日付グリッド)を、ホーム画面等の
+// 基準画面と同じ共通デザイントークン(bg-card/border-border-subtle/rounded-card/
+// shadow-card、src/components/ui/Card.tsxのcardClassと同系)で包む。カレンダーは
+// 単純なカードの並びではなく内部に独自グリッドを持つため、cardClassそのものではなく
+// home/page.tsxのhomeCardClass等と同じ考え方でローカルに定義している(p-3の内側に
+// 日付グリッド自体の枠線・角丸は別途残す)。
+const calendarCardClass = "bg-card border border-border-subtle rounded-card shadow-card p-3 md:p-4 mb-4";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -35,10 +42,15 @@ export interface Birthday {
 
 export function CalendarView({
   schedules,
+  attendances = {},
   birthdays = [],
   onSelectDate,
 }: {
   schedules: Schedule[];
+  // 選択した日の予定カード(下記)をScheduleCard.tsxと共通化するために必要。
+  // 予定一覧表示(page.tsxのlist表示)と同じ出欠データをそのまま渡すだけで、
+  // 取得・集計ロジック自体はpage.tsx側のまま変更していない。
+  attendances?: Record<string, Attendance>;
   birthdays?: Birthday[];
   // 選択中の日付が変わるたびに呼ばれる。「予定を追加」で選択日を初期値として渡すのに使う。
   onSelectDate?: (date: string | null) => void;
@@ -130,35 +142,47 @@ export function CalendarView({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2.5">
-        <button
-          type="button"
-          onClick={goPrev}
-          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
-        >
-          ‹
-        </button>
-        <div className="font-sans font-extrabold text-[17px] text-heading">
-          {year}年{month + 1}月
-        </div>
-        <button
-          type="button"
-          onClick={goNext}
-          className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
-        >
-          ›
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 text-center text-[10.5px] font-bold mb-1">
-        {["月", "火", "水", "木", "金", "土", "日"].map((w, i) => (
-          <div key={w} className={i === 5 ? "text-sky" : i === 6 ? "text-danger-text" : "text-ink-soft"}>
-            {w}
+      {/* UI刷新(作業1): 月切替・曜日見出し・日付グリッドをまとめて共通デザインの
+          カード(calendarCardClass、上記)で包む。角丸・枠線・背景・余白を基準画面と
+          揃える。月切替ボタンの見た目(rounded-lg、aspect-[4/3]セルの配色ルール等)は
+          既存の共通デザインと同系(他画面の小型アイコンボタンも同じrounded-lg)のため
+          変更していない。
+          タップ領域調整: 見た目の30×30pxは変更せず、relative + before擬似要素
+          (inset:-7px、透明)でタップ可能領域だけを44×44px以上に拡張している
+          (30+7+7=44)。before要素はposition:absoluteでレイアウトに影響せず、
+          カード自体のpadding(p-3=12px/md:p-4=16px)の内側に収まるため、カードの
+          外枠や隣接するセルとは重ならない。中央の月表示ラベルとの間にも十分な
+          余白があり干渉しない。 */}
+      <div className={calendarCardClass}>
+        <div className="flex items-center justify-between mb-2.5">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="relative w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading before:absolute before:-inset-[7px] before:content-['']"
+          >
+            ‹
+          </button>
+          <div className="font-sans font-extrabold text-[17px] text-heading">
+            {year}年{month + 1}月
           </div>
-        ))}
-      </div>
+          <button
+            type="button"
+            onClick={goNext}
+            className="relative w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading before:absolute before:-inset-[7px] before:content-['']"
+          >
+            ›
+          </button>
+        </div>
 
-      <div className="grid grid-cols-7 border border-line rounded-lg overflow-hidden divide-x divide-y divide-line">
+        <div className="grid grid-cols-7 text-center text-[10.5px] font-bold mb-1">
+          {["月", "火", "水", "木", "金", "土", "日"].map((w, i) => (
+            <div key={w} className={i === 5 ? "text-sky" : i === 6 ? "text-danger-text" : "text-ink-soft"}>
+              {w}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-7 border border-line rounded-lg overflow-hidden divide-x divide-y divide-line">
         {cells.map((c, i) => {
           const events = eventsByDate.get(c.date) ?? [];
           const hasEvent = events.length > 0;
@@ -215,8 +239,14 @@ export function CalendarView({
             </button>
           );
         })}
+        </div>
       </div>
 
+      {/* UI刷新(作業1): 「選択した日の予定」は、カレンダー本体のカードとは別の
+          セクションとして扱う(他の画面でも、SectionLabel+カード一覧はカレンダー
+          本体のような単一ウィジェットのカードの外に置く構成のため)。誕生日表示は
+          予定ではないためScheduleCardを再利用できず、共通cardClassのみ適用する。
+          予定の表示は下のScheduleCard再利用(作業2)を参照。 */}
       <div className="mt-4">
         <SectionLabel>選択した日の予定</SectionLabel>
         {!selectedDate ? (
@@ -224,25 +254,18 @@ export function CalendarView({
         ) : (
           <>
             {dayBirthdays.length > 0 && (
-              <Card>
+              <div className={cardClass}>
                 <div className="font-bold text-[13px]">🎂 誕生日: {dayBirthdays.join("・")}</div>
-              </Card>
+              </div>
             )}
             {dayEvents.length === 0 ? (
               dayBirthdays.length === 0 && <EmptyState>この日の予定はありません</EmptyState>
             ) : (
-              dayEvents.map((ev) => (
-                <Link key={ev.id} href={`/schedule/${ev.id}`}>
-                  <Card className="cursor-pointer">
-                    <div className="font-bold text-[14.5px]">
-                      <TypeTag type={ev.type} gameCategory={ev.game_category} />
-                      {ev.title}
-                    </div>
-                    <div className="text-xs text-ink-soft mt-0.5">{scheduleMeta(ev)}</div>
-                    {ev.toban && <div className="text-xs text-ink-soft mt-0.5">当番:{ev.toban}</div>}
-                  </Card>
-                </Link>
-              ))
+              // UI刷新(作業2・3): 予定一覧表示(ScheduleCard.tsx)とカード・文字サイズ・
+              // 表示情報(種別タグ・日時/場所・当番・出欠Pill)を完全に揃えるため、独自の
+              // Card手書き実装ではなく同じScheduleCardをそのまま再利用する。遷移先・
+              // 出欠表示ロジックはScheduleCard側に委譲しており、ここでは変更していない。
+              dayEvents.map((ev) => <ScheduleCard key={ev.id} schedule={ev} attendance={attendances[ev.id]} />)
             )}
           </>
         )}
