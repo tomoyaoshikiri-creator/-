@@ -146,13 +146,19 @@ export function CalendarView({
           カード(calendarCardClass、上記)で包む。角丸・枠線・背景・余白を基準画面と
           揃える。月切替ボタンの見た目(rounded-lg、aspect-[4/3]セルの配色ルール等)は
           既存の共通デザインと同系(他画面の小型アイコンボタンも同じrounded-lg)のため
-          変更していない。 */}
+          変更していない。
+          タップ領域調整: 見た目の30×30pxは変更せず、relative + before擬似要素
+          (inset:-7px、透明)でタップ可能領域だけを44×44px以上に拡張している
+          (30+7+7=44)。before要素はposition:absoluteでレイアウトに影響せず、
+          カード自体のpadding(p-3=12px/md:p-4=16px)の内側に収まるため、カードの
+          外枠や隣接するセルとは重ならない。中央の月表示ラベルとの間にも十分な
+          余白があり干渉しない。 */}
       <div className={calendarCardClass}>
         <div className="flex items-center justify-between mb-2.5">
           <button
             type="button"
             onClick={goPrev}
-            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+            className="relative w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading before:absolute before:-inset-[7px] before:content-['']"
           >
             ‹
           </button>
@@ -162,7 +168,7 @@ export function CalendarView({
           <button
             type="button"
             onClick={goNext}
-            className="w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading"
+            className="relative w-[30px] h-[30px] rounded-lg bg-white border border-line flex items-center justify-center text-base text-heading before:absolute before:-inset-[7px] before:content-['']"
           >
             ›
           </button>
