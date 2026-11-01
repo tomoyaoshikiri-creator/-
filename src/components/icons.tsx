@@ -333,3 +333,13 @@ export function MoreIcon(props: IconProps) {
     </svg>
   );
 }
+
+// 実施メニューの「編集」ボタン(PracticeMenuCard.tsx)用の鉛筆アイコン。
+export function PencilIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19 4 20z" />
+      <path d="M13 7l3.5 3.5" />
+    </svg>
+  );
+}

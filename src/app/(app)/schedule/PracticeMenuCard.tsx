@@ -16,7 +16,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { ChevronRightIcon, CloseIcon, CopyIcon, DragHandleIcon } from "@/components/icons";
+import { ChevronRightIcon, CloseIcon, CopyIcon, DragHandleIcon, PencilIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { hasPracticeMenuAccess } from "@/lib/plan";
@@ -202,8 +202,21 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
         </span>
         <span className="flex-1 h-px bg-line" />
         {canManage && hasAccess && !editing && (
-          <button type="button" onClick={handleStartEdit} className="text-[12px] font-bold text-orange-text whitespace-nowrap">
-            編集
+          // 実機フィードバックにより、オレンジ色のテキストリンクから小型のアウトライン
+          // ボタン(鉛筆アイコン+「編集」)に変更。見出しの罫線(上のh-px)と操作ボタンを
+          // 見た目で明確に区別するため。外側のbuttonはmin-h-tap(44px)でタップ領域を
+          // 確保し、内側のspanが実際に見える36px(h-9)のチップを描く(タップ領域と
+          // 見た目の高さを分離)。編集開始の処理(handleStartEdit)自体は変更していない。
+          <button
+            type="button"
+            onClick={handleStartEdit}
+            aria-label="実施メニューを編集"
+            className="min-h-tap flex-shrink-0 flex items-center justify-center"
+          >
+            <span className="h-9 inline-flex items-center gap-1 px-2.5 rounded-control border border-orange/35 bg-orange/5 text-[12px] font-bold text-orange-text whitespace-nowrap">
+              <PencilIcon className="w-3.5 h-3.5" />
+              編集
+            </span>
           </button>
         )}
       </div>

@@ -250,18 +250,22 @@ export default function ScheduleDetailPage() {
               </div>
             )}
             {canWriteSchedule(role) && (
+              // 実機フィードバックにより、以前のflex-1(横幅いっぱいに均等に広がる)だと
+              // 存在感が強すぎたため、横幅をコンテンツに合わせたコンパクトな見た目に変更。
+              // 高さ(min-h-tap=44px)・横並びの配置・2ボタン共通のデザインは維持し、
+              // 横方向の余白(px-3→px-4)だけ調整している。onClick等の機能は無変更。
               <div className="flex gap-2 mt-3 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
-                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                  className="min-h-tap flex items-center justify-center px-4 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
                 >
                   予定を編集
                 </button>
                 <button
                   type="button"
                   onClick={() => setCopyOpen(true)}
-                  className="flex-1 min-h-tap flex items-center justify-center px-3 py-1.5 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                  className="min-h-tap flex items-center justify-center px-4 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
                 >
                   コピーして登録
                 </button>
