@@ -12,7 +12,6 @@ import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { useFocusMode } from "@/lib/focusMode";
 import { formatDateLabel, isTargetEligible, playerFullName, sortPlayers } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
 import type { Player, Schedule } from "@/lib/database.types";
@@ -52,9 +51,11 @@ export default function ScheduleDetailPage() {
   const { userId, role, requireUnlinkedGuardianAttendance } = useSession();
   const toast = useToast();
 
-  // 詳細画面(専用作業画面)のため、通常の下部5タブ・サイドバーは表示しない
-  // (戻る・ハンバーガーのみ。AppHeader側の導線は無変更)。
-  useFocusMode(true);
+  // 以前はuseFocusMode(true)で通常の下部5タブを非表示にしていたが、実機フィードバックに
+  // より通常5タブを常時表示する方針に変更した(閲覧時・実施メニュー編集中とも同じ)。
+  // PageShellはfocusMode=false相当のpb-28(下部ピルの裏にコンテンツが隠れないための
+  // 余白)を使うため、保存・キャンセル等の操作ボタンも通常5タブと重ならない。
+  // ヘッダーの戻る(backHref)・ハンバーガーは元々focusModeと独立しているため無変更。
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [subjects, setSubjects] = useState<AttendanceSubject[]>([]);

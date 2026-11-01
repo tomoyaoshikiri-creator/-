@@ -278,7 +278,16 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
                   ))}
                 </select>
                 <div className="flex gap-2 mt-2">
-                  <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="!mt-0 flex-1">
+                  {/* 高さ調整: 画面内の主要操作ボタン(予定を編集・コピーして登録・保存・
+                      キャンセル)をmin-h-tap(44px)で統一する。コピー先選択後の実行ボタン
+                      (コピーする/キャンセル)も同じ主要操作の一種として揃える。「他の練習日に
+                      コピー」(トリガー、40px固定)とは別物なので対象外。コピー処理自体は
+                      変更していない。 */}
+                  <SubmitButton
+                    onClick={handleCopy}
+                    disabled={copying || !copyTargetId}
+                    className="!mt-0 flex-1 min-h-tap flex items-center justify-center"
+                  >
                     {copying ? "コピー中…" : "コピーする"}
                   </SubmitButton>
                   <button
@@ -287,7 +296,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
                       setCopyOpen(false);
                       setCopyTargetId("");
                     }}
-                    className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                    className="flex-1 min-h-tap flex items-center justify-center rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
                   >
                     キャンセル
                   </button>
@@ -296,14 +305,21 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
             )}
 
             <div className="flex gap-2">
-              <SubmitButton onClick={handleSaveAll} disabled={savingAll} className="!mt-0 flex-1">
+              {/* 高さ調整: 保存・キャンセルをmin-h-tap(44px)で統一(以前はpy-2.5のみで
+                  min-h-tapが無く、他の主要操作ボタンより低かった)。保存処理・キャンセル
+                  処理自体は変更していない。 */}
+              <SubmitButton
+                onClick={handleSaveAll}
+                disabled={savingAll}
+                className="!mt-0 flex-1 min-h-tap flex items-center justify-center"
+              >
                 {savingAll ? "保存中…" : "保存"}
               </SubmitButton>
               <button
                 type="button"
                 onClick={handleCancelEdit}
                 disabled={savingAll}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-1 min-h-tap flex items-center justify-center rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
               >
                 キャンセル
               </button>
