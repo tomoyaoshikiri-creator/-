@@ -124,7 +124,12 @@ export default function SchedulePage() {
           {!loading && !query && hasPast && <CardFooterLink href="/schedule/history">過去の予定を見る</CardFooterLink>}
         </div>
       ) : (
-        <CalendarView schedules={schedules} birthdays={birthdays} onSelectDate={setCalendarSelectedDate} />
+        <CalendarView
+          schedules={schedules}
+          attendances={attendances}
+          birthdays={birthdays}
+          onSelectDate={setCalendarSelectedDate}
+        />
       )}
     </PageShell>
   );
