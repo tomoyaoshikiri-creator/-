@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Card, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { EditButton } from "@/components/ui/EditButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import type { AttendanceStatus, CarStatus, VenueType, YesNo } from "@/lib/database.types";
 
@@ -165,15 +166,12 @@ export function AttendanceEntryForm({
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
         ) : !editing ? (
           <>
+            {/* 共通EditButton(src/components/ui/EditButton.tsx)に置き換え。出欠状態の
+                Pillとの左右の関係(justify-between)は維持。setEditing等の権限・回答
+                処理自体は変更していない。 */}
             <div className="flex items-center justify-between gap-2">
               <div>{status && <Pill tone={statusTone(status)} size="lg">{status}</Pill>}</div>
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="flex-none text-center py-1.5 px-3 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
-              >
-                編集する
-              </button>
+              <EditButton onClick={() => setEditing(true)} ariaLabel={`${label}の出欠を編集`} />
             </div>
             {isGame && !isSelf && accompany && (
               <div className="text-[12.5px] text-ink-soft mt-1">

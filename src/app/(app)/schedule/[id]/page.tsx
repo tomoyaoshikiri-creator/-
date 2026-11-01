@@ -11,6 +11,7 @@ import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { EditButton } from "@/components/ui/EditButton";
 import { ChevronRightIcon } from "@/components/icons";
 import { formatDateLabel, isTargetEligible, playerFullName, sortPlayers } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
@@ -228,9 +229,15 @@ export default function ScheduleDetailPage() {
         <EmptyState>予定が見つかりません</EmptyState>
       ) : (
         <>
-          {/* 1. 予定情報カード: 種別・タイトル・日時・場所・当番と、予定の編集・コピーを
-              カード内に横並びで配置する(以前のように折りたたみ内に隠さない)。 */}
-          <SectionLabel>予定の内容</SectionLabel>
+          {/* 1. 予定情報カード: 種別・タイトル・日時・場所・当番と、コピーして登録を
+              カード内に配置する(以前のように折りたたみ内に隠さない)。「予定を編集」は
+              共通EditButton(src/components/ui/EditButton.tsx)に変更し、見出し
+              「予定の内容」の右側(SectionLabelのaction)へ移動した。 */}
+          <SectionLabel
+            action={canWriteSchedule(role) && <EditButton onClick={() => setEditOpen(true)} ariaLabel="予定を編集" />}
+          >
+            予定の内容
+          </SectionLabel>
           <div className={cardClass}>
             <div className="font-bold text-base break-words">
               <TypeTag type={schedule.type} gameCategory={schedule.game_category} />
@@ -250,18 +257,10 @@ export default function ScheduleDetailPage() {
               </div>
             )}
             {canWriteSchedule(role) && (
-              // 実機フィードバックにより、以前のflex-1(横幅いっぱいに均等に広がる)だと
-              // 存在感が強すぎたため、横幅をコンテンツに合わせたコンパクトな見た目に変更。
-              // 高さ(min-h-tap=44px)・横並びの配置・2ボタン共通のデザインは維持し、
-              // 横方向の余白(px-3→px-4)だけ調整している。onClick等の機能は無変更。
+              // 「予定を編集」を見出し側のEditButtonへ移動したため、ここには独立した操作
+              // 「コピーして登録」のみ残る。高さ(min-h-tap=44px)・コンパクトな横幅の
+              // 見た目は変更していない。onClick等の機能は無変更。
               <div className="flex gap-2 mt-3 pt-3 border-t border-line">
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  className="min-h-tap flex items-center justify-center px-4 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
-                >
-                  予定を編集
-                </button>
                 <button
                   type="button"
                   onClick={() => setCopyOpen(true)}
