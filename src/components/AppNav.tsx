@@ -14,9 +14,10 @@ import { TabBar } from "@/components/TabBar";
 export function AppNav({ role, children }: { role: Role; children: React.ReactNode }) {
   const { userId, teamId } = useSession();
   const badges = useTabBadges(userId, teamId, role);
-  // スタッツ入力画面・スケジュール詳細画面等の「専用作業画面」がuseFocusMode(true)を
-  // 呼んでいる間だけ、通常の下部TabBarを非表示にする(画面側は戻る+ハンバーガーや
-  // 専用操作バーに置き換える)。
+  // スタッツ入力画面(game/stats/[matchId]/page.tsx)等の「専用作業画面」が
+  // useFocusMode(true)を呼んでいる間だけ、通常の下部TabBarを非表示にする(画面側は
+  // 戻る+ハンバーガーや専用操作バーに置き換える)。スケジュール詳細画面は実機
+  // フィードバックにより通常5タブ常時表示に変更し、focusModeは使わなくなった。
   const { focusMode } = useFocusModeState();
 
   return (

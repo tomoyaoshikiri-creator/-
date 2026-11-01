@@ -14,9 +14,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { cardClass } from "@/components/ui/Card";
+import { cardClass, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { CloseIcon, DragHandleIcon } from "@/components/icons";
+import { EditButton } from "@/components/ui/EditButton";
+import { ChevronRightIcon, CloseIcon, CopyIcon, DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { hasPracticeMenuAccess } from "@/lib/plan";
@@ -196,17 +197,18 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
 
   return (
     <>
-      <div className="mb-2.5 flex items-center gap-2">
-        <span className="font-mono text-[13px] font-bold tracking-widest uppercase text-ink whitespace-nowrap">
-          実施メニュー
-        </span>
-        <span className="flex-1 h-px bg-line" />
-        {canManage && hasAccess && !editing && (
-          <button type="button" onClick={handleStartEdit} className="text-[12px] font-bold text-orange-text whitespace-nowrap">
-            編集
-          </button>
-        )}
-      </div>
+      {/* 共通EditButton(src/components/ui/EditButton.tsx)に置き換え。見出し行自体も
+          SectionLabelへ統一し、手書きの見出し+罫線+操作ボタンの重複実装を無くした。
+          編集開始の処理(handleStartEdit)自体は変更していない。 */}
+      <SectionLabel
+        action={
+          canManage && hasAccess && !editing && (
+            <EditButton onClick={handleStartEdit} ariaLabel="実施メニューを編集" />
+          )
+        }
+      >
+        実施メニュー
+      </SectionLabel>
       <div className={cardClass}>
         {!editing ? (
           menus.length === 0 ? (
@@ -250,12 +252,20 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
             </button>
 
             {menus.length > 0 && !copyOpen && (
+              // 確定デザイン: 高さ40px・編集エリア全幅・白背景・薄いグレーの枠線・角丸、
+              // 左にコピーアイコン・中央にラベル・右に右矢印。保存(オレンジ系の塗り)・
+              // キャンセル(bg-paperの枠線ボタン)より控えめに見えるよう、無地の白背景+
+              // 細い枠線のみにし、文字色も控えめなink-softにしている(以前のtext-orange-text
+              // font-boldより目立たない見た目)。コピー処理・コピー先選択・保存処理自体は
+              // 変更していない(onClick=openCopyのまま)。
               <button
                 type="button"
                 onClick={openCopy}
-                className="block text-[12px] font-bold text-orange-text mb-3"
+                className="w-full h-10 flex items-center gap-2 px-3 rounded-control border border-line bg-white text-[12px] font-bold text-ink-soft mb-3"
               >
-                他の練習日にコピー
+                <CopyIcon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-center">他の練習日にコピー</span>
+                <ChevronRightIcon className="w-4 h-4 flex-shrink-0" />
               </button>
             )}
             {copyOpen && (
@@ -270,7 +280,16 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
                   ))}
                 </select>
                 <div className="flex gap-2 mt-2">
-                  <SubmitButton onClick={handleCopy} disabled={copying || !copyTargetId} className="!mt-0 flex-1">
+                  {/* 高さ調整: 画面内の主要操作ボタン(予定を編集・コピーして登録・保存・
+                      キャンセル)をmin-h-tap(44px)で統一する。コピー先選択後の実行ボタン
+                      (コピーする/キャンセル)も同じ主要操作の一種として揃える。「他の練習日に
+                      コピー」(トリガー、40px固定)とは別物なので対象外。コピー処理自体は
+                      変更していない。 */}
+                  <SubmitButton
+                    onClick={handleCopy}
+                    disabled={copying || !copyTargetId}
+                    className="!mt-0 flex-1 min-h-tap flex items-center justify-center"
+                  >
                     {copying ? "コピー中…" : "コピーする"}
                   </SubmitButton>
                   <button
@@ -279,7 +298,7 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
                       setCopyOpen(false);
                       setCopyTargetId("");
                     }}
-                    className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                    className="flex-1 min-h-tap flex items-center justify-center rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
                   >
                     キャンセル
                   </button>
@@ -288,14 +307,21 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
             )}
 
             <div className="flex gap-2">
-              <SubmitButton onClick={handleSaveAll} disabled={savingAll} className="!mt-0 flex-1">
+              {/* 高さ調整: 保存・キャンセルをmin-h-tap(44px)で統一(以前はpy-2.5のみで
+                  min-h-tapが無く、他の主要操作ボタンより低かった)。保存処理・キャンセル
+                  処理自体は変更していない。 */}
+              <SubmitButton
+                onClick={handleSaveAll}
+                disabled={savingAll}
+                className="!mt-0 flex-1 min-h-tap flex items-center justify-center"
+              >
                 {savingAll ? "保存中…" : "保存"}
               </SubmitButton>
               <button
                 type="button"
                 onClick={handleCancelEdit}
                 disabled={savingAll}
-                className="flex-1 py-2.5 rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
+                className="flex-1 min-h-tap flex items-center justify-center rounded-lg text-[13px] font-bold border border-line bg-paper text-ink-soft"
               >
                 キャンセル
               </button>

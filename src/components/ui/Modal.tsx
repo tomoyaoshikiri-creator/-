@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { CONFIRM_CLOSE_MESSAGE, useNavigationGuard } from "@/lib/navigationGuard";
+import { PILL_NAV_TAB_HEIGHT_PX } from "@/components/PillNavBar";
 
 export function Modal({
   open,
@@ -97,22 +98,44 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
   // 異なり、ここは明示的にcontrast機構を利用する)。shadowも旧・緑固定値ではなく、
   // 現在のteamPrimaryと連動する色にする(--orange-shadow-55、src/lib/theme.tsで
   // JS側事前計算。CSSのcolor-mix()はSafariクラッシュ対策のため使わない)。
+  //
+  // 下部5タブ(TabBar.tsx)がフローティング型のピルになった(Phase 3)ことで、従来の
+  // bottom-4(16px固定)だとピルと重なって押せなくなる不具合が実機で確認された。
+  // ピル自体の高さ(PILL_NAV_TAB_HEIGHT_PX)とピルの下端オフセット(TabBar.tsxと同じ
+  // max(0.875rem, env(safe-area-inset-bottom)))を足し合わせ、さらに12〜16pxの間隔
+  // (0.875rem=14px)を空けた位置にFabを置く。固定pxの単純な上移動ではなく、ピルの
+  // 実際の位置・高さとの関係から導いた値であるため、将来ピルの高さやセーフエリアの
+  // 扱いが変わっても追従する。
+  //
+  // 横位置も、外側のラッパーをTabBar.tsx/PillNavPositionと同じ
+  // inset-x-0 + mx-auto + max-w-[480px] の中央寄せにし、その内側でright-3(ピルの
+  // 右端と同じ値)に配置する。これにより、iPhone縦画面だけでなく、app-shell自体が
+  // 画面幅いっぱいに広がる700px以上(iPad縦横)でも、ピルの実際の右端(常に
+  // max-w-[480px]の内側)とFabの位置が揃う(従来のright-4は画面の実際の右端を
+  // 基準にしていたため、iPad幅ではピルの右端と大きくズレていた)。
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="absolute right-4 bottom-4 w-10 h-10 rounded-full border border-orange flex items-center justify-center text-xl font-bold z-10"
+    <div
+      className="absolute inset-x-0 mx-auto max-w-[480px]"
       style={{
-        color: "var(--on-team-primary)",
-        // SubmitButton/SegButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
-        // 薄い方は黒を混ぜず、白を混ぜて明るくする(--orange-light-55/--orange-shadow-55、
-        // Safariのcolor-mix()クラッシュ対策でJS側事前計算値に変更済み)。
-        background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
-        boxShadow: "0 10px 20px -6px var(--orange-shadow-55)",
+        bottom: `calc(max(0.875rem, env(safe-area-inset-bottom)) + ${PILL_NAV_TAB_HEIGHT_PX}px + 0.875rem)`,
       }}
     >
-      +
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={label}
+        className="absolute right-3 bottom-0 w-10 h-10 rounded-full border border-orange flex items-center justify-center text-xl font-bold z-10"
+        style={{
+          color: "var(--on-team-primary)",
+          // SubmitButton/SegButtonと同じ135deg・濃い色(左上)→薄い色(右下)のグラデーション。
+          // 薄い方は黒を混ぜず、白を混ぜて明るくする(--orange-light-55/--orange-shadow-55、
+          // Safariのcolor-mix()クラッシュ対策でJS側事前計算値に変更済み)。
+          background: "linear-gradient(135deg, var(--orange) 0%, var(--orange-light-55) 100%)",
+          boxShadow: "0 10px 20px -6px var(--orange-shadow-55)",
+        }}
+      >
+        +
+      </button>
+    </div>
   );
 }

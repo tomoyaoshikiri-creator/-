@@ -16,6 +16,15 @@ export type PillNavIcon = (props: { className?: string }) => React.ReactElement;
 export const PILL_NAV_ICON_CLASS = "w-[23px] h-[23px]";
 export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitespace-nowrap";
 
+// TabBar.tsx(通常5タブ)のピル自体の実測高さ。PillNavLinkのpy-2(16px)+アイコン
+// バッジ(px-3 py-1、23pxアイコン+py-1×2=8pxで31px)+gap-1(4px)+ラベル
+// (text-[9.5px] leading-none、約9.5px)+PillNavBar自体のborder(1px×2=2px)の合計
+// (16+31+4+9.5+2=62.5px、安全側に切り上げ)。画面右下の「＋」ボタン(Fab、
+// src/components/ui/Modal.tsx)がこのピルと重ならないよう、ピルの上端からの
+// 位置を計算する際に使う。ラベル・アイコンサイズを変更した場合はこの値も
+// 見直すこと。
+export const PILL_NAV_TAB_HEIGHT_PX = 64;
+
 // 画面下部に浮かせる位置決めだけを担う外枠(左右マージン・セーフエリア対応)。
 // 中身の形(ピル/サブパネルのカード)を問わず共通で使う。
 //
