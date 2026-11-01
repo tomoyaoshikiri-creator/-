@@ -162,6 +162,16 @@ export function BackIcon(props: IconProps) {
   );
 }
 
+// 「他の練習日にコピー」ボタン(PracticeMenuCard.tsx)用の標準的な二重矩形のコピーアイコン。
+export function CopyIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="9" y="9" width="11" height="11" rx="1.5" />
+      <path d="M15 9V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v7.5A1.5 1.5 0 0 0 6 15h3" />
+    </svg>
+  );
+}
+
 export function PlusIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

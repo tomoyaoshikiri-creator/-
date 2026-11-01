@@ -16,7 +16,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
-import { CloseIcon, DragHandleIcon } from "@/components/icons";
+import { ChevronRightIcon, CloseIcon, CopyIcon, DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canManagePracticeMenus } from "@/lib/permissions";
 import { hasPracticeMenuAccess } from "@/lib/plan";
@@ -250,12 +250,20 @@ export function PracticeMenuCard({ scheduleId, scheduleDate }: { scheduleId: str
             </button>
 
             {menus.length > 0 && !copyOpen && (
+              // 確定デザイン: 高さ40px・編集エリア全幅・白背景・薄いグレーの枠線・角丸、
+              // 左にコピーアイコン・中央にラベル・右に右矢印。保存(オレンジ系の塗り)・
+              // キャンセル(bg-paperの枠線ボタン)より控えめに見えるよう、無地の白背景+
+              // 細い枠線のみにし、文字色も控えめなink-softにしている(以前のtext-orange-text
+              // font-boldより目立たない見た目)。コピー処理・コピー先選択・保存処理自体は
+              // 変更していない(onClick=openCopyのまま)。
               <button
                 type="button"
                 onClick={openCopy}
-                className="block text-[12px] font-bold text-orange-text mb-3"
+                className="w-full h-10 flex items-center gap-2 px-3 rounded-control border border-line bg-white text-[12px] font-bold text-ink-soft mb-3"
               >
-                他の練習日にコピー
+                <CopyIcon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-center">他の練習日にコピー</span>
+                <ChevronRightIcon className="w-4 h-4 flex-shrink-0" />
               </button>
             )}
             {copyOpen && (
