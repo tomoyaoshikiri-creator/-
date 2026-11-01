@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -110,7 +110,7 @@ export default function SettingsColorPage() {
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
-        <Card>
+        <div className={cardClass}>
           <div className="text-xs text-ink-soft mb-4">
             {customized
               ? "このチーム専用の配色を使っています。"
@@ -196,7 +196,7 @@ export default function SettingsColorPage() {
               配色を編集する
             </button>
           )}
-        </Card>
+        </div>
       )}
     </PageShell>
   );

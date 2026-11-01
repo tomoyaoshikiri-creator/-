@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 
 const CONFIRM_PHRASE = "退会する";
@@ -55,7 +55,7 @@ export default function LeaveServicePage() {
   if (result) {
     return (
       <PageShell header={<AppHeader title="このサービスから退会する" variant="detail" />}>
-        <Card>
+        <div className={cardClass}>
           <div className="font-bold text-[13.5px] mb-2">退会手続きを受け付けました</div>
           {result.immediate ? (
             <div className="text-[12.5px] text-ink-soft leading-relaxed">アカウントを削除しました。ご利用ありがとうございました。</div>
@@ -65,7 +65,7 @@ export default function LeaveServicePage() {
             </div>
           )}
           <SubmitButton onClick={handleBackToLogin}>ログイン画面に戻る</SubmitButton>
-        </Card>
+        </div>
       </PageShell>
     );
   }
@@ -74,7 +74,7 @@ export default function LeaveServicePage() {
 
   return (
     <PageShell header={<AppHeader title="このサービスから退会する" variant="detail" backHref="/settings" />}>
-      <Card>
+      <div className={cardClass}>
         <div className="font-bold text-[13.5px] mb-2">この操作について</div>
         <ul className="text-[12.5px] text-ink-soft leading-relaxed list-disc pl-4 space-y-1">
           <li>あなた個人のCIRCLE LINESアカウント(ログイン情報)を完全に削除します。チームのデータ自体を消す操作ではありません</li>
@@ -85,9 +85,9 @@ export default function LeaveServicePage() {
           <li>管理しているチームが1つもなければ、アカウントは即座に削除されます</li>
           <li>この操作は取り消せません(唯一の管理者であるチームの7日以内の取り消しを除く)</li>
         </ul>
-      </Card>
+      </div>
 
-      <Card>
+      <div className={cardClass}>
         <FieldLabel>本人確認のため、現在のパスワードを入力してください</FieldLabel>
         <input
           type="password"
@@ -116,7 +116,7 @@ export default function LeaveServicePage() {
         >
           {submitting ? "処理中…" : "このサービスから退会する"}
         </button>
-      </Card>
+      </div>
     </PageShell>
   );
 }

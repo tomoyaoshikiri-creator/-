@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 
@@ -43,7 +43,7 @@ export default function SettingsPasswordPage() {
   return (
     <PageShell header={<AppHeader title="パスワードの変更" variant="detail" backHref="/settings" />}>
       <SectionLabel>新しいパスワード</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <FieldLabel htmlFor="settings-new-password">新しいパスワード</FieldLabel>
         <input
           id="settings-new-password"
@@ -65,7 +65,7 @@ export default function SettingsPasswordPage() {
         <SubmitButton onClick={handleSave} disabled={saving}>
           {saving ? "変更中…" : "パスワードを変更する"}
         </SubmitButton>
-      </Card>
+      </div>
     </PageShell>
   );
 }

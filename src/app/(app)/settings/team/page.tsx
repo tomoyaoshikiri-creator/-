@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { Switch } from "@/components/ui/Switch";
 import { SettingsRow } from "@/components/SettingsRow";
 import { canManageSettings } from "@/lib/permissions";
@@ -51,7 +51,7 @@ export default function SettingsTeamPage() {
   return (
     <PageShell header={<AppHeader title="チーム設定" variant="detail" backHref="/settings" accessBadge="admin" />}>
       <SectionLabel>チーム</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <SettingsRow href="/settings/logo" label="チーム情報・表示設定" />
         <SettingsRow href="/settings/color" label="配色" />
         <SettingsRow href="/settings/storage" label="使用量" />
@@ -61,10 +61,10 @@ export default function SettingsTeamPage() {
           label="カテゴリー"
           value={`${CATEGORY_DISPLAY_LABELS[category]} / ${SPORT_DISPLAY_LABELS[sport]}`}
         />
-      </Card>
+      </div>
 
       <SectionLabel>出欠</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="flex items-center justify-between py-1 gap-3">
           <div className="min-w-0">
             <div className="font-bold text-[13.5px]">選手と紐づいていないメンバーの出欠</div>
@@ -74,12 +74,12 @@ export default function SettingsTeamPage() {
           </div>
           <Switch checked={attendanceToggle} onChange={handleToggleAttendance} disabled={savingAttendanceToggle} />
         </div>
-      </Card>
+      </div>
 
       <SectionLabel>危険な操作</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <SettingsRow href="/settings/close-account" label="チームを退会する" />
-      </Card>
+      </div>
     </PageShell>
   );
 }

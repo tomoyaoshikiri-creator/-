@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { SegButton, SubmitButton } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { isInquiryPlan, isPublicPlan } from "@/lib/plan";
@@ -96,7 +96,7 @@ export default function SettingsPlanPage() {
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
-        <Card>
+        <div className={cardClass}>
           {plan && (
             <div className="mb-2.5">
               <div className="text-[11px] font-bold text-orange-text">現在のプラン: {PLAN_DISPLAY_LABELS[plan]}</div>
@@ -168,7 +168,7 @@ export default function SettingsPlanPage() {
               </a>
             </>
           )}
-        </Card>
+        </div>
       )}
     </PageShell>
   );

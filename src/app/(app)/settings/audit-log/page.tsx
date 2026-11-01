@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { LockedFeatureCard } from "@/components/PlanLock";
 import { canManageSettings } from "@/lib/permissions";
@@ -138,7 +138,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
   return (
     <>
       <SectionLabel>絞り込み検索</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="flex gap-2.5">
           <div className="flex-1">
             <FieldLabel htmlFor="audit-log-from">開始日</FieldLabel>
@@ -175,7 +175,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
         <SubmitButton onClick={() => runQuery(0, false)} disabled={loading}>
           {loading ? "検索中…" : "この条件で検索する"}
         </SubmitButton>
-      </Card>
+      </div>
 
       {rows !== null && (
         <>
@@ -196,7 +196,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
           {rows.length === 0 ? (
             <EmptyState>条件に一致する記録がありません</EmptyState>
           ) : (
-            <Card>
+            <div className={cardClass}>
               <ul>
                 {rows.map((row) => (
                   <AuditLogRowItem
@@ -206,7 +206,7 @@ function AdvancedAuditLogSearch({ members }: { members: TeamMember[] }) {
                   />
                 ))}
               </ul>
-            </Card>
+            </div>
           )}
           {hasMore && (
             <button
@@ -307,7 +307,7 @@ export default function AuditLogPage() {
       ) : rows.length === 0 ? (
         <EmptyState>まだ記録がありません</EmptyState>
       ) : (
-        <Card>
+        <div className={cardClass}>
           <ul>
             {rows.map((row) => (
               <AuditLogRowItem
@@ -317,7 +317,7 @@ export default function AuditLogPage() {
               />
             ))}
           </ul>
-        </Card>
+        </div>
       )}
       {!loading && hasMore && (
         <button

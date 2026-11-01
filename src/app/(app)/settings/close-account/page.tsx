@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 
@@ -46,7 +46,7 @@ export default function CloseAccountPage() {
 
   return (
     <PageShell header={<AppHeader title="チームを退会する" variant="detail" backHref="/settings/team" accessBadge="admin" />}>
-      <Card>
+      <div className={cardClass}>
         <div className="font-bold text-[13.5px] mb-2">この操作について</div>
         <ul className="text-[12.5px] text-ink-soft leading-relaxed list-disc pl-4 space-y-1">
           <li>退会申請すると、選手・試合記録・カルテなどチームのすべてのデータが7日後に完全に削除されます</li>
@@ -57,9 +57,9 @@ export default function CloseAccountPage() {
         <Link href="/settings/export" className="block mt-3 text-[12.5px] text-orange-text font-bold underline">
           退会前にデータをエクスポートする ›
         </Link>
-      </Card>
+      </div>
 
-      <Card>
+      <div className={cardClass}>
         <FieldLabel>
           確認のため、チーム名「{teamName}」を入力してください
         </FieldLabel>
@@ -79,7 +79,7 @@ export default function CloseAccountPage() {
         >
           {submitting ? "処理中…" : "チームを退会する"}
         </button>
-      </Card>
+      </div>
     </PageShell>
   );
 }

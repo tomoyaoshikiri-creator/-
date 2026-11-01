@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { canManageSettings } from "@/lib/permissions";
 
 const EXPORT_ITEMS: { type: string; label: string; desc: string }[] = [
@@ -28,7 +28,7 @@ export default function DataExportPage() {
   return (
     <PageShell header={<AppHeader title="データをエクスポート" variant="detail" backHref="/settings" accessBadge="admin" />}>
       <SectionLabel>CSVでダウンロード</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="text-[12px] text-ink-soft mb-3">
           チームのデータをCSVファイルでダウンロードできます。項目ごとに個別のファイルになります。
         </div>
@@ -47,7 +47,7 @@ export default function DataExportPage() {
             </a>
           ))}
         </div>
-      </Card>
+      </div>
     </PageShell>
   );
 }
