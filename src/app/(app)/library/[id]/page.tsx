@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile, isPdfFile } from "@/lib/storagePath";
@@ -188,7 +188,9 @@ export default function LibraryItemDetailPage() {
       ) : editing ? (
         <>
           <SectionLabel>資料を編集</SectionLabel>
-          <Card>
+          {/* UI刷新バッチC: 旧<Card>(角丸6px)から共通cardClass(角丸14px)へ移行。
+              資料の閲覧・添付・操作権限は変更していない(3箇所とも同様)。 */}
+          <div className={cardClass}>
             <FieldLabel>タイトル</FieldLabel>
             <input className={inputClass()} value={title} onChange={(e) => setTitle(e.target.value)} />
 
@@ -234,10 +236,10 @@ export default function LibraryItemDetailPage() {
             >
               キャンセル
             </button>
-          </Card>
+          </div>
 
           <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
-          <Card>
+          <div className={cardClass}>
             <button
               type="button"
               onClick={handleDelete}
@@ -246,7 +248,7 @@ export default function LibraryItemDetailPage() {
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この資料を削除する"}
             </button>
-          </Card>
+          </div>
         </>
       ) : (
         <>
@@ -274,7 +276,7 @@ export default function LibraryItemDetailPage() {
           >
             資料情報
           </SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <div className="font-bold text-[14.5px]">
               {category && (
                 <span className="font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-lg mr-1.5 bg-navy/8 text-navy">
@@ -345,7 +347,7 @@ export default function LibraryItemDetailPage() {
                 })}
               </div>
             )}
-          </Card>
+          </div>
         </>
       )}
       <MoveModal

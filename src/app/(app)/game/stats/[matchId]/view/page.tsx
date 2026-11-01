@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { fgPct, twoPct, threePct, ftPct, type StatTotals } from "@/lib/gameStats";
@@ -349,7 +349,9 @@ export default function GameStatsViewPage() {
         <EmptyState>試合が見つかりません</EmptyState>
       ) : (
         <>
-          <Card>
+          {/* UI刷新バッチB: 旧<Card>(角丸6px)から共通cardClass(角丸14px)へ移行。
+              スタッツ集計・表示・閲覧権限は変更していない。 */}
+          <div className={cardClass}>
             <div className="font-bold text-[13.5px] text-center">
               第{match.game_number}試合{match.opponent ? ` vs ${match.opponent}` : ""}
             </div>
@@ -365,7 +367,7 @@ export default function GameStatsViewPage() {
               </div>
             </div>
             <div className="text-[10px] text-ink-soft text-center mt-1">スタッツの記録から集計した得点です</div>
-          </Card>
+          </div>
 
           <BoxScoreTable title="自チームのスタッツ" rows={ownRows} showThreePoint={showThreePoint} />
           <BoxScoreTable title="相手チームのスタッツ" rows={opponentRows} showThreePoint={showThreePoint} />
