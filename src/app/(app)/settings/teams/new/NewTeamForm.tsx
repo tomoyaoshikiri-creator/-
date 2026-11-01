@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createAdditionalTeam, type FormState } from "./actions";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, SubmitLinkButton, inputClass } from "@/components/ui/SegButton";
 import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 import { CATEGORIES, CATEGORY_DISPLAY_LABELS, isMiniBasketballAllowed } from "@/lib/category";
@@ -20,12 +20,12 @@ export function NewTeamForm() {
     return (
       <>
         <SectionLabel>新しいチームを作成</SectionLabel>
-        <Card>
+        <div className={cardClass}>
           <div className="text-[13px] text-ink-soft">
             チームは作成されましたが、この端末での切り替えに失敗しました。お手数ですが、下のボタンから手動でチームを切り替えてください。
           </div>
           <SubmitLinkButton href="/select-team">チームを切り替える</SubmitLinkButton>
-        </Card>
+        </div>
       </>
     );
   }
@@ -33,7 +33,7 @@ export function NewTeamForm() {
   return (
     <>
       <SectionLabel>新しいチームを作成</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="text-xs text-ink-soft mb-4">
           新しいチームを作成すると、あなたはそのチームの管理者になります。今の氏名のまま、複数のチームに所属できます。
         </div>
@@ -87,7 +87,7 @@ export function NewTeamForm() {
             {pending ? "作成中…" : "チームを作成する"}
           </SubmitButton>
         </form>
-      </Card>
+      </div>
     </>
   );
 }

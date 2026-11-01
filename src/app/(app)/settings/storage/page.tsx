@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { canManageSettings } from "@/lib/permissions";
 import { formatBytes, PLAN_DISPLAY_LABELS } from "@/lib/format";
 import type { TeamPlan } from "@/lib/database.types";
@@ -47,7 +47,7 @@ export default function SettingsStoragePage() {
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
-        <Card>
+        <div className={cardClass}>
           {plan && <div className="text-[11px] font-bold text-orange-text mb-1">{PLAN_DISPLAY_LABELS[plan]}プラン</div>}
           <div className="flex items-end justify-between">
             <div className="font-bold text-[20px]">{formatBytes(usedBytes)}</div>
@@ -65,7 +65,7 @@ export default function SettingsStoragePage() {
           <div className="text-xs text-ink-soft mt-2">
             ライブラリ・お知らせ・チーム日報・コーチ日報の添付、チームロゴ、試合スコア写真の合計サイズです。
           </div>
-        </Card>
+        </div>
       )}
     </PageShell>
   );

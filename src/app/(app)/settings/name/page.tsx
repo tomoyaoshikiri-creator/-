@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 
@@ -42,13 +42,13 @@ export default function SettingsNamePage() {
   return (
     <PageShell header={<AppHeader title="表示名の変更" variant="detail" backHref="/settings" />}>
       <SectionLabel>表示名</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <FieldLabel htmlFor="settings-name">表示名</FieldLabel>
         <input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass()} />
         <SubmitButton onClick={handleSave} disabled={saving}>
           {saving ? "保存中…" : "保存する"}
         </SubmitButton>
-      </Card>
+      </div>
     </PageShell>
   );
 }

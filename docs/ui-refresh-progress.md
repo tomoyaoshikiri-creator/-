@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-01(本PR: バッチA〜C〈出欠入力フォーム・スタッツ閲覧画面・
-資料室詳細の旧Card移行〉、PRレビュー待ち・マージ前)。
+最終更新: 2026-11-01(本PR: バッチD〈設定配下13画面の旧Card移行、見出し・
+入力欄・操作ボタンの整合確認〉、PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
 
@@ -24,8 +24,7 @@
 - 設定トップ(`settings/page.tsx`、cardClass使用を本更新時点で再確認済み)
 - スケジュール詳細(#206, #211, #212, #214)
   - 残課題だった`AttendanceEntryForm.tsx`内の出欠入力フォーム本体の旧`<Card>`
-    (1箇所)は、本PR(バッチA、PRレビュー待ち・マージ前)でcardClassへの
-    移行作業を実施済み。マージ後に完全解消となる。
+    (1箇所)は、#217でcardClassへ移行済み・マージ・本番反映済み。
 - スケジュール履歴(`schedule/history/page.tsx`、旧Card不使用を再確認済み)
 - スタッツ入力画面(Phase 1、#210)
 - 共通下部ナビ・ハンバーガー導線・旧Sidebar廃止(Phase 3、#213, #214)
@@ -33,17 +32,58 @@
     区切り線のみのメニューリスト形式のため、そもそも旧`<Card>`を使用して
     いない(本更新時点で確認済み)。cardClass移行の対象外として「完了」に
     含める。
-- スケジュール一覧・カレンダー表示(Phase 2、#215) — 詳細は下記
+- スケジュール一覧・カレンダー表示(Phase 2、#215)
+- バッチA〜C(出欠入力フォーム・スタッツ閲覧画面・資料室詳細の旧Card移行、
+  #217) — マージ・本番反映済み。詳細は下記(Phase 2参考セクションに続けて記載)
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- バッチA〜C(出欠入力フォーム・スタッツ閲覧画面・資料室詳細の旧Card移行、
-  本PR、マージ前) — 詳細は下記
+- バッチD(設定配下13画面、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: バッチA〜C(出欠入力フォーム・スタッツ閲覧画面・資料室詳細)
+## 今回のバッチ: バッチD(設定配下13画面)
+
+対象ファイル(13画面、いずれも`src/app/(app)/settings/`配下):
+`name/page.tsx`、`category/page.tsx`、`logo/page.tsx`、`team/page.tsx`、
+`close-account/page.tsx`、`plan/page.tsx`、`export/page.tsx`、
+`leave-service/page.tsx`、`audit-log/page.tsx`、`storage/page.tsx`、
+`color/page.tsx`、`password/page.tsx`、`teams/new/NewTeamForm.tsx`。
+設定トップ(`settings/page.tsx`)は刷新済みのため変更していない。
+
+統一した内容:
+- カード: 全13ファイルの旧`<Card>`(合計22箇所)を共通`cardClass`へ移行した。
+  (name 1、category 1、logo 2、team 3、close-account 2、plan 1、export 1、
+  leave-service 3、audit-log 3、storage 1、color 1、password 1、
+  NewTeamForm 2)
+- 見出し・入力欄・操作ボタン(`SectionLabel`/`inputClass`/`FieldLabel`/
+  `SubmitButton`)は、13ファイルすべてで移行前から既に共通コンポーネントを
+  使用していることを確認済み。追加の変更は行っていない。
+
+変更不要と判断した部品(既存の共通デザインと整合しているため、独自の新規
+デザイン規則化を避けて変更していない):
+- `category/page.tsx`・`logo/page.tsx`(チーム名セクション)・
+  `color/page.tsx`の「〜を編集する」全幅オレンジ枠ボタン: 3画面で見た目が
+  完全に一致しており、既に内部で整合している。タップ領域44pxの基準を
+  ボタン外観の一律拡大や横幅いっぱい化の指示とは解釈していない。
+- `export/page.tsx`のエクスポート行(手書きの`<a>`): ラベル・説明・CSVリンクの
+  3要素構成が`SettingsRow`のAPI(href/label/value)と完全には一致せず、
+  無理に転用すると見た目・挙動が変わる可能性があるため変更していない。
+- `plan/page.tsx`のプラン別ネストボックス: 外側の`cardClass`内のサブ要素
+  として妥当な範囲であり、実際のCTAには既に`SubmitButton`を使用している。
+- `close-account/page.tsx`・`leave-service/page.tsx`の退会系ボタン: 既に
+  `--danger`系の配色で保存系ボタンと視覚的に区別されているため変更していない。
+- 同2画面の見出し(`SectionLabel`非使用): カード内の先頭に既存の文言
+  (「この操作について」等)が実質的な見出しとして機能している。新規の
+  見出し文言を追加するとワーディング変更になるため、既存文言はそのまま
+  残し、見出しコンポーネントの追加は見送った。
+
+維持した既存機能・権限: 全画面で設定値の保存・取得ロジック、認証・権限・
+RLS、DBスキーマ、プラン・課金・退会・アカウント削除の動作は変更していない。
+対象外画面のデザイン変更・不要な文言変更・機能追加も行っていない。
+
+## 今回のバッチ(参考・マージ済み): バッチA〜C(出欠入力フォーム・スタッツ閲覧画面・資料室詳細)
 
 対象ファイル:
 - `src/app/(app)/schedule/AttendanceEntryForm.tsx`(バッチA、旧Card 1箇所)
@@ -96,8 +136,8 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 1 | スタッツ入力画面 | 完了 | #210 |
 | 2 | スケジュール一覧・カレンダー表示 | 完了 | #215 |
 | 3 | 下部5タブ・チーム内メニュー・ハンバーガーメニュー | 完了 | #213, #214 |
-| 4 | スタッツ閲覧画面(`/game/stats/[matchId]/view`) | PRレビュー待ち(バッチB) | 本PR |
-| 5 | 資料室詳細・設定配下の未刷新画面 | 資料室詳細のみPRレビュー待ち(バッチC)。設定配下13画面は未着手 | 本PR(資料室詳細分) |
+| 4 | スタッツ閲覧画面(`/game/stats/[matchId]/view`) | 完了 | #217 |
+| 5 | 資料室詳細・設定配下の未刷新画面 | 資料室詳細は完了(#217)。設定配下13画面はPRレビュー待ち(バッチD、本PR) | #217(資料室詳細分)、本PR(設定配下分) |
 | 6 | 選手・カルテ・会計関連の未刷新画面 | 未着手 | — |
 | 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | 未着手(未調査) | — |
 
@@ -105,22 +145,14 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 
 - `src/app/(app)`配下の`page.tsx`: 77ファイル
 - 旧`<Card>`をimportしているファイル(`(app)`配下、ページ・コンポーネント
-  含む): 55ファイル(本PRのバッチA〜Cで3ファイル分を移行、マージ前の
-  作業ツリーで再計測)
-- `cardClass`を使用しているファイル(同上): 21ファイル(同上)
-- `src/app/(app)/schedule/AttendanceEntryForm.tsx`: 旧`<Card>`は本PR
-  (バッチA)で解消済み(マージ前)
-- `src/app/(app)/game/stats/[matchId]/view/page.tsx`: 旧`<Card>`は本PR
-  (バッチB)で解消済み(マージ前)
-- `src/app/(app)/library/[id]/page.tsx`: 旧`<Card>`は本PR(バッチC)で
-  解消済み(マージ前)
-- `src/app/(app)/settings`配下: 旧`<Card>`使用が13ファイル
-  (`name`/`category`/`logo`/`team`/`close-account`/`plan`/`export`/
-  `leave-service`/`audit-log`/`storage`/`color`/`password`/
-  `teams/new/NewTeamForm`)、`cardClass`使用は`page.tsx`(トップ)のみ
-- `src/app/(app)/karte`配下: 旧`<Card>`使用が19ファイル
-- `src/app/(app)/accounting`配下: 旧`<Card>`使用が10ファイル
-- `src/app/(app)/players`配下: 旧`<Card>`使用が6ファイル
+  含む): 42ファイル(本PRのバッチDで`settings`配下13ファイルを移行、
+  マージ前の作業ツリーで再計測)
+- `cardClass`を使用しているファイル(同上): 34ファイル(同上)
+- `src/app/(app)/settings`配下: 旧`<Card>`使用は0ファイル(本PRのバッチDで
+  13ファイルすべてcardClassへ移行済み・マージ前)
+- `src/app/(app)/karte`配下: 旧`<Card>`使用が19ファイル(未着手、バッチE)
+- `src/app/(app)/accounting`配下: 旧`<Card>`使用が10ファイル(未着手、バッチE)
+- `src/app/(app)/players`配下: 旧`<Card>`使用が6ファイル(未着手、バッチE)
 
 上記のファイル数は「`<Card>`をimportしているか」の機械的なgrep結果であり、
 1ファイル内の複数カード箇所や、import無しで独自に旧スタイルを直接記述している
@@ -130,35 +162,22 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 
 ## 残作業バッチ(実装可能な単位)
 
-### バッチA: スケジュール詳細の残課題(小規模)— 対応済み、PRレビュー待ち
+### バッチA〜C: スケジュール詳細・スタッツ閲覧画面・資料室詳細 — 対応済み、マージ・本番反映済み(#217)
 
-- 対象ファイル: `src/app/(app)/schedule/AttendanceEntryForm.tsx`
-- 完了条件: 出欠入力フォーム本体の旧`<Card>`を`cardClass`へ移行。
-  出欠登録・編集・削除のロジック、権限判定は変更しない。
-- 状態: 本PRで実装済み(マージ前)。
+- 対象ファイル: `src/app/(app)/schedule/AttendanceEntryForm.tsx`、
+  `src/app/(app)/game/stats/[matchId]/view/page.tsx`、
+  `src/app/(app)/library/[id]/page.tsx`
+- 状態: #217でcardClassへの移行を実施し、マージ・本番反映済み。
 
-### バッチB: スタッツ閲覧画面(Phase 4)— 対応済み、PRレビュー待ち
-
-- 対象ファイル: `src/app/(app)/game/stats/[matchId]/view/page.tsx`
-- 完了条件: 旧`<Card>`(1箇所)を`cardClass`へ移行。閲覧専用の集計・
-  表示ロジックは変更しない。
-- 状態: 本PRで実装済み(マージ前)。
-
-### バッチC: 資料室詳細(Phase 5の一部)— 対応済み、PRレビュー待ち
-
-- 対象ファイル: `src/app/(app)/library/[id]/page.tsx`
-- 完了条件: 旧`<Card>`(3箇所)を`cardClass`へ移行。添付・閲覧ロジックは
-  変更しない。
-- 状態: 本PRで実装済み(マージ前)。
-
-### バッチD: 設定配下13画面(Phase 5の一部)
+### バッチD: 設定配下13画面(Phase 5の一部)— 対応済み、PRレビュー待ち
 
 - 対象ファイル: `src/app/(app)/settings/{name,category,logo,team,
   close-account,plan,export,leave-service,audit-log,storage,color,
   password}/page.tsx`、`src/app/(app)/settings/teams/new/NewTeamForm.tsx`
-- 完了条件: 各画面の旧`<Card>`を`cardClass`へ移行し、操作ボタンの
-  タップ領域(`min-h-tap`)を確認・統一する。設定値の保存・権限判定は
-  変更しない。低頻度画面のため優先度は中〜低。
+- 完了条件: 各画面の旧`<Card>`を`cardClass`へ移行し、見出し・入力欄・
+  操作ボタンが既存の共通コンポーネントと整合していることを確認する。
+  設定値の保存・権限判定は変更しない。
+- 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
 
 ### バッチE: 選手・カルテ・会計関連(Phase 6、大規模)
 

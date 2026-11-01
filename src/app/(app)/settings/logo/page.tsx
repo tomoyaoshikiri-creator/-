@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSettings } from "@/lib/permissions";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -111,7 +111,7 @@ export default function SettingsLogoPage() {
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
-        <Card>
+        <div className={cardClass}>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-lg border border-line bg-paper flex items-center justify-center overflow-hidden flex-shrink-0">
               {logoUrl ? (
@@ -152,14 +152,14 @@ export default function SettingsLogoPage() {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       )}
 
       <SectionLabel>チーム名の表示</SectionLabel>
       {loading ? (
         <div className="text-[12.5px] text-ink-soft text-center py-5">読み込み中…</div>
       ) : (
-        <Card>
+        <div className={cardClass}>
           {editingName ? (
             <>
               <FieldLabel>チーム名</FieldLabel>
@@ -181,7 +181,7 @@ export default function SettingsLogoPage() {
               </button>
             </>
           )}
-        </Card>
+        </div>
       )}
     </PageShell>
   );
