@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/Toast";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { cardClass, SectionLabel } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { EditButton } from "@/components/ui/EditButton";
@@ -161,7 +161,10 @@ export function AttendanceEntryForm({
   return (
     <>
       <SectionLabel>{label}の出欠</SectionLabel>
-      <Card>
+      {/* UI刷新バッチA: 旧<Card>(角丸6px)から共通cardClass(角丸14px)へ移行。
+          出欠登録・編集・削除・権限判定(handleSubmit/handleDelete/setEditing等)は
+          変更していない。 */}
+      <div className={cardClass}>
         {loading ? (
           <div className="text-[12.5px] text-ink-soft text-center py-3">読み込み中…</div>
         ) : !editing ? (
@@ -424,7 +427,7 @@ export function AttendanceEntryForm({
             )}
           </>
         )}
-      </Card>
+      </div>
     </>
   );
 }
