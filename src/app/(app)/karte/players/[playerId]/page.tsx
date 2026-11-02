@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { FieldLabel, SegButton, SubmitButton, TextTab, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
@@ -659,7 +659,7 @@ export default function KartePlayerPage() {
           // 縦横どちらにスクロールしても常に左上に固定表示する(topのみのstickyにすると、
           // iOS Safariで横スクロールと縦スクロールを組み合わせた際にヘッダーが上に空白を
           // 残したまま消える不具合が確認されたため、左固定も維持する)。
-          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[324px] mb-2.5">
+          <div className={`${tableWrapperClass} overflow-auto max-h-[324px]`}>
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>
@@ -892,7 +892,7 @@ export default function KartePlayerPage() {
         // (試合・チーム平均・シーズン平均)はsticky left-0 + top-Xの両方を持たせ、
         // 縦横どちらにスクロールしても常に左上に固定表示する(topのみのstickyだと
         // iOS Safariでヘッダーが空白を残して消える不具合があったため)。
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[288px] mb-2.5">
+        <div className={`${tableWrapperClass} overflow-auto max-h-[288px]`}>
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>
@@ -1070,7 +1070,7 @@ export default function KartePlayerPage() {
           />
         </div>
       ) : (
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+        <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>

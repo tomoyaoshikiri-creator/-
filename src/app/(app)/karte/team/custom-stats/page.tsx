@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, cardClass } from "@/components/ui/Card";
+import { EmptyState, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canViewKarte } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -132,7 +132,7 @@ export default function KarteTeamCustomStatsPage() {
       ) : categories.length === 0 ? (
         <EmptyState>まだスタッツ項目がありません</EmptyState>
       ) : (
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+        <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
           <table className="border-collapse text-[11.5px] w-full">
             <thead>
               <tr>

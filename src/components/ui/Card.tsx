@@ -17,6 +17,12 @@ export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement
 // このclassNameへ置き換えていく(Phase 2以降、画面ごとに適用)。
 export const cardClass = "bg-card border border-border-subtle rounded-card p-3 shadow-card mb-2.5 md:p-4";
 
+// スクロール可能な表(スタッツ・検定履歴等)を囲むラッパー専用の見た目。背景・枠線・
+// 角丸・影のデザイントークンはcardClassと揃えるが、テーブル側でsticky列・横スクロールの
+// 表示領域を自分で管理するため内側paddingは持たせない(呼び出し側でoverflow-auto・
+// max-height・横スクロールの指定を個別に続けて追加する、2026-11 最終QA第2段階)。
+export const tableWrapperClass = "bg-card border border-border-subtle rounded-card shadow-card mb-2.5";
+
 // 一覧・カードの下部に置く「すべて見る」系の遷移行。タップ領域・見た目を画面間で統一する
 // (2026-10-24 UI刷新)。カード内の最後の要素として使うことを想定し、上に区切り線を持つ。
 export function CardFooterLink({ href, children }: { href: string; children: React.ReactNode }) {

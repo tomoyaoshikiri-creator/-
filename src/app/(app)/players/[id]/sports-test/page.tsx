@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSportsTests } from "@/lib/permissions";
 import { hasSportsTestAccess } from "@/lib/plan";
@@ -401,7 +401,7 @@ export default function SportsTestPage() {
           </div>
 
           <SectionLabel>四半期ごとの記録</SectionLabel>
-          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+          <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>

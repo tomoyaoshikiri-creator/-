@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, cardClass } from "@/components/ui/Card";
+import { EmptyState, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canViewKarte } from "@/lib/permissions";
@@ -204,7 +204,7 @@ export default function KarteTeamSportsTestPage() {
           </div>
 
           {sportsTestValues.length > 0 && (
-            <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+            <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
               <table className="border-collapse text-[11.5px] w-full">
                 <thead>
                   <tr>
@@ -256,7 +256,7 @@ export default function KarteTeamSportsTestPage() {
             <div className="text-[11px] text-ink-soft mb-1.5">項目名をタップすると、その項目順に並び替わります</div>
           )}
 
-          <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+          <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
             <table className="border-collapse text-[11.5px] w-full">
               <thead>
                 <tr>

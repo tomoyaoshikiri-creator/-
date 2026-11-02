@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewWorkout } from "@/lib/permissions";
@@ -132,7 +132,7 @@ export default function WorkoutMenuTallyPage() {
             <SectionLabel>練習履歴({filtered.length}件)</SectionLabel>
             {filtered.map((p) => (
               <Link key={p.id} href={`/schedule/${p.id}`}>
-                <div className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-2">
+                <div className={cardClass}>
                   <div className="flex items-center gap-2">
                     <div className="text-[10.5px] text-ink-soft flex-shrink-0 w-[46px]">
                       {formatDateLabel(p.date)}
@@ -160,7 +160,7 @@ export default function WorkoutMenuTallyPage() {
         <>
           <SectionLabel>実施メニューの集計({tallies.length}種類)</SectionLabel>
           {tallies.map((t) => (
-            <div key={t.theme} className="bg-white border border-line rounded-lg px-3.5 py-2.5 mb-2">
+            <div key={t.theme} className={cardClass}>
               <div
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={() => setExpandedTheme(expandedTheme === t.theme ? null : t.theme)}

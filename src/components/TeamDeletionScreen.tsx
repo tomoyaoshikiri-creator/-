@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatFullDateLabel } from "@/lib/format";
 import { SubmitButton } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 
 // (app)/layout.tsx がteams.deletion_requested_atを検知した際に、通常のタブUIの
 // 代わりに全ロール共通で表示する画面。管理者だけ「退会を取り消す」操作ができる。
@@ -49,7 +50,7 @@ export function TeamDeletionScreen({
   return (
     <div className="app-shell">
       <div className="flex-1 overflow-y-auto flex flex-col justify-center px-6 py-10">
-        <div className="max-w-md mx-auto w-full bg-white border border-line rounded-lg p-5 text-center">
+        <div className={`max-w-md mx-auto w-full ${cardClass} text-center`}>
           <div className="font-bold text-[15px] mb-2">退会手続き中です</div>
           <div className="text-[12.5px] text-ink-soft leading-relaxed mb-1">
             {formatFullDateLabel(scheduledDeletionAt.slice(0, 10))}に、チームのすべてのデータが完全に削除されます。

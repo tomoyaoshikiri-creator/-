@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Pill } from "@/components/ui/Pill";
 import { skillTestLevelLabels } from "@/lib/skillTest";
@@ -128,18 +128,18 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
 
   if (loading) {
     return (
-      <Card>
+      <div className={cardClass}>
         <EmptyState>読み込み中…</EmptyState>
-      </Card>
+      </div>
     );
   }
 
   return (
     <>
       {tests.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだ検定がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         tests.map((test) => {
           const current = latestFor(test.id);
@@ -154,7 +154,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
             test.chapters,
           );
           return (
-            <Card key={test.id} className="mb-2.5">
+            <div key={test.id} className={cardClass}>
               <div className="flex items-center justify-between mb-2">
                 <div className="font-bold text-[13.5px]">{test.name}</div>
                 <div className="text-[12px] text-ink-soft">現在: {current ? current.level_label : "未設定"}</div>
@@ -185,13 +185,13 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
                   </button>
                 </div>
               )}
-            </Card>
+            </div>
           );
         })
       )}
 
       {showAddForm ? (
-        <Card>
+        <div className={cardClass}>
           <FieldLabel>検定名</FieldLabel>
           <input className={inputClass()} value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="例:ドリブル検定" />
           <div className="mt-3 flex gap-2">
@@ -233,7 +233,7 @@ export function SkillTestPanel({ playerId }: { playerId: string }) {
               キャンセル
             </button>
           </div>
-        </Card>
+        </div>
       ) : (
         <button
           type="button"
