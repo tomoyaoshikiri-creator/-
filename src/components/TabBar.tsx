@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/session-context";
+import { GAME_ICONS_BY_SPORT } from "@/components/SportGameIcons";
 import type { Role } from "@/lib/database.types";
 import { BOTTOM_NAV_TABS, TAB_LABELS, tabHrefForRole, type TabKey } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
@@ -26,6 +28,7 @@ import { PillNavBar, PillNavLink, PILL_NAV_BOTTOM_OFFSET } from "@/components/Pi
 // 根拠・経緯はPillNavBar.tsxのコメント参照)。
 export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
+  const { sport } = useSession();
 
   return (
     <div
@@ -40,7 +43,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
             <PillNavLink
               key={tab}
               href={href}
-              icon={TAB_ICONS[tab]}
+              icon={tab === "game" ? GAME_ICONS_BY_SPORT[sport] : TAB_ICONS[tab]}
               label={TAB_LABELS[tab]}
               active={isActive}
               badge={badges[tab]}
