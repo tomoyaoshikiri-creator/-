@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
 import { canCreatePoll } from "@/lib/permissions";
@@ -134,7 +134,7 @@ export default function NewPollPage() {
   return (
     <PageShell header={<AppHeader title="投票を作成" variant="detail" backHref="/poll" />}>
       <SectionLabel>内容</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <FieldLabel>タイトル</FieldLabel>
         <input className={inputClass()} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例:次の合宿先はどこがいい?" />
 
@@ -163,10 +163,10 @@ export default function NewPollPage() {
           </div>
           <Switch checked={anonymous} onChange={setAnonymous} />
         </div>
-      </Card>
+      </div>
 
       <SectionLabel>投票できるロール</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="flex flex-wrap gap-2">
           {POLL_ROLE_OPTIONS.map((r) => (
             <button
@@ -181,7 +181,7 @@ export default function NewPollPage() {
             </button>
           ))}
         </div>
-      </Card>
+      </div>
 
       <SectionLabel
         action={
@@ -197,7 +197,7 @@ export default function NewPollPage() {
         選択肢
       </SectionLabel>
       {playerPickerOpen && (
-        <Card>
+        <div className={cardClass}>
           {players.length === 0 ? (
             <div className="text-[12.5px] text-ink-soft">選手がいません</div>
           ) : (
@@ -219,9 +219,9 @@ export default function NewPollPage() {
               </SubmitButton>
             </>
           )}
-        </Card>
+        </div>
       )}
-      <Card>
+      <div className={cardClass}>
         <div className="space-y-2">
           {options.map((o, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -251,7 +251,7 @@ export default function NewPollPage() {
         >
           + 選択肢を追加
         </button>
-      </Card>
+      </div>
 
       <SubmitButton onClick={handleSubmit} disabled={saving}>
         {saving ? "作成中…" : "この投票を作成する"}

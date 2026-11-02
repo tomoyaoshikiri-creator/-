@@ -17,7 +17,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { DragHandleIcon } from "@/components/icons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -207,7 +207,7 @@ export default function StatCategoriesPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : (
-        <Card>
+        <div className={cardClass}>
           {categories.length === 0 ? (
             <EmptyState>まだ項目がありません</EmptyState>
           ) : (
@@ -301,7 +301,7 @@ export default function StatCategoriesPage() {
               {saving ? "保存中…" : "保存する"}
             </SubmitButton>
           </div>
-        </Card>
+        </div>
       )}
     </PageShell>
   );
