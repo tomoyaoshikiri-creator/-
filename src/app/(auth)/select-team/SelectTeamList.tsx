@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { selectTeam } from "./actions";
+import { cardClass } from "@/components/ui/Card";
 
 interface Membership {
   team_id: string;
@@ -28,7 +29,7 @@ export function SelectTeamList({ memberships }: { memberships: Membership[] }) {
   }
 
   return (
-    <div className="bg-white border border-line rounded-lg p-2">
+    <div className={cardClass}>
       {memberships.map((m) => (
         <button
           key={m.team_id}
