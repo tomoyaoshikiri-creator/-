@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { login, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 import { diagCheckpoint } from "@/lib/diag/log";
 
 const initialState: FormState = {};
@@ -35,7 +36,7 @@ export function LoginForm({ next }: { next?: string }) {
   if (step === "email") {
     return (
       <form
-        className="bg-white border border-line rounded-lg p-5"
+        className={cardClass}
         onSubmit={(e) => {
           e.preventDefault();
           if (email.trim()) setStep("password");
@@ -76,7 +77,7 @@ export function LoginForm({ next }: { next?: string }) {
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <input type="hidden" name="next" value={next ?? ""} />
       <input type="hidden" name="email" value={email.trim()} />
 

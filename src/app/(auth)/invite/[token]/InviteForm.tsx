@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { acceptInvite, verifyInviteCode, resendInviteCode, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 import { InvitePlayerPicker, type InvitePlayer } from "./InvitePlayerPicker";
 import type { TeamCategory } from "@/lib/database.types";
 import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
@@ -45,7 +46,7 @@ export function InviteForm({
     const agreedTermsAt = verifyState.agreedTermsAt ?? state.agreedTermsAt ?? "";
 
     return (
-      <div className="bg-white border border-line rounded-lg p-5">
+      <div className={cardClass}>
         <div className="text-[12.5px] text-ink-soft mb-1">
           {email} 宛に確認コードを送信しました。メールに記載の確認コードを入力してください。
         </div>
@@ -106,7 +107,7 @@ export function InviteForm({
     return (
       <>
         <form
-          className="bg-white border border-line rounded-lg p-5"
+          className={cardClass}
           onSubmit={(e) => {
             e.preventDefault();
             if (sei.trim() && mei.trim() && email.trim()) setStep("password");
@@ -161,7 +162,7 @@ export function InviteForm({
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="sei" value={sei.trim()} />
       <input type="hidden" name="mei" value={mei.trim()} />

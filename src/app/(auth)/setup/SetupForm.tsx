@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { completeSetup, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 import { TermsAgreementCheckbox } from "@/components/ui/TermsAgreementCheckbox";
 import { SPORTS, SPORT_DISPLAY_LABELS } from "@/lib/sport";
 import { CATEGORIES, CATEGORY_DISPLAY_LABELS, isMiniBasketballAllowed } from "@/lib/category";
@@ -17,7 +18,7 @@ export function SetupForm() {
   const [sport, setSport] = useState(SPORTS[0]);
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <div className="text-[12.5px] text-ink-soft mb-4">
         ログインは完了していますが、チームの作成がまだ終わっていません。チーム名とあなたの氏名を入力してください。
       </div>

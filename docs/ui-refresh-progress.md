@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-02(本PR: バッチE-3〈会計(accounting)配下10画面の
-旧Card移行〉、PRレビュー待ち・マージ前)。
+最終更新: 2026-11-02(本PR: バッチF〈認証画面(auth)配下10ファイルの旧
+カードスタイル統一〉、PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
 
@@ -46,15 +46,98 @@
 - バッチE-2(カルテ全体、karte配下19ファイル・合計60箇所)— E-2a(#220)・
   E-2b(#221)の両方がマージ・本番反映済みとなったため、karte配下の旧Card
   移行として完了。
+- バッチE-3(会計(accounting)配下10画面の旧Card移行、#222) — マージ・
+  本番反映済み。詳細は下記(バッチE-2b参考セクションに続けて記載)
+- バッチE(選手・カルテ・会計、合計35ファイル)— E-1(#219)・E-2(#220,
+  #221)・E-3(#222)がすべてマージ・本番反映済みとなったため完了。
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- バッチE-3(会計(accounting)配下10画面、本PR、マージ前) — 詳細は下記
+- バッチF(認証画面(auth)配下10ファイル、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: バッチE-3(会計(accounting)配下10画面)
+## 今回のバッチ: バッチF(認証画面・公開画面)
+
+対象調査の結果、以下を確認した。
+
+- 旧`<Card>`コンポーネントの使用: `(auth)`配下・公開ページ(`contact`/
+  `help`/`pricing`/`privacy`/`terms`/`tokushoho`/ルート`page.tsx`/
+  `not-found.tsx`/`error.tsx`)のいずれにも旧`<Card>`のimportは存在しない
+  (`grep`で確認済み、0件)。これらの画面は共通`Card`コンポーネントが
+  導入される以前からの実装であり、旧Cardを経由せず直接クラスを書いている。
+- 代わりに、`(auth)`配下のフォーム・メッセージボックスの大半が
+  `className="bg-white border border-line rounded-lg p-5"`(旧Cardと同じ
+  角丸6px・枠線のみの見た目)を手書きで直接指定していた。これをコードから
+  集計した結果、10ファイル・合計17箇所で使用していた。
+- 公開ページ(`contact`/`help`/`pricing`/`privacy`/`terms`/`tokushoho`/
+  ルート`page.tsx`)は、`(auth)`とは異なる`rounded-lg border border-line
+  bg-white p-4`(角丸6px、パディング16px)という、ページ間で完全に統一
+  された独自パターンを使用している。これは`PageShell`を使うモバイル版
+  アプリ画面とは異なる、`max-w-[720px]`中央寄せのデスクトップ可読レイアウト
+  (記事・規約ページ)であり、既にページ同士で統一されている。
+- 認証関連の共通コンポーネント: `AuthHeading`(見出し)、`FieldLabel`/
+  `SubmitButton`/`inputClass`(`SegButton.tsx`、入力欄・送信ボタン)、
+  `TermsAgreementCheckbox`、`TurnstileWidget`は、すべての認証フォームで
+  既に共通コンポーネントとして使用されている。
+
+対象ファイル(いずれも`src/app/(auth)/`配下、または`(auth)`専用の共有
+コンポーネント、旧カードスタイル使用10ファイル・合計17箇所):
+- `login/LoginForm.tsx`(ログイン、2箇所)
+- `signup/SignupForm.tsx`(新規登録、3箇所)
+- `forgot-password/ForgotPasswordForm.tsx`(パスワード再設定申請、2箇所)
+- `reset-password/ResetPasswordForm.tsx`(新パスワード設定、1箇所)
+- `invite/[token]/page.tsx`(招待リンク無効時、1箇所)
+- `invite/[token]/InviteForm.tsx`(招待受諾・新規、3箇所)
+- `invite/[token]/AcceptInviteAsExistingUserForm.tsx`(招待受諾・既存、2箇所)
+- `setup/SetupForm.tsx`(チーム作成、1箇所)
+- `select-team/SelectTeamList.tsx`(チーム選択、1箇所)
+- `src/components/ActiveTeamErrorScreen.tsx`(所属チーム確認エラー、1箇所)
+
+実際のUI変更内容:
+- カード: 全10ファイルの旧カードスタイル(`bg-white border border-line
+  rounded-lg p-5`、一部`p-2`)を、`(app)`配下の全バッチで使用してきた
+  共通`cardClass`へ移行した(合計17箇所)。追加のclassNameを持つもの
+  (`invite/[token]/page.tsx`の`text-center`、`ActiveTeamErrorScreen.tsx`
+  の`max-w-md mx-auto w-full`・`text-center`)は、既存のclassNameを保持
+  したまま`` `${cardClass} ...` ``の形で合成した。
+- 見出し・入力欄・ボタン(`AuthHeading`/`FieldLabel`/`inputClass`/
+  `SubmitButton`/`TermsAgreementCheckbox`/`TurnstileWidget`)は、10ファイル
+  すべてで移行前から既に共通コンポーネントを使用していることを確認済み。
+  追加の変更は行っていない。
+
+変更不要と判断した部品(既存の共通デザインと整合しているため、独自の新規
+デザイン規則化を避けて変更していない):
+- `login/page.tsx`のエラー・通知バナー(`bg-white border border-line
+  rounded-lg p-3`、2箇所): フォーム全体を囲む「カード」ではなく、一時的な
+  軽量インラインアラートとしての役割のため、カードへの統合は見送った。
+  画面固有のUIを無理に共通コンポーネントへ置き換えない方針に基づく判断。
+- 公開ページ(`contact`/`help`/`pricing`/`privacy`/`terms`/`tokushoho`/
+  ルート`page.tsx`)の`rounded-lg border border-line bg-white p-4`パターン:
+  ページ間で完全に統一されたデスクトップ可読レイアウト用の独自の箱型
+  スタイルであり、モバイル版アプリの`cardClass`(影つき・角丸14px・
+  カードスタック用)とは文脈が異なる。既にページ同士で整合しているため
+  変更していない。
+- `not-found.tsx`・`error.tsx`: カード要素を持たない中央寄せのテキスト
+  のみの画面であり、変更対象がないため変更していない。
+- `AuthHeading.tsx`のロゴ・タイトル表示: 既存のブランド表示仕様
+  (MASTER SPECIFICATION #10/#32)に基づく実装であり、カード統一の対象外
+  のため変更していない。
+
+認証ロジックに変更がないことの確認: `git diff`で全10ファイルの差分を
+確認した結果、変更はclassNameの置き換えと`cardClass`のimport追加のみ
+であり、`actions.ts`(ログイン・ログアウト・新規登録・招待・パスワード
+再設定・セッション管理等のサーバーアクション)は1ファイルも変更していない。
+リダイレクト処理、Supabase連携、DB・RLS、権限・プラン判定のコードも
+変更していない。
+
+維持した既存機能: ログイン・ログアウト処理、新規登録・招待の処理、
+パスワード再設定、セッション管理、リダイレクト、認証・認可、Supabase
+連携、DB・RLSは変更していない。認証フロー自体(2段階フォーム構成、
+確認コードの送受信等)も変更していない。
+
+## 今回のバッチ(参考・マージ済み): バッチE-3(会計(accounting)配下10画面)
 
 対象ファイル(いずれも`src/app/(app)/accounting/`配下、旧Card使用10ファイル):
 - `budget/page.tsx`(予算案、旧Card 2箇所)
@@ -376,7 +459,7 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 4 | スタッツ閲覧画面(`/game/stats/[matchId]/view`) | 完了 | #217 |
 | 5 | 資料室詳細・設定配下の未刷新画面 | 完了 | #217(資料室詳細分)、#218(設定配下分) |
 | 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)配下は完了(#219)。カルテ(karte)配下は完了(#220, #221)。会計(accounting)配下10画面はPRレビュー待ち(バッチE-3、本PR) | #219(選手管理分)、#220(カルテ選手個別分)、#221(カルテチーム単位分)、本PR(会計分) |
-| 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | 未着手(未調査) | — |
+| 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | (auth)配下10ファイルの旧カードスタイル統一はPRレビュー待ち(バッチF、本PR)。公開静的ページは調査済みで変更不要と判断。 | 本PR(バッチF) |
 
 ## 根拠データ(本更新時点で再調査済み)
 
@@ -391,8 +474,18 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
   マージ・本番反映済み)
 - `src/app/(app)/karte`配下: 旧`<Card>`使用は0ファイル(#220, #221で
   players/team双方とも移行済み・マージ・本番反映済み)
-- `src/app/(app)/accounting`配下: 旧`<Card>`使用は0ファイル(本PRのバッチ
-  E-3で10ファイルすべてcardClassへ移行済み・マージ前)
+- `src/app/(app)/accounting`配下: 旧`<Card>`使用は0ファイル(#222で10ファイル
+  すべてcardClassへ移行済み・マージ・本番反映済み)
+- `src/app/(auth)`配下: 旧`<Card>`コンポーネントのimportは0ファイル(元々
+  未使用)。ただし同等の見た目を手書きclassName
+  `bg-white border border-line rounded-lg p-5`(一部`p-2`)で再現していた
+  箇所が10ファイル・合計17箇所あり、本PRのバッチFで`cardClass`へ移行した
+  (マージ前)。
+- 公開静的ページ(`contact`/`help`/`pricing`/`privacy`/`terms`/`tokushoho`/
+  ルート`page.tsx`)は、`(auth)`や`(app)`とは異なる
+  `rounded-lg border border-line bg-white p-4`という独自パターンで
+  既に相互に統一されており、デスクトップ向けの記事レイアウトとして意図的に
+  別系統のため、本PRでは変更不要と判断した。
 - 残る旧`<Card>`使用7ファイルは`src/app/(app)/game`配下6ファイル・
   `src/app/(app)/poll/new/page.tsx`1ファイルで、いずれもバッチE(選手・
   カルテ・会計)の対象外。完了済み一覧の「ゲーム」の記載は過去のPR時点の
@@ -462,9 +555,23 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
   デザインと照合する。請求・入金・支出などの会計処理、金額計算・残高・
   集計・年度管理、会計データの登録・編集・削除、CSV出力・履歴表示、権限
   判定・プラン制限は変更しない。
-- 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
+- 状態: #222でcardClassへの移行を実施し、マージ・本番反映済み。これで
+  バッチE(選手・カルテ・会計、合計35ファイル)が完了した。
 
-### バッチF: その他低優先度画面(Phase 7、未調査)
+### バッチF: 認証画面・公開画面(Phase 7)— 対応済み、PRレビュー待ち
 
-- 対象: `(auth)`配下(ログイン・登録等)・公開静的ページ等。
-- 今回は対象ファイル・件数を調査していない。着手前に現状調査から行う。
+- 対象ファイル: `src/app/(auth)`配下で旧Cardと同等の手書きカードスタイル
+  (`bg-white border border-line rounded-lg p-5`等)を使用していた10ファイル
+  (login/LoginForm、signup/SignupForm、forgot-password/ForgotPasswordForm、
+  reset-password/ResetPasswordForm、invite/[token]/page、
+  invite/[token]/InviteForm、
+  invite/[token]/AcceptInviteAsExistingUserForm、setup/SetupForm、
+  select-team/SelectTeamList)と、共有コンポーネント
+  `src/components/ActiveTeamErrorScreen.tsx`、合計17箇所。
+- 完了条件: 各箇所の手書きカードスタイルを`cardClass`へ移行する。
+  ログイン・ログアウト処理、新規登録・招待の処理、パスワード再設定、
+  セッション管理、リダイレクト、認証・認可、Supabase連携、DB・RLS、
+  権限・プラン判定は変更しない。
+- 状態: 本PRで実装済み(マージ前)。公開静的ページ(contact/help/pricing/
+  privacy/terms/tokushoho/ルートpage.tsx)は既に相互に統一された別系統の
+  パターンのため変更不要と判断。詳細は上記「今回のバッチ」を参照。

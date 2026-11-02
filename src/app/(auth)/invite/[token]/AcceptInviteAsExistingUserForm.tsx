@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { acceptInviteAsExistingUser, type AcceptInviteAsExistingUserState } from "./actions";
 import { SubmitButton, SubmitLinkButton } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 import { InvitePlayerPicker, type InvitePlayer } from "./InvitePlayerPicker";
 import type { TeamCategory } from "@/lib/database.types";
 
@@ -24,7 +25,7 @@ export function AcceptInviteAsExistingUserForm({
 
   if (state.switchFailed) {
     return (
-      <div className="bg-white border border-line rounded-lg p-5">
+      <div className={cardClass}>
         <div className="text-[13px] text-ink-soft">
           チームへの参加は完了しましたが、この端末での切り替えに失敗しました。お手数ですが、下のボタンから手動でチームを切り替えてください。
         </div>
@@ -34,7 +35,7 @@ export function AcceptInviteAsExistingUserForm({
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <input type="hidden" name="token" value={token} />
       <div className="text-[12.5px] text-ink-soft mb-4">
         {roleLabel}としてこのチームに参加します。このアカウントで参加してよろしいですか?

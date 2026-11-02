@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updatePassword, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 
 const initialState: FormState = {};
 
@@ -10,7 +11,7 @@ export function ResetPasswordForm() {
   const [state, formAction, pending] = useActionState(updatePassword, initialState);
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <div className="text-[12.5px] text-ink-soft mb-4">新しいパスワードを設定してください。</div>
       {/* autoComplete指定の理由はLoginForm.tsx参照(iPadOS SafariのAutoFillクラッシュ対策)。 */}
       <FieldLabel htmlFor="password">新しいパスワード</FieldLabel>

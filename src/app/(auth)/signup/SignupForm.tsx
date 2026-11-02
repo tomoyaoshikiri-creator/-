@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signUpTeam, verifySignupCode, resendSignupCode, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 const initialState: FormState = {};
@@ -24,7 +25,7 @@ export function SignupForm() {
   if (state.awaitingCode) {
     const email = verifyState.email ?? state.email ?? "";
     return (
-      <div className="bg-white border border-line rounded-lg p-5">
+      <div className={cardClass}>
         <div className="text-[12.5px] text-ink-soft mb-1">
           {email} 宛に確認コードを送信しました。メールに記載の確認コードを入力してください。
         </div>
@@ -79,7 +80,7 @@ export function SignupForm() {
   if (step === "email") {
     return (
       <form
-        className="bg-white border border-line rounded-lg p-5"
+        className={cardClass}
         onSubmit={(e) => {
           e.preventDefault();
           if (email.trim()) setStep("password");
@@ -115,7 +116,7 @@ export function SignupForm() {
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <input type="hidden" name="email" value={email.trim()} />
 
       <div className="flex items-center justify-between mb-3">

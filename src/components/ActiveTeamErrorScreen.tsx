@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SubmitButton } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 
 // (app)/layout.tsx がinitialize_active_team()の失敗を検知した際、
 // または(auth)/setup がprofileはあるが所属チームを確認できない異常状態を
@@ -47,7 +48,7 @@ export function ActiveTeamErrorScreen({
   return (
     <div className="app-shell">
       <div className="flex-1 overflow-y-auto flex flex-col justify-center px-6 py-10">
-        <div className="max-w-md mx-auto w-full bg-white border border-line rounded-lg p-5 text-center">
+        <div className={`max-w-md mx-auto w-full ${cardClass} text-center`}>
           <div className="font-bold text-[15px] mb-2">{title}</div>
           <div className="text-[12.5px] text-ink-soft leading-relaxed mb-3">{message}</div>
           {logoutError && <div className="mb-3 text-[12.5px] text-danger-text">{logoutError}</div>}

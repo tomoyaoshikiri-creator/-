@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { requestPasswordReset, verifyResetCode, resendResetCode, type FormState } from "./actions";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { cardClass } from "@/components/ui/Card";
 
 const initialState: FormState = {};
 
@@ -19,7 +20,7 @@ export function ForgotPasswordForm() {
   if (state.awaitingCode) {
     const email = verifyState.email ?? state.email ?? "";
     return (
-      <div className="bg-white border border-line rounded-lg p-5">
+      <div className={cardClass}>
         <div className="text-[12.5px] text-ink-soft mb-1">
           {email} 宛にパスワード再設定用のコードを送信しました。メールに記載の確認コードを入力してください。
         </div>
@@ -72,7 +73,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form action={formAction} className="bg-white border border-line rounded-lg p-5">
+    <form action={formAction} className={cardClass}>
       <div className="text-[12.5px] text-ink-soft mb-4">
         登録済みのメールアドレスを入力してください。パスワード再設定用のコードをお送りします。
       </div>
