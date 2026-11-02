@@ -15,7 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
-import { gradeLabel, playerFullName } from "@/lib/format";
+import { gradeLabel, playerFullName, fiscalYearOf, todayDateStr } from "@/lib/format";
 import { FISCAL_MONTHS, sortedCollectionMonths } from "@/lib/duesAnnualSchedule";
 import { calculateDuesInstallments } from "@/lib/duesRatePlan";
 import {
@@ -145,6 +145,21 @@ export default function AccountingDuesItemPage() {
     } catch (e) {
       toast.warning(e instanceof Error ? e.message : "集金設定を確認してください");
       return;
+    }
+    if (item.schedule_mode !== "configured") {
+      const { count, error } = await createClient()
+        .from("accounting_dues_billing_periods")
+        .select("id", { count: "exact", head: true })
+        .eq("dues_item_id", item.id)
+        .eq("fiscal_year", fiscalYearOf(todayDateStr()));
+      if (error) {
+        toast.error("既存の請求履歴を確認できませんでした");
+        return;
+      }
+      if ((count ?? 0) > 0) {
+        toast.warning("今年度に請求済みの項目は途中で新方式へ切り替えられません。次年度からの切り替えが必要です。");
+        return;
+      }
     }
     await handleSave({
       rate_basis: scheduleDraft.basis,
