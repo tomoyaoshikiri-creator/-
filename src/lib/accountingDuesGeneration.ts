@@ -67,7 +67,7 @@ export async function generateDuesCharges(
           const start = fiscalMonthDate(fiscalYear, entry.month);
           const nextOffset = entry.coveredMonths.length;
           const [y, m] = start.split("-").map(Number);
-          const endDate = new Date(Date.UTC(y, m - 1 + nextOffset + (item.rate_basis === "yearly" ? 0 : 0), 0));
+          const endDate = new Date(Date.UTC(y, m - 1 + nextOffset, 0));
           return { periodStart: start, periodEnd: endDate.toISOString().slice(0, 10), coveredMonths: entry.coveredMonths };
         }).filter((p) => p.periodStart <= todayStr)
       : computeDuesPeriods(fiscalYear, item.cycle_months, todayStr);
@@ -96,8 +96,8 @@ export async function generateDuesCharges(
             gradeBands: bands ?? [],
             playerSetting: setting,
           });
-          if (monthlyAmount === null) return null;
-          let amount = monthlyAmount * item.cycle_months;
+          if (monthlyAmount === null && !(configured && item.rate_basis === "yearly")) return null;
+          let amount = (monthlyAmount ?? 0) * item.cycle_months;
           if (configured) {
             const covered = "coveredMonths" in period ? period.coveredMonths : [];
             if (item.rate_basis === "monthly") {
