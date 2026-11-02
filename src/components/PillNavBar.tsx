@@ -25,25 +25,34 @@ export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitesp
 // 見直すこと。
 export const PILL_NAV_TAB_HEIGHT_PX = 64;
 
-// 画面下部に浮かせる位置決めだけを担う外枠(左右マージン・セーフエリア対応)。
-// 中身の形(ピル/サブパネルのカード)を問わず共通で使う。
+// 画面下部に浮かせる位置の「下端からの余白」の共通計算式。TabBar.tsx(通常5タブ、
+// position:fixed)・このPillNavPosition(スタッツ入力画面の専用4ボタン等、
+// position:absolute)・Modal.tsxのFab(この値+ピル高さ+間隔)の3箇所が、以前は
+// それぞれ別々に同じ式を手書きしていたため、片方だけを調整すると位置がずれる
+// 不具合が発生した(2026-11 実機QA第2弾)。再発防止のため1箇所に一本化し、
+// 他はこの定数を参照する。
 //
-// 実機確認で、下端からの余白がcalc(0.875rem + env(safe-area-inset-bottom))だと
-// 離れすぎて見えることが判明した。TabBar.tsx側の過去の調査(ホームインジケーター
-// 領域はpadding-bottom等で追加の余白を確保しても見た目の保護領域が増えず、
-// 単に余白だけが増える)と同じ理由と考えられるため、固定の余白とsafe-area-inset-bottomを
-// 加算せず、大きい方を採用するmax()に変更する。これにより、safe-area-inset-bottomが
-// 大きい端末でも最低限それを下回らず、かつ0や小さい環境(Android Chrome等)では
-// 単純に下端から0.875rem(14px、目安の12〜16pxの範囲内)になる。
+// 2026-11 実機QA第3弾: iPhone Air・Safari通常タブでの実測(viewport 420×692、
+// 両メニューとも下端678px、つまり余白14px、env(safe-area-inset-bottom)は0px)
+// により、通常タブ表示での余白が0.875rem(14px)あり「高すぎる」と判断された。
+// 実測に基づき、安全マージンの固定フロアを0.375rem(6px)に縮小した。
+// env(safe-area-inset-bottom)が0の場合(Safari通常タブ)は6pxになり、0より
+// 大きい場合(ホーム画面追加のPWA/standalone表示等、ホームインジケーターの
+// 保護領域が実際に存在する場合)は、その実測値をそのまま使う(安全マージンを
+// 削ったり比率で縮めたりしない)。これにより、ホームインジケーターの保護領域
+// そのものを侵食するリスクを避けつつ、保護領域が存在しない表示では余白だけを
+// 詰める。
 // iPad横画面等、画面幅が広い場合はleft-3/right-3のままだとピルが画面幅いっぱいに
 // 伸びてしまう。max-widthを設け、かつleft/right(両方指定)+mx-auto(margin:auto)の
 // 組み合わせで、幅がmax-widthを下回る間(iPhone等)は従来通りlef-3/right-3の
 // 余白まで伸び、上回る場合(iPad横画面等)はその最大幅のまま中央に固定される。
+export const PILL_NAV_BOTTOM_OFFSET = "max(0.375rem, env(safe-area-inset-bottom))";
+
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
     <div
       className="absolute left-3 right-3 z-10 mx-auto max-w-[480px]"
-      style={{ bottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
+      style={{ bottom: PILL_NAV_BOTTOM_OFFSET }}
     >
       {children}
     </div>

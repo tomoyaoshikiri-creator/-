@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { Role } from "@/lib/database.types";
 import { BOTTOM_NAV_TABS, TAB_LABELS, tabHrefForRole, type TabKey } from "@/lib/permissions";
 import { TAB_ICONS } from "@/components/tabIcons";
-import { PillNavBar, PillNavLink } from "@/components/PillNavBar";
+import { PillNavBar, PillNavLink, PILL_NAV_BOTTOM_OFFSET } from "@/components/PillNavBar";
 
 // Phase 3: 通常画面の下部5タブをフローティング型のピル型ナビゲーションに統一した
 // (PillNavBar.tsx参照、スタッツ入力画面の専用操作バーと見た目の構成要素を共有)。
@@ -18,26 +18,19 @@ import { PillNavBar, PillNavLink } from "@/components/PillNavBar";
 // ビューポート基準でapp-shell(position:fixed; margin:0 auto; max-width:480px)と
 // 同じ中央寄せ(left:0/right:0 + margin:auto + max-width)を独自に行っている。
 //
-// 2026-11 実機QA第1弾: iPhone Airの実機確認で、下部メニューの位置が高すぎて
-// 下側に余白が残ることが判明した。以前(PillNavBar.tsx参照)、固定の余白と
-// safe-area-inset-bottomを単純に加算するとホームインジケーター領域の上に
-// さらに余白が二重に乗ってしまう問題をmax()で解消した経緯があるが、
-// safe-area-inset-bottomが大きい端末ではmax()の結果がその値そのものになり、
-// 本来のホームインジケーター保護領域に対してさらに0.875rem分のゆとりが
-// 必要という前提(元のmax()導入時の基準)が、結果的に安全マージンを
-// 二重に確保する形になっていた。ここでは、safe-area-inset-bottomから
-// その0.875rem分を差し引くことで、ホームインジケーター保護領域そのものは
-// 侵食せずに(0.875remはどの機種でも通常のホームインジケーター領域幅より
-// 小さい)、必要以上の余白だけを削る。safe-area-inset-bottomが0.875rem
-// 未満の機種(iPad mini等、ホームインジケーターの概念がない機種を含む)では
-// 従来通りmax()の0.875rem側が効き、挙動は変わらない。
+// 2026-11 実機QA第3弾: 下端からの余白(bottom)自体の計算式は、スタッツ入力画面の
+// 専用操作バー(PillNavPosition)・Fab(Modal.tsx)と共通の
+// PILL_NAV_BOTTOM_OFFSET(PillNavBar.tsx)を参照する。実機QA第1弾で
+// TabBar.tsxだけ個別にこの式を書き換えた結果、通常5タブとスタッツ専用4タブの
+// 位置がずれる不具合が発生したため、一本化して再発を防ぐ(計算式自体の実測
+// 根拠・経緯はPillNavBar.tsxのコメント参照)。
 export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Record<TabKey, boolean>> }) {
   const pathname = usePathname();
 
   return (
     <div
       className="fixed left-3 right-3 z-20 mx-auto max-w-[480px] print:hidden"
-      style={{ bottom: "max(0.875rem, calc(env(safe-area-inset-bottom) - 0.875rem))" }}
+      style={{ bottom: PILL_NAV_BOTTOM_OFFSET }}
     >
       <PillNavBar>
         {BOTTOM_NAV_TABS.map((tab) => {
