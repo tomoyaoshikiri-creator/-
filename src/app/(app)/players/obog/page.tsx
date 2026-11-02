@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { FieldLabel } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { PlayerRow } from "@/components/PlayerRow";
@@ -85,7 +85,7 @@ export default function ObogPage() {
             options={years.map((y) => ({ value: String(y), label: `${y}年度` }))}
           />
 
-          <Card>
+          <div className={cardClass}>
             {yearMembers.length === 0 ? (
               <EmptyState>この年度に卒団した選手はいません</EmptyState>
             ) : (
@@ -101,7 +101,7 @@ export default function ObogPage() {
                 />
               ))
             )}
-          </Card>
+          </div>
         </>
       )}
     </PageShell>
