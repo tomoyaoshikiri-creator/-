@@ -46,7 +46,9 @@ export const PILL_NAV_TAB_HEIGHT_PX = 64;
 // 伸びてしまう。max-widthを設け、かつleft/right(両方指定)+mx-auto(margin:auto)の
 // 組み合わせで、幅がmax-widthを下回る間(iPhone等)は従来通りlef-3/right-3の
 // 余白まで伸び、上回る場合(iPad横画面等)はその最大幅のまま中央に固定される。
-export const PILL_NAV_BOTTOM_OFFSET = "max(0.375rem, env(safe-area-inset-bottom))";
+// standalone iPhoneのみCSSカスタムプロパティで6pxに上書きする。
+// その他の起動モード・端末では従来のsafe-area対応式を維持する。
+export const PILL_NAV_BOTTOM_OFFSET = "var(--pill-nav-bottom-offset, max(0.375rem, env(safe-area-inset-bottom)))";
 
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
