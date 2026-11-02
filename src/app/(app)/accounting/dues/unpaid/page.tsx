@@ -12,7 +12,7 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen } from "@/lib/accounting";
 import { duesPeriodLabel } from "@/lib/accountingDues";
-import { fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
+import { fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type {
   AccountingDuesBillingPeriod,
   AccountingDuesCharge,
@@ -91,7 +91,7 @@ export default function AccountingDuesManagementPage() {
   useEffect(() => { void load(); }, [load]);
 
   const playerRows = useMemo<PlayerRow[]>(() => {
-    const rows: PlayerRow[] = roster.map(player => ({ id: player.id, name: playerFullName(player), player }));
+    const rows: PlayerRow[] = sortPlayers(roster).map(player => ({ id: player.id, name: playerFullName(player), player }));
     const known = new Set(rows.map(p => p.id));
     for (const charge of charges) {
       if (!known.has(charge.player_id)) {
@@ -99,7 +99,7 @@ export default function AccountingDuesManagementPage() {
         rows.push({ id: charge.player_id, name: "在籍一覧にない選手", player: null });
       }
     }
-    return rows.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+    return rows;
   }, [roster, charges]);
 
   const periodById = useMemo(() => new Map(periods.map(p => [p.id, p])), [periods]);
