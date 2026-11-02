@@ -99,7 +99,7 @@ export async function generateDuesCharges(
           if (monthlyAmount === null && !(configured && item.rate_basis === "yearly")) return null;
           let amount = (monthlyAmount ?? 0) * item.cycle_months;
           if (configured) {
-            const covered = "coveredMonths" in period ? period.coveredMonths : [];
+            const covered: number[] = "coveredMonths" in period ? (period.coveredMonths as number[]) : [];
             if (item.rate_basis === "monthly") {
               if (item.join_leave_rule === "prorated") {
                 const enrolled = covered.filter((month) => {
@@ -109,9 +109,9 @@ export async function generateDuesCharges(
                   return (!setting?.start_date || setting.start_date <= end) &&
                     (!setting?.stop_date || setting.stop_date >= date);
                 });
-                amount = monthlyAmount * enrolled.length;
+                amount = (monthlyAmount ?? 0) * enrolled.length;
               } else {
-                amount = monthlyAmount * covered.length;
+                amount = (monthlyAmount ?? 0) * covered.length;
               }
             } else {
               const annual = setting?.yearly_amount ?? (
