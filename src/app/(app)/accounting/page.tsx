@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
@@ -24,7 +24,7 @@ export default function AccountingHubPage() {
     <PageShell header={<AppHeader title="会計" variant="list" backHref="/team" accessBadge="operations" />}>
       <SectionLabel>集金</SectionLabel>
       <Link href="/accounting/dues">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">集金項目の設定</div>
@@ -32,10 +32,10 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
       <Link href="/accounting/dues/unpaid">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">未納一覧</div>
@@ -43,12 +43,12 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <SectionLabel>入出金</SectionLabel>
       <Link href="/accounting/transactions">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">入出金を記録・確認する</div>
@@ -56,12 +56,12 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <SectionLabel>予算・項目</SectionLabel>
       <Link href="/accounting/budget">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">予算案</div>
@@ -69,10 +69,10 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
       <Link href="/accounting/categories">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">項目の管理</div>
@@ -80,12 +80,12 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <SectionLabel>会計報告</SectionLabel>
       <Link href="/accounting/report">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">会計報告・予算案を出力する</div>
@@ -93,12 +93,12 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <SectionLabel>担当者</SectionLabel>
       <Link href="/accounting/officers">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">会計担当・会計監査</div>
@@ -106,7 +106,7 @@ export default function AccountingHubPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
     </PageShell>
   );

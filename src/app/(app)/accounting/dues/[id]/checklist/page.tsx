@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
@@ -183,9 +183,9 @@ export default function AccountingDuesChecklistPage() {
   if (!item) {
     return (
       <PageShell header={<AppHeader title="入金チェック" variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
-        <Card>
+        <div className={cardClass}>
           <EmptyState>この集金項目は見つかりませんでした</EmptyState>
-        </Card>
+        </div>
       </PageShell>
     );
   }
@@ -193,7 +193,7 @@ export default function AccountingDuesChecklistPage() {
   return (
     <PageShell header={<AppHeader title={`入金チェック: ${item.name}`} variant="detail" backHref={`/accounting/dues/${item.id}`} accessBadge="operations" />}>
       <SectionLabel>年度</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <InlineSelect
           value={String(fiscalYear)}
           onChange={(v) => setFiscalYear(Number(v))}
@@ -210,12 +210,12 @@ export default function AccountingDuesChecklistPage() {
         <div className="text-[10.5px] text-ink-soft mt-1.5">
           通常は毎朝自動で作成されます。集金項目を追加した直後など、すぐに確認したいときに使ってください。
         </div>
-      </Card>
+      </div>
 
       {periods.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだ請求がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         periods.map((period) => {
           const groups = groupsForPeriod(period.id);
@@ -223,7 +223,7 @@ export default function AccountingDuesChecklistPage() {
           return (
             <div key={period.id} className="mb-3">
               <SectionLabel>{duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 {groups.length === 0 ? (
                   <EmptyState>対象者がいません</EmptyState>
                 ) : (
@@ -260,7 +260,7 @@ export default function AccountingDuesChecklistPage() {
                     )}
                   </>
                 )}
-              </Card>
+              </div>
             </div>
           );
         })

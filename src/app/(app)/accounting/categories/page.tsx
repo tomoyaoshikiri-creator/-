@@ -17,7 +17,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { DragHandleIcon } from "@/components/icons";
 import { canManageAccounting } from "@/lib/permissions";
@@ -156,7 +156,7 @@ function CategorySection({
   return (
     <>
       <SectionLabel>{ACCOUNTING_KIND_LABELS[kind]}の項目</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {list.length === 0 ? (
           <EmptyState>まだ項目がありません</EmptyState>
         ) : (
@@ -192,7 +192,7 @@ function CategorySection({
             </button>
           )}
         </div>
-      </Card>
+      </div>
     </>
   );
 }

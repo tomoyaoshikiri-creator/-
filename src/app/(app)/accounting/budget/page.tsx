@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canManageAccounting } from "@/lib/permissions";
@@ -102,13 +102,13 @@ export default function AccountingBudgetPage() {
   return (
     <PageShell header={<AppHeader title="予算案" variant="detail" backHref="/accounting" accessBadge="operations" />}>
       <SectionLabel>年度</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <InlineSelect
           value={String(fiscalYear)}
           onChange={(v) => setFiscalYear(Number(v))}
           options={FISCAL_YEAR_OPTIONS.map((y) => ({ value: String(y), label: fiscalYearLabel(y) }))}
         />
-      </Card>
+      </div>
 
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
@@ -124,7 +124,7 @@ export default function AccountingBudgetPage() {
                 <SectionLabel>
                   {ACCOUNTING_KIND_LABELS[kind]}(合計 {formatYen(sectionTotal(kind))})
                 </SectionLabel>
-                <Card>
+                <div className={cardClass}>
                   {list.map((c, idx) => (
                     <div key={c.id} className={`py-2.5 ${idx > 0 ? "border-t border-line" : ""}`}>
                       <div className="font-bold text-[13px] mb-1.5">{c.name}</div>
@@ -153,7 +153,7 @@ export default function AccountingBudgetPage() {
                       )}
                     </div>
                   ))}
-                </Card>
+                </div>
               </div>
             );
           })}

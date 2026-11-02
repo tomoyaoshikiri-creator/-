@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { inputClass } from "@/components/ui/SegButton";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
@@ -67,7 +67,7 @@ function OfficerRoleSection({
       <SectionLabel>
         {ACCOUNTING_OFFICER_ROLE_LABELS[officerRole]}(最大{ACCOUNTING_MAX_OFFICERS[officerRole]}名)
       </SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {assigned.length === 0 ? (
           <EmptyState>まだ指定されていません</EmptyState>
         ) : (
@@ -106,7 +106,7 @@ function OfficerRoleSection({
             </button>
           </div>
         )}
-      </Card>
+      </div>
     </>
   );
 }

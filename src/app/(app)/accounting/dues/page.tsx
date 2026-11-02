@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
@@ -206,13 +206,13 @@ export default function AccountingDuesPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : items.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだ集金項目がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         items.map((item) => (
           <Link key={item.id} href={`/accounting/dues/${item.id}`}>
-            <Card className="cursor-pointer">
+            <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <div className="font-bold text-[15px] flex items-center gap-1.5">
@@ -228,7 +228,7 @@ export default function AccountingDuesPage() {
                 </div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
-            </Card>
+            </div>
           </Link>
         ))
       )}
