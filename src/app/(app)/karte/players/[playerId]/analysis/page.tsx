@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -269,9 +269,9 @@ export default function PlayerAnalysisPage() {
       {notesLoading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : aiNotes.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <div className="text-xs text-ink-soft">まだAI分析がありません</div>
-        </Card>
+        </div>
       ) : (
         <CollapsibleList
           items={aiNotes}
@@ -279,7 +279,7 @@ export default function PlayerAnalysisPage() {
           onShowAll={() => setShowAllAiNotes(true)}
           renderItem={(n) => (
             <Link key={n.id} href={`/karte/players/${params.playerId}/notes/${n.id}`}>
-              <Card className="cursor-pointer">
+              <div className={`${cardClass} cursor-pointer`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     {n.author_id !== userId &&
@@ -296,7 +296,7 @@ export default function PlayerAnalysisPage() {
                   <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
                 </div>
                 <ReactionSummary reactions={noteReactions.filter((r) => r.note_id === n.id)} />
-              </Card>
+              </div>
             </Link>
           )}
         />
@@ -305,13 +305,13 @@ export default function PlayerAnalysisPage() {
       <SectionLabel>スタッフコメント</SectionLabel>
 
       {notesLoading ? null : staffNotes.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <div className="text-xs text-ink-soft">まだコメントがありません</div>
-        </Card>
+        </div>
       ) : (
         staffNotes.map((n) =>
           editingNoteId === n.id ? (
-            <Card key={n.id}>
+            <div key={n.id} className={cardClass}>
               <textarea
                 rows={3}
                 className={inputClass()}
@@ -336,11 +336,11 @@ export default function PlayerAnalysisPage() {
                   キャンセル
                 </button>
               </div>
-            </Card>
+            </div>
           ) : (
-            <Card
+            <div
               key={n.id}
-              className={canManagePlayers(role) ? "cursor-pointer" : ""}
+              className={`${cardClass} ${canManagePlayers(role) ? "cursor-pointer" : ""}`}
               onClick={
                 canManagePlayers(role) ? () => setExpandedNoteId(expandedNoteId === n.id ? null : n.id) : undefined
               }
@@ -380,7 +380,7 @@ export default function PlayerAnalysisPage() {
                   </button>
                 </div>
               )}
-            </Card>
+            </div>
           ),
         )
       )}

@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { SubmitButton } from "@/components/ui/SegButton";
 import { canManagePlayers } from "@/lib/permissions";
 import { hasBulkImportAccess } from "@/lib/plan";
@@ -119,7 +119,7 @@ export default function PlayerBulkImportPage() {
   return (
     <PageShell header={<AppHeader title="選手のCSV一括登録" variant="detail" backHref="/karte/players" accessBadge="coach" />}>
       <SectionLabel>①テンプレートをダウンロード</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="text-[12px] text-ink-soft mb-2.5">
           テンプレートの列に合わせて選手情報を入力してください。氏・名以外は空欄でも登録できます。
         </div>
@@ -130,10 +130,10 @@ export default function PlayerBulkImportPage() {
         >
           テンプレートCSVをダウンロード
         </button>
-      </Card>
+      </div>
 
       <SectionLabel>②CSVをアップロード</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <input
           ref={fileInputRef}
           type="file"
@@ -158,23 +158,23 @@ export default function PlayerBulkImportPage() {
             文字化けしている可能性があります。Excelで保存する際は「CSV UTF-8」形式をお試しください。
           </div>
         )}
-      </Card>
+      </div>
 
       {csvText && (
         <>
           <SectionLabel>③内容を確認(ドライラン)</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <SubmitButton onClick={handleDryRun} disabled={checking}>
               {checking ? "確認中…" : "この内容で確認する"}
             </SubmitButton>
-          </Card>
+          </div>
         </>
       )}
 
       {result && (
         <>
           <SectionLabel>確認結果</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <div className="text-[13px] font-bold mb-1">
               対象{result.total}件中、正常{result.validCount}件・エラー{result.errorCount}件
             </div>
@@ -183,10 +183,10 @@ export default function PlayerBulkImportPage() {
                 {result.insertedCount}件を登録しました。
               </div>
             )}
-          </Card>
+          </div>
 
           {errorRows.length > 0 && (
-            <Card className="max-h-[50vh] overflow-y-auto">
+            <div className={`${cardClass} max-h-[50vh] overflow-y-auto`}>
               {errorRows.map((r) => (
                 <div key={r.rowNumber} className="border-b border-line last:border-b-0 py-2 text-[11.5px]">
                   <div className="font-bold">
@@ -199,20 +199,20 @@ export default function PlayerBulkImportPage() {
                   </ul>
                 </div>
               ))}
-            </Card>
+            </div>
           )}
 
           {!confirmed && (
             <>
               <SectionLabel>④確定して登録</SectionLabel>
-              <Card>
+              <div className={cardClass}>
                 <div className="text-[11.5px] text-ink-soft mb-2.5">
                   エラーのある行を除いた{result.validCount}件を登録します。エラー行は登録されません。
                 </div>
                 <SubmitButton onClick={handleConfirm} disabled={submitting || result.validCount === 0}>
                   {submitting ? "登録中…" : `${result.validCount}件を登録する`}
                 </SubmitButton>
-              </Card>
+              </div>
             </>
           )}
         </>

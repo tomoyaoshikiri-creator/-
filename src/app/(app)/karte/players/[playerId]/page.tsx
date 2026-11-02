@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { FieldLabel, SegButton, SubmitButton, TextTab, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
@@ -488,7 +488,7 @@ export default function KartePlayerPage() {
       </SectionLabel>
       {editing ? (
         <>
-          <Card>
+          <div className={cardClass}>
             <div className="flex gap-2">
               <div className="flex-1">
                 <FieldLabel>氏</FieldLabel>
@@ -595,10 +595,10 @@ export default function KartePlayerPage() {
             >
               キャンセル
             </button>
-          </Card>
+          </div>
 
           <div className="font-mono text-[11px] tracking-widest uppercase text-ink-soft mt-4 mb-2.5">削除</div>
-          <Card>
+          <div className={cardClass}>
             <button
               type="button"
               onClick={handleDelete}
@@ -607,10 +607,10 @@ export default function KartePlayerPage() {
             >
               {deleteConfirm ? "もう一度タップで削除確定" : "この選手を削除する"}
             </button>
-          </Card>
+          </div>
         </>
       ) : (
-        <Card>
+        <div className={cardClass}>
           <div className="flex items-center gap-2.5">
             <NumChip num={player.number ?? "-"} />
             <div>
@@ -631,7 +631,7 @@ export default function KartePlayerPage() {
             ステータス: {player.status}
             {player.birthday && ` / 誕生日: ${formatFullDateLabel(player.birthday)}`}
           </div>
-        </Card>
+        </div>
       )}
 
       {isPro && (
@@ -648,9 +648,9 @@ export default function KartePlayerPage() {
           <SectionLabel>試合スタッツ(試合ごと)</SectionLabel>
           {usesDetailedBasketballStats(sport) ? (
         gameRows.length === 0 ? (
-          <Card>
+          <div className={cardClass}>
             <EmptyState>この年度の出場記録がありません</EmptyState>
-          </Card>
+          </div>
         ) : (
           // ヘッダー4行(試合列見出し・チーム平均・シーズン平均・シーズン合計、各h-9=36px)+
           // 直近5試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
@@ -878,13 +878,13 @@ export default function KartePlayerPage() {
           </div>
         )
       ) : statCategories.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだスタッツ項目がありません</EmptyState>
-        </Card>
+        </div>
       ) : customGameRows.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>この年度の出場記録がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         // ヘッダー3行(試合列見出し・チーム平均・シーズン平均、各h-9=36px)+
         // 直近5試合分(同じ36px)だけを表示し、それ以降は縦スクロールで見せる
@@ -983,7 +983,7 @@ export default function KartePlayerPage() {
       )}
 
       <SectionLabel>身長・体重(週次)</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {growthRecords.length === 0 ? (
           <EmptyState>記録がありません</EmptyState>
         ) : (
@@ -1004,7 +1004,7 @@ export default function KartePlayerPage() {
         >
           記録を入力・編集する
         </Link>
-      </Card>
+      </div>
 
       {hasSportsTestAccess(plan) && (
         <>
@@ -1045,7 +1045,7 @@ export default function KartePlayerPage() {
         </div>
       )}
       {sportsTestView === "chart" && sportsTestRecords.length > 0 ? (
-        <Card>
+        <div className={cardClass}>
           <LineTrendChart
             points={
               sportsTestChartRange === "year"
@@ -1068,7 +1068,7 @@ export default function KartePlayerPage() {
                     })
             }
           />
-        </Card>
+        </div>
       ) : (
         <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
           <table className="border-collapse text-[11.5px] w-full">
@@ -1131,7 +1131,7 @@ export default function KartePlayerPage() {
           ) : (
             // 保護者はランクの直接編集はできない(ランク変更は/karte/team/skill-tests
             // の申請フロー経由)。現在のランクの閲覧のみ。
-            <Card>
+            <div className={cardClass}>
               {skillTests.length === 0 ? (
                 <div className="text-xs text-ink-soft">まだ検定がありません</div>
               ) : (
@@ -1150,7 +1150,7 @@ export default function KartePlayerPage() {
                   })}
                 </div>
               )}
-            </Card>
+            </div>
           )}
         </>
       )}
@@ -1158,7 +1158,7 @@ export default function KartePlayerPage() {
       {hasShootingDrillAccess(plan) && (
         <>
           <SectionLabel>コービーシューティング</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             {shootingRecordsByDate.length === 0 ? (
               <EmptyState>まだ記録がありません</EmptyState>
             ) : (
@@ -1178,7 +1178,7 @@ export default function KartePlayerPage() {
                 ))}
               </div>
             )}
-          </Card>
+          </div>
         </>
       )}
 
@@ -1186,12 +1186,12 @@ export default function KartePlayerPage() {
         <>
           <SectionLabel>集金</SectionLabel>
           <Link href={`/players/${player.id}/dues`}>
-            <Card className="cursor-pointer">
+            <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="font-bold text-[13.5px]">集金状況を見る</div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
-            </Card>
+            </div>
           </Link>
         </>
       )}
@@ -1200,12 +1200,12 @@ export default function KartePlayerPage() {
         <>
           <SectionLabel>選手メモ</SectionLabel>
           <Link href={`/players/${player.id}/notes`}>
-            <Card className="cursor-pointer">
+            <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="font-bold text-[13.5px]">メモを見る・編集する</div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
-            </Card>
+            </div>
           </Link>
         </>
       )}
@@ -1214,7 +1214,7 @@ export default function KartePlayerPage() {
         <>
           <SectionLabel>選手分析</SectionLabel>
           <Link href={`/karte/players/${player.id}/analysis`}>
-            <Card className="cursor-pointer">
+            <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-bold text-[13.5px]">AI分析・フィードバック</div>
@@ -1222,7 +1222,7 @@ export default function KartePlayerPage() {
                 </div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
-            </Card>
+            </div>
           </Link>
         </>
       )}

@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
@@ -218,7 +218,7 @@ export default function KartePlayersPage() {
         </div>
       ) : null}
 
-      <Card>
+      <div className={cardClass}>
         {loading ? (
           <EmptyState>読み込み中…</EmptyState>
         ) : activeList.length === 0 ? (
@@ -236,18 +236,18 @@ export default function KartePlayersPage() {
             />
           ))
         )}
-      </Card>
+      </div>
 
       {!loading && obogList.length > 0 && (
         // OB・OG一覧は/players/obogに統合済み(選手一覧側と重複していたため)。
         // スタッフはPlayerRowのselectableが常にtrueになるため、通常のリンクと同様に使える。
         <Link href="/players/obog">
-          <Card className="cursor-pointer">
+          <div className={`${cardClass} cursor-pointer`}>
             <div className="flex items-center justify-between">
               <div className="font-bold text-[13.5px]">OB・OG({obogList.length}名)</div>
               <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
-          </Card>
+          </div>
         </Link>
       )}
 
