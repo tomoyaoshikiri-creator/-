@@ -146,7 +146,7 @@ export default function AccountingDuesItemPage() {
       toast.warning(e instanceof Error ? e.message : "集金設定を確認してください");
       return;
     }
-    if (item.schedule_mode !== "configured") {
+    {
       const { count, error } = await createClient()
         .from("accounting_dues_billing_periods")
         .select("id", { count: "exact", head: true })
@@ -157,7 +157,7 @@ export default function AccountingDuesItemPage() {
         return;
       }
       if ((count ?? 0) > 0) {
-        toast.warning("今年度に請求済みの項目は途中で新方式へ切り替えられません。次年度からの切り替えが必要です。");
+        toast.warning("今年度に請求済みの項目は料金・集金月を変更できません。次年度からの切り替えが必要です。");
         return;
       }
     }
