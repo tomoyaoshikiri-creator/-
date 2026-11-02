@@ -356,6 +356,21 @@ textarea {
 }
 
 /*
+  2026-11 iPhone Air standalone実測: viewport 844px、safe-area-bottom 34px、
+  5タブ下端810px。ユーザー要望により表示領域下端からの隙間を6pxに縮める。
+  CSSの高さ(100dvh)は変更しない。通常5タブ・スタッツ専用4ボタン・FABは
+  同じPILL_NAV_BOTTOM_OFFSETを使うため、相対位置を維持したまま一括調整。
+  iPad / Safari通常タブ / ログイン画面には適用しない。
+  注: safe-area内へ28px寄せるため、実機でホームインジケーターとの
+  干渉がないか必ず確認してからマージすること。
+*/
+@media (display-mode: standalone) and (max-width: 699px) {
+  .app-shell:not(.auth-shell) {
+    --pill-nav-bottom-offset: 6px;
+  }
+}
+
+/*
   MASTER SPECIFICATION #32: Login/Registration等の認証画面はTeam Brand Screen
   ではなく常にCIRCLE LINES Brand Screen。アプリ本体(.app-shellの--paper、
   暖色系off-white)とは別に、ヘッダー(--header-gradient)・ロゴマークと同じ
