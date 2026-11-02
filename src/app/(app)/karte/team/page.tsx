@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card } from "@/components/ui/Card";
+import { cardClass } from "@/components/ui/Card";
 import { ChevronRightIcon } from "@/components/icons";
 import { canViewKarte } from "@/lib/permissions";
 import { hasAiAnalysisAccess, hasKarteTabAccess } from "@/lib/plan";
@@ -30,7 +30,7 @@ export default function KarteTeamPage() {
     >
       {role === "管理者" && (
         <Link href="/karte/team/goal">
-          <Card className="cursor-pointer">
+          <div className={`${cardClass} cursor-pointer`}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-bold text-[15px]">チーム目標</div>
@@ -40,12 +40,12 @@ export default function KarteTeamPage() {
               </div>
               <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
-          </Card>
+          </div>
         </Link>
       )}
 
       <Link href="/game">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">試合記録</div>
@@ -53,11 +53,11 @@ export default function KarteTeamPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <Link href={showBasketballStats ? "/karte/team/game" : "/karte/team/custom-stats"}>
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">スタッツ</div>
@@ -67,11 +67,11 @@ export default function KarteTeamPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <Link href="/karte/team/workout">
-        <Card className="cursor-pointer">
+        <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[15px]">ワークアウト</div>
@@ -79,12 +79,12 @@ export default function KarteTeamPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       {isStaff && hasAiAnalysisAccess(plan) && (
         <Link href="/karte/team/analysis">
-          <Card className="cursor-pointer">
+          <div className={`${cardClass} cursor-pointer`}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-bold text-[15px]">チーム分析</div>
@@ -92,7 +92,7 @@ export default function KarteTeamPage() {
               </div>
               <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
             </div>
-          </Card>
+          </div>
         </Link>
       )}
     </PageShell>

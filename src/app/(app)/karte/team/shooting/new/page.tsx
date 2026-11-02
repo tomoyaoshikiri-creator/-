@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { SegButton, FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canRecordShootingDrill } from "@/lib/permissions";
 import { hasShootingDrillAccess } from "@/lib/plan";
@@ -281,7 +281,7 @@ export default function ShootingDrillNewPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : phase === "setup" ? (
         <>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>選手</FieldLabel>
             {players.length === 0 ? (
               <EmptyState>在籍中の選手がいません</EmptyState>
@@ -316,7 +316,7 @@ export default function ShootingDrillNewPage() {
             <SubmitButton onClick={handleStart} disabled={!selectedPlayerId}>
               スタート
             </SubmitButton>
-          </Card>
+          </div>
 
           <button
             type="button"
@@ -327,7 +327,7 @@ export default function ShootingDrillNewPage() {
           </button>
 
           {manualOpen && (
-            <Card className="mt-2">
+            <div className={`${cardClass} mt-2`}>
               <FieldLabel>選手</FieldLabel>
               <select
                 className={inputClass()}
@@ -390,12 +390,12 @@ export default function ShootingDrillNewPage() {
               <SubmitButton onClick={handleManualSave} disabled={manualSaving}>
                 {manualSaving ? "保存中…" : "この記録を保存"}
               </SubmitButton>
-            </Card>
+            </div>
           )}
         </>
       ) : (
         <>
-          <Card>
+          <div className={cardClass}>
             <div className="text-center">
               <div className="text-[12px] text-ink-soft font-bold">
                 {selectedPlayer ? `#${selectedPlayer.number ?? "-"} ${playerFullName(selectedPlayer)}` : ""} / 基準{targetPoints}点
@@ -496,7 +496,7 @@ export default function ShootingDrillNewPage() {
                 {saving ? "保存中…" : "この記録を保存"}
               </SubmitButton>
             )}
-          </Card>
+          </div>
         </>
       )}
     </PageShell>

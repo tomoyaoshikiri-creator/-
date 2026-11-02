@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canViewAttendanceReport } from "@/lib/permissions";
 import { hasAttendanceReportAccess } from "@/lib/plan";
@@ -85,7 +85,7 @@ export default function AttendanceReportPage() {
   return (
     <PageShell header={<AppHeader title="出欠集計" variant="detail" backHref="/team" accessBadge="coach" />}>
       <SectionLabel>期間・予定種別</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <div className="flex gap-2.5">
           <div className="flex-1">
             <FieldLabel htmlFor="attendance-report-from">開始日</FieldLabel>
@@ -119,7 +119,7 @@ export default function AttendanceReportPage() {
         <SubmitButton onClick={handleAggregate} disabled={loading || !from || !to}>
           {loading ? "集計中…" : "この条件で集計する"}
         </SubmitButton>
-      </Card>
+      </div>
 
       {rows !== null && (
         <>
@@ -140,7 +140,7 @@ export default function AttendanceReportPage() {
           {rows.length === 0 ? (
             <EmptyState>対象の予定がありません</EmptyState>
           ) : (
-            <Card className="overflow-x-auto">
+            <div className={`${cardClass} overflow-x-auto`}>
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="text-ink-soft text-[10.5px]">
@@ -172,7 +172,7 @@ export default function AttendanceReportPage() {
                   ))}
                 </tbody>
               </table>
-            </Card>
+            </div>
           )}
         </>
       )}

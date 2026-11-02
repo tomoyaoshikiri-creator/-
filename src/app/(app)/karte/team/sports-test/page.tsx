@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { SegButton, FieldLabel } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canViewKarte } from "@/lib/permissions";
@@ -181,7 +181,7 @@ export default function KarteTeamSportsTestPage() {
         <EmptyState>読み込み中…</EmptyState>
       ) : !isStaff ? (
         <>
-          <Card>
+          <div className={cardClass}>
             <div className="text-[11.5px] font-bold text-ink-soft mb-3">チーム平均</div>
             {!teamAverageRow || teamAverageRow.record_count === 0 ? (
               <div className="text-xs text-ink-soft">この四半期の記録はありません</div>
@@ -201,7 +201,7 @@ export default function KarteTeamSportsTestPage() {
                 })}
               </div>
             )}
-          </Card>
+          </div>
 
           {sportsTestValues.length > 0 && (
             <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
