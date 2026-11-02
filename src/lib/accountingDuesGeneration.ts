@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fiscalYearOf } from "@/lib/format";
 import { computeDuesPeriods, isPlayerBillableForPeriod, resolveMonthlyAmount } from "@/lib/accountingDues";
+import { calculateDuesInstallments } from "@/lib/duesRatePlan";
+import { fiscalMonthDate } from "@/lib/duesAnnualSchedule";
 import type { DuesBillingUnit, DuesPricingMethod } from "@/lib/accounting";
 import type { Database } from "@/lib/database.types";
 
@@ -54,7 +56,22 @@ export async function generateDuesCharges(
       });
     }
 
-    const periods = computeDuesPeriods(fiscalYear, item.cycle_months, todayStr).filter((p) => !existingStarts.has(p.periodStart));
+    const configured = item.schedule_mode === "configured";
+    // 新方式は集金月の開始日に対象期間の請求を作成する。
+    // 旧方式は従来の計算を維持する。
+    const schedule = configured
+      ? calculateDuesInstallments({ basis: item.rate_basis, amount: 1, collectionMonths: item.collection_months ?? [] })
+      : [];
+    const scheduledPeriods = configured
+      ? schedule.map((entry) => {
+          const start = fiscalMonthDate(fiscalYear, entry.month);
+          const nextOffset = entry.coveredMonths.length;
+          const [y, m] = start.split("-").map(Number);
+          const endDate = new Date(Date.UTC(y, m - 1 + nextOffset + (item.rate_basis === "yearly" ? 0 : 0), 0));
+          return { periodStart: start, periodEnd: endDate.toISOString().slice(0, 10), coveredMonths: entry.coveredMonths };
+        }).filter((p) => p.periodStart <= todayStr)
+      : computeDuesPeriods(fiscalYear, item.cycle_months, todayStr);
+    const periods = scheduledPeriods.filter((p) => !existingStarts.has(p.periodStart));
 
     for (const period of periods) {
       const { data: periodRow, error: periodError } = await supabase
@@ -69,6 +86,9 @@ export async function generateDuesCharges(
         .map((p) => {
           const setting = settingByPlayerId.get(p.id) ?? null;
           if (!isPlayerBillableForPeriod(period, setting)) return null;
+          // 過去の集金月を過ぎてから加入した選手は自動で遡及請求しない。
+          // 追加請求は管理者による確認・確定の別フローで扱う。
+          if (configured && setting?.start_date && setting.start_date > period.periodStart) return null;
           const monthlyAmount = resolveMonthlyAmount({
             pricingMethod: item.pricing_method as DuesPricingMethod,
             flatMonthlyAmount: item.flat_monthly_amount,
@@ -77,8 +97,40 @@ export async function generateDuesCharges(
             playerSetting: setting,
           });
           if (monthlyAmount === null) return null;
-          const amount = monthlyAmount * item.cycle_months;
-          if (amount <= 0) return null;
+          let amount = monthlyAmount * item.cycle_months;
+          if (configured) {
+            const covered = "coveredMonths" in period ? period.coveredMonths : [];
+            if (item.rate_basis === "monthly") {
+              if (item.join_leave_rule === "prorated") {
+                const enrolled = covered.filter((month) => {
+                  const date = fiscalMonthDate(fiscalYear, month);
+                  const [y, m] = date.split("-").map(Number);
+                  const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+                  return (!setting?.start_date || setting.start_date <= end) &&
+                    (!setting?.stop_date || setting.stop_date >= date);
+                });
+                amount = monthlyAmount * enrolled.length;
+              } else {
+                amount = monthlyAmount * covered.length;
+              }
+            } else {
+              const annual = setting?.yearly_amount ?? (
+                item.pricing_method === "flat" ? item.flat_yearly_amount
+                : item.pricing_method === "grade_band"
+                  ? (bands ?? []).find((b) => {
+                      const grade = p.grade === null ? null : parseInt(p.grade, 10);
+                      return grade !== null && grade >= b.grade_min && grade <= b.grade_max;
+                    })?.yearly_amount
+                  : null
+              );
+              if (annual === null || annual === undefined) return null;
+              const annualPlan = calculateDuesInstallments({
+                basis: "yearly", amount: annual, collectionMonths: item.collection_months ?? [],
+              });
+              amount = annualPlan.find((x) => x.month === Number(period.periodStart.slice(5, 7)))?.amount ?? 0;
+            }
+          }
+          if (!Number.isSafeInteger(amount) || amount <= 0) return null;
           const groupKey = (item.billing_unit as DuesBillingUnit) === "household" ? (guardianByPlayerId.get(p.id) ?? p.id) : p.id;
           return { billing_period_id: periodRow.id, player_id: p.id, group_key: groupKey, amount };
         })
