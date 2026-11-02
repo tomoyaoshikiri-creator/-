@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { SegButton } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
 import { canManageAccounting } from "@/lib/permissions";
@@ -230,7 +230,7 @@ export default function AccountingReportPage() {
     <PageShell header={<AppHeader title="会計報告" variant="detail" backHref="/accounting" accessBadge="operations" />}>
       <div className="print:hidden">
         <SectionLabel>出力内容</SectionLabel>
-        <Card>
+        <div className={cardClass}>
           <div className="flex gap-1.5 mb-2.5">
             <SegButton active={mode === "report"} onClick={() => setMode("report")}>
               会計報告
@@ -256,7 +256,7 @@ export default function AccountingReportPage() {
               会計担当・会計監査本人が「確認・承認」すると印欄に印影が表示されます。承認後に入出金が修正されると、その年度の承認は自動で取り消されます。
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {loading ? (

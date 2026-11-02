@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SegButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
 import { ChevronRightIcon } from "@/components/icons";
@@ -230,9 +230,9 @@ export default function AccountingDuesItemPage() {
   if (notFound || !item) {
     return (
       <PageShell header={<AppHeader title="集金項目" variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
-        <Card>
+        <div className={cardClass}>
           <EmptyState>この集金項目は見つかりませんでした</EmptyState>
-        </Card>
+        </div>
       </PageShell>
     );
   }
@@ -250,7 +250,7 @@ export default function AccountingDuesItemPage() {
   return (
     <PageShell header={<AppHeader title={item.name} variant="detail" backHref="/accounting/dues" accessBadge="operations" />}>
       <Link href={`/accounting/dues/${item.id}/checklist`}>
-        <Card className="cursor-pointer mb-2.5">
+        <div className={`${cardClass} cursor-pointer mb-2.5`}>
           <div className="flex items-center justify-between">
             <div>
               <div className="font-bold text-[14px]">入金チェック</div>
@@ -258,11 +258,11 @@ export default function AccountingDuesItemPage() {
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
-        </Card>
+        </div>
       </Link>
 
       <SectionLabel>{step("名称・状態")}</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <FieldLabel>名称</FieldLabel>
@@ -291,10 +291,10 @@ export default function AccountingDuesItemPage() {
             </span>
           </div>
         )}
-      </Card>
+      </div>
 
       <SectionLabel>{step("料金の決め方")}</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <div className="flex flex-col gap-1.5">
@@ -338,12 +338,12 @@ export default function AccountingDuesItemPage() {
             {pricingMethod === "per_player" && <div className="text-[12px] text-ink-soft mt-1">選手ごとの月額は下のカードで設定します。</div>}
           </div>
         )}
-      </Card>
+      </div>
 
       {pricingMethod === "grade_band" && (
         <>
           <SectionLabel>{step("学年帯ごとの月額")}</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             {bands.length === 0 ? (
               <EmptyState>まだ学年帯が設定されていません</EmptyState>
             ) : (
@@ -412,7 +412,7 @@ export default function AccountingDuesItemPage() {
                 </div>
               </div>
             )}
-          </Card>
+          </div>
         </>
       )}
 
@@ -422,7 +422,7 @@ export default function AccountingDuesItemPage() {
           ? "この項目は選手ごとに金額を指定する方式のため、ここで全員分の月額を設定してください。"
           : "免除・金額の上書き・請求開始/停止月が必要な選手だけ、ここで設定します。"}
       </div>
-      <Card>
+      <div className={cardClass}>
         {playerSettings.length === 0 ? (
           <EmptyState>まだ個別設定がありません</EmptyState>
         ) : (
@@ -514,10 +514,10 @@ export default function AccountingDuesItemPage() {
             </button>
           </div>
         )}
-      </Card>
+      </div>
 
       <SectionLabel>{step("集金の設定")}</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <FieldLabel>集金の周期</FieldLabel>
@@ -567,10 +567,10 @@ export default function AccountingDuesItemPage() {
             </div>
           </div>
         )}
-      </Card>
+      </div>
 
       <SectionLabel>{step("会計への計上")}</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <FieldLabel>計上先の収入項目</FieldLabel>
@@ -587,10 +587,10 @@ export default function AccountingDuesItemPage() {
             {incomeCategories.find((c) => c.id === item.income_category_id)?.name ?? "(削除済みの項目)"}
           </div>
         )}
-      </Card>
+      </div>
 
       <SectionLabel>{step("未納通知(任意)")}</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <div className="text-[11px] text-ink-soft mb-1.5">
@@ -620,7 +620,7 @@ export default function AccountingDuesItemPage() {
             {item.reminder_days_after !== null ? `開始から${item.reminder_days_after}日後に自動送信` : "自動送信しない"}
           </div>
         )}
-      </Card>
+      </div>
 
       <button
         type="button"
@@ -631,7 +631,7 @@ export default function AccountingDuesItemPage() {
       </button>
 
       <SectionLabel>削除</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <button
           type="button"
           onClick={handleDelete}
@@ -640,7 +640,7 @@ export default function AccountingDuesItemPage() {
         >
           {deleteConfirm ? "もう一度タップで削除確定" : "この集金項目を削除"}
         </button>
-      </Card>
+      </div>
     </PageShell>
   );
 }

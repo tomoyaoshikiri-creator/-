@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -285,7 +285,7 @@ export default function AccountingTransactionsPage() {
       }
     >
       <SectionLabel>年度・絞り込み</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <InlineSelect
           value={String(fiscalYear)}
           onChange={(v) => setFiscalYear(Number(v))}
@@ -314,7 +314,7 @@ export default function AccountingTransactionsPage() {
             />
           </div>
         )}
-      </Card>
+      </div>
 
       <SectionLabel>
         明細({filtered.length}件、合計 {formatYen(total)})
@@ -322,11 +322,11 @@ export default function AccountingTransactionsPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : filtered.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>記録がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
-        <Card className="max-h-[65vh] overflow-y-auto">
+        <div className={`${cardClass} max-h-[65vh] overflow-y-auto`}>
           {filtered.map((t) => {
             const cat = categoryById(t.category_id);
             const expanded = expandedId === t.id;
@@ -417,7 +417,7 @@ export default function AccountingTransactionsPage() {
               </div>
             );
           })}
-        </Card>
+        </div>
       )}
     </PageShell>
   );

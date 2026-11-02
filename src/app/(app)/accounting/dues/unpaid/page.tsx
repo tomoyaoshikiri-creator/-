@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
@@ -149,14 +149,14 @@ export default function AccountingDuesUnpaidPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : groups.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>未納はありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         <>
           <SectionLabel>{`未納 ${groups.length}件`}</SectionLabel>
           {groups.map((g) => (
-            <Card key={`${g.periodId}:${g.groupKey}`}>
+            <div key={`${g.periodId}:${g.groupKey}`} className={cardClass}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-[11px] text-ink-soft">
@@ -177,7 +177,7 @@ export default function AccountingDuesUnpaidPage() {
                   入金済みにする
                 </button>
               </div>
-            </Card>
+            </div>
           ))}
         </>
       )}
