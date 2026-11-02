@@ -25,25 +25,48 @@ export const PILL_NAV_LABEL_CLASS = "text-[9.5px] font-bold leading-none whitesp
 // 見直すこと。
 export const PILL_NAV_TAB_HEIGHT_PX = 64;
 
-// 画面下部に浮かせる位置決めだけを担う外枠(左右マージン・セーフエリア対応)。
-// 中身の形(ピル/サブパネルのカード)を問わず共通で使う。
+// 画面下部に浮かせる位置の「下端からの余白」の共通計算式。TabBar.tsx(通常5タブ、
+// position:fixed)・このPillNavPosition(スタッツ入力画面の専用4ボタン等、
+// position:absolute)・Modal.tsxのFab(この値+ピル高さ+間隔)の3箇所が、以前は
+// それぞれ別々に同じ式を手書きしていたため、2026-11の実機QAで片方だけを調整した際に
+// 3箇所の位置がずれる不具合が発生した。再発防止のためここに一本化し、他はこの定数を
+// 参照する。
 //
 // 実機確認で、下端からの余白がcalc(0.875rem + env(safe-area-inset-bottom))だと
 // 離れすぎて見えることが判明した。TabBar.tsx側の過去の調査(ホームインジケーター
 // 領域はpadding-bottom等で追加の余白を確保しても見た目の保護領域が増えず、
 // 単に余白だけが増える)と同じ理由と考えられるため、固定の余白とsafe-area-inset-bottomを
-// 加算せず、大きい方を採用するmax()に変更する。これにより、safe-area-inset-bottomが
-// 大きい端末でも最低限それを下回らず、かつ0や小さい環境(Android Chrome等)では
-// 単純に下端から0.875rem(14px、目安の12〜16pxの範囲内)になる。
+// 加算せず、大きい方を採用するmax()に変更した。
+//
+// 2026-11 実機QA第2弾: iPhone Airでmax(0.875rem, env(safe-area-inset-bottom))の
+// ままだと下端の余白が大きく見える不具合が再報告された。safe-area-inset-bottomを
+// そのまま使う代わりに半分(50%)に縮める。固定のpx/remを差し引く方式(前回の
+// 対応)は、実機のsafe-area-inset-bottom自体の実測値が不明なままでは効果量が
+// 読めない(値が大きい機種ほど効果が相対的に薄くなる)ため、絶対値ではなく
+// 比率で縮める方式に変更した。0.875remのフロアはsafe-area-inset-bottomが
+// 小さい/存在しない環境(Android Chrome等、iPad miniのホームボタン機種を含む)
+// 向けの最低限の余白として維持する。
+//
+// 重要な限界: この50%という比率は実機のスクリーンショット実測値から導いた値
+// ではなく、往復のフィードバック(「多すぎる」「まだ足りない」)から絞り込んだ
+// 推測値である。ホームインジケーターの実際のスワイプ判定領域とどれだけ干渉する
+// かはコード上では保証できないため、iPhone Air・他のiPhone・iPad miniの実機で
+// 以下を確認すること: (1)ホームインジケーターの上に重なったり操作を誤爆したりし
+// ないか、(2)見た目の余白が意図した位置になっているか。不足/過剰であれば、この
+// 1箇所(PILL_NAV_BOTTOM_OFFSET)の比率・フロアだけを調整すれば3箇所すべてに
+// 反映される。
+//
 // iPad横画面等、画面幅が広い場合はleft-3/right-3のままだとピルが画面幅いっぱいに
 // 伸びてしまう。max-widthを設け、かつleft/right(両方指定)+mx-auto(margin:auto)の
 // 組み合わせで、幅がmax-widthを下回る間(iPhone等)は従来通りlef-3/right-3の
 // 余白まで伸び、上回る場合(iPad横画面等)はその最大幅のまま中央に固定される。
+export const PILL_NAV_BOTTOM_OFFSET = "max(0.875rem, calc(env(safe-area-inset-bottom) * 0.5))";
+
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
     <div
       className="absolute left-3 right-3 z-10 mx-auto max-w-[480px]"
-      style={{ bottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
+      style={{ bottom: PILL_NAV_BOTTOM_OFFSET }}
     >
       {children}
     </div>

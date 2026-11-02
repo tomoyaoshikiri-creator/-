@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import { CONFIRM_CLOSE_MESSAGE, useNavigationGuard } from "@/lib/navigationGuard";
-import { PILL_NAV_TAB_HEIGHT_PX } from "@/components/PillNavBar";
+import { PILL_NAV_TAB_HEIGHT_PX, PILL_NAV_BOTTOM_OFFSET } from "@/components/PillNavBar";
 
 export function Modal({
   open,
@@ -101,11 +101,14 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
   //
   // 下部5タブ(TabBar.tsx)がフローティング型のピルになった(Phase 3)ことで、従来の
   // bottom-4(16px固定)だとピルと重なって押せなくなる不具合が実機で確認された。
-  // ピル自体の高さ(PILL_NAV_TAB_HEIGHT_PX)とピルの下端オフセット(TabBar.tsxと同じ
-  // max(0.875rem, env(safe-area-inset-bottom)))を足し合わせ、さらに12〜16pxの間隔
-  // (0.875rem=14px)を空けた位置にFabを置く。固定pxの単純な上移動ではなく、ピルの
-  // 実際の位置・高さとの関係から導いた値であるため、将来ピルの高さやセーフエリアの
-  // 扱いが変わっても追従する。
+  // ピル自体の高さ(PILL_NAV_TAB_HEIGHT_PX)とピルの下端オフセット
+  // (PILL_NAV_BOTTOM_OFFSET、TabBar.tsx・PillNavPositionと共通)を足し合わせ、
+  // さらに12〜16pxの間隔(0.875rem=14px)を空けた位置にFabを置く。固定pxの単純な
+  // 上移動ではなく、ピルの実際の位置・高さとの関係から導いた値であるため、将来
+  // ピルの高さやセーフエリアの扱いが変わっても追従する(2026-11 実機QA第2弾:
+  // 以前はこのbottom式をここに個別に書いており、ピル側のオフセット調整時に
+  // 追従し忘れてFabとピルがずれる不具合の原因になっていたため、共通定数を
+  // 参照する形に改めた)。
   //
   // 横位置も、外側のラッパーをTabBar.tsx/PillNavPositionと同じ
   // inset-x-0 + mx-auto + max-w-[480px] の中央寄せにし、その内側でright-3(ピルの
@@ -117,7 +120,7 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
     <div
       className="absolute inset-x-0 mx-auto max-w-[480px]"
       style={{
-        bottom: `calc(max(0.875rem, env(safe-area-inset-bottom)) + ${PILL_NAV_TAB_HEIGHT_PX}px + 0.875rem)`,
+        bottom: `calc(${PILL_NAV_BOTTOM_OFFSET} + ${PILL_NAV_TAB_HEIGHT_PX}px + 0.875rem)`,
       }}
     >
       <button
