@@ -2104,7 +2104,7 @@ export interface Database {
           grade_min: number;
           grade_max: number;
           monthly_amount: number;
-          yearly_amount: number | null;
+          yearly_amount?: number | null;
         };
         Update: Partial<{
           grade_min: number;
