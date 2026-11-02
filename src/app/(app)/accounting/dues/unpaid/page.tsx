@@ -274,7 +274,7 @@ export default function AccountingDuesManagementPage() {
               {detailCell && (
                 <div className={cardClass}>
                   <div className="flex justify-between gap-2">
-                    <div className="font-bold text-[15px]">{detailCell.item.name}・{monthOf(detailCell.period.periodStart)}月</div>
+                    <div className="font-bold text-[15px]">{detailCell.item.name}・{monthOf(detailCell.period.period_start)}月</div>
                     <button type="button" onClick={() => setSelectedCell(null)} aria-label="閉じる" className="text-ink-soft px-2">×</button>
                   </div>
                   <div className="text-[11px] text-ink-soft mt-1">{duesPeriodLabel({ periodStart: detailCell.period.period_start, periodEnd: detailCell.period.period_end })}</div>
