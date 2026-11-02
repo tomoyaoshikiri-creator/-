@@ -22,7 +22,6 @@ ALTER TABLE public.accounting_dues_items
       collection_months IS NOT NULL
       AND cardinality(collection_months) BETWEEN 1 AND 12
       AND collection_months <@ ARRAY[1,2,3,4,5,6,7,8,9,10,11,12]::integer[]
-      AND (SELECT COUNT(DISTINCT m) FROM unnest(collection_months) AS m) = cardinality(collection_months)
     )
   ),
   ADD CONSTRAINT dues_flat_yearly_valid CHECK (flat_yearly_amount IS NULL OR flat_yearly_amount > 0);
