@@ -24,6 +24,7 @@ export function PageShell({
     <>
       <div className="print:hidden">{header}</div>
       <div
+        data-page-scroll
         className={`flex-1 overflow-y-auto px-4.5 pt-4 ${focusMode ? "pb-5" : "pb-28"} relative min-[700px]:px-8 min-[700px]:pt-6 print:overflow-visible print:p-0`}
       >
         {children}

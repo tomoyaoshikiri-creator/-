@@ -36,6 +36,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
 
   return (
     <div
+      data-tabbar
       className="fixed left-3 right-3 z-20 mx-auto max-w-[480px] print:hidden"
       style={{ bottom: "max(0.875rem, calc(env(safe-area-inset-bottom) - 0.875rem))" }}
     >

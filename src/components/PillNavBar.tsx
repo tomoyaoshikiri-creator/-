@@ -42,6 +42,7 @@ export const PILL_NAV_TAB_HEIGHT_PX = 64;
 export function PillNavPosition({ children }: { children: ReactNode }) {
   return (
     <div
+      data-pillnav
       className="absolute left-3 right-3 z-10 mx-auto max-w-[480px]"
       style={{ bottom: "max(0.875rem, env(safe-area-inset-bottom))" }}
     >

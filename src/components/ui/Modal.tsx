@@ -115,6 +115,7 @@ export function Fab({ onClick, label = "追加" }: { onClick: () => void; label?
   // 基準にしていたため、iPad幅ではピルの右端と大きくズレていた)。
   return (
     <div
+      data-fab
       className="absolute inset-x-0 mx-auto max-w-[480px]"
       style={{
         bottom: `calc(max(0.875rem, env(safe-area-inset-bottom)) + ${PILL_NAV_TAB_HEIGHT_PX}px + 0.875rem)`,
