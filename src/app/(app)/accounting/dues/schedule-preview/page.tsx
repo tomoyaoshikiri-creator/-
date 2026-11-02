@@ -8,6 +8,8 @@ import { cardClass } from "@/components/ui/Card";
 import { inputClass } from "@/components/ui/SegButton";
 import { FISCAL_MONTHS, sortedCollectionMonths, type DuesJoinLeaveRule } from "@/lib/duesAnnualSchedule";
 import { calculateDuesInstallments, type DuesRateBasis } from "@/lib/duesRatePlan";
+import { previewPlayerDues } from "@/lib/duesPricingPreview";
+import type { DuesPricingMethod } from "@/lib/accounting";
 
 function yen(n: number): string { return `${n.toLocaleString("ja-JP")}円`; }
 
@@ -16,6 +18,9 @@ export default function AnnualDuesSettingsPreview() {
   const [name, setName] = useState("部費");
   const [basis, setBasis] = useState<DuesRateBasis>("monthly");
   const [amountText, setAmountText] = useState("2500");
+  const [pricingMethod, setPricingMethod] = useState<DuesPricingMethod>("flat");
+  const [gradeAmount, setGradeAmount] = useState("2000");
+  const [playerAmount, setPlayerAmount] = useState("1800");
   const [count, setCount] = useState(4);
   const [months, setMonths] = useState<number[]>([4, 7, 10, 1]);
   const [joinLeaveRule, setJoinLeaveRule] = useState<DuesJoinLeaveRule>("prorated");
@@ -30,6 +35,21 @@ export default function AnnualDuesSettingsPreview() {
   }, [basis, amountText, count, months]);
 
   const total = result.installments.reduce((sum, x) => sum + x.amount, 0);
+  const sample = useMemo(() => {
+    if (basis !== "monthly" || months.length !== count) return null;
+    try {
+      return previewPlayerDues({
+        basis, pricingMethod,
+        flatAmount: Number(amountText),
+        grade: 5,
+        gradeBands: [{ grade_min: 4, grade_max: 6, monthly_amount: Number(gradeAmount) }],
+        playerSetting: pricingMethod === "per_player"
+          ? { monthly_amount: Number(playerAmount), exempt: false, start_date: null, stop_date: null }
+          : null,
+        collectionMonths: months,
+      });
+    } catch { return null; }
+  }, [basis, pricingMethod, amountText, gradeAmount, playerAmount, months, count]);
 
   function changeCount(next: number) {
     setCount(next);
@@ -60,9 +80,33 @@ export default function AnnualDuesSettingsPreview() {
               className={`rounded-lg border py-2.5 text-[13px] font-bold ${basis === value ? "border-blue-500 bg-blue-500/10 text-blue-700" : "border-line text-ink-soft"}`}>{label}</button>
           ))}
         </div>
+        <div className="mt-3 text-[12px] font-bold mb-1.5">料金の決め方</div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {([["flat", "一律"], ["grade_band", "学年別"], ["per_player", "選手別"]] as const).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={pricingMethod === value} onClick={() => setPricingMethod(value)}
+              className={`rounded-lg border py-2 text-[12px] font-bold ${pricingMethod === value ? "border-blue-500 bg-blue-500/10 text-blue-700" : "border-line text-ink-soft"}`}>{label}</button>
+          ))}
+        </div>
+        {pricingMethod === "grade_band" && (
+          <div className="mt-3">
+            <label htmlFor="dues-grade-amount" className="block text-[12px] font-bold mb-1">学年別の料金例（4〜6年生・月額）</label>
+            <input id="dues-grade-amount" type="number" min="1" className={inputClass()} value={gradeAmount} onChange={e => setGradeAmount(e.target.value)} />
+            <div className="text-[11px] text-ink-soft mt-1">学年帯を追加・編集する画面は正式統合時に対応します。</div>
+          </div>
+        )}
+        {pricingMethod === "per_player" && (
+          <div className="mt-3">
+            <label htmlFor="dues-player-amount" className="block text-[12px] font-bold mb-1">選手別の料金例（月額）</label>
+            <input id="dues-player-amount" type="number" min="1" className={inputClass()} value={playerAmount} onChange={e => setPlayerAmount(e.target.value)} />
+            <div className="text-[11px] text-ink-soft mt-1">実際の選手名簿・免除設定との連携は未実装です。</div>
+          </div>
+        )}
+        {basis === "yearly" && pricingMethod !== "flat" && (
+          <div className="mt-2 text-[11px] text-orange-text">年額の学年別・選手別設定は未対応です。</div>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="dues-amount" className="block text-[12px] font-bold mb-1">{basis === "monthly" ? "月額" : "年額"}（円）</label>
+            <label htmlFor="dues-amount" className="block text-[12px] font-bold mb-1">{basis === "monthly" ? "一律月額" : "一律年額"}（円）</label>
             <input id="dues-amount" type="number" min="1" step="1" className={inputClass()} value={amountText} onChange={e => setAmountText(e.target.value)} />
           </div>
           <div>
@@ -97,7 +141,7 @@ export default function AnnualDuesSettingsPreview() {
       </div>
 
       <div className={`${cardClass} mt-3`}>
-        <div className="text-[14px] font-bold mb-2">集金予定の内訳</div>
+        <div className="text-[14px] font-bold mb-2">集金予定の内訳（一律料金）</div>
         {result.error ? <div role="alert" className="text-[12px] text-red-600">{result.error}</div> : (
           <div className="divide-y divide-line">
             {result.installments.map(x => (
@@ -113,6 +157,14 @@ export default function AnnualDuesSettingsPreview() {
         )}
       </div>
 
+      {basis === "monthly" && pricingMethod !== "flat" && (
+        <div className={`${cardClass} mt-3`}>
+          <div className="text-[14px] font-bold mb-1">料金方式別の試算</div>
+          <div className="text-[11px] text-ink-soft mb-2">{pricingMethod === "grade_band" ? "5年生の例" : "選手1名の例"}</div>
+          <div className="font-bold text-[18px]">{sample ? yen(sample.annualTotal) : "—"} <span className="text-[11px] text-ink-soft">年間</span></div>
+          {sample?.installments.map(row => <div key={row.month} className="flex justify-between py-1 text-[12px]"><span>{row.month}月</span><span>{yen(row.amount)}</span></div>)}
+        </div>
+      )}
       <div className={`${cardClass} mt-3`}>
         <div className="text-[14px] font-bold mb-2">途中加入・退団時の請求</div>
         {([["prorated", "在籍期間に応じて請求"], ["full", "全額を請求"]] as const).map(([value, label]) => (
