@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-02(本PR: 最終調整〈残存スタイル整理、これまで対象外で
-あったgame配下7ファイル・poll/new/page.tsxの旧カードスタイルを整理〉、
+最終更新: 2026-11-02(本PR: 実機QA第1弾〈①試合スタッツ画面のスターティング
+登録をチーム別モーダルに分離、②下部5タブメニューの位置調整〉、
 PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
@@ -58,16 +58,95 @@ PRレビュー待ち・マージ前)。
   karte/team/workout/menu/page.tsxの3件の移行漏れ修正+スタッツ表
   ラッパー9ファイル13箇所の`tableWrapperClass`共通化、#224) — マージ・
   本番反映済み。詳細は下記(バッチF参考セクションに続けて記載)
+- 最終調整(残存スタイル整理、game配下7ファイル・poll/new/page.tsxの旧
+  カードスタイル整理、#225) — マージ・本番反映済み。詳細は下記(最終QA
+  第2段階参考セクションに続けて記載)
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- 最終調整(残存スタイル整理、game配下7ファイル・poll/new/page.tsxの旧
-  カードスタイル整理、本PR、マージ前) — 詳細は下記
+- 実機QA第1弾(①試合スタッツ画面のスターティング登録をチーム別モーダルに
+  分離、②下部5タブメニューの位置調整、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: 最終調整(残存スタイル整理)
+## 今回のバッチ: 実機QA第1弾(UI修正)
+
+PR #225マージ後の最新mainを起点に、iPhone Airの実機確認で見つかった2件を
+修正した。既存機能の維持を最優先とし、不要なリファクタリングやUIの拡大は
+行っていない。
+
+### ① スターティング登録のチーム別分離
+
+- 調査結果: 試合開始時のスターティング登録(`StartingLineupModal.tsx`)は
+  `LineupSection.tsx`(自チーム)と`OpponentLineupSection.tsx`(相手チーム)
+  の2つのセクションを1つの`Modal`に縦に並べていたため、モバイルで縦長に
+  なっていた。一方、既存の選手交代(`MemberChangeModal.tsx`)は、呼び出し元
+  (`game/stats/[matchId]/page.tsx`)が自チーム用・相手チーム用のインスタンス
+  をそれぞれ独立したopen状態(`ownMemberModalOpen`/`opponentMemberModalOpen`)
+  で個別に開く構成になっており、チームごとに完全に分離されていた。
+- 対応: `StartingLineupModal.tsx`を`OwnStartingLineupModal`・
+  `OpponentStartingLineupModal`の2つの独立したモーダルコンポーネントに
+  分割し、`MemberChangeModal`と同じ「チームごとに別インスタウンス・別open
+  状態」の構成に揃えた。呼び出し元の状態も`startingLineupModalOpen`
+  (1つ)から`ownStartingLineupModalOpen`・
+  `opponentStartingLineupModalOpen`(2つ)に分離し、「その他」パネルの
+  起動ボタンも、既存の「交代」パネルの自チーム/相手チームボタン(オレンジ/
+  ネイビーの配色)と同じ見た目・配置(横並び2ボタン)に揃えた。
+  `LineupSection.tsx`・`OpponentLineupSection.tsx`自体の選手選択UI・
+  draft状態・登録ボタン(`SubmitButton`)は変更していない。スターティング
+  登録と選手交代は別の処理のため、保存ロジック(`handleSaveStarters`・
+  `handleSaveOpponentStarters`・`handleToggleOwnMember`・
+  `handleToggleOpponentMember`)は一切変更していない。
+- 確認: `git diff`でこれらの保存・交代ロジック関数に変更がないことを
+  目視確認済み(コード上で確認済み)。自チーム・相手チームのモーダルが
+  それぞれ独立したuseState・独立したprops(他チームの状態を一切渡さない)
+  で構成されていることをコード上で確認済み。実機での開閉操作・レイアウト
+  の見た目は未確認。
+
+### ② 下部5タブメニューの位置調整
+
+- 調査結果: `src/components/TabBar.tsx`の位置計算は
+  `bottom: max(0.875rem, env(safe-area-inset-bottom))`。
+  `src/components/PillNavBar.tsx`のコメントにある過去の実機確認で、固定の
+  余白とsafe-area-inset-bottomを単純に加算する`calc(0.875rem +
+  env(safe-area-inset-bottom))`だと「下端からの余白が離れすぎて見える」
+  ことが判明し、大きい方を採用する`max()`に変更した経緯がある。
+  safe-area-inset-bottomが大きい端末では、`max()`の結果はsafe-area-
+  inset-bottomの値そのものになる。iPhone Airの実機確認で、この状態でも
+  メニュー下に余白が残り過ぎて見えることが分かった。
+- 対応: ユーザー確認の上、`max(0.875rem, calc(env(safe-area-inset-bottom)
+  - 0.875rem))`に変更した。safe-area-inset-bottomから0.875rem分を
+  差し引くことで、ホームインジケーター保護領域そのものは侵食せず
+  (0.875remはどの機種でも通常のホームインジケーター領域幅より小さい)、
+  必要以上の余白だけを削る。safe-area-inset-bottomが0.875rem未満の機種
+  (iPad mini等、ホームインジケーターの概念がない機種を含む)では従来通り
+  `max()`の0.875rem側が効くため挙動は変わらない。この変更は
+  `src/components/TabBar.tsx`のみに閉じており、同じ`max(0.875rem,
+  env(safe-area-inset-bottom))`パターンを使う`PillNavBar.tsx`の
+  `PillNavPosition`(スタッツ入力画面の専用操作バー・FABの位置決めに使用)
+  やModal.tsxの位置計算には手を加えていない。
+- 確認: TypeScript/build上で問題なし(コード上で確認済み)。
+  PageShellの`pb-28`(コンテンツ側の下部余白)は、メニューが下方向
+  (物理的な画面端に近づく方向)へ移動したことで従来以上の余白が確保され
+  るため、コンテンツがメニューに隠れる方向への影響はないと判断した
+  (コード上で確認済み)。ただし、具体的な移動量(px/rem)は実機の
+  screenshot実測値に基づくものではなく、既存のmax()式から0.875rem分を
+  差し引くという推測による調整であるため、iPhone Airおよび他のiPhone/
+  iPad miniでの実際の見た目は実機で再確認が必要。
+
+### 検証
+
+- ESLint・TypeScript(`tsc --noEmit`)・Vitest(22ファイル/300テスト)・
+  Next.js buildすべて成功。
+- `git diff`を全件確認し、スタッツ入力・集計ロジック、試合進行・タイマー等
+  の処理、選手交代・ラインナップ管理、保存・更新・削除処理、DB・RLS・
+  認証・権限判定に変更がないことを確認した。
+- 自チーム・相手チームの登録状態が独立していることは、コンポーネント構成
+  (別インスタンス・別useState・他チームの状態を渡さないprops)として
+  コード上で確認済み。実機での実際の操作(開閉・登録・再編集)は未確認。
+
+## 今回のバッチ(参考・マージ済み): 最終調整(残存スタイル整理)
 
 これまでのバッチ(E/F/最終QA第2段階)で対象外としていたgame配下と
 poll/new/page.tsxの旧カードスタイルを整理し、全体のデザイン統一を完了
@@ -594,7 +673,8 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 5 | 資料室詳細・設定配下の未刷新画面 | 完了 | #217(資料室詳細分)、#218(設定配下分) |
 | 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)・カルテ(karte)・会計(accounting)すべて完了 | #219、#220、#221、#222 |
 | 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | (auth)配下10ファイルの旧カードスタイル統一は完了。公開静的ページは調査済みで変更不要と判断。 | #223 |
-| 8(最終QA) | 全体監査(第1段階)・デザイン不統一の修正(第2段階)・残存スタイル整理(最終調整) | 第1段階は調査完了(コード変更なし)。第2段階(SkillTestPanel・TeamDeletionScreen・workout/menu・スタッツ表ラッパー9ファイル13箇所)は完了。最終調整(game配下7ファイル・poll/new/page.tsx)はPRレビュー待ち(本PR)。実機QAは未完了。 | #224(第2段階)、本PR(最終調整) |
+| 8(最終QA) | 全体監査(第1段階)・デザイン不統一の修正(第2段階)・残存スタイル整理(最終調整) | 第1段階は調査完了(コード変更なし)。第2段階(SkillTestPanel・TeamDeletionScreen・workout/menu・スタッツ表ラッパー9ファイル13箇所)・最終調整(game配下7ファイル・poll/new/page.tsx)ともに完了。 | #224(第2段階)、#225(最終調整) |
+| 9(実機QA) | 実機QA第1弾(①スターティング登録のチーム別分離、②下部5タブメニューの位置調整) | PRレビュー待ち(本PR)。②は実機再確認が必要。 | 本PR |
 
 ## 根拠データ(本更新時点で再調査済み)
 
@@ -763,7 +843,22 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
   判定は変更しない。横スクロール表(`game/stats/[matchId]/view/page.tsx`・
   `game/custom-stats/[matchId]/page.tsx`)は#224で`tableWrapperClass`を
   適用済みのため変更しない。
-- 状態: 本PRで実装済み(マージ前)。`game/StatPad.tsx`の3箇所は意図的な
-  例外として旧Cardのまま維持。これで`(app)`配下の旧`<Card>`importは
-  `StatPad.tsx`の3箇所を除き全て解消した。実機QAは未完了のまま維持
-  している。
+- 状態: #225で実装・マージ・本番反映済み。`game/StatPad.tsx`の3箇所は
+  意図的な例外として旧Cardのまま維持。これで`(app)`配下の旧`<Card>`
+  importは`StatPad.tsx`の3箇所を除き全て解消した。
+
+### 実機QA第1弾: スターティング登録の分離・下部ナビ位置調整 — 対応済み、PRレビュー待ち
+
+- 対象ファイル: `src/app/(app)/game/StartingLineupModal.tsx`
+  (`OwnStartingLineupModal`・`OpponentStartingLineupModal`へ分割)、
+  `src/app/(app)/game/stats/[matchId]/page.tsx`(モーダル呼び出し・
+  状態・起動ボタンの更新)、`src/components/TabBar.tsx`(下部5タブの
+  bottom位置計算)。
+- 完了条件: ①自チーム・相手チームのスターティング5名をそれぞれ独立して
+  登録・再編集できる。一方の操作が他方の選択状態を変更しない。②下部5
+  タブメニューのサイズ・間隔・並び順は変更せず、位置のみ下へ移動する。
+  いずれも既存の選手交代・試合進行・スタッツ記録・DB・RLS・認証・権限
+  判定は変更しない。
+- 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
+  ②の具体的な移動量は実機のscreenshot実測値に基づくものではなく推測調整
+  のため、実機再確認が必要。

@@ -16,7 +16,7 @@ import { GameStatLog, type StatLogEntry } from "../../GameStatLog";
 import { GameStatsLandscape } from "../../GameStatsLandscape";
 import { OpponentRoster } from "../../OpponentRoster";
 import { TeamFoulLamps } from "@/components/TeamFoulLamps";
-import { StartingLineupModal } from "../../StartingLineupModal";
+import { OwnStartingLineupModal, OpponentStartingLineupModal } from "../../StartingLineupModal";
 import { MemberChangeModal, type MemberOption } from "../../MemberChangeModal";
 import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats, maxTimeoutsPerQuarter } from "@/lib/sport";
@@ -72,7 +72,8 @@ export default function GameStatsPage() {
   const [benchedStarterIds, setBenchedStarterIds] = useState<string[]>([]);
   const [savingStarters, setSavingStarters] = useState(false);
   const [ownMemberModalOpen, setOwnMemberModalOpen] = useState(false);
-  const [startingLineupModalOpen, setStartingLineupModalOpen] = useState(false);
+  const [ownStartingLineupModalOpen, setOwnStartingLineupModalOpen] = useState(false);
+  const [opponentStartingLineupModalOpen, setOpponentStartingLineupModalOpen] = useState(false);
   const [statLines, setStatLines] = useState<Record<string, GamePlayerStatLine>>({});
   const [statEvents, setStatEvents] = useState<GameStatEvent[]>([]);
   const [opponentPlayers, setOpponentPlayers] = useState<GameOpponentPlayer[]>([]);
@@ -930,16 +931,28 @@ export default function GameStatsPage() {
 
                 {barPanel === "more" && (
                   <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBarPanel("none");
-                        setStartingLineupModalOpen(true);
-                      }}
-                      className="w-full min-h-tap flex items-center justify-center rounded-control border border-line text-ink-soft bg-white font-bold text-xs"
-                    >
-                      スターティングの編集
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOwnStartingLineupModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-orange text-orange-text bg-orange/8 font-bold text-xs"
+                      >
+                        自チームのスターティング
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBarPanel("none");
+                          setOpponentStartingLineupModalOpen(true);
+                        }}
+                        className="flex-1 min-h-tap flex items-center justify-center rounded-control border border-navy text-navy bg-navy/8 font-bold text-xs"
+                      >
+                        相手チームのスターティング
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={handleResetStats}
@@ -1033,14 +1046,18 @@ export default function GameStatsPage() {
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}
           />
-          <StartingLineupModal
-            open={startingLineupModalOpen}
-            onClose={() => setStartingLineupModalOpen(false)}
+          <OwnStartingLineupModal
+            open={ownStartingLineupModalOpen}
+            onClose={() => setOwnStartingLineupModalOpen(false)}
             starters={starters}
             savingStarters={savingStarters}
             players={players}
             attendanceStatus={attendanceStatus}
             onSaveStarters={handleSaveStarters}
+          />
+          <OpponentStartingLineupModal
+            open={opponentStartingLineupModalOpen}
+            onClose={() => setOpponentStartingLineupModalOpen(false)}
             opponentPlayers={opponentPlayers}
             opponentStarters={opponentStarters}
             savingOpponentStarters={savingOpponentStarters}
@@ -1173,14 +1190,18 @@ export default function GameStatsPage() {
             options={opponentMemberOptions}
             onToggle={handleToggleOpponentMember}
           />
-          <StartingLineupModal
-            open={startingLineupModalOpen}
-            onClose={() => setStartingLineupModalOpen(false)}
+          <OwnStartingLineupModal
+            open={ownStartingLineupModalOpen}
+            onClose={() => setOwnStartingLineupModalOpen(false)}
             starters={starters}
             savingStarters={savingStarters}
             players={players}
             attendanceStatus={attendanceStatus}
             onSaveStarters={handleSaveStarters}
+          />
+          <OpponentStartingLineupModal
+            open={opponentStartingLineupModalOpen}
+            onClose={() => setOpponentStartingLineupModalOpen(false)}
             opponentPlayers={opponentPlayers}
             opponentStarters={opponentStarters}
             savingOpponentStarters={savingOpponentStarters}
