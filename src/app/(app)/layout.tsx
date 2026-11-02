@@ -5,6 +5,7 @@ import { NavigationGuardProvider } from "@/lib/navigationGuard";
 import { FocusModeProvider } from "@/lib/focusMode";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AppNav } from "@/components/AppNav";
+import { ViewportProbe } from "@/components/ViewportProbe";
 import { InactivityLogout } from "@/components/InactivityLogout";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { TeamDeletionScreen } from "@/components/TeamDeletionScreen";
@@ -103,6 +104,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="app-shell" style={themeStyle as React.CSSProperties}>
+      {process.env.VERCEL_ENV === "preview" && <ViewportProbe />}
       <SessionProvider
         value={{
           userId: profile.id,
