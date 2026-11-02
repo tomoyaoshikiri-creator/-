@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Pill } from "@/components/ui/Pill";
 import { SegButton } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -156,7 +156,7 @@ export default function GameResultsPage() {
         <EmptyState>結果が登録された試合がありません</EmptyState>
       ) : (
         <>
-          <div className="bg-white border border-line rounded-lg px-4 py-2.5 mb-2.5 text-center">
+          <div className={`${cardClass} text-center`}>
             <div className="font-extrabold text-[22px] text-heading">
               {matches.length}戦{" "}
               <span style={{ color: "var(--green-text)" }}>{winCount}勝</span>{" "}
@@ -172,7 +172,7 @@ export default function GameResultsPage() {
             const opponentScore = m.opponent_score ?? 0;
             const diff = teamScore - opponentScore;
             const result = diff > 0 ? "勝ち" : diff < 0 ? "負け" : "引き分け";
-            const rowClassName = `bg-white border border-line rounded-lg px-3.5 py-2 mb-2 flex items-center gap-2${
+            const rowClassName = `${cardClass} flex items-center gap-2${
               canRecordGames(role) ? " cursor-pointer" : ""
             }`;
             const rowContent = (

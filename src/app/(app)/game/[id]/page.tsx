@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { TypeTag } from "@/components/ui/Pill";
 import { SegButton, SubmitButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
@@ -537,7 +537,7 @@ export default function GameDetailPage() {
           {selectedMatch && (
             <div className="mt-3">
               <FieldLabel>対戦相手・結果</FieldLabel>
-              <Card>
+              <div className={cardClass}>
                 <input
                   className={inputClass()}
                   value={opponent}
@@ -666,7 +666,7 @@ export default function GameDetailPage() {
                       ? "再タップで削除確定"
                       : `第${selectedMatch.game_number}試合を削除する`}
                 </button>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -674,13 +674,13 @@ export default function GameDetailPage() {
             <div className="mt-3">
               <SectionLabel>コーチメモ</SectionLabel>
               {notes.length === 0 ? (
-                <Card>
+                <div className={cardClass}>
                   <div className="text-xs text-ink-soft">まだコーチメモがありません</div>
-                </Card>
+                </div>
               ) : (
                 notes.map((n) =>
                   editingNoteId === n.id ? (
-                    <Card key={n.id}>
+                    <div key={n.id} className={cardClass}>
                       <textarea
                         rows={3}
                         className={inputClass()}
@@ -705,11 +705,11 @@ export default function GameDetailPage() {
                           キャンセル
                         </button>
                       </div>
-                    </Card>
+                    </div>
                   ) : (
-                    <Card
+                    <div
                       key={n.id}
-                      className="cursor-pointer"
+                      className={`${cardClass} cursor-pointer`}
                       onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
                     >
                       <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
@@ -747,12 +747,12 @@ export default function GameDetailPage() {
                           </button>
                         </div>
                       )}
-                    </Card>
+                    </div>
                   ),
                 )
               )}
               {showAddNote ? (
-                <Card>
+                <div className={cardClass}>
                   <textarea
                     rows={3}
                     className={inputClass()}
@@ -775,7 +775,7 @@ export default function GameDetailPage() {
                       キャンセル
                     </button>
                   </div>
-                </Card>
+                </div>
               ) : (
                 <SubmitButton onClick={() => setShowAddNote(true)}>コーチメモを登録する</SubmitButton>
               )}

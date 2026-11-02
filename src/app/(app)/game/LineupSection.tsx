@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
 import { SubmitButton, FieldLabel } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
@@ -78,7 +78,7 @@ export function LineupSection({
     <>
       <div className="mt-3">
         <FieldLabel>スターティング(最大5人)</FieldLabel>
-        <Card>
+        <div className={cardClass}>
           {players.length === 0 ? (
             <EmptyState>在籍中の選手がいません</EmptyState>
           ) : (
@@ -93,7 +93,7 @@ export function LineupSection({
               />
             ))
           )}
-        </Card>
+        </div>
       </div>
 
       <SubmitButton onClick={handleSave} disabled={saving || players.length === 0}>

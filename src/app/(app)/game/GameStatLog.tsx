@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { statEventLabel, statEventPoints, type StatEvent } from "@/lib/gameStats";
 
 export interface StatLogEntry {
@@ -47,7 +47,7 @@ export function GameStatLog({
   return (
     <div className="mt-4">
       <SectionLabel>{title}</SectionLabel>
-      <Card className="max-h-[220px] overflow-y-auto">
+      <div className={`${cardClass} max-h-[220px] overflow-y-auto`}>
         {events.slice(0, 100).map((e) => {
           const isTimeout = e.event === "timeout";
           const pts = e.event === "timeout" ? 0 : statEventPoints(e.event, e.delta);
@@ -104,7 +104,7 @@ export function GameStatLog({
             </div>
           );
         })}
-      </Card>
+      </div>
     </div>
   );
 }

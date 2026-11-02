@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-02(本PR: 最終QA第2段階〈第1段階の静的調査で発見した
-デザイン不統一3件の修正+スタッツ表ラッパー9ファイル13箇所の共通化〉、
+最終更新: 2026-11-02(本PR: 最終調整〈残存スタイル整理、これまで対象外で
+あったgame配下7ファイル・poll/new/page.tsxの旧カードスタイルを整理〉、
 PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
@@ -54,22 +54,75 @@ PRレビュー待ち・マージ前)。
 - バッチF(認証画面(auth)配下10ファイル・17箇所の旧カードスタイル統一、
   #223) — マージ・本番反映済み。詳細は下記(バッチE-3参考セクションに
   続けて記載)
+- 最終QA第2段階(SkillTestPanel.tsx・TeamDeletionScreen.tsx・
+  karte/team/workout/menu/page.tsxの3件の移行漏れ修正+スタッツ表
+  ラッパー9ファイル13箇所の`tableWrapperClass`共通化、#224) — マージ・
+  本番反映済み。詳細は下記(バッチF参考セクションに続けて記載)
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- 最終QA第2段階(第1段階で発見したデザイン不統一3件の修正+スタッツ表
-  ラッパー9ファイル13箇所の共通化、本PR、マージ前) — 詳細は下記
+- 最終調整(残存スタイル整理、game配下7ファイル・poll/new/page.tsxの旧
+  カードスタイル整理、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: 最終QA第2段階(第1段階で発見したデザイン不統一の修正)
+## 今回のバッチ: 最終調整(残存スタイル整理)
 
-最終QA第1段階(static調査のみ、コード変更なし)で発見した3件の個別修正と、
-スタッツ表ラッパーの共通化を行った。バッチF(#223)は本PRの前提として
-マージ・本番反映済みであり、対象には含まれない。
+これまでのバッチ(E/F/最終QA第2段階)で対象外としていたgame配下と
+poll/new/page.tsxの旧カードスタイルを整理し、全体のデザイン統一を完了
+させた。最終QA第2段階(#224)は本PRの前提としてマージ・本番反映済みであり、
+対象には含まれない。
 
-### 第1段階の調査結果(参考、コード変更は本PRで実施)
+### 対象調査
+
+- `src/app/(app)/poll/new/page.tsx`: 旧`<Card>`4箇所。
+- `src/app/(app)/game`配下: 旧`<Card>`import 6ファイル
+  (`LineupSection.tsx`、`[id]/page.tsx`、`OpponentLineupSection.tsx`、
+  `GameStatLog.tsx`、`stat-categories/page.tsx`、`StatPad.tsx`)、
+  手書きの旧スタイル1ファイル(`results/page.tsx`、2箇所)。
+  `custom-stats/[matchId]/page.tsx`は最終QA第2段階(#224)で
+  `tableWrapperClass`へ既に移行済みのため対象外。
+
+### 用途の分類と対応
+
+① 通常の情報表示カード(cardClassへ移行、合計14箇所):
+- `poll/new/page.tsx`(4箇所、投票作成フォームの各セクション)
+- `game/[id]/page.tsx`(5箇所、対戦結果フォーム・コーチメモの一覧/編集/
+  追加。試合前後に使う管理画面であり、試合進行中のタップ操作ではない)
+- `game/stat-categories/page.tsx`(1箇所、スタッツ項目の設定画面)
+- `game/results/page.tsx`(2箇所、試合結果の一覧・集計。閲覧専用)
+- `game/LineupSection.tsx`(1箇所、試合前のスターティング選択)
+- `game/OpponentLineupSection.tsx`(1箇所、試合前の相手スターティング選択)
+- `game/GameStatLog.tsx`(1箇所、プレーバイプレーログの表示。タップは
+  記録の訂正・削除という二次操作であり、スタッツ入力自体の主要操作導線
+  ではないため①と判断)
+
+② 試合進行中の入力・操作パネル(意図的にcardClassへ移行せず、旧Cardの
+まま維持):
+- `game/StatPad.tsx`(3箇所、自チーム選手チップ・スタッツ入力ボタン
+  グリッド・相手チーム選手チップ)。試合進行中にテンポよくタップし続ける
+  主要な操作導線(選手チップの選択→スタッツボタンのタップ)の外枠であり、
+  cardClassへの移行でパディングが変化すると選手チップの横スクロール
+  領域・ボタングリッドの余白がわずかに変動するリスクがあるため、意図的に
+  旧Cardのまま維持した。理由はコード内コメント(StatPad.tsx内)にも
+  明記した。
+
+横スクロール表(`game/stats/[matchId]/view/page.tsx`・
+`game/custom-stats/[matchId]/page.tsx`)は最終QA第2段階(#224)で
+`tableWrapperClass`へ既に適用済みのため、本PRでは変更していない。
+
+### 認証・ロジックに変更がないことの確認
+
+`git diff`を全件確認し、変更箇所はすべてimport文の追加・className値の
+置換・タグの置き換え(`<Card>`→`<div>`)、およびStatPad.tsxへの説明コメント
+追加のみであることを確認した。スタッツ入力・集計ロジック、試合進行・
+タイマー等の処理、選手交代・ラインナップ管理、保存・更新・削除処理、
+DB・RLS・認証・権限判定は一切変更していない。
+
+## 今回のバッチ(参考・マージ済み): 最終QA第2段階(デザイン不統一3件の修正)
+
+### 第1段階の調査結果(参考、コード変更は#224で実施)
 
 - バッチA〜Fで対象とした画面自体の旧Card移行は完了していたが、全体監査で
   以下の移行漏れを発見した。
@@ -121,25 +174,25 @@ PR #199(下部表示実測)
    表の構造・データ処理(スタッツの集計・表示)は変更していない。構造上の
    問題は見つからず、全13箇所を安全に共通化できた。
 
-### 既知の対象外スタイルの再評価(今回は変更せず)
+### 既知の対象外スタイルの再評価(#224時点、今回は変更せず)
 
 - `src/app/(app)/game`配下(`LineupSection.tsx`、`[id]/page.tsx`、
   `OpponentLineupSection.tsx`、`GameStatLog.tsx`、`stat-categories/page.tsx`、
   `StatPad.tsx`は旧`<Card>`import、`custom-stats/[matchId]/page.tsx`・
-  `results/page.tsx`は手書きの旧スタイル、合計8ファイル): 試合進行中の
-  ライブ入力という時間的制約が大きい機能群であり、他のバッチよりコンポー
-  ネント間の結合度が高い。意図的に別バッチとして切り出す判断は妥当と評価
-  し、今回は対象外として維持する(次回、専用バッチでの対応を推奨)。
-- `src/app/(app)/poll/new/page.tsx`(旧`<Card>`import、2箇所): 単体の
-  低リスクな1ファイルであり、対象外とする強い理由は乏しい。今回のユーザー
-  指示の対象(①②③+表ラッパー)には含まれていないため変更していないが、
-  「修正すべきもの」側に分類し、次回の小規模バッチでの対応を推奨する。
+  `results/page.tsx`は手書きの旧スタイル、合計8ファイル)と
+  `src/app/(app)/poll/new/page.tsx`は、#224時点では対象外としていたが、
+  後続の最終調整バッチ(本PR)で整理した。詳細は上記「最終調整(残存スタイル
+  整理)」を参照。`custom-stats/[matchId]/page.tsx`は#224で
+  `tableWrapperClass`へ移行済みのため、最終調整バッチの対象外。
 - 公開ページ(`contact`/`help`/`pricing`/`privacy`/`terms`/`tokushoho`/
   ルート`page.tsx`): デスクトップ向けの記事レイアウト(`max-w-[720px]`)
   として、`privacy`/`terms`/`tokushoho`の`bg-white border border-line
   rounded-lg p-4`という記事本文の背景スタイルを含め、相互に自己整合的に
   統一されている。モバイルのapp-shell向けデザイン(cardClass)とは意図的に
-  別系統であり、意図的な例外として妥当と評価し、今回は対象外として維持する。
+  別系統であり、意図的な例外として妥当と評価し、対象外として維持する
+  (最終調整バッチでも再評価済み、変更なし)。
+
+## 今回のバッチ(参考・マージ済み): バッチF(認証画面・公開画面)
 
 ### 対象調査の結果(参考、バッチF時点の記録)
 
@@ -541,21 +594,26 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 5 | 資料室詳細・設定配下の未刷新画面 | 完了 | #217(資料室詳細分)、#218(設定配下分) |
 | 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)・カルテ(karte)・会計(accounting)すべて完了 | #219、#220、#221、#222 |
 | 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | (auth)配下10ファイルの旧カードスタイル統一は完了。公開静的ページは調査済みで変更不要と判断。 | #223 |
-| 8(最終QA) | 全体監査(第1段階)・デザイン不統一の修正(第2段階) | 第1段階は調査完了(コード変更なし)。第2段階(SkillTestPanel・TeamDeletionScreen・workout/menu・スタッツ表ラッパー9ファイル13箇所)はPRレビュー待ち(本PR)。実機QAは未完了。 | 本PR |
+| 8(最終QA) | 全体監査(第1段階)・デザイン不統一の修正(第2段階)・残存スタイル整理(最終調整) | 第1段階は調査完了(コード変更なし)。第2段階(SkillTestPanel・TeamDeletionScreen・workout/menu・スタッツ表ラッパー9ファイル13箇所)は完了。最終調整(game配下7ファイル・poll/new/page.tsx)はPRレビュー待ち(本PR)。実機QAは未完了。 | #224(第2段階)、本PR(最終調整) |
 
 ## 根拠データ(本更新時点で再調査済み)
 
 - `src/app/(app)`配下の`page.tsx`: 77ファイル
 - 旧`<Card>`をimportしているファイル(`(app)`配下、ページ・コンポーネント
-  含む): 7ファイル(最終QA第1段階で`src/components/karte/
-  SkillTestPanel.tsx`を追加発見。これは`karte/players/[playerId]/
-  page.tsx`から呼び出される共有部品でページ本体のJSXのみを見るgrepでは
-  検出できず、過去のバッチE-2aの対象ファイル集計からは漏れていた。本PRで
-  cardClassへ移行済み)
+  含む): 本PR(最終調整)時点で0ファイル。#224で発見された
+  `src/components/karte/SkillTestPanel.tsx`の移行漏れ(過去のバッチE-2aの
+  対象ファイル集計がページ本体のJSXのみを見ていたため漏れていた)は#224で
+  修正済み。残っていた`game`配下6ファイル・`poll/new/page.tsx`1ファイルも
+  本PRでcardClassへ移行し、`(app)`配下の旧`<Card>`importは0ファイルとなった
+  (`game/StatPad.tsx`の3箇所は意図的な例外として旧Cardのまま維持、詳細は
+  「最終調整(残存スタイル整理)」セクション参照)。
 - `cardClass`を使用しているファイル(同上): 本PR時点の作業ツリーで
-  再計測(SkillTestPanel.tsx・TeamDeletionScreen.tsx・karte/team/
-  workout/menu/page.tsxの3ファイルを追加で移行したため、バッチE-3時点の
-  69ファイルから増加)
+  再計測(#224でSkillTestPanel.tsx・TeamDeletionScreen.tsx・karte/team/
+  workout/menu/page.tsxの3ファイル、本PRでpoll/new/page.tsx・
+  game/[id]/page.tsx・game/stat-categories/page.tsx・
+  game/results/page.tsx・game/LineupSection.tsx・
+  game/OpponentLineupSection.tsx・game/GameStatLog.tsxの7ファイルを
+  追加で移行したため、バッチE-3時点の69ファイルから増加)
 - `src/app/(app)/settings`配下: 旧`<Card>`使用は0ファイル(#218で移行済み・
   マージ・本番反映済み)
 - `src/app/(app)/players`配下: 旧`<Card>`使用は0ファイル(#219で移行済み・
@@ -567,26 +625,20 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 - `src/app/(auth)`配下: 旧`<Card>`コンポーネントのimportは0ファイル(元々
   未使用)。ただし同等の見た目を手書きclassName
   `bg-white border border-line rounded-lg p-5`(一部`p-2`)で再現していた
-  箇所が10ファイル・合計17箇所あり、本PRのバッチFで`cardClass`へ移行した
-  (マージ前)。
+  箇所が10ファイル・合計17箇所あり、バッチF(#223)で`cardClass`へ移行済み。
 - 公開静的ページ(`contact`/`help`/`pricing`/`privacy`/`terms`/`tokushoho`/
   ルート`page.tsx`)は、`(auth)`や`(app)`とは異なる
   `rounded-lg border border-line bg-white p-4`という独自パターンで
   既に相互に統一されており、デスクトップ向けの記事レイアウトとして意図的に
-  別系統のため、本PRでは変更不要と判断した。
-- 残る旧`<Card>`使用6ファイル(`src/app/(app)/game`配下の
-  `LineupSection.tsx`、`[id]/page.tsx`、`OpponentLineupSection.tsx`、
-  `GameStatLog.tsx`、`stat-categories/page.tsx`、`StatPad.tsx`)と
-  `src/app/(app)/poll/new/page.tsx`(1ファイル)、合計7ファイル。加えて
-  `game/custom-stats/[matchId]/page.tsx`・`game/results/page.tsx`は旧
-  `<Card>`のimportはないが同等の手書きスタイルを使用している(最終QA
-  第1段階で発見、grep対象を手書きパターンにも広げて確認)。
-  game配下(合計8ファイル)は試合進行中のライブ入力という時間的制約が
-  大きい機能群であり、結合度が高いため意図的に別バッチとする判断を妥当と
-  評価し、今回も対象外として維持した。`poll/new/page.tsx`は単体の低リスク
-  ファイルで対象外とする強い理由は乏しく、次回の小規模バッチでの対応を
-  推奨する(最終QA第2段階で再評価、詳細は「最終QA第2段階」セクション
-  参照)。
+  別系統のため、対象外として維持する(変更なし)。
+- `game`配下7ファイル(`LineupSection.tsx`、`[id]/page.tsx`、
+  `OpponentLineupSection.tsx`、`GameStatLog.tsx`、`stat-categories/page.tsx`、
+  `results/page.tsx`、`StatPad.tsx`)・`poll/new/page.tsx`は、本PR(最終
+  調整)で整理した。`StatPad.tsx`の3箇所(自チーム選手チップ・スタッツ
+  入力ボタングリッド・相手チーム選手チップ)は試合進行中の主要な操作導線
+  であるため意図的に旧Cardのまま維持し、残り6ファイル+`poll/new/page.tsx`
+  はcardClassへ移行した。詳細は「最終調整(残存スタイル整理)」セクション
+  参照。
 
 上記のファイル数は「`<Card>`をimportしているか」の機械的なgrep結果であり、
 1ファイル内の複数カード箇所や、import無しで独自に旧スタイルを直接記述している
@@ -689,6 +741,29 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
   スタッツ表ラッパー9ファイル13箇所(新設の`tableWrapperClass`へ統一)。
 - 完了条件: 検定の作成・ランク登録・承認、退会取消処理・権限判定、練習
   記録の一覧・絞り込み・展開、スタッツの集計・表示ロジックは変更しない。
-- 状態: 本PRで実装済み(マージ前)。game配下8ファイル・poll/new/page.tsx・
-  公開静的ページの旧スタイルは、今回の対象外として再評価した上で維持
-  (詳細は上記「今回のバッチ」を参照)。実機QAは未完了のまま維持している。
+- 状態: #224でcardClass・tableWrapperClassへの移行を実施し、マージ・
+  本番反映済み。game配下7ファイル(StatPad.tsxを含む)・poll/new/page.tsx
+  の旧スタイルは#224時点では対象外としていたが、後続の最終調整バッチ
+  (本PR)で整理した。公開静的ページの旧スタイルは別系統のデザインとして
+  対象外のまま維持。実機QAは未完了のまま維持している。
+
+### 最終調整: 残存スタイル整理(game配下・poll/new) — 対応済み、PRレビュー待ち
+
+- 対象ファイル: `src/app/(app)/poll/new/page.tsx`(旧Card4箇所)、
+  `src/app/(app)/game`配下7ファイル
+  (`LineupSection.tsx`・`OpponentLineupSection.tsx`・`GameStatLog.tsx`・
+  `stat-categories/page.tsx`は各1箇所、`[id]/page.tsx`は5箇所、
+  `results/page.tsx`は手書きスタイル2箇所、合計11箇所)。
+- 完了条件: ①通常の情報表示カードはcardClassへ移行する。②試合進行中の
+  入力・操作パネル(`game/StatPad.tsx`の自チーム選手チップ・スタッツ入力
+  ボタングリッド・相手チーム選手チップ、3箇所)はタップ領域・操作導線を
+  維持するため意図的にcardClassへ移行せず、理由をコード内コメントと本
+  台帳に明記する。スタッツ入力・集計ロジック、試合進行・タイマー等の処理、
+  選手交代・ラインナップ管理、保存・更新・削除処理、DB・RLS・認証・権限
+  判定は変更しない。横スクロール表(`game/stats/[matchId]/view/page.tsx`・
+  `game/custom-stats/[matchId]/page.tsx`)は#224で`tableWrapperClass`を
+  適用済みのため変更しない。
+- 状態: 本PRで実装済み(マージ前)。`game/StatPad.tsx`の3箇所は意図的な
+  例外として旧Cardのまま維持。これで`(app)`配下の旧`<Card>`importは
+  `StatPad.tsx`の3箇所を除き全て解消した。実機QAは未完了のまま維持
+  している。
