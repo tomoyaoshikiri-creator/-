@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-02(本PR: バッチE-1〈選手管理(players)配下6画面の旧Card
-移行〉、PRレビュー待ち・マージ前)。
+最終更新: 2026-11-02(本PR: バッチE-2a〈カルテ(karte/players)配下5画面の
+旧Card移行〉、PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
 
@@ -37,15 +37,73 @@
   #217) — マージ・本番反映済み。詳細は下記(Phase 2参考セクションに続けて記載)
 - バッチD(設定配下13画面の旧Card移行、#218) — マージ・本番反映済み。
   詳細は下記(バッチA〜C参考セクションに続けて記載)
+- バッチE-1(選手管理(players)配下6画面の旧Card移行、#219) — マージ・
+  本番反映済み。詳細は下記(バッチD参考セクションに続けて記載)
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- バッチE-1(選手管理(players)配下6画面、本PR、マージ前) — 詳細は下記
+- バッチE-2a(カルテ(karte/players)配下5画面、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: バッチE-1(選手管理(players)配下6画面)
+## 今回のバッチ: バッチE-2a(カルテ(karte/players)配下5画面)
+
+対象ファイル(いずれも`src/app/(app)/karte/players/`配下、旧Card使用5ファイル):
+- `[playerId]/analysis/page.tsx`(選手分析、旧Card 5箇所)
+- `[playerId]/notes/[noteId]/page.tsx`(AI分析メモ詳細、旧Card 1箇所)
+- `[playerId]/page.tsx`(個別カルテ、旧Card 13箇所)
+- `bulk-import/page.tsx`(CSV一括登録、旧Card 6箇所)
+- `page.tsx`(選手一覧、旧Card 2箇所)
+
+機能単位の分類: 本バッチは「選手個別のカルテ・分析・一覧」に対応する
+karte/players配下(旧Card使用5ファイル)を対象とした。同じkarte配下の
+team(チーム単位のカルテ・分析・目標・練習記録等、旧Card使用14ファイル)は
+依存関係・変更規模の観点から別バッチ(バッチE-2b、未着手)として分割する。
+
+統一した内容:
+- カード: 全5ファイルの旧`<Card>`(合計27箇所)を共通`cardClass`へ移行した。
+  (analysis 5、notes/[noteId] 1、[playerId] 13、bulk-import 6、page 2)
+- key/className/onClick等のpropsを個別に持つCard(選手分析のAI分析カード・
+  スタッフコメントカードの編集/表示切り替え、個別カルテの集金・選手メモ・
+  選手分析への遷移カード、選手一覧のOB・OG遷移カード、CSV一括登録のエラー
+  一覧カード)は、`<div key={...} className={`${cardClass} ...`} onClick={...}>`
+  の形でそれぞれ移行し、既存のkey・className・onClickの付与を保持した。
+- 見出し・入力欄・ボタン(`SectionLabel`/`FieldLabel`/`inputClass`/
+  `SubmitButton`/`SegButton`/`InlineSelect`/`TextTab`/`Switch`/
+  `KartePlayerRow`/`SkillTestPanel`/`LineTrendChart`)は、5ファイルすべてで
+  移行前から既に共通コンポーネントを使用していることを確認済み。追加の変更は
+  行っていない。
+
+変更不要と判断した部品(既存の共通デザインと整合しているため、独自の新規
+デザイン規則化を避けて変更していない):
+- `[playerId]/page.tsx`の前後選手ナビ(30×30pxの固定サイズ`<Link>`): バッチ
+  E-1(players/[id]/notes)で確認済みと同じ理由で、本バッチの依頼範囲はカード
+  の統一であり、タップ領域拡張は明示的な依頼事項ではないため変更していない。
+- `[playerId]/page.tsx`・`analysis/page.tsx`の削除・保存・キャンセル系の
+  小型ボタン(`border-danger`/`text-danger-text`/`bg-danger/8`等、または
+  インラインstyleの`var(--danger-text)`/`var(--danger)`使用): いずれも既存の
+  危険操作表示と視覚的に同じ色であり、バッチE-1で確認済みのパターンと同様の
+  ため変更していない。
+- `[playerId]/page.tsx`の「編集する」ボタン(`SectionLabel`のaction枠、
+  `rounded-full`・小型ピル)は、スケジュール関連の`EditButton`と役割・外観が
+  近いが、`SectionLabel`のaction内に収まる既存の専用実装であり、カードの
+  統一範囲を超える変更になるため変更していない。
+- `bulk-import/page.tsx`のテンプレートダウンロード・CSVアップロードの
+  全幅ボタン(`border-line`/`border-orange`の組み合わせ)は、既存の設定配下の
+  パターンと同系の配色のため変更していない。
+- `[playerId]/page.tsx`のスポーツテスト年度セレクトの素のHTML`<select>`
+  (`appearance-none bg-white border border-line rounded-lg`)は、同画面の
+  表/グラフ切替用の小型セレクトとして独立した実装になっており、`inputClass()`
+  (フォーム全幅入力用)への転用は見た目のサイズ・用途が異なるため変更していない。
+
+維持した既存機能・権限: カルテの記録・編集・削除、選手ごとの情報取得・表示、
+評価・集計・グラフ・履歴表示、保存・入力チェック、権限判定・閲覧範囲
+(`canViewKarte`/`canManagePlayers`/`hasKarteTabAccess`等のプラン・ロール
+判定、保護者の`player_guardians`による閲覧制限)は変更していない。DB・RLS・
+認証、players・accounting配下の画面も変更していない。
+
+## 今回のバッチ(参考・マージ済み): バッチE-1(選手管理(players)配下6画面)
 
 対象ファイル(いずれも`src/app/(app)/players/`配下、旧Card使用6ファイル):
 - `[id]/dues/page.tsx`(集金状況、旧Card 2箇所)
@@ -189,21 +247,24 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 3 | 下部5タブ・チーム内メニュー・ハンバーガーメニュー | 完了 | #213, #214 |
 | 4 | スタッツ閲覧画面(`/game/stats/[matchId]/view`) | 完了 | #217 |
 | 5 | 資料室詳細・設定配下の未刷新画面 | 完了 | #217(資料室詳細分)、#218(設定配下分) |
-| 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)配下6画面はPRレビュー待ち(バッチE-1、本PR)。カルテ(バッチE-2)・会計(バッチE-3)は未着手 | 本PR(選手管理分) |
+| 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)配下は完了(#219)。カルテ(karte/players)配下5画面はPRレビュー待ち(バッチE-2a、本PR)。カルテ(karte/team、バッチE-2b)・会計(バッチE-3)は未着手 | #219(選手管理分)、本PR(カルテ選手個別分) |
 | 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | 未着手(未調査) | — |
 
 ## 根拠データ(本更新時点で再調査済み)
 
 - `src/app/(app)`配下の`page.tsx`: 77ファイル
 - 旧`<Card>`をimportしているファイル(`(app)`配下、ページ・コンポーネント
-  含む): 36ファイル(本PRのバッチE-1で`players`配下6ファイルを移行、
+  含む): 31ファイル(本PRのバッチE-2aで`karte/players`配下5ファイルを移行、
   マージ前の作業ツリーで再計測)
-- `cardClass`を使用しているファイル(同上): 40ファイル(同上)
+- `cardClass`を使用しているファイル(同上): 45ファイル(同上)
 - `src/app/(app)/settings`配下: 旧`<Card>`使用は0ファイル(#218で移行済み・
   マージ・本番反映済み)
-- `src/app/(app)/players`配下: 旧`<Card>`使用は0ファイル(本PRのバッチE-1で
-  6ファイルすべてcardClassへ移行済み・マージ前)
-- `src/app/(app)/karte`配下: 旧`<Card>`使用が19ファイル(未着手、バッチE-2)
+- `src/app/(app)/players`配下: 旧`<Card>`使用は0ファイル(#219で移行済み・
+  マージ・本番反映済み)
+- `src/app/(app)/karte/players`配下: 旧`<Card>`使用は0ファイル(本PRのバッチ
+  E-2aで5ファイルすべてcardClassへ移行済み・マージ前)
+- `src/app/(app)/karte/team`配下: 旧`<Card>`使用が14ファイル(未着手、
+  バッチE-2b)
 - `src/app/(app)/accounting`配下: 旧`<Card>`使用が10ファイル(未着手、バッチE-3)
 
 上記のファイル数は「`<Card>`をimportしているか」の機械的なgrep結果であり、
@@ -233,28 +294,39 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 対象ファイル: `src/app/(app)/karte`配下(旧Card使用19ファイル)、
 `src/app/(app)/accounting`配下(10ファイル)、`src/app/(app)/players`配下
 (6ファイル)。合計35ファイル。画面数が多いため、機能群(選手/カルテ/会計)
-単位でE-1〜E-3に分割して実施する。各バッチで旧`<Card>`を`cardClass`へ移行し、
+単位で分割し、カルテはさらに規模・依存関係からE-2a(選手個別)/E-2b
+(チーム)に分割して実施する。各バッチで旧`<Card>`を`cardClass`へ移行し、
 記録・集計ロジック・権限判定は変更しない。
 
-#### バッチE-1: 選手管理(players)配下6画面 — 対応済み、PRレビュー待ち
+#### バッチE-1: 選手管理(players)配下6画面 — 対応済み、マージ・本番反映済み(#219)
 
 - 対象ファイル: `src/app/(app)/players/{[id]/dues,[id]/growth,[id]/notes,
   [id]/sports-test,[id]/stats,obog}/page.tsx`(旧Card使用6ファイル、合計20箇所)
+- 状態: #219でcardClassへの移行を実施し、マージ・本番反映済み。
+
+#### バッチE-2a: カルテ(karte/players、選手個別)配下5画面 — 対応済み、PRレビュー待ち
+
+- 対象ファイル: `src/app/(app)/karte/players/{[playerId]/analysis,
+  [playerId]/notes/[noteId],[playerId],bulk-import,}/page.tsx`
+  (旧Card使用5ファイル、合計27箇所)
 - 完了条件: 各画面の旧`<Card>`を`cardClass`へ移行し、見出し・入力欄・ボタン・
-  一覧表示が既存の共通コンポーネントと整合していることを確認する。選手情報の
-  登録・編集・削除、成長記録・スポーツテスト・スタッツの取得・表示、選手の
-  権限・閲覧範囲は変更しない。
+  余白・文字サイズ・一覧表示が既存の共通コンポーネントと整合していることを
+  確認する。カルテの記録・編集・削除、選手ごとの情報取得・表示、評価・集計・
+  グラフ・履歴表示、保存・入力チェック、権限判定・閲覧範囲は変更しない。
 - 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
 
-#### バッチE-2: カルテ(karte)配下(未着手)
+#### バッチE-2b: カルテ(karte/team、チーム単位)配下14画面(未着手)
 
-- 対象ファイル: `src/app/(app)/karte`配下(旧Card使用19ファイル)。
-- 完了条件: バッチE-1と同様の方針で旧`<Card>`を`cardClass`へ移行する。
+- 対象ファイル: `src/app/(app)/karte/team`配下(旧Card使用14ファイル:
+  analysis、attendance-report、custom-stats、game、goal、
+  notes/[noteId]、page、shooting/new、shooting、skill-tests/[id]、
+  skill-tests、sports-test、workout、workout/shaving)。
+- 完了条件: バッチE-2aと同様の方針で旧`<Card>`を`cardClass`へ移行する。
 
 #### バッチE-3: 会計(accounting)配下(未着手)
 
 - 対象ファイル: `src/app/(app)/accounting`配下(旧Card使用10ファイル)。
-- 完了条件: バッチE-1と同様の方針で旧`<Card>`を`cardClass`へ移行する。
+- 完了条件: バッチE-1・E-2aと同様の方針で旧`<Card>`を`cardClass`へ移行する。
 
 ### バッチF: その他低優先度画面(Phase 7、未調査)
 
