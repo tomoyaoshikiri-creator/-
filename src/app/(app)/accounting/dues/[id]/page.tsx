@@ -293,6 +293,13 @@ export default function AccountingDuesItemPage() {
         )}
       </div>
 
+      <Link href="/accounting/dues/schedule-preview">
+        <div className={`${cardClass} mb-2.5 border border-blue-500/30`}>
+          <div className="font-bold text-[13px]">新しい料金・集金設定を試す（プレビュー）</div>
+          <div className="text-[11px] text-ink-soft mt-1">月額・年額と集金月を分けて設定。保存・請求は行いません。</div>
+        </div>
+      </Link>
+
       <SectionLabel>{step("料金の決め方")}</SectionLabel>
       <div className={cardClass}>
         {editing ? (
