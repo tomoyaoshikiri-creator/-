@@ -91,7 +91,7 @@ export default function AccountingDuesManagementPage() {
   useEffect(() => { void load(); }, [load]);
 
   const playerRows = useMemo<PlayerRow[]>(() => {
-    const rows = roster.map(player => ({ id: player.id, name: playerFullName(player), player }));
+    const rows: PlayerRow[] = roster.map(player => ({ id: player.id, name: playerFullName(player), player }));
     const known = new Set(rows.map(p => p.id));
     for (const charge of charges) {
       if (!known.has(charge.player_id)) {
@@ -251,7 +251,7 @@ export default function AccountingDuesManagementPage() {
                         <tr key={item.id}>
                           <th scope="row" className="sticky left-0 z-10 bg-paper text-left font-bold px-2 py-3 border-b border-line">{item.name}</th>
                           {MONTHS.map(m => {
-                            const cells = playerCells.filter(c => c.item.id === item.id && monthOf(c.period.periodStart) === m);
+                            const cells = playerCells.filter(c => c.item.id === item.id && monthOf(c.period.period_start) === m);
                             const isPaid = cells.length > 0 && cells.every(c => c.charges.every(ch => ch.status === "paid"));
                             return <td key={m} className="text-center px-1 py-2 border-b border-line">
                               {cells.length ? (
