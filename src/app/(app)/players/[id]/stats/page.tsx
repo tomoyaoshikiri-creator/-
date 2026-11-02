@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canManagePlayers } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -224,7 +224,7 @@ export default function PlayerStatsPage() {
                 <EmptyState>この年度の出場記録がありません</EmptyState>
               </div>
             ) : (
-              <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+              <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
                 <table className="border-collapse text-[11.5px] w-full">
                   <thead>
                     <tr>
@@ -451,7 +451,7 @@ export default function PlayerStatsPage() {
               <EmptyState>この年度の出場記録がありません</EmptyState>
             </div>
           ) : (
-            <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
+            <div className={`${tableWrapperClass} overflow-auto max-h-[65vh]`}>
               <table className="border-collapse text-[11.5px] w-full">
                 <thead>
                   <tr>

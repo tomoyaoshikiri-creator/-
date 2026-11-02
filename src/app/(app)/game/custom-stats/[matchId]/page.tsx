@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { EmptyState } from "@/components/ui/Card";
+import { EmptyState, tableWrapperClass } from "@/components/ui/Card";
 import { canManageStatCategories, canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats } from "@/lib/sport";
 import { playerFullName, sortPlayers } from "@/lib/format";
@@ -114,7 +114,7 @@ export default function CustomStatsPage() {
       ) : players.length === 0 ? (
         <EmptyState>選手が登録されていません</EmptyState>
       ) : (
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[75vh]">
+        <div className={`${tableWrapperClass} overflow-auto max-h-[75vh]`}>
           <table className="border-collapse text-[12px] w-full">
             <thead>
               <tr>

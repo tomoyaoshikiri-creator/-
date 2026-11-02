@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { cardClass, EmptyState, SectionLabel, tableWrapperClass } from "@/components/ui/Card";
 import { canRecordGames } from "@/lib/permissions";
 import { usesDetailedBasketballStats, usesThreePointScoring } from "@/lib/sport";
 import { fgPct, twoPct, threePct, ftPct, type StatTotals } from "@/lib/gameStats";
@@ -78,7 +78,7 @@ function BoxScoreTable({ title, rows, showThreePoint }: { title: string; rows: B
       {rows.length === 0 ? (
         <EmptyState>スタッツの記録がありません</EmptyState>
       ) : (
-        <div className="bg-white border border-line rounded-lg overflow-auto max-h-[60vh]">
+        <div className={`${tableWrapperClass} overflow-auto max-h-[60vh]`}>
           <table className="border-collapse text-[12px] w-full">
             <thead>
               <tr>
