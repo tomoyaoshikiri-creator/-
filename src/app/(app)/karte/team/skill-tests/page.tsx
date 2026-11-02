@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { ChevronRightIcon } from "@/components/icons";
@@ -178,18 +178,18 @@ export default function KarteTeamSkillTestsPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : tests.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだ検定がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         tests.map((t) => (
           <Link key={t.id} href={`/karte/team/skill-tests/${t.id}`}>
-            <Card className="cursor-pointer">
+            <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="font-bold text-[14px]">{t.name}</div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
-            </Card>
+            </div>
           </Link>
         ))
       )}

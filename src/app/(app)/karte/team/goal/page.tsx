@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, SectionLabel } from "@/components/ui/Card";
+import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 
@@ -49,7 +49,7 @@ export default function KarteTeamGoalPage() {
   return (
     <PageShell header={<AppHeader title="チーム目標" variant="detail" backHref="/karte/team" accessBadge="admin" />}>
       <SectionLabel>チーム目標</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         {editing ? (
           <>
             <FieldLabel>ホーム画面に表示する目標</FieldLabel>
@@ -79,7 +79,7 @@ export default function KarteTeamGoalPage() {
             </button>
           </>
         )}
-      </Card>
+      </div>
     </PageShell>
   );
 }

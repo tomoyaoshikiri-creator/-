@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { Modal } from "@/components/ui/Modal";
 import { Pill } from "@/components/ui/Pill";
@@ -476,9 +476,9 @@ export default function KarteTeamSkillTestDetailPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !test ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>検定が見つかりません</EmptyState>
-        </Card>
+        </div>
       ) : (
         <>
           {isStaff && (
@@ -492,9 +492,9 @@ export default function KarteTeamSkillTestDetailPage() {
           )}
 
           {players.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <EmptyState>{isStaff ? "選手が登録されていません" : "紐づく選手が登録されていません"}</EmptyState>
-            </Card>
+            </div>
           ) : (
             <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
               <table className="border-collapse text-[11.5px] w-full">
@@ -551,7 +551,7 @@ export default function KarteTeamSkillTestDetailPage() {
           {myRequests.length > 0 && (
             <>
               <SectionLabel>あなたの申請状況</SectionLabel>
-              <Card className="mb-2.5">
+              <div className={`${cardClass} mb-2.5`}>
                 <div className="flex flex-col gap-2.5">
                   {myRequests.map((r) => (
                     <div key={r.id} className="flex items-start justify-between gap-2 text-[12px]">
@@ -569,14 +569,14 @@ export default function KarteTeamSkillTestDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </>
           )}
 
           {isStaff && pendingQueue.length > 0 && (
             <>
               <SectionLabel>承認待ちの申請</SectionLabel>
-              <Card className="mb-2.5">
+              <div className={`${cardClass} mb-2.5`}>
                 <div className="flex flex-col gap-3">
                   {pendingQueue.map((r) => (
                     <div key={r.id} className="flex items-start justify-between gap-2 text-[12px]">
@@ -610,7 +610,7 @@ export default function KarteTeamSkillTestDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </>
           )}
         </>

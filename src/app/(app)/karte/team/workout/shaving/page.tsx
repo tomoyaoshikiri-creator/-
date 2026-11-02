@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canRecordShavingDrill } from "@/lib/permissions";
@@ -251,11 +251,11 @@ export default function ShavingDrillPage() {
         <>
           <SectionLabel>記録一覧</SectionLabel>
           {records.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <EmptyState>記録がありません</EmptyState>
-            </Card>
+            </div>
           ) : (
-            <Card className="max-h-[65vh] overflow-y-auto">
+            <div className={`${cardClass} max-h-[65vh] overflow-y-auto`}>
               {records.map((r) => {
                 const expanded = expandedId === r.id;
                 return (
@@ -321,7 +321,7 @@ export default function ShavingDrillPage() {
                   </div>
                 );
               })}
-            </Card>
+            </div>
           )}
         </>
       )}

@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -205,11 +205,11 @@ export default function ShootingDrillListPage() {
 
           <SectionLabel>すべての記録</SectionLabel>
           {filteredRecords.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <EmptyState>記録がありません</EmptyState>
-            </Card>
+            </div>
           ) : (
-            <Card className="max-h-[50vh] overflow-y-auto">
+            <div className={`${cardClass} max-h-[50vh] overflow-y-auto`}>
               {groupedRecords.map((group, groupIndex) => (
                 <div key={group.playerId}>
                   {playerFilter === "all" && (
@@ -331,7 +331,7 @@ export default function ShootingDrillListPage() {
                   })}
                 </div>
               ))}
-            </Card>
+            </div>
           )}
         </>
       )}

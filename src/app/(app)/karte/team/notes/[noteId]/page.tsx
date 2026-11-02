@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState } from "@/components/ui/Card";
+import { EmptyState, cardClass } from "@/components/ui/Card";
 import { inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { canManagePlayers } from "@/lib/permissions";
@@ -143,7 +143,7 @@ export default function TeamAnalysisNoteDetailPage() {
 
   return (
     <PageShell header={<AppHeader title="AI分析" variant="detail" backHref="/karte/team/analysis" accessBadge="coach" />}>
-      <Card>
+      <div className={cardClass}>
         <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
           <span>
             {formatDateLabel(note.created_at.slice(0, 10))}
@@ -200,7 +200,7 @@ export default function TeamAnalysisNoteDetailPage() {
             )}
           </>
         )}
-      </Card>
+      </div>
     </PageShell>
   );
 }
