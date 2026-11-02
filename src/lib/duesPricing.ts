@@ -68,7 +68,9 @@ export function previewDuesCharges(fiscalYear: number, rule: DuesPricingRule): D
   const adjustment = rule.adjustmentYen ?? 0;
   if (!Number.isSafeInteger(adjustment)) throw new Error("調整額は整数円で指定してください");
 
-  const first = rule.startDate ? monthIndex(rule.startDate, fiscalYear) + (rule.joinMonthRule === "next_month" ? 1 : 0) : 0;
+  const startIndex = rule.startDate ? monthIndex(rule.startDate, fiscalYear) : 0;
+  // 前年度以前から在籍している選手は「加入月を除く」を当年度4月に適用しない。
+  const first = startIndex + (rule.startDate && startIndex >= 0 && rule.joinMonthRule === "next_month" ? 1 : 0);
   const last = rule.stopDate ? monthIndex(rule.stopDate, fiscalYear) : 11;
   const active = Array.from({ length: 12 }, (_, i) => !rule.exempt && i >= first && i <= last);
   const monthly = Array<number>(12).fill(0);
