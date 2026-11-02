@@ -29,7 +29,7 @@ export function TabBar({ role, badges = {} }: { role: Role; badges?: Partial<Rec
 
   return (
     <div
-      className="fixed left-3 right-3 z-20 mx-auto max-w-[480px] print:hidden"
+      className="app-tabbar fixed left-3 right-3 z-20 mx-auto max-w-[480px] print:hidden"
       style={{ bottom: PILL_NAV_BOTTOM_OFFSET }}
     >
       <PillNavBar>
