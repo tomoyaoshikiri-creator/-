@@ -38,8 +38,8 @@ export default function AccountingHubPage() {
         <div className={`${cardClass} cursor-pointer`}>
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-bold text-[15px]">未納一覧</div>
-              <div className="text-[11.5px] text-ink-soft mt-1">集金項目をまたいで、未納のままの請求をまとめて確認する</div>
+              <div className="font-bold text-[15px]">集金管理</div>
+              <div className="text-[11.5px] text-ink-soft mt-1">選手ごとに集金状況を確認・入金をチェックする</div>
             </div>
             <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
           </div>
