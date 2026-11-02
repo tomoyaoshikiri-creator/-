@@ -356,6 +356,26 @@ textarea {
 }
 
 /*
+  iPhoneのホーム画面追加(standalone)表示のみ: 100dvhが端末の利用可能な
+  最大レイアウト領域より短く報告される環境で、アプリの背景とスクロール領域が
+  下端手前で途切れる問題を検証する。
+  - Safari通常タブ、iPad(幅700px以上)、認証画面は従来の100dvhを維持。
+  - 100lvhが100dvhと同じ環境では挙動は変わらない。
+  - TabBarのpositionをshell基準のabsoluteにすることで、shellだけが
+    高くなった場合にも下部ナビを同じ下端基準で配置する。
+  - OSが描画を許可しない領域をCSSで強制表示するものではない。
+*/
+@media (display-mode: standalone) and (max-width: 699px) {
+  .app-shell:not(.auth-shell) {
+    height: 100lvh;
+  }
+
+  .app-shell:not(.auth-shell) .app-tabbar {
+    position: absolute;
+  }
+}
+
+/*
   MASTER SPECIFICATION #32: Login/Registration等の認証画面はTeam Brand Screen
   ではなく常にCIRCLE LINES Brand Screen。アプリ本体(.app-shellの--paper、
   暖色系off-white)とは別に、ヘッダー(--header-gradient)・ロゴマークと同じ
