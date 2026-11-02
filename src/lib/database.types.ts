@@ -2034,6 +2034,11 @@ export interface Database {
           name: string;
           pricing_method: "flat" | "grade_band" | "per_player";
           flat_monthly_amount: number | null;
+          flat_yearly_amount: number | null;
+          rate_basis: "monthly" | "yearly";
+          schedule_mode: "legacy" | "configured";
+          collection_months: number[] | null;
+          join_leave_rule: "prorated" | "full";
           cycle_months: number;
           payment_methods: string[];
           billing_unit: "player" | "household";
@@ -2050,6 +2055,11 @@ export interface Database {
           name: string;
           pricing_method: "flat" | "grade_band" | "per_player";
           flat_monthly_amount?: number | null;
+          flat_yearly_amount?: number | null;
+          rate_basis?: "monthly" | "yearly";
+          schedule_mode?: "legacy" | "configured";
+          collection_months?: number[] | null;
+          join_leave_rule?: "prorated" | "full";
           cycle_months: number;
           payment_methods?: string[];
           billing_unit: "player" | "household";
@@ -2062,6 +2072,11 @@ export interface Database {
           name: string;
           pricing_method: "flat" | "grade_band" | "per_player";
           flat_monthly_amount: number | null;
+          flat_yearly_amount: number | null;
+          rate_basis: "monthly" | "yearly";
+          schedule_mode: "legacy" | "configured";
+          collection_months: number[] | null;
+          join_leave_rule: "prorated" | "full";
           cycle_months: number;
           payment_methods: string[];
           billing_unit: "player" | "household";
@@ -2080,6 +2095,7 @@ export interface Database {
           grade_min: number;
           grade_max: number;
           monthly_amount: number;
+          yearly_amount: number | null;
           created_at: string;
         };
         Insert: {
@@ -2088,11 +2104,13 @@ export interface Database {
           grade_min: number;
           grade_max: number;
           monthly_amount: number;
+          yearly_amount: number | null;
         };
         Update: Partial<{
           grade_min: number;
           grade_max: number;
           monthly_amount: number;
+          yearly_amount: number | null;
         }>;
         Relationships: [];
       };
@@ -2102,6 +2120,7 @@ export interface Database {
           dues_item_id: string;
           player_id: string;
           monthly_amount: number | null;
+          yearly_amount: number | null;
           exempt: boolean;
           start_date: string | null;
           stop_date: string | null;
@@ -2114,6 +2133,7 @@ export interface Database {
           dues_item_id: string;
           player_id: string;
           monthly_amount?: number | null;
+          yearly_amount?: number | null;
           exempt?: boolean;
           start_date?: string | null;
           stop_date?: string | null;
@@ -2121,6 +2141,7 @@ export interface Database {
         };
         Update: Partial<{
           monthly_amount: number | null;
+          yearly_amount: number | null;
           exempt: boolean;
           start_date: string | null;
           stop_date: string | null;
