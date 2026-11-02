@@ -6,8 +6,8 @@
 明確な不具合や新しいPhaseでの依存関係がない限り再着手しない。
 唯一の進捗管理ファイルとして扱い、重複する新規の管理ファイルは作らない。
 
-最終更新: 2026-11-01(本PR: バッチD〈設定配下13画面の旧Card移行、見出し・
-入力欄・操作ボタンの整合確認〉、PRレビュー待ち・マージ前)。
+最終更新: 2026-11-02(本PR: バッチE-1〈選手管理(players)配下6画面の旧Card
+移行〉、PRレビュー待ち・マージ前)。
 以降の「確認方法」に記載のない数値は、過去のPR本文(#209時点の調査等)からの
 引用であり、本更新時点で再調査していない。再調査した項目には明記している。
 
@@ -35,15 +35,66 @@
 - スケジュール一覧・カレンダー表示(Phase 2、#215)
 - バッチA〜C(出欠入力フォーム・スタッツ閲覧画面・資料室詳細の旧Card移行、
   #217) — マージ・本番反映済み。詳細は下記(Phase 2参考セクションに続けて記載)
+- バッチD(設定配下13画面の旧Card移行、#218) — マージ・本番反映済み。
+  詳細は下記(バッチA〜C参考セクションに続けて記載)
 
 保留(診断専用、対象外): PR #198(Safari入力クラッシュ診断) /
 PR #199(下部表示実測)
 
 ## PRレビュー待ち
 
-- バッチD(設定配下13画面、本PR、マージ前) — 詳細は下記
+- バッチE-1(選手管理(players)配下6画面、本PR、マージ前) — 詳細は下記
 
-## 今回のバッチ: バッチD(設定配下13画面)
+## 今回のバッチ: バッチE-1(選手管理(players)配下6画面)
+
+対象ファイル(いずれも`src/app/(app)/players/`配下、旧Card使用6ファイル):
+- `[id]/dues/page.tsx`(集金状況、旧Card 2箇所)
+- `[id]/growth/page.tsx`(身長・体重、旧Card 2箇所)
+- `[id]/notes/page.tsx`(選手メモ、旧Card 3箇所)
+- `[id]/sports-test/page.tsx`(スポーツテスト、旧Card 8箇所)
+- `[id]/stats/page.tsx`(スタッツ、旧Card 4箇所)
+- `obog/page.tsx`(OB・OG、旧Card 1箇所)
+
+同じplayers配下の`BirthdaySelect.tsx`・`NewPlayerModal.tsx`・`[id]/page.tsx`・
+`page.tsx`は、そもそも旧Card・cardClassのいずれも使用していない(本更新時点で
+確認済み)ため変更していない。
+
+統一した内容:
+- カード: 全6ファイルの旧`<Card>`(合計20箇所)を共通`cardClass`へ移行した。
+  (dues 2、growth 2、notes 3、sports-test 8、stats 4、obog 1)
+- `notes/page.tsx`のみ、編集中カード(`<Card key={n.id}>`)と表示中カード
+  (`<Card key={n.id} className="cursor-pointer" onClick={...}>`)がkey/
+  className/onClickを個別に持っていたため、`<div key={n.id} className={cardClass}>`・
+  `<div key={n.id} className={`${cardClass} cursor-pointer`} onClick={...}>`の
+  形でそれぞれ移行し、既存のonClick・className付与を保持した。
+- 見出し・入力欄・ボタン(`SectionLabel`/`FieldLabel`/`inputClass`/
+  `SubmitButton`/`SegButton`/`InlineSelect`/`PlayerRow`)は、6ファイルすべてで
+  移行前から既に共通コンポーネントを使用していることを確認済み。追加の変更は
+  行っていない。
+
+変更不要と判断した部品(既存の共通デザインと整合しているため、独自の新規
+デザイン規則化を避けて変更していない):
+- `notes/page.tsx`の前後選手ナビ(30×30pxの固定サイズ`<Link>`): カレンダー
+  画面の月切替ボタンと似た見た目だが、本バッチの依頼範囲はカードの統一であり
+  タップ領域拡張は明示的な依頼事項ではないため、既存の配置・サイズのまま変更
+  していない。
+- `growth/page.tsx`・`notes/page.tsx`の削除・保存・キャンセル系の小型ボタン
+  (`border-danger`/`text-danger-text`/`bg-danger/8`等のTailwindテーマクラス
+  使用): `--danger`系の配色トークンを介した既存の危険操作表示と視覚的に同じ
+  色であり、settings配下で使われているインラインstyle版と見た目は同一のため
+  変更していない。
+- `sports-test/page.tsx`の`SegButton`(入力/表で見る、年度、四半期、実施状況)
+  は既存の共通コンポーネントをそのまま使用しているため変更不要。
+- `obog/page.tsx`の`InlineSelect`(卒業年度選択)・`PlayerRow`(選手一覧行)も
+  既存の共通コンポーネントをそのまま使用しているため変更不要。
+
+維持した既存機能・権限: 選手情報の登録・編集・削除、成長記録・スポーツテスト・
+スタッツの取得と表示、選手の権限・閲覧範囲(`player_guardians`による保護者の
+閲覧制限、`canManagePlayers`等のロール判定)、データ取得・保存・集計ロジックは
+変更していない。DB・RLS・認証、karte(カルテ)・accounting(会計)配下の画面も
+変更していない。
+
+## 今回のバッチ(参考・マージ済み): バッチD(設定配下13画面)
 
 対象ファイル(13画面、いずれも`src/app/(app)/settings/`配下):
 `name/page.tsx`、`category/page.tsx`、`logo/page.tsx`、`team/page.tsx`、
@@ -137,22 +188,23 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
 | 2 | スケジュール一覧・カレンダー表示 | 完了 | #215 |
 | 3 | 下部5タブ・チーム内メニュー・ハンバーガーメニュー | 完了 | #213, #214 |
 | 4 | スタッツ閲覧画面(`/game/stats/[matchId]/view`) | 完了 | #217 |
-| 5 | 資料室詳細・設定配下の未刷新画面 | 資料室詳細は完了(#217)。設定配下13画面はPRレビュー待ち(バッチD、本PR) | #217(資料室詳細分)、本PR(設定配下分) |
-| 6 | 選手・カルテ・会計関連の未刷新画面 | 未着手 | — |
+| 5 | 資料室詳細・設定配下の未刷新画面 | 完了 | #217(資料室詳細分)、#218(設定配下分) |
+| 6 | 選手・カルテ・会計関連の未刷新画面 | 選手管理(players)配下6画面はPRレビュー待ち(バッチE-1、本PR)。カルテ(バッチE-2)・会計(バッチE-3)は未着手 | 本PR(選手管理分) |
 | 7 | その他の低優先度画面((auth)配下・公開静的ページ等) | 未着手(未調査) | — |
 
 ## 根拠データ(本更新時点で再調査済み)
 
 - `src/app/(app)`配下の`page.tsx`: 77ファイル
 - 旧`<Card>`をimportしているファイル(`(app)`配下、ページ・コンポーネント
-  含む): 42ファイル(本PRのバッチDで`settings`配下13ファイルを移行、
+  含む): 36ファイル(本PRのバッチE-1で`players`配下6ファイルを移行、
   マージ前の作業ツリーで再計測)
-- `cardClass`を使用しているファイル(同上): 34ファイル(同上)
-- `src/app/(app)/settings`配下: 旧`<Card>`使用は0ファイル(本PRのバッチDで
-  13ファイルすべてcardClassへ移行済み・マージ前)
-- `src/app/(app)/karte`配下: 旧`<Card>`使用が19ファイル(未着手、バッチE)
-- `src/app/(app)/accounting`配下: 旧`<Card>`使用が10ファイル(未着手、バッチE)
-- `src/app/(app)/players`配下: 旧`<Card>`使用が6ファイル(未着手、バッチE)
+- `cardClass`を使用しているファイル(同上): 40ファイル(同上)
+- `src/app/(app)/settings`配下: 旧`<Card>`使用は0ファイル(#218で移行済み・
+  マージ・本番反映済み)
+- `src/app/(app)/players`配下: 旧`<Card>`使用は0ファイル(本PRのバッチE-1で
+  6ファイルすべてcardClassへ移行済み・マージ前)
+- `src/app/(app)/karte`配下: 旧`<Card>`使用が19ファイル(未着手、バッチE-2)
+- `src/app/(app)/accounting`配下: 旧`<Card>`使用が10ファイル(未着手、バッチE-3)
 
 上記のファイル数は「`<Card>`をimportしているか」の機械的なgrep結果であり、
 1ファイル内の複数カード箇所や、import無しで独自に旧スタイルを直接記述している
@@ -169,24 +221,40 @@ DB・RLS・認証は変更していない。対象外画面のデザイン変更
   `src/app/(app)/library/[id]/page.tsx`
 - 状態: #217でcardClassへの移行を実施し、マージ・本番反映済み。
 
-### バッチD: 設定配下13画面(Phase 5の一部)— 対応済み、PRレビュー待ち
+### バッチD: 設定配下13画面(Phase 5の一部)— 対応済み、マージ・本番反映済み(#218)
 
 - 対象ファイル: `src/app/(app)/settings/{name,category,logo,team,
   close-account,plan,export,leave-service,audit-log,storage,color,
   password}/page.tsx`、`src/app/(app)/settings/teams/new/NewTeamForm.tsx`
-- 完了条件: 各画面の旧`<Card>`を`cardClass`へ移行し、見出し・入力欄・
-  操作ボタンが既存の共通コンポーネントと整合していることを確認する。
-  設定値の保存・権限判定は変更しない。
-- 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
+- 状態: #218でcardClassへの移行を実施し、マージ・本番反映済み。
 
 ### バッチE: 選手・カルテ・会計関連(Phase 6、大規模)
 
-- 対象ファイル: `src/app/(app)/karte`配下(旧Card使用19ファイル)、
-  `src/app/(app)/accounting`配下(10ファイル)、`src/app/(app)/players`配下
-  (6ファイル)。合計35ファイル。
-- 完了条件: 画面数が多いため、さらに機能群(カルテ/会計/選手)単位で
-  複数バッチへ分割して実施する。各バッチで旧`<Card>`を`cardClass`へ移行し、
-  記録・集計ロジック・権限判定は変更しない。
+対象ファイル: `src/app/(app)/karte`配下(旧Card使用19ファイル)、
+`src/app/(app)/accounting`配下(10ファイル)、`src/app/(app)/players`配下
+(6ファイル)。合計35ファイル。画面数が多いため、機能群(選手/カルテ/会計)
+単位でE-1〜E-3に分割して実施する。各バッチで旧`<Card>`を`cardClass`へ移行し、
+記録・集計ロジック・権限判定は変更しない。
+
+#### バッチE-1: 選手管理(players)配下6画面 — 対応済み、PRレビュー待ち
+
+- 対象ファイル: `src/app/(app)/players/{[id]/dues,[id]/growth,[id]/notes,
+  [id]/sports-test,[id]/stats,obog}/page.tsx`(旧Card使用6ファイル、合計20箇所)
+- 完了条件: 各画面の旧`<Card>`を`cardClass`へ移行し、見出し・入力欄・ボタン・
+  一覧表示が既存の共通コンポーネントと整合していることを確認する。選手情報の
+  登録・編集・削除、成長記録・スポーツテスト・スタッツの取得・表示、選手の
+  権限・閲覧範囲は変更しない。
+- 状態: 本PRで実装済み(マージ前)。詳細は上記「今回のバッチ」を参照。
+
+#### バッチE-2: カルテ(karte)配下(未着手)
+
+- 対象ファイル: `src/app/(app)/karte`配下(旧Card使用19ファイル)。
+- 完了条件: バッチE-1と同様の方針で旧`<Card>`を`cardClass`へ移行する。
+
+#### バッチE-3: 会計(accounting)配下(未着手)
+
+- 対象ファイル: `src/app/(app)/accounting`配下(旧Card使用10ファイル)。
+- 完了条件: バッチE-1と同様の方針で旧`<Card>`を`cardClass`へ移行する。
 
 ### バッチF: その他低優先度画面(Phase 7、未調査)
 

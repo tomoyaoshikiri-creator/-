@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen } from "@/lib/accounting";
@@ -119,14 +119,14 @@ export default function PlayerDuesPage() {
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : groups.length === 0 ? (
-        <Card>
+        <div className={cardClass}>
           <EmptyState>まだ請求がありません</EmptyState>
-        </Card>
+        </div>
       ) : (
         groups.map((g) => (
           <div key={g.item.id} className="mb-3">
             <SectionLabel>{g.item.name}</SectionLabel>
-            <Card>
+            <div className={cardClass}>
               {g.rows.map(({ period, charge }, idx) => (
                 <div
                   key={charge.id}
@@ -145,7 +145,7 @@ export default function PlayerDuesPage() {
                   </span>
                 </div>
               ))}
-            </Card>
+            </div>
           </div>
         ))
       )}

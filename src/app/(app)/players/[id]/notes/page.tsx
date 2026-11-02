@@ -8,7 +8,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
@@ -282,13 +282,13 @@ export default function PlayerNotesPage() {
 
           <SectionLabel>これまでのメモ</SectionLabel>
           {notes.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <div className="text-xs text-ink-soft">まだメモがありません</div>
-            </Card>
+            </div>
           ) : (
             notes.map((n) =>
               editingNoteId === n.id ? (
-                <Card key={n.id}>
+                <div key={n.id} className={cardClass}>
                   <textarea
                     rows={3}
                     className={inputClass()}
@@ -313,11 +313,11 @@ export default function PlayerNotesPage() {
                       キャンセル
                     </button>
                   </div>
-                </Card>
+                </div>
               ) : (
-                <Card
+                <div
                   key={n.id}
-                  className="cursor-pointer"
+                  className={`${cardClass} cursor-pointer`}
                   onClick={() => setExpandedNoteId(expandedNoteId === n.id ? null : n.id)}
                 >
                   <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-bold text-ink-soft tracking-wide mb-1.5">
@@ -355,7 +355,7 @@ export default function PlayerNotesPage() {
                       </button>
                     </div>
                   )}
-                </Card>
+                </div>
               ),
             )
           )}

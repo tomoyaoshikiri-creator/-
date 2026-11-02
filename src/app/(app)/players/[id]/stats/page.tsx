@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { canManagePlayers } from "@/lib/permissions";
 import { hasKarteTabAccess } from "@/lib/plan";
@@ -206,7 +206,7 @@ export default function PlayerStatsPage() {
       ) : (
         <>
           <SectionLabel>年度</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>年度</FieldLabel>
             <select className={inputClass()} value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))}>
               {FISCAL_YEAR_OPTIONS.map((y) => (
@@ -215,14 +215,14 @@ export default function PlayerStatsPage() {
                 </option>
               ))}
             </select>
-          </Card>
+          </div>
 
           <SectionLabel>試合ごとのスタッツ</SectionLabel>
           {showBasketballStats ? (
             gameRows.length === 0 ? (
-              <Card>
+              <div className={cardClass}>
                 <EmptyState>この年度の出場記録がありません</EmptyState>
-              </Card>
+              </div>
             ) : (
               <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
                 <table className="border-collapse text-[11.5px] w-full">
@@ -443,13 +443,13 @@ export default function PlayerStatsPage() {
               </div>
             )
           ) : statCategories.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <EmptyState>まだスタッツ項目がありません</EmptyState>
-            </Card>
+            </div>
           ) : customGameRows.length === 0 ? (
-            <Card>
+            <div className={cardClass}>
               <EmptyState>この年度の出場記録がありません</EmptyState>
-            </Card>
+            </div>
           ) : (
             <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
               <table className="border-collapse text-[11.5px] w-full">

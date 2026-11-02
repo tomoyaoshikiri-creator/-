@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { formatDateLabel, playerFullName, todayDateStr } from "@/lib/format";
@@ -137,7 +137,7 @@ export default function PlayerGrowthPage() {
       }
     >
       <SectionLabel>記録を追加</SectionLabel>
-      <Card>
+      <div className={cardClass}>
         <FieldLabel>測定日</FieldLabel>
         <input
           type="date"
@@ -172,7 +172,7 @@ export default function PlayerGrowthPage() {
         <SubmitButton onClick={handleSave} disabled={saving}>
           {saving ? "保存中…" : "記録する"}
         </SubmitButton>
-      </Card>
+      </div>
 
       <SectionLabel>これまでの記録</SectionLabel>
       {loading ? (
@@ -180,7 +180,7 @@ export default function PlayerGrowthPage() {
       ) : records.length === 0 ? (
         <EmptyState>まだ記録がありません</EmptyState>
       ) : (
-        <Card>
+        <div className={cardClass}>
           {records.map((r, idx) => (
             <div
               key={r.id}
@@ -204,7 +204,7 @@ export default function PlayerGrowthPage() {
               </button>
             </div>
           ))}
-        </Card>
+        </div>
       )}
     </PageShell>
   );

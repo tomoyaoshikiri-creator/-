@@ -7,7 +7,7 @@ import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
-import { Card, EmptyState, SectionLabel } from "@/components/ui/Card";
+import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { canManageSportsTests } from "@/lib/permissions";
 import { hasSportsTestAccess } from "@/lib/plan";
@@ -385,7 +385,7 @@ export default function SportsTestPage() {
       {viewMode === "table" ? (
         <>
           <SectionLabel>年度</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>年度</FieldLabel>
             <select
               className={inputClass()}
@@ -398,7 +398,7 @@ export default function SportsTestPage() {
                 </option>
               ))}
             </select>
-          </Card>
+          </div>
 
           <SectionLabel>四半期ごとの記録</SectionLabel>
           <div className="bg-white border border-line rounded-lg overflow-auto max-h-[65vh] mb-2.5">
@@ -448,7 +448,7 @@ export default function SportsTestPage() {
       ) : (
         <>
           <SectionLabel>年度・四半期</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>年度</FieldLabel>
             <select
               className={inputClass()}
@@ -487,7 +487,7 @@ export default function SportsTestPage() {
                 Q{baseline.quarter}(初回実績)との比較を各項目に表示しています
               </div>
             )}
-          </Card>
+          </div>
 
           {loading ? (
             <EmptyState>読み込み中…</EmptyState>
@@ -495,7 +495,7 @@ export default function SportsTestPage() {
             <>
               <div className={notConducted ? "opacity-40 pointer-events-none" : ""}>
           <SectionLabel>体格</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>測定日</FieldLabel>
             <input
               type="date"
@@ -552,10 +552,10 @@ export default function SportsTestPage() {
               />
               <CompareLine current={numOrNull(form.wingspan_cm)} baseline={baseline?.wingspan_cm ?? null} baselineQuarter={baseline?.quarter} />
             </div>
-          </Card>
+          </div>
 
           <SectionLabel>スピード・瞬発力</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>20mスプリント(秒・2回)</FieldLabel>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -620,10 +620,10 @@ export default function SportsTestPage() {
                 baselineQuarter={baseline?.quarter}
               />
             </div>
-          </Card>
+          </div>
 
           <SectionLabel>アジリティ</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>レーンアジリティ(秒・2回)</FieldLabel>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -685,10 +685,10 @@ export default function SportsTestPage() {
                 baselineQuarter={baseline?.quarter}
               />
             </div>
-          </Card>
+          </div>
 
           <SectionLabel>持久力</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>20m三往復(秒)</FieldLabel>
             <input
               type="number"
@@ -711,10 +711,10 @@ export default function SportsTestPage() {
               />
               <CompareLine current={numOrNull(form.beep_test_reps)} baseline={baseline?.beep_test_reps ?? null} baselineQuarter={baseline?.quarter} />
             </div>
-          </Card>
+          </div>
 
           <SectionLabel>柔軟性</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>背中こぶし合わせ(cm)</FieldLabel>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -740,10 +740,10 @@ export default function SportsTestPage() {
                 <CompareLine current={numOrNull(form.back_fist_left)} baseline={baseline?.back_fist_left ?? null} baselineQuarter={baseline?.quarter} />
               </div>
             </div>
-          </Card>
+          </div>
 
           <SectionLabel>ボール操作・シュート</SectionLabel>
-          <Card>
+          <div className={cardClass}>
             <FieldLabel>ボール投げ(m・2回)</FieldLabel>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -865,7 +865,7 @@ export default function SportsTestPage() {
               />
               <CompareLine current={numOrNull(form.paint_shot)} baseline={baseline?.paint_shot ?? null} baselineQuarter={baseline?.quarter} />
             </div>
-          </Card>
+          </div>
           </div>
 
           <SubmitButton onClick={handleSave} disabled={saving}>
