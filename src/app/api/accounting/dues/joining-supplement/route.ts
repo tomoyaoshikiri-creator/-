@@ -66,15 +66,22 @@ export async function POST(request: Request) {
   }
   if (!confirm) return NextResponse.json({ ok: true, preview: { ...preview, start, end } });
   // 管理者の明示的な確定操作後にだけ請求を保存する。
-  const { data: period, error: createError } = await db.from("accounting_dues_billing_periods").insert({
-    dues_item_id: duesItemId, fiscal_year: fiscalYear, period_start: start, period_end: end,
-  }).select("id").single();
-  if (createError || !period) return NextResponse.json({ error: "請求期間を作成できませんでした" }, { status: 500 });
+  const matchingPeriod = (existingPeriods ?? []).find(p => p.period_start === start && p.period_end === end);
+  let periodId = matchingPeriod?.id;
+  let createdPeriod = false;
+  if (!periodId) {
+    const { data: period, error: createError } = await db.from("accounting_dues_billing_periods").insert({
+      dues_item_id: duesItemId, fiscal_year: fiscalYear, period_start: start, period_end: end,
+    }).select("id").single();
+    if (createError || !period) return NextResponse.json({ error: "請求期間を作成できませんでした" }, { status: 500 });
+    periodId = period.id;
+    createdPeriod = true;
+  }
   const { error: chargeError } = await db.from("accounting_dues_charges").insert({
-    billing_period_id: period.id, player_id: playerId, group_key: playerId, amount: preview.amount,
+    billing_period_id: periodId, player_id: playerId, group_key: playerId, amount: preview.amount,
   });
   if (chargeError) {
-    await db.from("accounting_dues_billing_periods").delete().eq("id", period.id);
+    if (createdPeriod) await db.from("accounting_dues_billing_periods").delete().eq("id", periodId);
     return NextResponse.json({ error: "追加請求を保存できませんでした" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, created: true, preview: { ...preview, start, end } });
