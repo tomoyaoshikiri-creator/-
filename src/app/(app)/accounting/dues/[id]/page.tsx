@@ -319,6 +319,16 @@ export default function AccountingDuesItemPage() {
         </div>
       </Link>
 
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-[12px] text-ink-soft">{editing ? "編集中" : "閲覧モード"}</span>
+        {!editing && (
+          <button type="button" onClick={() => setEditing(true)}
+            className="px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8">
+            ✏️ 編集
+          </button>
+        )}
+      </div>
+
       <SectionLabel>{step("名称・状態")}</SectionLabel>
       <div className={cardClass}>
         {editing ? (
@@ -414,7 +424,8 @@ export default function AccountingDuesItemPage() {
                     <button
                       type="button"
                       onClick={() => handleDeleteBand(b.id)}
-                      className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper"
+                      disabled={!editing}
+                      className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper disabled:hidden"
                     >
                       削除
                     </button>
@@ -422,7 +433,7 @@ export default function AccountingDuesItemPage() {
                 ))}
               </ul>
             )}
-            {grades.length > 0 && (
+            {editing && grades.length > 0 && (
               <div className={bands.length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
                 <div className="flex items-center gap-1.5">
                   <select
@@ -494,6 +505,7 @@ export default function AccountingDuesItemPage() {
                     <button
                       type="button"
                       onClick={() => handleDeletePlayerSetting(s.id)}
+                      disabled={!editing}
                       className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper"
                     >
                       削除
@@ -501,6 +513,7 @@ export default function AccountingDuesItemPage() {
                   </div>
                   <div className="mt-1.5 flex items-center gap-2">
                     <input
+                      disabled={!editing}
                       type="number"
                       min={0}
                       placeholder={pricingMethod === "per_player" ? "月額(必須)" : "月額の上書き(任意)"}
@@ -514,6 +527,7 @@ export default function AccountingDuesItemPage() {
                     />
                     <label className="flex-none flex items-center gap-1 text-[12px] font-bold text-ink-soft">
                       <input
+                        disabled={!editing}
                         type="checkbox"
                         checked={s.exempt}
                         onChange={(e) => handleUpdatePlayerSetting(s.id, { exempt: e.target.checked })}
@@ -525,6 +539,7 @@ export default function AccountingDuesItemPage() {
                     <div className="flex-1">
                       <div className="text-[10.5px] text-ink-soft mb-0.5">開始月(任意)</div>
                       <input
+                        disabled={!editing}
                         type="date"
                         className={inputClass()}
                         defaultValue={s.start_date ?? ""}
@@ -542,6 +557,7 @@ export default function AccountingDuesItemPage() {
                     </div>
                   </div>
                   <input
+                    disabled={!editing}
                     className={inputClass("mt-1.5")}
                     placeholder="備考(任意)"
                     defaultValue={s.note ?? ""}
@@ -552,7 +568,7 @@ export default function AccountingDuesItemPage() {
             })}
           </ul>
         )}
-        {candidates.length > 0 && (
+        {editing && candidates.length > 0 && (
           <div className={playerSettings.length > 0 ? "mt-2.5 flex gap-2" : "flex gap-2"}>
             <select className={inputClass("flex-1")} value={newPlayerId} onChange={(e) => setNewPlayerId(e.target.value)}>
               <option value="">選手を選ぶ</option>
@@ -580,14 +596,14 @@ export default function AccountingDuesItemPage() {
         <div className="text-[12px] font-bold mb-1">料金基準</div>
         <div className="flex gap-2">
           {([["monthly", "月額"], ["yearly", "年額"]] as const).map(([basis, label]) => (
-            <SegButton key={basis} active={scheduleDraft.basis === basis} onClick={() => setScheduleDraft(d => ({
+            <SegButton key={basis} active={scheduleDraft.basis === basis} onClick={() => editing && setScheduleDraft(d => ({
               ...d, basis, amount: String((basis === "yearly" ? item.flat_yearly_amount : item.flat_monthly_amount) ?? ""),
             }))}>{label}</SegButton>
           ))}
         </div>
         {pricingMethod === "flat" && <div className="mt-2">
           <FieldLabel>{scheduleDraft.basis === "monthly" ? "月額（円）" : "年額（円）"}</FieldLabel>
-          <input type="number" min={1} step={1} className={inputClass()} value={scheduleDraft.amount}
+          <input type="number" min={1} step={1} disabled={!editing} className={inputClass()} value={scheduleDraft.amount}
             onChange={e => setScheduleDraft(d => ({ ...d, amount: e.target.value }))} />
         </div>}
         <div className="mt-3">
@@ -627,10 +643,10 @@ export default function AccountingDuesItemPage() {
             })}
           </div>
         ) : <div className="mt-2 text-[11px] text-ink-soft">料金と集金月を設定すると試算を表示します。</div>}
-        <button type="button" disabled={saving || item.pricing_method !== "flat"} onClick={saveSchedule}
+        {editing && <button type="button" disabled={saving || item.pricing_method !== "flat"} onClick={saveSchedule}
           className="mt-3 w-full rounded-lg bg-blue-600 text-white py-2.5 font-bold text-[13px] disabled:opacity-40">
           {saving ? "保存中…" : "この料金・集金設定を保存"}
-        </button>
+        </button>}
         {item.pricing_method !== "flat" && <div className="mt-1 text-[11px] text-ink-soft">学年別・選手別の新方式は、料金入力欄の対応後に保存できます。</div>}
         <div className="mt-1 text-[11px] text-ink-soft">現在の方式：{item.schedule_mode === "configured" ? "新方式" : "従来方式"}</div>
       </div>
@@ -741,13 +757,10 @@ export default function AccountingDuesItemPage() {
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setEditing((v) => !v)}
-        className="w-full text-center py-2.5 rounded-lg font-bold text-[13px] border border-orange text-orange-text bg-orange/8 mb-2.5"
-      >
-        {editing ? "編集を終了する" : "設定を編集する"}
-      </button>
+      {editing && <div className="sticky bottom-0 z-10 flex gap-2 py-3 bg-paper border-t border-line">
+        <button type="button" onClick={() => { setEditing(false); void load(); }}
+          className="flex-1 py-2.5 rounded-lg border border-line font-bold text-[13px]">編集を終了</button>
+      </div>}
 
       <SectionLabel>削除</SectionLabel>
       <div className={cardClass}>
