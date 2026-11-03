@@ -501,51 +501,35 @@ export default function AccountingDuesItemPage() {
               </ul>
             )}
             {editing && grades.length > 0 && (
-              <div className={(editing ? draftBands : bands).length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
-                <div className="flex items-center gap-1.5">
-                  <select
-                    className={inputClass("flex-1")}
+              <div className="mt-4 pt-3 border-t border-line min-w-0">
+                <div className="text-[13px] font-bold mb-2">新しい学年帯を追加</div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                  <select className={inputClass("w-full min-w-0")} aria-label="追加する学年帯の開始学年"
                     value={bandDraft.grade_min}
-                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}
-                  >
-                    {grades.map((g) => (
-                      <option key={g} value={g}>
-                        {gradeLabel(String(g), category)}
-                      </option>
-                    ))}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_min: Number(e.target.value) }))}>
+                    {grades.map((g) => <option key={g} value={g}>{gradeLabel(String(g), category)}</option>)}
                   </select>
-                  <span className="text-[12px] text-ink-soft flex-none">〜</span>
-                  <select
-                    className={inputClass("flex-1")}
+                  <span className="text-[12px] text-ink-soft">〜</span>
+                  <select className={inputClass("w-full min-w-0")} aria-label="追加する学年帯の終了学年"
                     value={bandDraft.grade_max}
-                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}
-                  >
-                    {grades.map((g) => (
-                      <option key={g} value={g}>
-                        {gradeLabel(String(g), category)}
-                      </option>
-                    ))}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, grade_max: Number(e.target.value) }))}>
+                    {grades.map((g) => <option key={g} value={g}>{gradeLabel(String(g), category)}</option>)}
                   </select>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-24 flex-none">
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder={scheduleDraft.basis === "yearly" ? "年額" : "月額"}
-                      className={inputClass()}
-                      value={scheduleDraft.basis === "yearly" ? bandDraft.yearly_amount : bandDraft.monthly_amount}
-                      onChange={(e) => setBandDraft((d) => ({ ...d, [scheduleDraft.basis === "yearly" ? "yearly_amount" : "monthly_amount"]: e.target.value }))}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddBand}
-                    className="flex-1 px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8"
-                  >
-                    追加
-                  </button>
-                </div>
+                <label className="block mt-2 min-w-0">
+                  <span className="text-[11px] text-ink-soft">{scheduleDraft.basis === "yearly" ? "新しい学年帯の年額（円）" : "新しい学年帯の月額（円）"}</span>
+                  <input type="number" min={1} step={1}
+                    aria-label={scheduleDraft.basis === "yearly" ? "追加する学年帯の年額" : "追加する学年帯の月額"}
+                    placeholder={scheduleDraft.basis === "yearly" ? "年額を入力" : "月額を入力"}
+                    className={inputClass("w-full min-w-0 mt-1")}
+                    value={scheduleDraft.basis === "yearly" ? bandDraft.yearly_amount : bandDraft.monthly_amount}
+                    onChange={(e) => setBandDraft((d) => ({ ...d, [scheduleDraft.basis === "yearly" ? "yearly_amount" : "monthly_amount"]: e.target.value }))}
+                  />
+                </label>
+                <button type="button" onClick={handleAddBand}
+                  className="mt-2 w-full px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8">
+                  この学年帯を追加
+                </button>
               </div>
             )}
           </div>
