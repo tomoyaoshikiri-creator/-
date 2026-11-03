@@ -12,6 +12,10 @@ import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
+import { FISCAL_MONTHS, sortedCollectionMonths } from "@/lib/duesAnnualSchedule";
+import { calculateDuesInstallments } from "@/lib/duesRatePlan";
+import { MIN_GRADE_BY_CATEGORY, GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
+import { gradeLabel, playerFullName } from "@/lib/format";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import {
@@ -19,11 +23,15 @@ import {
   DUES_CYCLE_MONTHS_LABELS,
   DUES_CYCLE_MONTHS_OPTIONS,
   DUES_PRICING_METHOD_LABELS,
+  DUES_PAYMENT_METHOD_OPTIONS,
+  DUES_PAYMENT_METHOD_LABELS,
+  formatYen,
+  type DuesPaymentMethod,
   type DuesBillingUnit,
   type DuesCycleMonths,
   type DuesPricingMethod,
 } from "@/lib/accounting";
-import type { AccountingCategory, AccountingDuesItem } from "@/lib/database.types";
+import type { AccountingCategory, AccountingDuesItem, RosterPlayer, TeamCategory } from "@/lib/database.types";
 
 interface Draft {
   name: string;
@@ -32,15 +40,29 @@ interface Draft {
   cycle_months: DuesCycleMonths;
   billing_unit: DuesBillingUnit;
   income_category_id: string;
+  rate_basis: "monthly" | "yearly";
+  flat_yearly_amount: string;
+  collection_months: number[];
+  join_leave_rule: "prorated" | "full";
+  payment_methods: DuesPaymentMethod[];
+  reminder_days_after: string;
 }
 
 function emptyDraft(): Draft {
-  return { name: "", pricing_method: "flat", flat_monthly_amount: "", cycle_months: 1, billing_unit: "player", income_category_id: "" };
+  return { name: "", pricing_method: "flat", flat_monthly_amount: "", cycle_months: 1, billing_unit: "player", income_category_id: "",
+    rate_basis: "monthly", flat_yearly_amount: "", collection_months: [4,7,10,1], join_leave_rule: "prorated", payment_methods: [], reminder_days_after: "" };
 }
 
+type NewBand = { grade_min: number; grade_max: number; monthly_amount: string };
+type NewPlayerSetting = { player_id: string; monthly_amount: string; exempt: boolean; start_date: string; stop_date: string; note: string };
+function gradesFor(category: TeamCategory): number[] {
+  const min = MIN_GRADE_BY_CATEGORY[category], max = GRADUATION_GRADE_BY_CATEGORY[category];
+  if (min === null || max === null) return [];
+  return [...(category === "小学生" ? [0] : []), ...Array.from({ length: max-min+1 }, (_,i) => min+i)];
+}
 export default function AccountingDuesPage() {
   const router = useRouter();
-  const { role, plan, teamId } = useSession();
+  const { role, plan, teamId, category } = useSession();
   const toast = useToast();
 
   useEffect(() => {
@@ -48,17 +70,24 @@ export default function AccountingDuesPage() {
   }, [role, plan, router]);
 
   const [items, setItems] = useState<AccountingDuesItem[]>([]);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [bands, setBands] = useState<NewBand[]>([]);
+  const [bandInput, setBandInput] = useState<NewBand>({ grade_min: 0, grade_max: 0, monthly_amount: "" });
+  const [playerSettings, setPlayerSettings] = useState<NewPlayerSetting[]>([]);
+  const [newPlayerId, setNewPlayerId] = useState("");
   const [incomeCategories, setIncomeCategories] = useState<AccountingCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: duesItems }, { data: cats }] = await Promise.all([
+    const [{ data: duesItems }, { data: cats }, { data: players }] = await Promise.all([
       supabase.from("accounting_dues_items").select("*").order("position", { ascending: true }),
       supabase.from("accounting_categories").select("*").eq("kind", "income").eq("auto_managed", false).order("position", { ascending: true }),
+      supabase.rpc("list_roster_players"),
     ]);
     setItems(duesItems ?? []);
+    setRoster(players ?? []);
     setIncomeCategories(cats ?? []);
     setLoading(false);
   }, []);
@@ -71,43 +100,76 @@ export default function AccountingDuesPage() {
 
   function openModal() {
     setDraft({ ...emptyDraft(), income_category_id: incomeCategories[0]?.id ?? "" });
+    setBands([]);
+    setBandInput({ grade_min: gradesFor(category)[0] ?? 0, grade_max: gradesFor(category)[0] ?? 0, monthly_amount: "" });
+    setPlayerSettings([]);
+    setNewPlayerId("");
     setModalOpen(true);
   }
 
   async function handleCreate() {
-    const flatAmount = Number(draft.flat_monthly_amount);
-    if (!draft.name.trim() || !draft.income_category_id) {
-      toast.warning("名称・計上先の項目を入力してください");
-      return;
+    if (saving) return;
+    const amount = Number(draft.rate_basis === "yearly" ? draft.flat_yearly_amount : draft.flat_monthly_amount);
+    if (!draft.name.trim() || !draft.income_category_id) { toast.warning("名称・計上先の項目を入力してください"); return; }
+    if (!draft.collection_months.length) { toast.warning("集金月を選択してください"); return; }
+    if (draft.pricing_method === "flat" && (!Number.isSafeInteger(amount) || amount <= 0)) {
+      toast.warning("料金を正しく入力してください"); return;
     }
-    if (draft.pricing_method === "flat" && (!Number.isFinite(flatAmount) || flatAmount <= 0)) {
-      toast.warning("月額を正しく入力してください");
-      return;
+    if (draft.pricing_method === "grade_band") {
+      if (draft.rate_basis !== "monthly" || bands.length === 0) {
+        toast.warning("学年帯別料金は月額基準で、1件以上設定してください"); return;
+      }
+      if (bands.some(b => !Number.isSafeInteger(Number(b.monthly_amount)) || Number(b.monthly_amount) <= 0 ||
+        b.grade_min > b.grade_max)) { toast.warning("学年帯の月額・範囲を確認してください"); return; }
+      const occupied = new Set<number>();
+      for (const band of bands) for (let g=band.grade_min;g<=band.grade_max;g++) {
+        if (occupied.has(g)) { toast.warning("学年帯が重複しています"); return; }
+        occupied.add(g);
+      }
+    }
+    if (draft.pricing_method === "per_player" && playerSettings.length === 0) {
+      toast.warning("選手別料金を1件以上設定してください"); return;
+    }
+    if (playerSettings.some(p => !p.exempt && p.monthly_amount !== "" &&
+      (!Number.isSafeInteger(Number(p.monthly_amount)) || Number(p.monthly_amount) < 0))) {
+      toast.warning("選手別料金を確認してください"); return;
+    }
+    if (draft.pricing_method === "per_player" && playerSettings.some(p => !p.exempt && p.monthly_amount === "")) {
+      toast.warning("選手ごとの月額を入力してください"); return;
+    }
+    if (draft.reminder_days_after !== "" && (!Number.isSafeInteger(Number(draft.reminder_days_after)) || Number(draft.reminder_days_after) < 0)) {
+      toast.warning("リマインド日数を確認してください"); return;
     }
     setSaving(true);
     const supabase = createClient();
-    const nextPosition = items.length > 0 ? Math.max(...items.map((i) => i.position)) + 1 : 0;
-    const { data, error } = await supabase
-      .from("accounting_dues_items")
-      .insert({
-        team_id: teamId,
-        name: draft.name.trim(),
-        pricing_method: draft.pricing_method,
-        flat_monthly_amount: draft.pricing_method === "flat" ? flatAmount : null,
-        cycle_months: draft.cycle_months,
-        billing_unit: draft.billing_unit,
-        income_category_id: draft.income_category_id,
-        position: nextPosition,
-      })
-      .select("*")
-      .single();
-    setSaving(false);
-    if (error || !data) {
-      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
+    const nextPosition = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 0;
+    const { data, error } = await supabase.from("accounting_dues_items").insert({
+      team_id: teamId, name: draft.name.trim(), pricing_method: draft.pricing_method,
+      flat_monthly_amount: draft.pricing_method === "flat" && draft.rate_basis === "monthly" ? amount : null,
+      flat_yearly_amount: draft.pricing_method === "flat" && draft.rate_basis === "yearly" ? amount : null,
+      schedule_mode: "configured", rate_basis: draft.rate_basis,
+      collection_months: sortedCollectionMonths(draft.collection_months), join_leave_rule: draft.join_leave_rule,
+      payment_methods: draft.payment_methods, reminder_days_after: draft.reminder_days_after === "" ? null : Number(draft.reminder_days_after),
+      cycle_months: draft.cycle_months, billing_unit: draft.billing_unit,
+      income_category_id: draft.income_category_id, position: nextPosition,
+    }).select("*").single();
+    if (error || !data) { setSaving(false); toast.error(`作成に失敗しました: ${error?.message ?? ""}`); return; }
+    // 関連テーブルの作成に失敗した場合は項目本体も削除して不完全な作成を残さない。
+    const bandRows = bands.map(b => ({ dues_item_id: data.id, grade_min: b.grade_min, grade_max: b.grade_max, monthly_amount: Number(b.monthly_amount) }));
+    const playerRows = playerSettings.map(p => ({ dues_item_id: data.id, player_id: p.player_id,
+      monthly_amount: p.monthly_amount === "" ? null : Number(p.monthly_amount),
+      exempt: p.exempt, start_date: p.start_date || null, stop_date: p.stop_date || null, note: p.note.trim() || null }));
+    const bandError = bandRows.length ? (await supabase.from("accounting_dues_grade_bands").insert(bandRows)).error : null;
+    const playerError = !bandError && playerRows.length ? (await supabase.from("accounting_dues_player_settings").insert(playerRows)).error : null;
+    if (bandError || playerError) {
+      const { error: rollbackError } = await supabase.from("accounting_dues_items").delete().eq("id", data.id);
+      setSaving(false);
+      toast.error(rollbackError ? "関連設定の保存に失敗しました。作成された項目を確認してください" : "関連設定の保存に失敗したため、作成を取り消しました");
       return;
     }
+    setSaving(false);
     setModalOpen(false);
-    setItems((prev) => [...prev, data]);
+    setItems(prev => [...prev, data]);
     toast.success("集金項目を追加しました");
     router.push(`/accounting/dues/${data.id}`);
   }
