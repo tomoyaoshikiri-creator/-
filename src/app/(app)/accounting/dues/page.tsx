@@ -208,9 +208,9 @@ export default function AccountingDuesPage() {
       }
     >
       <div className="text-[12px] text-ink-soft mb-3">
-        月謝など、定期的に集金するものを項目として登録します。支払方法・学年帯ごとの金額・選手ごとの個別設定は、項目の詳細画面で行います。
+        集金項目を選ぶと、選手別の年間入金一覧を開きます。料金や集金月は各項目の「設定」から変更できます。
       </div>
-      <SectionLabel>集金項目</SectionLabel>
+      <SectionLabel>入金チェック</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : items.length === 0 ? (
@@ -219,7 +219,7 @@ export default function AccountingDuesPage() {
         </div>
       ) : (
         items.map((item) => (
-          <Link key={item.id} href={`/accounting/dues/${item.id}`}>
+          <div key={item.id} className="mb-2.5">\n          <Link href={`/accounting/dues/${item.id}/checklist`}>
             <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
@@ -237,7 +237,7 @@ export default function AccountingDuesPage() {
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
             </div>
-          </Link>
+          </Link>\n          <Link href={`/accounting/dues/${item.id}`} className="block text-right text-[12px] font-bold text-blue-600 py-1 px-2">料金・集金設定</Link>\n          </div>
         ))
       )}
     </PageShell>
