@@ -14,6 +14,12 @@ describe("Joining supplement preview", () => {
   it("does not create a supplement for April joiner", () => {
     expect(previewJoiningSupplement({ plan, fiscalYear: 2026, joinDate: "2026-04-15" })).toBeNull();
   });
+  it("rejects invalid joining dates", () => {
+    expect(() => previewJoiningSupplement({ plan, fiscalYear: 2026, joinDate: "2026-02-30" })).toThrow();
+  });
+  it("does not bill a joiner after the fiscal year", () => {
+    expect(previewJoiningSupplement({ plan, fiscalYear: 2026, joinDate: "2027-04-01" })).toBeNull();
+  });
   it("calculates March joiner after February collection", () => {
     expect(previewJoiningSupplement({ plan, fiscalYear: 2026, joinDate: "2027-03-01" }))
       .toEqual({ collectionMonth: 2, coveredMonths: [3], amount: 2500 });
