@@ -86,7 +86,7 @@ export async function generateDuesCharges(
       const chargeRows = players
         .map((p) => {
           const setting = settingByPlayerId.get(p.id) ?? null;
-          if (!isPlayerBillableForPeriod(period, setting)) return null;
+          if (!configured && !isPlayerBillableForPeriod(period, setting)) return null;
           // 過去の集金月を過ぎてから加入した選手は自動で遡及請求しない。
           // 追加請求は管理者による確認・確定の別フローで扱う。
           if (configured && setting?.start_date && setting.start_date.slice(0, 7) > period.periodStart.slice(0, 7)) return null;
@@ -97,6 +97,7 @@ export async function generateDuesCharges(
             gradeBands: bands ?? [],
             playerSetting: setting,
           });
+          if (setting?.exempt) return null;
           if (monthlyAmount === null && !(configured && item.rate_basis === "yearly")) return null;
           let amount = (monthlyAmount ?? 0) * item.cycle_months;
           if (configured) {
@@ -153,7 +154,13 @@ export async function generateDuesCharges(
 
       if (chargeRows.length > 0) {
         const { error: chargeError } = await supabase.from("accounting_dues_charges").insert(chargeRows);
-        if (!chargeError) chargesCreated += chargeRows.length;
+        if (chargeError) {
+          const { error: rollbackError } = await supabase.from("accounting_dues_billing_periods").delete().eq("id", periodRow.id);
+          if (rollbackError) throw new Error(`請求作成に失敗し、期間の復旧にも失敗しました: ${rollbackError.message}`);
+          periodsCreated -= 1;
+          throw new Error(`請求作成に失敗しました: ${chargeError.message}`);
+        }
+        chargesCreated += chargeRows.length;
       }
     }
   }
