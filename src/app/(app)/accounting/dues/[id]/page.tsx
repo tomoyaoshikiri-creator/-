@@ -146,9 +146,9 @@ export default function AccountingDuesItemPage() {
       ? scheduleAmount !== Number(item.flat_yearly_amount ?? 0)
       : scheduleAmount !== Number(item.flat_monthly_amount ?? 0);
     const scheduleNeedsSave = scheduleChanged || (draftItem.pricing_method === "flat" && amountChanged)
-      || (item.schedule_mode !== "configured" && scheduleChanged);
+      || item.schedule_mode !== "configured";
     if (scheduleNeedsSave) {
-      if (scheduleDraft.months.length === 0 || !Number.isInteger(scheduleAmount) || scheduleAmount < 0) {
+      if (scheduleDraft.months.length === 0 || (draftItem.pricing_method === "flat" && (!Number.isSafeInteger(scheduleAmount) || scheduleAmount < 0))) {
         toast.warning("集金月と料金を正しく設定してください");
         return;
       }
