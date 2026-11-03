@@ -56,6 +56,7 @@ export default function AccountingDuesPage() {
   const [periods, setPeriods] = useState<AccountingDuesBillingPeriod[]>([]);
   const [charges, setCharges] = useState<AccountingDuesCharge[]>([]);
   const [fiscalYear, setFiscalYear] = useState(fiscalYearOf(todayDateStr()));
+  const [updatingCell, setUpdatingCell] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -80,6 +81,33 @@ export default function AccountingDuesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function toggleMonth(playerId: string, month: number) {
+    if (!canManageAccounting(role)) return;
+    const periodIds = periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id);
+    const playerCharges = charges.filter(c => c.player_id === playerId && periodIds.includes(c.billing_period_id));
+    if (!playerCharges.length) return;
+    const nextStatus = playerCharges.every(c => c.status === "paid") ? "unpaid" : "paid";
+    // 世帯請求の場合は、同じ請求期間・世帯の全選手を同時に更新する。
+    const targets = charges.filter(c => playerCharges.some(p => p.billing_period_id === c.billing_period_id && p.group_key === c.group_key));
+    const cellKey = `${playerId}-${month}`;
+    setUpdatingCell(cellKey);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("認証情報を確認できませんでした");
+      setUpdatingCell(null);
+      return;
+    }
+    const now = new Date().toISOString();
+    const ids = targets.map(c => c.id);
+    const { error } = await supabase.from("accounting_dues_charges")
+      .update({ status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? user.id : null, updated_at: now })
+      .in("id", ids);
+    if (error) toast.error(`入金状態の更新に失敗しました: ${error.message}`);
+    else setCharges(prev => prev.map(c => ids.includes(c.id) ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? user.id : null, updated_at: now } : c));
+    setUpdatingCell(null);
+  }
 
   const [modalOpen, setModalOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
@@ -237,9 +265,9 @@ export default function AccountingDuesPage() {
                   {FISCAL_GRID_MONTHS.map(month => {
                     const status = duesGridStatus(player.id, month, periods, charges);
                     return <td key={month} className="text-center px-1 py-2">
-                      <span className={status === "paid" ? "text-green-text font-bold" : status === "unpaid" ? "text-orange-text font-bold" : "text-ink-soft"}>
-                        {status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
-                      </span>
+                      <button type="button" disabled={status === "none" || updatingCell !== null} onClick={() => toggleMonth(player.id, month)} aria-label={`${playerFullName(player)} ${month}月の入金状態を変更`} className={status === "paid" ? "text-green-text font-bold px-2 py-1" : status === "unpaid" ? "text-orange-text font-bold px-2 py-1" : "text-ink-soft px-2 py-1"}>
+                        {updatingCell === `${player.id}-${month}` ? "…" : status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
+                      </button>
                     </td>;
                   })}
                 </tr>
@@ -247,7 +275,7 @@ export default function AccountingDuesPage() {
             </tbody>
           </table>
         </div>
-        <div className="text-[11px] text-ink-soft mt-2">全項目を合算した入金状態です。各項目を開くと選手ごとに入金を変更できます。</div>
+        <div className="text-[11px] text-ink-soft mt-2">全項目を合算した入金状態です。「済」「未」をタップすると、その月の対象請求をまとめて切り替えます。</div>
       </div>
       <SectionLabel>入金チェック</SectionLabel>
       {loading ? (
