@@ -66,6 +66,13 @@ export default function AccountingDuesPage() {
     load();
   }, [load]);
 
+  // 集金項目が1つの場合は、項目一覧を挟まず選手別入金一覧へ進む。
+  useEffect(() => {
+    if (!loading && items.length === 1) {
+      router.replace(`/accounting/dues/${items[0].id}/checklist`);
+    }
+  }, [loading, items, router]);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
