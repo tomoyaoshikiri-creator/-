@@ -197,9 +197,17 @@ export default function AccountingDuesPage() {
                   ))}
                 </div>
               </section>
+              <section>
+                <FieldLabel>3. 料金の基準</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">月額または年額を選択してください。</div>
+                <div className="flex gap-2 mb-2">
+                  {(draft.pricing_method === "per_player" ? ["monthly"] as const : ["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
+                    onClick={()=>setDraft(d=>({...d,rate_basis:basis}))}>{basis==="monthly"?"月額":"年額"}</SegButton>)}
+                </div>
+              </section>
               {draft.pricing_method === "grade_band" && <section>
-                <FieldLabel>3. 学年帯ごとの料金</FieldLabel>
-                <div className="text-[11px] text-ink-soft mb-2">料金基準は下の「月額／年額」で切り替えられます。</div>
+                <FieldLabel>4. 学年帯ごとの料金</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">上で選択した料金基準に応じて金額を設定します。</div>
                 {bands.map((b,i) => <div key={i} className="flex items-center justify-between gap-2 border-b border-line py-2 text-[12px]">
                   <span>{gradeLabel(String(b.grade_min),category)}〜{gradeLabel(String(b.grade_max),category)}：{formatYen(Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount))}/{draft.rate_basis === "yearly" ? "年" : "月"}</span>
                   <button type="button" className="text-ink-soft underline" onClick={() => setBands(prev => prev.filter((_,j) => j!==i))}>削除</button>
@@ -226,40 +234,8 @@ export default function AccountingDuesPage() {
                 </div>
               </section>}
               <section>
-                <FieldLabel>{draft.pricing_method === "grade_band" ? "4." : "3."} 選手ごとの個別設定</FieldLabel>
-                <div className="text-[11px] text-ink-soft mb-2">免除・金額の上書き・請求開始/停止月が必要な選手を設定します。</div>
-                {playerSettings.map(p=><div key={p.player_id} className="border border-line rounded-lg p-2.5 mb-2 space-y-2">
-                  <div className="flex items-center justify-between text-[12px] font-bold">
-                    <span>{playerFullName(roster.find(x=>x.id===p.player_id)!)}</span>
-                    <button type="button" className="text-ink-soft underline" onClick={()=>setPlayerSettings(prev=>prev.filter(x=>x.player_id!==p.player_id))}>削除</button>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <input type="number" min={0} placeholder="月額（空欄は基本料金）" className={inputClass("flex-1")} value={p.monthly_amount}
-                      onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,monthly_amount:e.target.value}:x))}/>
-                    <label className="flex gap-1 text-[12px]"><input type="checkbox" checked={p.exempt}
-                      onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,exempt:e.target.checked}:x))}/>免除</label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="text-[11px]">開始日<input type="date" className={inputClass()} value={p.start_date} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,start_date:e.target.value}:x))}/></label>
-                    <label className="text-[11px]">停止日<input type="date" className={inputClass()} value={p.stop_date} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,stop_date:e.target.value}:x))}/></label>
-                  </div>
-                  <input className={inputClass()} placeholder="備考" value={p.note} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,note:e.target.value}:x))}/>
-                </div>)}
-                <div className="flex gap-2">
-                  <select className={inputClass("flex-1")} value={newPlayerId} onChange={e=>setNewPlayerId(e.target.value)}>
-                    <option value="">選手を選ぶ</option>
-                    {roster.filter(p=>!playerSettings.some(x=>x.player_id===p.id)).map(p=><option key={p.id} value={p.id}>{playerFullName(p)}</option>)}
-                  </select>
-                  <button type="button" className="px-3 border border-line rounded-lg font-bold text-[12px]" disabled={!newPlayerId}
-                    onClick={()=>{setPlayerSettings(prev=>[...prev,{player_id:newPlayerId,monthly_amount:"",exempt:false,start_date:"",stop_date:"",note:""}]);setNewPlayerId("");}}>追加</button>
-                </div>
-              </section>
-              <section>
-                <FieldLabel>集金月・集金予定額</FieldLabel>
-                <div className="flex gap-2 mb-2">
-                  {(draft.pricing_method === "per_player" ? ["monthly"] as const : ["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
-                    onClick={()=>setDraft(d=>({...d,rate_basis:basis}))}>{basis==="monthly"?"月額":"年額"}</SegButton>)}
-                </div>
+                <FieldLabel>{draft.pricing_method === "grade_band" ? "5." : "4."} 集金月・集金予定額</FieldLabel>
+
                 {draft.pricing_method==="flat" && <input type="number" min={1} placeholder={draft.rate_basis==="monthly"?"月額（円）":"年額（円）"}
                   className={inputClass()} value={draft.rate_basis==="monthly"?draft.flat_monthly_amount:draft.flat_yearly_amount}
                   onChange={e=>setDraft(d=>({...d,[d.rate_basis==="monthly"?"flat_monthly_amount":"flat_yearly_amount"]:e.target.value}))}/>}
@@ -289,7 +265,36 @@ export default function AccountingDuesPage() {
                 </div>}
               </section>
               <section>
-                <FieldLabel>集金の設定</FieldLabel>
+                <FieldLabel>{draft.pricing_method === "grade_band" ? "6." : "5."} 選手ごとの個別設定</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">免除・金額の上書き・請求開始/停止月が必要な選手を設定します。</div>
+                {playerSettings.map(p=><div key={p.player_id} className="border border-line rounded-lg p-2.5 mb-2 space-y-2">
+                  <div className="flex items-center justify-between text-[12px] font-bold">
+                    <span>{playerFullName(roster.find(x=>x.id===p.player_id)!)}</span>
+                    <button type="button" className="text-ink-soft underline" onClick={()=>setPlayerSettings(prev=>prev.filter(x=>x.player_id!==p.player_id))}>削除</button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <input type="number" min={0} placeholder="月額（空欄は基本料金）" className={inputClass("flex-1")} value={p.monthly_amount}
+                      onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,monthly_amount:e.target.value}:x))}/>
+                    <label className="flex gap-1 text-[12px]"><input type="checkbox" checked={p.exempt}
+                      onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,exempt:e.target.checked}:x))}/>免除</label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[11px]">開始日<input type="date" className={inputClass()} value={p.start_date} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,start_date:e.target.value}:x))}/></label>
+                    <label className="text-[11px]">停止日<input type="date" className={inputClass()} value={p.stop_date} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,stop_date:e.target.value}:x))}/></label>
+                  </div>
+                  <input className={inputClass()} placeholder="備考" value={p.note} onChange={e=>setPlayerSettings(prev=>prev.map(x=>x.player_id===p.player_id?{...x,note:e.target.value}:x))}/>
+                </div>)}
+                <div className="flex gap-2">
+                  <select className={inputClass("flex-1")} value={newPlayerId} onChange={e=>setNewPlayerId(e.target.value)}>
+                    <option value="">選手を選ぶ</option>
+                    {roster.filter(p=>!playerSettings.some(x=>x.player_id===p.id)).map(p=><option key={p.id} value={p.id}>{playerFullName(p)}</option>)}
+                  </select>
+                  <button type="button" className="px-3 border border-line rounded-lg font-bold text-[12px]" disabled={!newPlayerId}
+                    onClick={()=>{setPlayerSettings(prev=>[...prev,{player_id:newPlayerId,monthly_amount:"",exempt:false,start_date:"",stop_date:"",note:""}]);setNewPlayerId("");}}>追加</button>
+                </div>
+              </section>
+              <section>
+                <FieldLabel>{draft.pricing_method === "grade_band" ? "7." : "6."} 集金の設定</FieldLabel>
                 <div className="text-[11px] text-ink-soft">集金の周期は上の「集金月」で設定します。</div>
                 <FieldLabel>請求の単位</FieldLabel>
                 <div className="flex gap-2">{(Object.keys(DUES_BILLING_UNIT_LABELS) as DuesBillingUnit[]).map(u=><SegButton key={u} active={draft.billing_unit===u}
@@ -299,7 +304,7 @@ export default function AccountingDuesPage() {
                   onClick={()=>setDraft(d=>({...d,payment_methods:d.payment_methods.includes(method)?d.payment_methods.filter(m=>m!==method):[...d.payment_methods,method]}))}>{DUES_PAYMENT_METHOD_LABELS[method]}</SegButton>)}</div>
               </section>
               <section>
-                <FieldLabel>計上先の収入項目</FieldLabel>
+                <FieldLabel>{draft.pricing_method === "grade_band" ? "8." : "7."} 計上先の収入項目</FieldLabel>
                 <select className={inputClass()} value={draft.income_category_id} onChange={e=>setDraft(d=>({...d,income_category_id:e.target.value}))}>
                   <option value="">選ぶ</option>
                   {incomeCategories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
@@ -307,7 +312,7 @@ export default function AccountingDuesPage() {
                 {incomeCategories.length===0 && <div className="text-[11px] text-danger-text mt-1">先に「項目の管理」で収入項目を追加してください</div>}
               </section>
               <section>
-                <FieldLabel>リマインド設定（日数・任意）</FieldLabel>
+                <FieldLabel>{draft.pricing_method === "grade_band" ? "9." : "8."} リマインド設定（日数・任意）</FieldLabel>
                 <input type="number" min={0} className={inputClass()} value={draft.reminder_days_after}
                   onChange={e=>setDraft(d=>({...d,reminder_days_after:e.target.value}))}/>
               </section>
