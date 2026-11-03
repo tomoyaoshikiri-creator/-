@@ -199,6 +199,7 @@ export default function AccountingDuesPage() {
               </section>
               {draft.pricing_method === "grade_band" && <section>
                 <FieldLabel>3. 学年帯ごとの料金</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">料金基準は下の「月額／年額」で切り替えられます。</div>
                 {bands.map((b,i) => <div key={i} className="flex items-center justify-between gap-2 border-b border-line py-2 text-[12px]">
                   <span>{gradeLabel(String(b.grade_min),category)}〜{gradeLabel(String(b.grade_max),category)}：{formatYen(Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount))}/{draft.rate_basis === "yearly" ? "年" : "月"}</span>
                   <button type="button" className="text-ink-soft underline" onClick={() => setBands(prev => prev.filter((_,j) => j!==i))}>削除</button>
@@ -218,7 +219,7 @@ export default function AccountingDuesPage() {
                   <button type="button" className="px-3 rounded-lg border border-line font-bold text-[12px]"
                     onClick={()=>{
                       const n=Number(draft.rate_basis === "yearly" ? bandInput.yearly_amount : bandInput.monthly_amount);
-                      if (bandInput.grade_min>bandInput.grade_max || !Number.isSafeInteger(n) || n<=0) { toast.warning("学年帯と月額を確認してください"); return; }
+                      if (bandInput.grade_min>bandInput.grade_max || !Number.isSafeInteger(n) || n<=0) { toast.warning("学年帯と料金を確認してください"); return; }
                       setBands(prev=>[...prev,bandInput].sort((x,y)=>x.grade_min-y.grade_min));
                       setBandInput({grade_min:gradesFor(category)[0]??0,grade_max:gradesFor(category)[0]??0,monthly_amount:"",yearly_amount:""});
                     }}>追加</button>
