@@ -75,6 +75,7 @@ export default function AccountingDuesItemPage() {
   const [bands, setBands] = useState<AccountingDuesGradeBand[]>([]);
   const [draftBands, setDraftBands] = useState<AccountingDuesGradeBand[]>([]);
   const [playerSettings, setPlayerSettings] = useState<AccountingDuesPlayerSetting[]>([]);
+  const [draftPlayerSettings, setDraftPlayerSettings] = useState<AccountingDuesPlayerSetting[]>([]);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -105,6 +106,7 @@ export default function AccountingDuesItemPage() {
     setBands(bandRows ?? []);
     setDraftBands(bandRows ?? []);
     setPlayerSettings(settingRows ?? []);
+    setDraftPlayerSettings(settingRows ?? []);
     setRoster(players ?? []);
     setLoading(false);
   }, [params.id]);
@@ -123,6 +125,7 @@ export default function AccountingDuesItemPage() {
     if (!item) return;
     setDraftItem({ ...item });
     setDraftBands(bands.map(b => ({ ...b })));
+    setDraftPlayerSettings(playerSettings.map(p => ({ ...p })));
     setScheduleDraft({
       basis: item.rate_basis ?? "monthly",
       amount: String((item.rate_basis === "yearly" ? item.flat_yearly_amount : item.flat_monthly_amount) ?? ""),
@@ -143,7 +146,8 @@ export default function AccountingDuesItemPage() {
     }
     setSaving(true);
     const bandsChanged = JSON.stringify(draftBands) !== JSON.stringify(bands);
-    if (bandsChanged) {
+    const playersChanged = JSON.stringify(draftPlayerSettings) !== JSON.stringify(playerSettings);
+    if (bandsChanged || playersChanged) {
       const supabase = createClient();
       const { count, error: historyError } = await supabase.from("accounting_dues_billing_periods")
         .select("id", { count: "exact", head: true }).eq("dues_item_id", item.id)
@@ -165,6 +169,25 @@ export default function AccountingDuesItemPage() {
           monthly_amount: band.monthly_amount,
         });
         if (error) { setSaving(false); toast.error("学年帯の追加に失敗しました"); await load(); return; }
+      }
+    }
+    if (playersChanged) {
+      const supabase = createClient();
+      for (const original of playerSettings) {
+        if (!draftPlayerSettings.some(p => p.id === original.id)) {
+          const { error } = await supabase.from("accounting_dues_player_settings").delete().eq("id", original.id);
+          if (error) { setSaving(false); toast.error("選手別設定の削除に失敗しました"); await load(); return; }
+        }
+      }
+      for (const p of draftPlayerSettings) {
+        const old = playerSettings.find(x => x.id === p.id);
+        if (old && JSON.stringify(old) === JSON.stringify(p)) continue;
+        const patch = { monthly_amount: p.monthly_amount, exempt: p.exempt,
+          start_date: p.start_date, stop_date: p.stop_date, note: p.note };
+        const { error } = old
+          ? await supabase.from("accounting_dues_player_settings").update(patch).eq("id", p.id)
+          : await supabase.from("accounting_dues_player_settings").insert({ ...patch, dues_item_id: item.id, player_id: p.player_id });
+        if (error) { setSaving(false); toast.error("選手別設定の保存に失敗しました"); await load(); return; }
       }
     }
     const { data, error } = await createClient().from("accounting_dues_items")
@@ -232,46 +255,23 @@ export default function AccountingDuesItemPage() {
   }
 
   // 選手ごとの個別設定の追加・編集
-  const settingPlayerIds = new Set(playerSettings.map((s) => s.player_id));
-  const candidates = roster.filter((p) => !settingPlayerIds.has(p.id));
+  const visiblePlayerSettings = editing ? draftPlayerSettings : playerSettings;
+  const settingPlayerIds = new Set(visiblePlayerSettings.map(s => s.player_id));
+  const candidates = roster.filter(p => !settingPlayerIds.has(p.id));
   const [newPlayerId, setNewPlayerId] = useState("");
-  async function handleAddPlayerSetting() {
+  function handleAddPlayerSetting() {
     if (!item || !newPlayerId) return;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("accounting_dues_player_settings")
-      .insert({ dues_item_id: item.id, player_id: newPlayerId })
-      .select("*")
-      .single();
-    if (error || !data) {
-      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
-      return;
-    }
-    setPlayerSettings((prev) => [...prev, data]);
+    setDraftPlayerSettings(prev => [...prev, {
+      id: `draft-${crypto.randomUUID()}`, dues_item_id: item.id, player_id: newPlayerId,
+      monthly_amount: null, exempt: false, start_date: null, stop_date: null, note: null,
+    } as AccountingDuesPlayerSetting]);
     setNewPlayerId("");
   }
-  async function handleUpdatePlayerSetting(id: string, patch: DuesPlayerSettingPatch) {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("accounting_dues_player_settings")
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq("id", id)
-      .select("*")
-      .single();
-    if (error || !data) {
-      toast.error(`保存に失敗しました: ${error?.message ?? ""}`);
-      return;
-    }
-    setPlayerSettings((prev) => prev.map((s) => (s.id === id ? data : s)));
+  function handleUpdatePlayerSetting(id: string, patch: DuesPlayerSettingPatch) {
+    setDraftPlayerSettings(prev => prev.map(p => p.id === id ? ({ ...p, ...patch } as AccountingDuesPlayerSetting) : p));
   }
-  async function handleDeletePlayerSetting(id: string) {
-    const supabase = createClient();
-    const { error } = await supabase.from("accounting_dues_player_settings").delete().eq("id", id);
-    if (error) {
-      toast.error(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setPlayerSettings((prev) => prev.filter((s) => s.id !== id));
+  function handleDeletePlayerSetting(id: string) {
+    setDraftPlayerSettings(prev => prev.filter(p => p.id !== id));
   }
 
   if (loading) {
@@ -326,7 +326,7 @@ export default function AccountingDuesItemPage() {
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[12px] text-ink-soft">{editing ? "編集中" : "閲覧モード"}</span>
         {!editing && (
-          <button type="button" onClick={() => { setDraftItem({ ...item }); setDraftBands(bands.map(b => ({ ...b }))); setEditing(true); }}
+          <button type="button" onClick={() => { setDraftItem({ ...item }); setDraftBands(bands.map(b => ({ ...b }))); setDraftPlayerSettings(playerSettings.map(p => ({ ...p }))); setEditing(true); }}
             className="px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8">
             ✏️ 編集
           </button>
@@ -416,11 +416,11 @@ export default function AccountingDuesItemPage() {
         <>
           <SectionLabel>{step("学年帯ごとの月額")}</SectionLabel>
           <div className={cardClass}>
-            {bands.length === 0 ? (
+            {(editing ? draftBands : bands).length === 0 ? (
               <EmptyState>まだ学年帯が設定されていません</EmptyState>
             ) : (
               <ul>
-                {bands.map((b) => (
+                {(editing ? draftBands : bands).map((b) => (
                   <li key={b.id} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
                     <span className="text-[13px] font-bold">
                       {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}: {formatYen(Number(b.monthly_amount))}/月
@@ -438,7 +438,7 @@ export default function AccountingDuesItemPage() {
               </ul>
             )}
             {editing && grades.length > 0 && (
-              <div className={bands.length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
+              <div className={(editing ? draftBands : bands).length > 0 ? "mt-2.5 flex flex-col gap-1.5" : "flex flex-col gap-1.5"}>
                 <div className="flex items-center gap-1.5">
                   <select
                     className={inputClass("flex-1")}
@@ -496,11 +496,11 @@ export default function AccountingDuesItemPage() {
           : "免除・金額の上書き・請求開始/停止月が必要な選手だけ、ここで設定します。"}
       </div>
       <div className={cardClass}>
-        {playerSettings.length === 0 ? (
+        {visiblePlayerSettings.length === 0 ? (
           <EmptyState>まだ個別設定がありません</EmptyState>
         ) : (
           <ul>
-            {playerSettings.map((s) => {
+            {visiblePlayerSettings.map((s) => {
               const player = roster.find((p) => p.id === s.player_id);
               return (
                 <li key={s.id} className="py-2.5 border-b border-line last:border-b-0">
@@ -573,7 +573,7 @@ export default function AccountingDuesItemPage() {
           </ul>
         )}
         {editing && candidates.length > 0 && (
-          <div className={playerSettings.length > 0 ? "mt-2.5 flex gap-2" : "flex gap-2"}>
+          <div className={visiblePlayerSettings.length > 0 ? "mt-2.5 flex gap-2" : "flex gap-2"}>
             <select className={inputClass("flex-1")} value={newPlayerId} onChange={(e) => setNewPlayerId(e.target.value)}>
               <option value="">選手を選ぶ</option>
               {candidates.map((p) => (
