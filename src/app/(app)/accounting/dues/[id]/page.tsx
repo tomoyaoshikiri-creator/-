@@ -792,7 +792,7 @@ export default function AccountingDuesItemPage() {
         )}
       </div>
 
-      {editing && <div className="sticky bottom-0 z-10 flex gap-2 py-3 bg-paper border-t border-line">
+      {editing && <div className="fixed left-4 right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-30 flex gap-2 rounded-xl border border-line bg-paper p-2 shadow-lg md:bottom-4 md:left-auto md:right-6 md:w-[min(32rem,calc(100vw-3rem))]">
         <button type="button" disabled={saving} onClick={cancelEditing}
           className="flex-1 py-2.5 rounded-lg border border-line font-bold text-[13px]">キャンセル</button>
         <button type="button" disabled={saving} onClick={saveAll}
