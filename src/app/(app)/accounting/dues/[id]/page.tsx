@@ -156,10 +156,7 @@ export default function AccountingDuesItemPage() {
         toast.warning("月額または年額は1円以上で設定してください");
         return;
       }
-      if (draftItem.pricing_method === "grade_band" && scheduleDraft.basis === "yearly") {
-        toast.warning("学年帯別料金は月額基準で設定してください");
-        return;
-      }
+      
     }
     setSaving(true);
     const bandsChanged = JSON.stringify(draftBands) !== JSON.stringify(bands);
@@ -184,6 +181,7 @@ export default function AccountingDuesItemPage() {
         const { error } = await supabase.from("accounting_dues_grade_bands").insert({
           dues_item_id: item.id, grade_min: band.grade_min, grade_max: band.grade_max,
           monthly_amount: band.monthly_amount,
+          yearly_amount: band.yearly_amount,
         });
         if (error) { setSaving(false); toast.error("学年帯の追加に失敗しました"); await load(); return; }
       }
@@ -262,19 +260,20 @@ export default function AccountingDuesItemPage() {
 
   // 学年帯の追加
   const grades = gradeOptions(category);
-  const [bandDraft, setBandDraft] = useState({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "" });
+  const [bandDraft, setBandDraft] = useState({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "", yearly_amount: "" });
   function handleAddBand() {
     if (!item) return;
-    const amount = Number(bandDraft.monthly_amount);
+    const amount = Number(scheduleDraft.basis === "yearly" ? bandDraft.yearly_amount : bandDraft.monthly_amount);
     if (bandDraft.grade_min > bandDraft.grade_max || !Number.isFinite(amount) || amount <= 0) {
       toast.warning("学年の範囲・月額を正しく入力してください"); return;
     }
     setDraftBands(prev => [...prev, {
       id: `draft-${crypto.randomUUID()}`, dues_item_id: item.id,
       grade_min: bandDraft.grade_min, grade_max: bandDraft.grade_max,
-      monthly_amount: amount,
+      monthly_amount: scheduleDraft.basis === "monthly" ? amount : 0,
+      yearly_amount: scheduleDraft.basis === "yearly" ? amount : null,
     } as AccountingDuesGradeBand].sort((x,y) => x.grade_min-y.grade_min));
-    setBandDraft({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "" });
+    setBandDraft({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "", yearly_amount: "" });
   }
   function handleDeleteBand(id: string) {
     setDraftBands(prev => prev.filter(b => b.id !== id));
@@ -437,7 +436,7 @@ export default function AccountingDuesItemPage() {
 
       {pricingMethod === "grade_band" && (
         <>
-          <SectionLabel>{step("学年帯ごとの月額")}</SectionLabel>
+          <SectionLabel>{step("学年帯ごとの料金")}</SectionLabel>
           <div className={cardClass}>
             {(editing ? draftBands : bands).length === 0 ? (
               <EmptyState>まだ学年帯が設定されていません</EmptyState>
@@ -446,7 +445,7 @@ export default function AccountingDuesItemPage() {
                 {(editing ? draftBands : bands).map((b) => (
                   <li key={b.id} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
                     <span className="text-[13px] font-bold">
-                      {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}: {formatYen(Number(b.monthly_amount))}/月
+                      {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}: {formatYen(Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount))}/{scheduleDraft.basis === "yearly" ? "年" : "月"}
                     </span>
                     <button
                       type="button"
@@ -492,10 +491,10 @@ export default function AccountingDuesItemPage() {
                     <input
                       type="number"
                       min={1}
-                      placeholder="月額"
+                      placeholder={scheduleDraft.basis === "yearly" ? "年額" : "月額"}
                       className={inputClass()}
-                      value={bandDraft.monthly_amount}
-                      onChange={(e) => setBandDraft((d) => ({ ...d, monthly_amount: e.target.value }))}
+                      value={scheduleDraft.basis === "yearly" ? bandDraft.yearly_amount : bandDraft.monthly_amount}
+                      onChange={(e) => setBandDraft((d) => ({ ...d, [scheduleDraft.basis === "yearly" ? "yearly_amount" : "monthly_amount"]: e.target.value }))}
                     />
                   </div>
                   <button
@@ -657,14 +656,14 @@ export default function AccountingDuesItemPage() {
             {installmentPreview.map(row => <div key={row.month} className="flex justify-between text-[12px] py-1"><span>{row.month}月（{row.coveredMonths.length}か月）</span><span>{formatYen(row.amount)}</span></div>)}
             <div className="border-t border-line mt-1 pt-2 text-[13px] font-bold">年間 {formatYen(installmentPreview.reduce((sum, row) => sum + row.amount, 0))}</div>
           </div>
-        ) : pricingMethod === "grade_band" && scheduleDraft.basis === "monthly" ? (
+        ) : pricingMethod === "grade_band" ? (
           <div className="mt-3 rounded-lg bg-line/30 p-2.5">
             <div className="text-[12px] font-bold mb-1">学年帯別の集金予定額（参考）</div>
             {(editing ? draftBands : bands).map(b => {
               let rows: ReturnType<typeof calculateDuesInstallments> = [];
-              try { rows = calculateDuesInstallments({ basis: "monthly", amount: Number(b.monthly_amount), collectionMonths: scheduleDraft.months }); } catch { /* 集金月未設定 */ }
+              try { rows = calculateDuesInstallments({ basis: scheduleDraft.basis, amount: Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount), collectionMonths: scheduleDraft.months }); } catch { /* 集金月未設定 */ }
               return <div key={b.id} className="py-2 border-b border-line last:border-b-0">
-                <div className="text-[12px] font-bold">{gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}：月額 {formatYen(Number(b.monthly_amount))}</div>
+                <div className="text-[12px] font-bold">{gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}：{scheduleDraft.basis === "yearly" ? "年額" : "月額"} {formatYen(Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount))}</div>
                 {rows.map(row => <div key={row.month} className="flex justify-between text-[11px] py-0.5"><span>{row.month}月（{row.coveredMonths.length}か月分）</span><span>{formatYen(row.amount)}</span></div>)}
               </div>;
             })}
@@ -677,14 +676,7 @@ export default function AccountingDuesItemPage() {
       <div className={cardClass}>
         {editing ? (
           <>
-            <FieldLabel>集金の周期</FieldLabel>
-            <div className="flex flex-wrap gap-1.5">
-              {DUES_CYCLE_MONTHS_OPTIONS.map((c) => (
-                <SegButton key={c} active={currentItem.cycle_months === c} onClick={() => handleSave({ cycle_months: c })}>
-                  {DUES_CYCLE_MONTHS_LABELS[c as DuesCycleMonths]}
-                </SegButton>
-              ))}
-            </div>
+            <div className="text-[11px] text-ink-soft">集金月は上の設定を使用します。</div>
             <div className="mt-2.5">
               <FieldLabel>支払い方法(複数選択可)</FieldLabel>
               <div className="flex flex-wrap gap-1.5">
@@ -708,10 +700,6 @@ export default function AccountingDuesItemPage() {
           </>
         ) : (
           <div className="flex flex-col gap-1.5 text-[12.5px]">
-            <div>
-              <span className="text-ink-soft">周期: </span>
-              <span className="font-bold">{DUES_CYCLE_MONTHS_LABELS[currentItem.cycle_months as DuesCycleMonths]}</span>
-            </div>
             <div>
               <span className="text-ink-soft">支払い方法: </span>
               <span className="font-bold">
