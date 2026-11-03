@@ -243,41 +243,9 @@ export default function AccountingDuesPage() {
       }
     >
       <div className="text-[12px] text-ink-soft mb-3">
-        集金項目を選ぶと、選手別の年間入金一覧を開きます。料金や集金月は各項目の「設定」から変更できます。
+        ここでは集金項目・料金・集金月を設定します。入金状況の確認と変更は「入金管理」から行えます。
       </div>
-      <SectionLabel>選手別・年間入金一覧</SectionLabel>
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-3">
-          <button type="button" onClick={() => setFiscalYear(y => y - 1)} className="px-3 py-1 rounded-lg border border-line">前年度</button>
-          <strong className="text-[13px]">{fiscalYear}年度</strong>
-          <button type="button" onClick={() => setFiscalYear(y => y + 1)} className="px-3 py-1 rounded-lg border border-line">次年度</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px] border-collapse">
-            <thead><tr className="border-b border-line">
-              <th className="sticky left-0 bg-paper text-left px-2 py-2 min-w-[105px]">選手</th>
-              {FISCAL_GRID_MONTHS.map(m => <th key={m} className="text-center px-1 py-2 min-w-[36px]">{m}月</th>)}
-            </tr></thead>
-            <tbody>
-              {sortDuesPlayers(roster).map(player => (
-                <tr key={player.id} className="border-b border-line last:border-b-0">
-                  <th className="sticky left-0 bg-paper text-left px-2 py-2 whitespace-nowrap">{playerFullName(player)}{player.number ? ` #${player.number}` : ""}</th>
-                  {FISCAL_GRID_MONTHS.map(month => {
-                    const status = duesGridStatus(player.id, month, periods, charges);
-                    return <td key={month} className="text-center px-1 py-2">
-                      <button type="button" disabled={status === "none" || updatingCell !== null} onClick={() => toggleMonth(player.id, month)} aria-label={`${playerFullName(player)} ${month}月の入金状態を変更`} className={status === "paid" ? "text-green-text font-bold px-2 py-1" : status === "unpaid" ? "text-orange-text font-bold px-2 py-1" : "text-ink-soft px-2 py-1"}>
-                        {updatingCell === `${player.id}-${month}` ? "…" : status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
-                      </button>
-                    </td>;
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="text-[11px] text-ink-soft mt-2">全項目を合算した入金状態です。「済」「未」をタップすると、その月の対象請求をまとめて切り替えます。</div>
-      </div>
-      <SectionLabel>入金チェック</SectionLabel>
+      <SectionLabel>集金項目の設定</SectionLabel>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : items.length === 0 ? (
@@ -286,7 +254,8 @@ export default function AccountingDuesPage() {
         </div>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="mb-2.5">\n          <Link href={`/accounting/dues/${item.id}/checklist`}>
+          <div key={item.id} className="mb-2.5">
+          <Link href={`/accounting/dues/${item.id}/checklist`}>
             <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
@@ -304,7 +273,9 @@ export default function AccountingDuesPage() {
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
               </div>
             </div>
-          </Link>\n          <Link href={`/accounting/dues/${item.id}`} className="block text-right text-[12px] font-bold text-blue-600 py-1 px-2">料金・集金設定</Link>\n          </div>
+          </Link>
+          <Link href={`/accounting/dues/${item.id}`} className="block text-right text-[12px] font-bold text-blue-600 py-1 px-2">料金・集金設定</Link>
+          </div>
         ))
       )}
     </PageShell>
