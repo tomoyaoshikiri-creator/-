@@ -65,9 +65,10 @@ export async function generateDuesCharges(
     const scheduledPeriods = configured
       ? schedule.map((entry) => {
           const start = fiscalMonthDate(fiscalYear, entry.month);
-          const nextOffset = entry.coveredMonths.length;
-          const [y, m] = start.split("-").map(Number);
-          const endDate = new Date(Date.UTC(y, m - 1 + nextOffset, 0));
+          // 初回の集金月が4月以外でも、期間末は対象月の最終月から算出する。
+          const lastCoveredMonth = entry.coveredMonths[entry.coveredMonths.length - 1];
+          const [y, m] = fiscalMonthDate(fiscalYear, lastCoveredMonth).split("-").map(Number);
+          const endDate = new Date(Date.UTC(y, m, 0));
           return { periodStart: start, periodEnd: endDate.toISOString().slice(0, 10), coveredMonths: entry.coveredMonths };
         }).filter((p) => p.periodStart <= todayStr)
       : computeDuesPeriods(fiscalYear, item.cycle_months, todayStr);
