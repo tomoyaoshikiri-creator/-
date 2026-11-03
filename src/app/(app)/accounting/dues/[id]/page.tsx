@@ -1,5 +1,6 @@
-import { PILL_NAV_BOTTOM_OFFSET, PILL_NAV_TAB_HEIGHT_PX } from "@/components/PillNavBar";
 "use client";
+
+import { PILL_NAV_BOTTOM_OFFSET, PILL_NAV_TAB_HEIGHT_PX } from "@/components/PillNavBar";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
