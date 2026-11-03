@@ -12,6 +12,8 @@ import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
+import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
+import { fiscalYearOf, todayDateStr, playerFullName } from "@/lib/format";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import {
@@ -23,7 +25,7 @@ import {
   type DuesCycleMonths,
   type DuesPricingMethod,
 } from "@/lib/accounting";
-import type { AccountingCategory, AccountingDuesItem } from "@/lib/database.types";
+import type { AccountingCategory, AccountingDuesItem, AccountingDuesBillingPeriod, AccountingDuesCharge, RosterPlayer } from "@/lib/database.types";
 
 interface Draft {
   name: string;
@@ -51,17 +53,30 @@ export default function AccountingDuesPage() {
   const [items, setItems] = useState<AccountingDuesItem[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<AccountingCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [periods, setPeriods] = useState<AccountingDuesBillingPeriod[]>([]);
+  const [charges, setCharges] = useState<AccountingDuesCharge[]>([]);
+  const [fiscalYear, setFiscalYear] = useState(fiscalYearOf(todayDateStr()));
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: duesItems }, { data: cats }] = await Promise.all([
+    const [{ data: duesItems }, { data: cats }, { data: players }, { data: billingPeriods }] = await Promise.all([
       supabase.from("accounting_dues_items").select("*").order("position", { ascending: true }),
       supabase.from("accounting_categories").select("*").eq("kind", "income").eq("auto_managed", false).order("position", { ascending: true }),
+      supabase.rpc("list_roster_players"),
+      supabase.from("accounting_dues_billing_periods").select("*").eq("fiscal_year", fiscalYear),
     ]);
     setItems(duesItems ?? []);
+    setRoster(players ?? []);
+    setPeriods(billingPeriods ?? []);
+    const ids = (billingPeriods ?? []).map(p => p.id);
+    if (ids.length) {
+      const { data: rows } = await supabase.from("accounting_dues_charges").select("*").in("billing_period_id", ids);
+      setCharges(rows ?? []);
+    } else setCharges([]);
     setIncomeCategories(cats ?? []);
     setLoading(false);
-  }, []);
+  }, [fiscalYear]);
 
   useEffect(() => {
     load();
@@ -209,6 +224,38 @@ export default function AccountingDuesPage() {
     >
       <div className="text-[12px] text-ink-soft mb-3">
         集金項目を選ぶと、選手別の年間入金一覧を開きます。料金や集金月は各項目の「設定」から変更できます。
+      </div>
+      <SectionLabel>選手別・年間入金一覧</SectionLabel>
+      <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-3">
+          <button type="button" onClick={() => setFiscalYear(y => y - 1)} className="px-3 py-1 rounded-lg border border-line">前年度</button>
+          <strong className="text-[13px]">{fiscalYear}年度</strong>
+          <button type="button" onClick={() => setFiscalYear(y => y + 1)} className="px-3 py-1 rounded-lg border border-line">次年度</button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px] border-collapse">
+            <thead><tr className="border-b border-line">
+              <th className="sticky left-0 bg-paper text-left px-2 py-2 min-w-[105px]">選手</th>
+              {FISCAL_GRID_MONTHS.map(m => <th key={m} className="text-center px-1 py-2 min-w-[36px]">{m}月</th>)}
+            </tr></thead>
+            <tbody>
+              {sortDuesPlayers(roster).map(player => (
+                <tr key={player.id} className="border-b border-line last:border-b-0">
+                  <th className="sticky left-0 bg-paper text-left px-2 py-2 whitespace-nowrap">{playerFullName(player)}{player.number ? ` #${player.number}` : ""}</th>
+                  {FISCAL_GRID_MONTHS.map(month => {
+                    const status = duesGridStatus(player.id, month, periods, charges);
+                    return <td key={month} className="text-center px-1 py-2">
+                      <span className={status === "paid" ? "text-green-text font-bold" : status === "unpaid" ? "text-orange-text font-bold" : "text-ink-soft"}>
+                        {status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
+                      </span>
+                    </td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="text-[11px] text-ink-soft mt-2">全項目を合算した入金状態です。各項目を開くと選手ごとに入金を変更できます。</div>
       </div>
       <SectionLabel>入金チェック</SectionLabel>
       {loading ? (
