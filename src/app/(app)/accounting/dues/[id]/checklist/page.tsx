@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -13,6 +14,7 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
 import { duesPeriodLabel } from "@/lib/accountingDues";
+import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
 import { loadProfilesMap } from "@/lib/profiles";
 import { fiscalYearLabel, fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
 import type { AccountingDuesBillingPeriod, AccountingDuesCharge, AccountingDuesItem, RosterPlayer } from "@/lib/database.types";
@@ -78,6 +80,29 @@ export default function AccountingDuesChecklistPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const [supplementPlayerId, setSupplementPlayerId] = useState("");
+  const [supplementPreview, setSupplementPreview] = useState<{ amount: number; coveredMonths: number[]; start: string; end: string } | null>(null);
+  const [supplementBusy, setSupplementBusy] = useState(false);
+  async function handleSupplement(confirm: boolean) {
+    if (!supplementPlayerId) return;
+    setSupplementBusy(true);
+    try {
+      const res = await fetch("/api/accounting/dues/joining-supplement", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duesItemId: params.id, playerId: supplementPlayerId, fiscalYear, confirm }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast.error(result.error ?? "追加請求を確認できません"); setSupplementPreview(null); return; }
+      if (confirm) {
+        toast.success("追加請求を確定しました");
+        setSupplementPreview(null);
+        setSupplementPlayerId("");
+        await load();
+      } else setSupplementPreview(result.preview);
+    } catch { toast.error("通信に失敗しました"); }
+    finally { setSupplementBusy(false); }
+  }
 
   const [generating, setGenerating] = useState(false);
   async function handleGenerate() {
@@ -151,6 +176,34 @@ export default function AccountingDuesChecklistPage() {
     );
   }
 
+  const [gridUpdating, setGridUpdating] = useState<string | null>(null);
+  async function handleGridToggle(playerId: string, month: number) {
+    const ids = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
+    const selected = charges.filter(c => c.player_id === playerId && ids.has(c.billing_period_id));
+    if (selected.length === 0) return;
+    const targets = charges.filter(c => selected.some(s => s.billing_period_id === c.billing_period_id && s.group_key === c.group_key));
+    const key = `${playerId}:${month}`;
+    setGridUpdating(key);
+    const nextStatus = selected.every(c => c.status === "paid") ? "unpaid" : "paid";
+    const now = new Date().toISOString();
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_dues_charges")
+      .update({
+        status: nextStatus,
+        paid_at: nextStatus === "paid" ? now : null,
+        paid_by: nextStatus === "paid" ? userId : null,
+      }).in("id", targets.map(c => c.id));
+    setGridUpdating(null);
+    if (error) {
+      toast.error(`入金状態の更新に失敗しました: ${error.message}`);
+      return;
+    }
+    const selectedIds = new Set(targets.map(c => c.id));
+    setCharges(prev => prev.map(c => selectedIds.has(c.id)
+      ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? userId : null }
+      : c));
+  }
+
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
   async function handleBulkCheck(periodId: string) {
     setBulkChecking(periodId);
@@ -192,6 +245,10 @@ export default function AccountingDuesChecklistPage() {
 
   return (
     <PageShell header={<AppHeader title={`入金チェック: ${item.name}`} variant="detail" backHref={`/accounting/dues/${item.id}`} accessBadge="operations" />}>
+      <div className="flex justify-end gap-3 mb-2 text-[12px] font-bold">
+        <Link href={`/accounting/dues/${item.id}`} className="text-blue-600">料金・集金設定</Link>
+        <Link href="/accounting/dues?manage=1" className="text-blue-600">集金項目の管理</Link>
+      </div>
       <SectionLabel>年度</SectionLabel>
       <div className={cardClass}>
         <InlineSelect
@@ -210,6 +267,64 @@ export default function AccountingDuesChecklistPage() {
         <div className="text-[10.5px] text-ink-soft mt-1.5">
           通常は毎朝自動で作成されます。集金項目を追加した直後など、すぐに確認したいときに使ってください。
         </div>
+      </div>
+
+      {item.schedule_mode === "configured" && item.rate_basis === "monthly" && (
+        <>
+          <SectionLabel>途中入団の追加請求</SectionLabel>
+          <div className={cardClass}>
+            <p className="text-[11px] text-ink-soft mb-2">入団日を選手別料金設定に登録した選手が対象です。金額を確認してから確定します。</p>
+            <select className="w-full border border-line rounded-lg p-2 text-[13px] bg-paper" value={supplementPlayerId}
+              onChange={e => { setSupplementPlayerId(e.target.value); setSupplementPreview(null); }}>
+              <option value="">選手を選択</option>
+              {sortDuesPlayers(roster).map(p => <option key={p.id} value={p.id}>{playerFullName(p)}</option>)}
+            </select>
+            <button type="button" disabled={!supplementPlayerId || supplementBusy} onClick={() => handleSupplement(false)}
+              className="mt-2 px-3 py-2 rounded-lg border border-line text-[12px] font-bold disabled:opacity-50">追加請求を確認</button>
+            {supplementPreview && (
+              <div className="mt-3 border-t border-line pt-3">
+                <p className="text-[12px] font-bold">対象：{supplementPreview.coveredMonths.join("・")}月分 ／ {formatYen(supplementPreview.amount)}</p>
+                <p className="text-[11px] text-ink-soft mt-1">確定後は請求が作成されます。既存の入金済み請求は変更しません。</p>
+                <button type="button" disabled={supplementBusy} onClick={() => handleSupplement(true)}
+                  className="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-bold disabled:opacity-50">この金額で請求を確定</button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      <SectionLabel>選手別・年間入金一覧</SectionLabel>
+      <div className={cardClass}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px] border-collapse">
+            <thead>
+              <tr className="border-b border-line">
+                <th className="sticky left-0 bg-paper text-left px-2 py-2 min-w-[110px]">選手</th>
+                {FISCAL_GRID_MONTHS.map(month => <th key={month} className="text-center px-1 py-2 min-w-[35px]">{month}月</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {sortDuesPlayers(roster).map(player => (
+                <tr key={player.id} className="border-b border-line last:border-b-0">
+                  <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{playerFullName(player)}</th>
+                  {FISCAL_GRID_MONTHS.map(month => {
+                    const status = duesGridStatus(player.id, month, periods, charges);
+                    return <td key={month} className="text-center px-1 py-2 font-bold">
+                      {status === "none" ? <span className="text-ink-soft">－</span> : (
+                        <button type="button" aria-label={`${playerFullName(player)} ${month}月 ${status === "paid" ? "入金済み" : "未入金"}。タップして変更`}
+                          onClick={() => handleGridToggle(player.id, month)}
+                          disabled={gridUpdating !== null}
+                          className={`min-w-[28px] py-1 rounded-md border disabled:opacity-50 ${status === "paid" ? "border-green text-green-text bg-green/8" : "border-orange text-orange-text bg-orange/8"}`}>
+                          {status === "paid" ? "済" : "未"}
+                        </button>
+                      )}
+                    </td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-ink-soft mt-2">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。</p>
       </div>
 
       {periods.length === 0 ? (
