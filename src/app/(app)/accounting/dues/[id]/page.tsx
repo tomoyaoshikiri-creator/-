@@ -351,13 +351,6 @@ export default function AccountingDuesItemPage() {
         )}
       </div>
 
-      <Link href="/accounting/dues/schedule-preview">
-        <div className={`${cardClass} mb-2.5 border border-blue-500/30`}>
-          <div className="font-bold text-[13px]">新しい料金・集金設定を試す（プレビュー）</div>
-          <div className="text-[11px] text-ink-soft mt-1">月額・年額と集金月を分けて設定。保存・請求は行いません。</div>
-        </div>
-      </Link>
-
       <SectionLabel>{step("料金の決め方")}</SectionLabel>
       <div className={cardClass}>
         {editing ? (
@@ -581,7 +574,7 @@ export default function AccountingDuesItemPage() {
         )}
       </div>
 
-      <SectionLabel>料金・集金月の設定</SectionLabel>
+      <SectionLabel>{step("集金月・集金予定額")}</SectionLabel>
       <div className={cardClass}>
         <div className="text-[11.5px] text-ink-soft mb-2">月額と集金月を分けて設定します。保存すると、次回の自動請求から新方式を使用します。既存の請求・入金は変更しません。</div>
         <div className="text-[12px] font-bold mb-1">料金基準</div>
@@ -592,11 +585,11 @@ export default function AccountingDuesItemPage() {
             }))}>{label}</SegButton>
           ))}
         </div>
-        <div className="mt-2">
+        {pricingMethod === "flat" && <div className="mt-2">
           <FieldLabel>{scheduleDraft.basis === "monthly" ? "月額（円）" : "年額（円）"}</FieldLabel>
           <input type="number" min={1} step={1} className={inputClass()} value={scheduleDraft.amount}
             onChange={e => setScheduleDraft(d => ({ ...d, amount: e.target.value }))} />
-        </div>
+        </div>}
         <div className="mt-3">
           <FieldLabel>集金月（複数選択可）</FieldLabel>
           <div className="grid grid-cols-4 gap-1.5">
@@ -615,11 +608,23 @@ export default function AccountingDuesItemPage() {
             ))}
           </div>
         </div>
-        {installmentPreview ? (
+        {pricingMethod === "flat" && installmentPreview ? (
           <div className="mt-3 rounded-lg bg-line/30 p-2.5">
             <div className="text-[12px] font-bold mb-1">集金予定額</div>
             {installmentPreview.map(row => <div key={row.month} className="flex justify-between text-[12px] py-1"><span>{row.month}月（{row.coveredMonths.length}か月）</span><span>{formatYen(row.amount)}</span></div>)}
             <div className="border-t border-line mt-1 pt-2 text-[13px] font-bold">年間 {formatYen(installmentPreview.reduce((sum, row) => sum + row.amount, 0))}</div>
+          </div>
+        ) : pricingMethod === "grade_band" && scheduleDraft.basis === "monthly" ? (
+          <div className="mt-3 rounded-lg bg-line/30 p-2.5">
+            <div className="text-[12px] font-bold mb-1">学年帯別の集金予定額（参考）</div>
+            {bands.map(b => {
+              let rows: ReturnType<typeof calculateDuesInstallments> = [];
+              try { rows = calculateDuesInstallments({ basis: "monthly", amount: Number(b.monthly_amount), collectionMonths: scheduleDraft.months }); } catch { /* 集金月未設定 */ }
+              return <div key={b.id} className="py-2 border-b border-line last:border-b-0">
+                <div className="text-[12px] font-bold">{gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}：月額 {formatYen(Number(b.monthly_amount))}</div>
+                {rows.map(row => <div key={row.month} className="flex justify-between text-[11px] py-0.5"><span>{row.month}月（{row.coveredMonths.length}か月分）</span><span>{formatYen(row.amount)}</span></div>)}
+              </div>;
+            })}
           </div>
         ) : <div className="mt-2 text-[11px] text-ink-soft">料金と集金月を設定すると試算を表示します。</div>}
         <button type="button" disabled={saving || item.pricing_method !== "flat"} onClick={saveSchedule}
