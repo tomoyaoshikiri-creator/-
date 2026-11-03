@@ -152,6 +152,33 @@ export default function AccountingDuesChecklistPage() {
     );
   }
 
+  const [gridUpdating, setGridUpdating] = useState<string | null>(null);
+  async function handleGridToggle(playerId: string, month: number) {
+    const ids = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
+    const selected = charges.filter(c => c.player_id === playerId && ids.has(c.billing_period_id));
+    if (selected.length === 0) return;
+    const key = `${playerId}:${month}`;
+    setGridUpdating(key);
+    const nextStatus = selected.every(c => c.status === "paid") ? "unpaid" : "paid";
+    const now = new Date().toISOString();
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_dues_charges")
+      .update({
+        status: nextStatus,
+        paid_at: nextStatus === "paid" ? now : null,
+        paid_by: nextStatus === "paid" ? userId : null,
+      }).in("id", selected.map(c => c.id));
+    setGridUpdating(null);
+    if (error) {
+      toast.error(`入金状態の更新に失敗しました: ${error.message}`);
+      return;
+    }
+    const selectedIds = new Set(selected.map(c => c.id));
+    setCharges(prev => prev.map(c => selectedIds.has(c.id)
+      ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? userId : null }
+      : c));
+  }
+
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
   async function handleBulkCheck(periodId: string) {
     setBulkChecking(periodId);
@@ -235,9 +262,14 @@ export default function AccountingDuesChecklistPage() {
                   {FISCAL_GRID_MONTHS.map(month => {
                     const status = duesGridStatus(player.id, month, periods, charges);
                     return <td key={month} className="text-center px-1 py-2 font-bold">
-                      <span className={status === "paid" ? "text-green-text" : status === "unpaid" ? "text-orange-text" : "text-ink-soft"}>
-                        {status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
-                      </span>
+                      {status === "none" ? <span className="text-ink-soft">－</span> : (
+                        <button type="button" aria-label={`${playerFullName(player)} ${month}月 ${status === "paid" ? "入金済み" : "未入金"}。タップして変更`}
+                          onClick={() => handleGridToggle(player.id, month)}
+                          disabled={gridUpdating !== null}
+                          className={`min-w-[28px] py-1 rounded-md border disabled:opacity-50 ${status === "paid" ? "border-green text-green-text bg-green/8" : "border-orange text-orange-text bg-orange/8"}`}>
+                          {status === "paid" ? "済" : "未"}
+                        </button>
+                      )}
                     </td>;
                   })}
                 </tr>
@@ -245,7 +277,7 @@ export default function AccountingDuesChecklistPage() {
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-ink-soft mt-2">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。入金の変更は下の請求期間別一覧から行えます。</p>
+        <p className="text-[11px] text-ink-soft mt-2">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。</p>
       </div>
 
       {periods.length === 0 ? (
