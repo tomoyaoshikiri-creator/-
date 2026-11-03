@@ -89,7 +89,7 @@ export async function generateDuesCharges(
           if (!isPlayerBillableForPeriod(period, setting)) return null;
           // 過去の集金月を過ぎてから加入した選手は自動で遡及請求しない。
           // 追加請求は管理者による確認・確定の別フローで扱う。
-          if (configured && setting?.start_date && setting.start_date > period.periodStart) return null;
+          if (configured && setting?.start_date && setting.start_date.slice(0, 7) > period.periodStart.slice(0, 7)) return null;
           const monthlyAmount = resolveMonthlyAmount({
             pricingMethod: item.pricing_method as DuesPricingMethod,
             flatMonthlyAmount: item.flat_monthly_amount,
@@ -128,7 +128,21 @@ export async function generateDuesCharges(
               const annualPlan = calculateDuesInstallments({
                 basis: "yearly", amount: annual, collectionMonths: item.collection_months ?? [],
               });
-              amount = annualPlan.find((x) => x.month === Number(period.periodStart.slice(5, 7)))?.amount ?? 0;
+              const installment = annualPlan.find((x) => x.month === Number(period.periodStart.slice(5, 7)));
+              if (!installment) return null;
+              amount = installment.amount;
+              if (item.join_leave_rule === "prorated") {
+                const covered = installment.coveredMonths;
+                const active = covered.filter(month => {
+                  const date = fiscalMonthDate(fiscalYear, month);
+                  const [y, m] = date.split("-").map(Number);
+                  const end = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+                  return (!setting?.start_date || setting.start_date <= end) &&
+                    (!setting?.stop_date || setting.stop_date >= date);
+                });
+                // 年額の分割額を在籍月数で按分。確定済みの過去請求は変更しない。
+                amount = Math.round(installment.amount * active.length / covered.length);
+              }
             }
           }
           if (!Number.isSafeInteger(amount) || amount <= 0) return null;
