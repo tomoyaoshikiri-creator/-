@@ -81,6 +81,29 @@ export default function AccountingDuesChecklistPage() {
     load();
   }, [load]);
 
+  const [supplementPlayerId, setSupplementPlayerId] = useState("");
+  const [supplementPreview, setSupplementPreview] = useState<{ amount: number; coveredMonths: number[]; start: string; end: string } | null>(null);
+  const [supplementBusy, setSupplementBusy] = useState(false);
+  async function handleSupplement(confirm: boolean) {
+    if (!supplementPlayerId) return;
+    setSupplementBusy(true);
+    try {
+      const res = await fetch("/api/accounting/dues/joining-supplement", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ duesItemId: params.id, playerId: supplementPlayerId, fiscalYear, confirm }),
+      });
+      const result = await res.json();
+      if (!res.ok) { toast.error(result.error ?? "追加請求を確認できません"); setSupplementPreview(null); return; }
+      if (confirm) {
+        toast.success("追加請求を確定しました");
+        setSupplementPreview(null);
+        setSupplementPlayerId("");
+        await load();
+      } else setSupplementPreview(result.preview);
+    } catch { toast.error("通信に失敗しました"); }
+    finally { setSupplementBusy(false); }
+  }
+
   const [generating, setGenerating] = useState(false);
   async function handleGenerate() {
     setGenerating(true);
@@ -246,6 +269,29 @@ export default function AccountingDuesChecklistPage() {
         </div>
       </div>
 
+      {item.schedule_mode === "configured" && item.rate_basis === "monthly" && (
+        <>
+          <SectionLabel>途中入団の追加請求</SectionLabel>
+          <div className={cardClass}>
+            <p className="text-[11px] text-ink-soft mb-2">入団日を選手別料金設定に登録した選手が対象です。金額を確認してから確定します。</p>
+            <select className="w-full border border-line rounded-lg p-2 text-[13px] bg-paper" value={supplementPlayerId}
+              onChange={e => { setSupplementPlayerId(e.target.value); setSupplementPreview(null); }}>
+              <option value="">選手を選択</option>
+              {sortDuesPlayers(roster).map(p => <option key={p.id} value={p.id}>{playerFullName(p)}</option>)}
+            </select>
+            <button type="button" disabled={!supplementPlayerId || supplementBusy} onClick={() => handleSupplement(false)}
+              className="mt-2 px-3 py-2 rounded-lg border border-line text-[12px] font-bold disabled:opacity-50">追加請求を確認</button>
+            {supplementPreview && (
+              <div className="mt-3 border-t border-line pt-3">
+                <p className="text-[12px] font-bold">対象：{supplementPreview.coveredMonths.join("・")}月分 ／ {formatYen(supplementPreview.amount)}</p>
+                <p className="text-[11px] text-ink-soft mt-1">確定後は請求が作成されます。既存の入金済み請求は変更しません。</p>
+                <button type="button" disabled={supplementBusy} onClick={() => handleSupplement(true)}
+                  className="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-bold disabled:opacity-50">この金額で請求を確定</button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
       <SectionLabel>選手別・年間入金一覧</SectionLabel>
       <div className={cardClass}>
         <div className="overflow-x-auto">
