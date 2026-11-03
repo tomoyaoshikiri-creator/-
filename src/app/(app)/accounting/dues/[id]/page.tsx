@@ -140,14 +140,30 @@ export default function AccountingDuesItemPage() {
     const scheduleChanged = JSON.stringify(sortedCollectionMonths(scheduleDraft.months)) !== JSON.stringify(sortedCollectionMonths(item.collection_months ?? [4,7,10,1]))
       || scheduleDraft.basis !== (item.rate_basis ?? "monthly")
       || scheduleDraft.joinLeave !== (item.join_leave_rule ?? "prorated");
-    if (scheduleChanged) {
-      toast.warning("集金月の変更は請求処理との整合性確認後に対応します");
-      return;
+    const scheduleAmount = Number(scheduleDraft.amount);
+    const amountChanged = scheduleDraft.basis === "yearly"
+      ? scheduleAmount !== Number(item.flat_yearly_amount ?? 0)
+      : scheduleAmount !== Number(item.flat_monthly_amount ?? 0);
+    const scheduleNeedsSave = scheduleChanged || (draftItem.pricing_method === "flat" && amountChanged)
+      || (item.schedule_mode !== "configured" && scheduleChanged);
+    if (scheduleNeedsSave) {
+      if (scheduleDraft.months.length === 0 || !Number.isInteger(scheduleAmount) || scheduleAmount < 0) {
+        toast.warning("集金月と料金を正しく設定してください");
+        return;
+      }
+      if (draftItem.pricing_method === "flat" && scheduleAmount <= 0) {
+        toast.warning("月額または年額は1円以上で設定してください");
+        return;
+      }
+      if (draftItem.pricing_method === "grade_band" && scheduleDraft.basis === "yearly") {
+        toast.warning("学年帯別料金は月額基準で設定してください");
+        return;
+      }
     }
     setSaving(true);
     const bandsChanged = JSON.stringify(draftBands) !== JSON.stringify(bands);
     const playersChanged = JSON.stringify(draftPlayerSettings) !== JSON.stringify(playerSettings);
-    if (bandsChanged || playersChanged) {
+    if (bandsChanged || playersChanged || scheduleNeedsSave || draftItem.pricing_method !== item.pricing_method) {
       const supabase = createClient();
       const { count, error: historyError } = await supabase.from("accounting_dues_billing_periods")
         .select("id", { count: "exact", head: true }).eq("dues_item_id", item.id)
@@ -200,6 +216,15 @@ export default function AccountingDuesItemPage() {
         billing_unit: draftItem.billing_unit,
         income_category_id: draftItem.income_category_id,
         reminder_days_after: draftItem.reminder_days_after,
+        ...(scheduleNeedsSave ? {
+          schedule_mode: "configured" as const,
+          rate_basis: scheduleDraft.basis,
+          collection_months: sortedCollectionMonths(scheduleDraft.months),
+          join_leave_rule: scheduleDraft.joinLeave,
+          ...(draftItem.pricing_method === "flat" ? (scheduleDraft.basis === "yearly"
+            ? { flat_yearly_amount: scheduleAmount }
+            : { flat_monthly_amount: scheduleAmount }) : {}),
+        } : {}),
         updated_at: new Date().toISOString(),
       }).eq("id", item.id).select("*").single();
     setSaving(false);
@@ -596,7 +621,7 @@ export default function AccountingDuesItemPage() {
 
       <SectionLabel>{step("集金月・集金予定額")}</SectionLabel>
       <div className={cardClass}>
-        <div className="text-[11.5px] text-ink-soft mb-2">月額と集金月を分けて設定します。保存すると、次回の自動請求から新方式を使用します。既存の請求・入金は変更しません。</div>
+        <div className="text-[11.5px] text-ink-soft mb-2">月額と集金月を分けて設定します。設定変更は保存時に反映します。今年度の請求履歴がある場合、集金月・料金方式の変更はできません。</div>
         <div className="text-[12px] font-bold mb-1">料金基準</div>
         <div className="flex gap-2">
           {([["monthly", "月額"], ["yearly", "年額"]] as const).map(([basis, label]) => (
@@ -614,7 +639,7 @@ export default function AccountingDuesItemPage() {
           <FieldLabel>集金月（複数選択可）</FieldLabel>
           <div className="grid grid-cols-4 gap-1.5">
             {FISCAL_MONTHS.map(month => (
-              <SegButton key={month} active={scheduleDraft.months.includes(month)} onClick={() => setScheduleDraft(d => ({
+              <SegButton key={month} active={scheduleDraft.months.includes(month)} onClick={() => editing && setScheduleDraft(d => ({
                 ...d, months: d.months.includes(month) ? d.months.filter(m => m !== month) : sortedCollectionMonths([...d.months, month]),
               }))}>{month}月</SegButton>
             ))}
@@ -624,7 +649,7 @@ export default function AccountingDuesItemPage() {
           <FieldLabel>途中加入・退団</FieldLabel>
           <div className="flex flex-wrap gap-2">
             {([["prorated", "在籍月数分"], ["full", "対象期間の全額"]] as const).map(([rule, label]) => (
-              <SegButton key={rule} active={scheduleDraft.joinLeave === rule} onClick={() => setScheduleDraft(d => ({ ...d, joinLeave: rule }))}>{label}</SegButton>
+              <SegButton key={rule} active={scheduleDraft.joinLeave === rule} onClick={() => editing && setScheduleDraft(d => ({ ...d, joinLeave: rule }))}>{label}</SegButton>
             ))}
           </div>
         </div>
@@ -637,7 +662,7 @@ export default function AccountingDuesItemPage() {
         ) : pricingMethod === "grade_band" && scheduleDraft.basis === "monthly" ? (
           <div className="mt-3 rounded-lg bg-line/30 p-2.5">
             <div className="text-[12px] font-bold mb-1">学年帯別の集金予定額（参考）</div>
-            {bands.map(b => {
+            {(editing ? draftBands : bands).map(b => {
               let rows: ReturnType<typeof calculateDuesInstallments> = [];
               try { rows = calculateDuesInstallments({ basis: "monthly", amount: Number(b.monthly_amount), collectionMonths: scheduleDraft.months }); } catch { /* 集金月未設定 */ }
               return <div key={b.id} className="py-2 border-b border-line last:border-b-0">
