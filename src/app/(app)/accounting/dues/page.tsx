@@ -211,7 +211,7 @@ export default function AccountingDuesPage() {
       ) : (
         items.map((item) => (
           <div key={item.id} className="mb-2.5">
-          <Link href={`/accounting/dues/${item.id}/checklist`}>
+          <Link href={`/accounting/dues/${item.id}`}>
             <div className={`${cardClass} cursor-pointer`}>
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
@@ -230,7 +230,6 @@ export default function AccountingDuesPage() {
               </div>
             </div>
           </Link>
-          <Link href={`/accounting/dues/${item.id}`} className="block text-right text-[12px] font-bold text-blue-600 py-1 px-2">料金・集金設定</Link>
           </div>
         ))
       )}
