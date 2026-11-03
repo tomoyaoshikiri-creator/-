@@ -158,6 +158,7 @@ export default function AccountingDuesChecklistPage() {
     const ids = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
     const selected = charges.filter(c => c.player_id === playerId && ids.has(c.billing_period_id));
     if (selected.length === 0) return;
+    const targets = charges.filter(c => selected.some(s => s.billing_period_id === c.billing_period_id && s.group_key === c.group_key));
     const key = `${playerId}:${month}`;
     setGridUpdating(key);
     const nextStatus = selected.every(c => c.status === "paid") ? "unpaid" : "paid";
@@ -168,13 +169,13 @@ export default function AccountingDuesChecklistPage() {
         status: nextStatus,
         paid_at: nextStatus === "paid" ? now : null,
         paid_by: nextStatus === "paid" ? userId : null,
-      }).in("id", selected.map(c => c.id));
+      }).in("id", targets.map(c => c.id));
     setGridUpdating(null);
     if (error) {
       toast.error(`入金状態の更新に失敗しました: ${error.message}`);
       return;
     }
-    const selectedIds = new Set(selected.map(c => c.id));
+    const selectedIds = new Set(targets.map(c => c.id));
     setCharges(prev => prev.map(c => selectedIds.has(c.id)
       ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? userId : null }
       : c));
