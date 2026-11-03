@@ -12,8 +12,6 @@ import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { Fab, Modal } from "@/components/ui/Modal";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
-import { fiscalYearOf, todayDateStr, playerFullName } from "@/lib/format";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import {
@@ -25,7 +23,7 @@ import {
   type DuesCycleMonths,
   type DuesPricingMethod,
 } from "@/lib/accounting";
-import type { AccountingCategory, AccountingDuesItem, AccountingDuesBillingPeriod, AccountingDuesCharge, RosterPlayer } from "@/lib/database.types";
+import type { AccountingCategory, AccountingDuesItem } from "@/lib/database.types";
 
 interface Draft {
   name: string;
@@ -52,62 +50,20 @@ export default function AccountingDuesPage() {
   const [items, setItems] = useState<AccountingDuesItem[]>([]);
   const [incomeCategories, setIncomeCategories] = useState<AccountingCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [roster, setRoster] = useState<RosterPlayer[]>([]);
-  const [periods, setPeriods] = useState<AccountingDuesBillingPeriod[]>([]);
-  const [charges, setCharges] = useState<AccountingDuesCharge[]>([]);
-  const [fiscalYear, setFiscalYear] = useState(fiscalYearOf(todayDateStr()));
-  const [updatingCell, setUpdatingCell] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
     const supabase = createClient();
-    const [{ data: duesItems }, { data: cats }, { data: players }, { data: billingPeriods }] = await Promise.all([
+    const [{ data: duesItems }, { data: cats }] = await Promise.all([
       supabase.from("accounting_dues_items").select("*").order("position", { ascending: true }),
       supabase.from("accounting_categories").select("*").eq("kind", "income").eq("auto_managed", false).order("position", { ascending: true }),
-      supabase.rpc("list_roster_players"),
-      supabase.from("accounting_dues_billing_periods").select("*").eq("fiscal_year", fiscalYear),
     ]);
     setItems(duesItems ?? []);
-    setRoster(players ?? []);
-    setPeriods(billingPeriods ?? []);
-    const ids = (billingPeriods ?? []).map(p => p.id);
-    if (ids.length) {
-      const { data: rows } = await supabase.from("accounting_dues_charges").select("*").in("billing_period_id", ids);
-      setCharges(rows ?? []);
-    } else setCharges([]);
     setIncomeCategories(cats ?? []);
     setLoading(false);
-  }, [fiscalYear]);
+  }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  async function toggleMonth(playerId: string, month: number) {
-    if (!canManageAccounting(role)) return;
-    const periodIds = periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id);
-    const playerCharges = charges.filter(c => c.player_id === playerId && periodIds.includes(c.billing_period_id));
-    if (!playerCharges.length) return;
-    const nextStatus = playerCharges.every(c => c.status === "paid") ? "unpaid" : "paid";
-    // 世帯請求の場合は、同じ請求期間・世帯の全選手を同時に更新する。
-    const targets = charges.filter(c => playerCharges.some(p => p.billing_period_id === c.billing_period_id && p.group_key === c.group_key));
-    const cellKey = `${playerId}-${month}`;
-    setUpdatingCell(cellKey);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("認証情報を確認できませんでした");
-      setUpdatingCell(null);
-      return;
-    }
-    const now = new Date().toISOString();
-    const ids = targets.map(c => c.id);
-    const { error } = await supabase.from("accounting_dues_charges")
-      .update({ status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? user.id : null, updated_at: now })
-      .in("id", ids);
-    if (error) toast.error(`入金状態の更新に失敗しました: ${error.message}`);
-    else setCharges(prev => prev.map(c => ids.includes(c.id) ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? now : null, paid_by: nextStatus === "paid" ? user.id : null, updated_at: now } : c));
-    setUpdatingCell(null);
-  }
+  useEffect(() => { void load(); }, [load]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
