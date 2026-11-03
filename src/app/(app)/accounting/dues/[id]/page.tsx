@@ -288,6 +288,13 @@ export default function AccountingDuesItemPage() {
     );
   }
 
+  let installmentPreview: ReturnType<typeof calculateDuesInstallments> | null = null;
+  try {
+    installmentPreview = calculateDuesInstallments({ basis: scheduleDraft.basis, amount: Number(scheduleDraft.amount), collectionMonths: scheduleDraft.months });
+  } catch {
+    installmentPreview = null;
+  }
+
   const pricingMethod = item.pricing_method as DuesPricingMethod;
   const paymentMethods = item.payment_methods as DuesPaymentMethod[];
 
@@ -608,16 +615,13 @@ export default function AccountingDuesItemPage() {
             ))}
           </div>
         </div>
-        {(() => {
-          try {
-            const plan = calculateDuesInstallments({ basis: scheduleDraft.basis, amount: Number(scheduleDraft.amount), collectionMonths: scheduleDraft.months });
-            return <div className="mt-3 rounded-lg bg-line/30 p-2.5">
-              <div className="text-[12px] font-bold mb-1">集金予定額</div>
-              {plan.map(row => <div key={row.month} className="flex justify-between text-[12px] py-1"><span>{row.month}月（{row.coveredMonths.length}か月）</span><span>{formatYen(row.amount)}</span></div>)}
-              <div className="border-t border-line mt-1 pt-2 text-[13px] font-bold">年間 {formatYen(plan.reduce((sum, row) => sum + row.amount, 0))}</div>
-            </div>;
-          } catch { return <div className="mt-2 text-[11px] text-ink-soft">料金と集金月を設定すると試算を表示します。</div>; }
-        })()}
+        {installmentPreview ? (
+          <div className="mt-3 rounded-lg bg-line/30 p-2.5">
+            <div className="text-[12px] font-bold mb-1">集金予定額</div>
+            {installmentPreview.map(row => <div key={row.month} className="flex justify-between text-[12px] py-1"><span>{row.month}月（{row.coveredMonths.length}か月）</span><span>{formatYen(row.amount)}</span></div>)}
+            <div className="border-t border-line mt-1 pt-2 text-[13px] font-bold">年間 {formatYen(installmentPreview.reduce((sum, row) => sum + row.amount, 0))}</div>
+          </div>
+        ) : <div className="mt-2 text-[11px] text-ink-soft">料金と集金月を設定すると試算を表示します。</div>}
         <button type="button" disabled={saving || item.pricing_method !== "flat"} onClick={saveSchedule}
           className="mt-3 w-full rounded-lg bg-blue-600 text-white py-2.5 font-bold text-[13px] disabled:opacity-40">
           {saving ? "保存中…" : "この料金・集金設定を保存"}
