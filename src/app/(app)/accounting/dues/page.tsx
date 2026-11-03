@@ -53,7 +53,7 @@ function emptyDraft(): Draft {
     rate_basis: "monthly", flat_yearly_amount: "", collection_months: [4,7,10,1], join_leave_rule: "prorated", payment_methods: [], reminder_days_after: "" };
 }
 
-type NewBand = { grade_min: number; grade_max: number; monthly_amount: string };
+type NewBand = { grade_min: number; grade_max: number; monthly_amount: string; yearly_amount: string };
 type NewPlayerSetting = { player_id: string; monthly_amount: string; exempt: boolean; start_date: string; stop_date: string; note: string };
 function gradesFor(category: TeamCategory): number[] {
   const min = MIN_GRADE_BY_CATEGORY[category], max = GRADUATION_GRADE_BY_CATEGORY[category];
@@ -72,7 +72,7 @@ export default function AccountingDuesPage() {
   const [items, setItems] = useState<AccountingDuesItem[]>([]);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [bands, setBands] = useState<NewBand[]>([]);
-  const [bandInput, setBandInput] = useState<NewBand>({ grade_min: 0, grade_max: 0, monthly_amount: "" });
+  const [bandInput, setBandInput] = useState<NewBand>({ grade_min: 0, grade_max: 0, monthly_amount: "", yearly_amount: "" });
   const [playerSettings, setPlayerSettings] = useState<NewPlayerSetting[]>([]);
   const [newPlayerId, setNewPlayerId] = useState("");
   const [incomeCategories, setIncomeCategories] = useState<AccountingCategory[]>([]);
@@ -101,7 +101,7 @@ export default function AccountingDuesPage() {
   function openModal() {
     setDraft({ ...emptyDraft(), income_category_id: incomeCategories[0]?.id ?? "" });
     setBands([]);
-    setBandInput({ grade_min: gradesFor(category)[0] ?? 0, grade_max: gradesFor(category)[0] ?? 0, monthly_amount: "" });
+    setBandInput({ grade_min: gradesFor(category)[0] ?? 0, grade_max: gradesFor(category)[0] ?? 0, monthly_amount: "", yearly_amount: "" });
     setPlayerSettings([]);
     setNewPlayerId("");
     setModalOpen(true);
@@ -116,11 +116,11 @@ export default function AccountingDuesPage() {
       toast.warning("料金を正しく入力してください"); return;
     }
     if (draft.pricing_method === "grade_band") {
-      if (draft.rate_basis !== "monthly" || bands.length === 0) {
-        toast.warning("学年帯別料金は月額基準で、1件以上設定してください"); return;
+      if (bands.length === 0) {
+        toast.warning("学年帯を1件以上設定してください"); return;
       }
-      if (bands.some(b => !Number.isSafeInteger(Number(b.monthly_amount)) || Number(b.monthly_amount) <= 0 ||
-        b.grade_min > b.grade_max)) { toast.warning("学年帯の月額・範囲を確認してください"); return; }
+      if (bands.some(b => !Number.isSafeInteger(Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount)) || Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount) <= 0 ||
+        b.grade_min > b.grade_max)) { toast.warning("学年帯の料金・範囲を確認してください"); return; }
       const occupied = new Set<number>();
       for (const band of bands) for (let g=band.grade_min;g<=band.grade_max;g++) {
         if (occupied.has(g)) { toast.warning("学年帯が重複しています"); return; }
@@ -155,7 +155,7 @@ export default function AccountingDuesPage() {
     }).select("*").single();
     if (error || !data) { setSaving(false); toast.error(`作成に失敗しました: ${error?.message ?? ""}`); return; }
     // 関連テーブルの作成に失敗した場合は項目本体も削除して不完全な作成を残さない。
-    const bandRows = bands.map(b => ({ dues_item_id: data.id, grade_min: b.grade_min, grade_max: b.grade_max, monthly_amount: Number(b.monthly_amount) }));
+    const bandRows = bands.map(b => ({ dues_item_id: data.id, grade_min: b.grade_min, grade_max: b.grade_max, monthly_amount: draft.rate_basis === "monthly" ? Number(b.monthly_amount) : 0, yearly_amount: draft.rate_basis === "yearly" ? Number(b.yearly_amount) : null }));
     const playerRows = playerSettings.map(p => ({ dues_item_id: data.id, player_id: p.player_id,
       monthly_amount: p.monthly_amount === "" ? null : Number(p.monthly_amount),
       exempt: p.exempt, start_date: p.start_date || null, stop_date: p.stop_date || null, note: p.note.trim() || null }));
@@ -191,16 +191,17 @@ export default function AccountingDuesPage() {
                 <FieldLabel>2. 料金の決め方</FieldLabel>
                 <div className="flex flex-col gap-1.5">
                   {(Object.keys(DUES_PRICING_METHOD_LABELS) as DuesPricingMethod[]).map(m => (
-                    <SegButton key={m} active={draft.pricing_method === m} onClick={() => setDraft(d => ({ ...d, pricing_method: m }))}>
+                    <SegButton key={m} active={draft.pricing_method === m} onClick={() => setDraft(d => ({ ...d, pricing_method: m, rate_basis: m === "per_player" ? "monthly" : d.rate_basis }))}>
                       {DUES_PRICING_METHOD_LABELS[m]}
                     </SegButton>
                   ))}
                 </div>
               </section>
               {draft.pricing_method === "grade_band" && <section>
-                <FieldLabel>3. 学年帯ごとの月額</FieldLabel>
+                <FieldLabel>3. 学年帯ごとの料金</FieldLabel>
+                <div className="text-[11px] text-ink-soft mb-2">料金基準は下の「月額／年額」で切り替えられます。</div>
                 {bands.map((b,i) => <div key={i} className="flex items-center justify-between gap-2 border-b border-line py-2 text-[12px]">
-                  <span>{gradeLabel(String(b.grade_min),category)}〜{gradeLabel(String(b.grade_max),category)}：{formatYen(Number(b.monthly_amount))}/月</span>
+                  <span>{gradeLabel(String(b.grade_min),category)}〜{gradeLabel(String(b.grade_max),category)}：{formatYen(Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount))}/{draft.rate_basis === "yearly" ? "年" : "月"}</span>
                   <button type="button" className="text-ink-soft underline" onClick={() => setBands(prev => prev.filter((_,j) => j!==i))}>削除</button>
                 </div>)}
                 <div className="flex gap-1.5 mt-2">
@@ -213,14 +214,14 @@ export default function AccountingDuesPage() {
                   </select>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <input type="number" min={1} className={inputClass("flex-1")} placeholder="月額" value={bandInput.monthly_amount}
-                    onChange={e=>setBandInput(d=>({...d,monthly_amount:e.target.value}))} />
+                  <input type="number" min={1} className={inputClass("flex-1")} placeholder={draft.rate_basis === "yearly" ? "年額" : "月額"} value={draft.rate_basis === "yearly" ? bandInput.yearly_amount : bandInput.monthly_amount}
+                    onChange={e=>setBandInput(d=>({...d,[draft.rate_basis === "yearly" ? "yearly_amount" : "monthly_amount"]:e.target.value}))} />
                   <button type="button" className="px-3 rounded-lg border border-line font-bold text-[12px]"
                     onClick={()=>{
-                      const n=Number(bandInput.monthly_amount);
-                      if (bandInput.grade_min>bandInput.grade_max || !Number.isSafeInteger(n) || n<=0) { toast.warning("学年帯と月額を確認してください"); return; }
+                      const n=Number(draft.rate_basis === "yearly" ? bandInput.yearly_amount : bandInput.monthly_amount);
+                      if (bandInput.grade_min>bandInput.grade_max || !Number.isSafeInteger(n) || n<=0) { toast.warning("学年帯と料金を確認してください"); return; }
                       setBands(prev=>[...prev,bandInput].sort((x,y)=>x.grade_min-y.grade_min));
-                      setBandInput({grade_min:gradesFor(category)[0]??0,grade_max:gradesFor(category)[0]??0,monthly_amount:""});
+                      setBandInput({grade_min:gradesFor(category)[0]??0,grade_max:gradesFor(category)[0]??0,monthly_amount:"",yearly_amount:""});
                     }}>追加</button>
                 </div>
               </section>}
@@ -256,7 +257,7 @@ export default function AccountingDuesPage() {
               <section>
                 <FieldLabel>集金月・集金予定額</FieldLabel>
                 <div className="flex gap-2 mb-2">
-                  {(["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
+                  {(draft.pricing_method === "per_player" ? ["monthly"] as const : ["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
                     onClick={()=>setDraft(d=>({...d,rate_basis:basis}))}>{basis==="monthly"?"月額":"年額"}</SegButton>)}
                 </div>
                 {draft.pricing_method==="flat" && <input type="number" min={1} placeholder={draft.rate_basis==="monthly"?"月額（円）":"年額（円）"}
@@ -276,10 +277,10 @@ export default function AccountingDuesPage() {
                 {draft.collection_months.length>0 && (draft.pricing_method==="flat" || draft.pricing_method==="grade_band") && <div className="mt-2 bg-line/30 rounded-lg p-2.5 text-[12px]">
                   <div className="font-bold mb-1">集金予定額（試算）</div>
                   {(draft.pricing_method==="flat" ? [{label:"一律",amount:Number(draft.rate_basis==="yearly"?draft.flat_yearly_amount:draft.flat_monthly_amount)}] :
-                    bands.map(b=>({label:`${gradeLabel(String(b.grade_min),category)}〜${gradeLabel(String(b.grade_max),category)}`,amount:Number(b.monthly_amount)})))
+                    bands.map(b=>({label:`${gradeLabel(String(b.grade_min),category)}〜${gradeLabel(String(b.grade_max),category)}`,amount:Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount)})))
                     .map((plan,i)=>{
                       let rows:ReturnType<typeof calculateDuesInstallments>=[];
-                      try {rows=calculateDuesInstallments({basis:draft.pricing_method==="flat"?draft.rate_basis:"monthly",amount:plan.amount,collectionMonths:draft.collection_months});} catch {}
+                      try {rows=calculateDuesInstallments({basis:draft.rate_basis,amount:plan.amount,collectionMonths:draft.collection_months});} catch {}
                       return <div key={i} className="mb-2">
                         <div className="font-bold">{plan.label}</div>
                         {rows.map(row=><div key={row.month} className="flex justify-between"><span>{row.month}月（{row.coveredMonths.length}か月分）</span><span>{formatYen(row.amount)}</span></div>)}
@@ -289,8 +290,7 @@ export default function AccountingDuesPage() {
               </section>
               <section>
                 <FieldLabel>集金の設定</FieldLabel>
-                <div className="flex flex-wrap gap-1.5">{DUES_CYCLE_MONTHS_OPTIONS.map(c=><SegButton key={c} active={draft.cycle_months===c}
-                  onClick={()=>setDraft(d=>({...d,cycle_months:c}))}>{DUES_CYCLE_MONTHS_LABELS[c]}</SegButton>)}</div>
+                <div className="text-[11px] text-ink-soft">集金の周期は上の「集金月」で設定します。</div>
                 <FieldLabel>請求の単位</FieldLabel>
                 <div className="flex gap-2">{(Object.keys(DUES_BILLING_UNIT_LABELS) as DuesBillingUnit[]).map(u=><SegButton key={u} active={draft.billing_unit===u}
                   onClick={()=>setDraft(d=>({...d,billing_unit:u}))}>{DUES_BILLING_UNIT_LABELS[u]}</SegButton>)}</div>
