@@ -11,7 +11,8 @@ import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { FieldLabel, SegButton, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
-import { ChevronRightIcon, PencilIcon } from "@/components/icons";
+import { ChevronRightIcon } from "@/components/icons";
+import { EditButton } from "@/components/ui/EditButton";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
@@ -351,10 +352,7 @@ export default function AccountingDuesItemPage() {
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[12px] text-ink-soft">{editing ? "編集中" : "閲覧モード"}</span>
         {!editing && (
-          <button type="button" onClick={() => { setDraftItem({ ...item }); setDraftBands(bands.map(b => ({ ...b }))); setDraftPlayerSettings(playerSettings.map(p => ({ ...p }))); setEditing(true); }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg font-bold text-[12px] text-ink-soft hover:bg-line/40">
-            <PencilIcon className="w-3.5 h-3.5" aria-hidden="true" /> 編集
-          </button>
+          <EditButton onClick={() => { setDraftItem({ ...item }); setDraftBands(bands.map(b => ({ ...b }))); setDraftPlayerSettings(playerSettings.map(p => ({ ...p }))); setEditing(true); }} />
         )}
       </div>
 
