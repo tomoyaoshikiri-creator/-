@@ -158,6 +158,13 @@ export default function AccountingDuesItemPage() {
       }
       
     }
+    if (draftItem.pricing_method === "grade_band" && draftBands.some(b => {
+      const amount = scheduleDraft.basis === "yearly" ? b.yearly_amount : b.monthly_amount;
+      return !Number.isSafeInteger(Number(amount)) || Number(amount) <= 0;
+    })) {
+      toast.warning("すべての学年帯に有効な" + (scheduleDraft.basis === "yearly" ? "年額" : "月額") + "を設定してください");
+      return;
+    }
     setSaving(true);
     const bandsChanged = JSON.stringify(draftBands) !== JSON.stringify(bands);
     const playersChanged = JSON.stringify(draftPlayerSettings) !== JSON.stringify(playerSettings);
@@ -175,6 +182,16 @@ export default function AccountingDuesItemPage() {
         if (!draftBands.some(b => b.id === oldBand.id)) {
           const { error } = await supabase.from("accounting_dues_grade_bands").delete().eq("id", oldBand.id);
           if (error) { setSaving(false); toast.error("学年帯の削除に失敗しました"); await load(); return; }
+        }
+      }
+      for (const band of draftBands.filter(b => !b.id.startsWith("draft-"))) {
+        const original = bands.find(b => b.id === band.id);
+        if (original && JSON.stringify(original) !== JSON.stringify(band)) {
+          const { error } = await supabase.from("accounting_dues_grade_bands").update({
+            grade_min: band.grade_min, grade_max: band.grade_max,
+            monthly_amount: band.monthly_amount, yearly_amount: band.yearly_amount,
+          }).eq("id", band.id);
+          if (error) { setSaving(false); toast.error("学年帯の更新に失敗しました"); await load(); return; }
         }
       }
       for (const band of draftBands.filter(b => b.id.startsWith("draft-"))) {
