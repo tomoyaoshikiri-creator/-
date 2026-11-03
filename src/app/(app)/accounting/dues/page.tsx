@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -40,6 +40,7 @@ function emptyDraft(): Draft {
 
 export default function AccountingDuesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { role, plan, teamId } = useSession();
   const toast = useToast();
 
@@ -68,10 +69,10 @@ export default function AccountingDuesPage() {
 
   // 集金項目が1つの場合は、項目一覧を挟まず選手別入金一覧へ進む。
   useEffect(() => {
-    if (!loading && items.length === 1) {
+    if (!loading && items.length === 1 && searchParams.get("manage") !== "1") {
       router.replace(`/accounting/dues/${items[0].id}/checklist`);
     }
-  }, [loading, items, router]);
+  }, [loading, items, router, searchParams]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft());
