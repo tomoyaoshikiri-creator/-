@@ -445,7 +445,7 @@ export default function AccountingDuesItemPage() {
             {pricingMethod === "flat" && (
               <div className="text-[12px] text-ink-soft mt-1">月額 {formatYen(Number(item.flat_monthly_amount ?? 0))}</div>
             )}
-            {pricingMethod === "grade_band" && <div className="text-[12px] text-ink-soft mt-1">学年帯ごとの月額は下のカードで設定します。</div>}
+            {pricingMethod === "grade_band" && <div className="text-[12px] text-ink-soft mt-1">学年帯ごとの料金は下のカードで設定します。</div>}
             {pricingMethod === "per_player" && <div className="text-[12px] text-ink-soft mt-1">選手ごとの月額は下のカードで設定します。</div>}
           </div>
         )}
@@ -464,6 +464,24 @@ export default function AccountingDuesItemPage() {
                     <span className="text-[13px] font-bold">
                       {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}: {formatYen(Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount))}/{scheduleDraft.basis === "yearly" ? "年" : "月"}
                     </span>
+                    {editing && (
+                      <input
+                        type="number" min={1} step={1}
+                        aria-label={`${gradeLabel(String(b.grade_min), category)}〜${gradeLabel(String(b.grade_max), category)}の${scheduleDraft.basis === "yearly" ? "年額" : "月額"}`}
+                        className={inputClass("w-28 flex-none")}
+                        placeholder={scheduleDraft.basis === "yearly" ? "年額" : "月額"}
+                        value={scheduleDraft.basis === "yearly" ? b.yearly_amount ?? "" : b.monthly_amount}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setDraftBands(prev => prev.map(x => x.id !== b.id ? x : ({
+                            ...x,
+                            ...(scheduleDraft.basis === "yearly"
+                              ? { yearly_amount: raw === "" ? null : Number(raw) }
+                              : { monthly_amount: raw === "" ? 0 : Number(raw) }),
+                          })));
+                        }}
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => handleDeleteBand(b.id)}
