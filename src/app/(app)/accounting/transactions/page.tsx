@@ -79,7 +79,10 @@ export default function AccountingTransactionsPage() {
     if (categoryFilter !== "all" && t.category_id !== categoryFilter) return false;
     return true;
   });
-  const total = filtered.reduce((sum, t) => sum + Number(t.amount), 0);
+  const total = filtered.reduce((sum, t) => {
+    const amount = Number(t.amount);
+    return sum + (categoryById(t.category_id)?.kind === "income" ? amount : -amount);
+  }, 0);
 
   const categoryOptions = categories
     .filter((c) => !c.auto_managed && (kindFilter === "all" || c.kind === kindFilter))
