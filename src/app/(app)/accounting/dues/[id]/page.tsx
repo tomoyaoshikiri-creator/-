@@ -460,36 +460,42 @@ export default function AccountingDuesItemPage() {
             ) : (
               <ul>
                 {(editing ? draftBands : bands).map((b) => (
-                  <li key={b.id} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
-                    <span className="text-[13px] font-bold">
-                      {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}: {formatYen(Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount))}/{scheduleDraft.basis === "yearly" ? "年" : "月"}
-                    </span>
-                    {editing && (
-                      <input
-                        type="number" min={1} step={1}
-                        aria-label={`${gradeLabel(String(b.grade_min), category)}〜${gradeLabel(String(b.grade_max), category)}の${scheduleDraft.basis === "yearly" ? "年額" : "月額"}`}
-                        className={inputClass("w-28 flex-none")}
-                        placeholder={scheduleDraft.basis === "yearly" ? "年額" : "月額"}
-                        value={scheduleDraft.basis === "yearly" ? b.yearly_amount ?? "" : b.monthly_amount}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          setDraftBands(prev => prev.map(x => x.id !== b.id ? x : ({
-                            ...x,
-                            ...(scheduleDraft.basis === "yearly"
-                              ? { yearly_amount: raw === "" ? null : Number(raw) }
-                              : { monthly_amount: raw === "" ? 0 : Number(raw) }),
-                          })));
-                        }}
-                      />
+                  <li key={b.id} className="py-3 border-b border-line last:border-b-0 min-w-0">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-[13px] font-bold min-w-0 break-words">
+                        {gradeLabel(String(b.grade_min), category)}〜{gradeLabel(String(b.grade_max), category)}
+                      </span>
+                      {editing && (
+                        <button type="button" onClick={() => handleDeleteBand(b.id)}
+                          className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper">
+                          削除
+                        </button>
+                      )}
+                    </div>
+                    {editing ? (
+                      <label className="block mt-2 min-w-0">
+                        <span className="text-[11px] text-ink-soft">{scheduleDraft.basis === "yearly" ? "年額（円）" : "月額（円）"}</span>
+                        <input type="number" min={1} step={1}
+                          aria-label={`${gradeLabel(String(b.grade_min), category)}〜${gradeLabel(String(b.grade_max), category)}の${scheduleDraft.basis === "yearly" ? "年額" : "月額"}`}
+                          className={inputClass("w-full min-w-0 mt-1")}
+                          placeholder={scheduleDraft.basis === "yearly" ? "年額" : "月額"}
+                          value={scheduleDraft.basis === "yearly" ? b.yearly_amount ?? "" : b.monthly_amount}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setDraftBands(prev => prev.map(x => x.id !== b.id ? x : ({
+                              ...x,
+                              ...(scheduleDraft.basis === "yearly"
+                                ? { yearly_amount: raw === "" ? null : Number(raw) }
+                                : { monthly_amount: raw === "" ? 0 : Number(raw) }),
+                            })));
+                          }}
+                        />
+                      </label>
+                    ) : (
+                      <div className="mt-1 text-[13px] font-bold">
+                        {formatYen(Number(scheduleDraft.basis === "yearly" ? b.yearly_amount ?? 0 : b.monthly_amount))}/{scheduleDraft.basis === "yearly" ? "年" : "月"}
+                      </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteBand(b.id)}
-                      disabled={!editing}
-                      className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line text-ink-soft bg-paper disabled:hidden"
-                    >
-                      削除
-                    </button>
                   </li>
                 ))}
               </ul>
