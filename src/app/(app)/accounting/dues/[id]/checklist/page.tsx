@@ -228,7 +228,7 @@ export default function AccountingDuesChecklistPage() {
                 const ga = a.grade === null ? -1 : Number(a.grade);
                 const gb = b.grade === null ? -1 : Number(b.grade);
                 if (ga !== gb) return gb - ga;
-                return Number(a.jersey_number ?? 9999) - Number(b.jersey_number ?? 9999);
+                return Number(a.number ?? 9999) - Number(b.number ?? 9999);
               }).map(player => (
                 <tr key={player.id} className="border-b border-line last:border-b-0">
                   <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{playerFullName(player)}</th>
