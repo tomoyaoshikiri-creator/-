@@ -28,13 +28,13 @@ export function duesGridStatus(
 }
 
 /** 同じ学年なら背番号順、未設定は最後。 */
-export function sortDuesPlayers<T extends { grade: string | number | null; jersey_number?: string | number | null }>(players: T[]): T[] {
+export function sortDuesPlayers<T extends { grade: string | number | null; number?: string | number | null }>(players: T[]): T[] {
   return [...players].sort((a, b) => {
     const gradeA = a.grade === null ? -1 : Number(a.grade);
     const gradeB = b.grade === null ? -1 : Number(b.grade);
     if (gradeA !== gradeB) return gradeB - gradeA;
-    const numberA = a.jersey_number === null || a.jersey_number === undefined || a.jersey_number === "" ? Infinity : Number(a.jersey_number);
-    const numberB = b.jersey_number === null || b.jersey_number === undefined || b.jersey_number === "" ? Infinity : Number(b.jersey_number);
+    const numberA = a.number === null || a.number === undefined || a.number === "" ? Infinity : Number(a.number);
+    const numberB = b.number === null || b.number === undefined || b.number === "" ? Infinity : Number(b.number);
     return numberA - numberB;
   });
 }
