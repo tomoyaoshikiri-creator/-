@@ -13,6 +13,7 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
 import { duesPeriodLabel } from "@/lib/accountingDues";
+import { FISCAL_GRID_MONTHS, duesGridStatus } from "@/lib/duesGrid";
 import { loadProfilesMap } from "@/lib/profiles";
 import { fiscalYearLabel, fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
 import type { AccountingDuesBillingPeriod, AccountingDuesCharge, AccountingDuesItem, RosterPlayer } from "@/lib/database.types";
@@ -210,6 +211,41 @@ export default function AccountingDuesChecklistPage() {
         <div className="text-[10.5px] text-ink-soft mt-1.5">
           通常は毎朝自動で作成されます。集金項目を追加した直後など、すぐに確認したいときに使ってください。
         </div>
+      </div>
+
+      <SectionLabel>選手別・年間入金一覧</SectionLabel>
+      <div className={cardClass}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px] border-collapse">
+            <thead>
+              <tr className="border-b border-line">
+                <th className="sticky left-0 bg-paper text-left px-2 py-2 min-w-[110px]">選手</th>
+                {FISCAL_GRID_MONTHS.map(month => <th key={month} className="text-center px-1 py-2 min-w-[35px]">{month}月</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[...roster].sort((a, b) => {
+                const ga = a.grade === null ? -1 : Number(a.grade);
+                const gb = b.grade === null ? -1 : Number(b.grade);
+                if (ga !== gb) return gb - ga;
+                return Number(a.jersey_number ?? 9999) - Number(b.jersey_number ?? 9999);
+              }).map(player => (
+                <tr key={player.id} className="border-b border-line last:border-b-0">
+                  <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{playerFullName(player)}</th>
+                  {FISCAL_GRID_MONTHS.map(month => {
+                    const status = duesGridStatus(player.id, month, periods, charges);
+                    return <td key={month} className="text-center px-1 py-2 font-bold">
+                      <span className={status === "paid" ? "text-green-text" : status === "unpaid" ? "text-orange-text" : "text-ink-soft"}>
+                        {status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
+                      </span>
+                    </td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-ink-soft mt-2">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。入金の変更は下の請求期間別一覧から行えます。</p>
       </div>
 
       {periods.length === 0 ? (
