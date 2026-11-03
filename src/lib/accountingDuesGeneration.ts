@@ -152,7 +152,13 @@ export async function generateDuesCharges(
         })
         .filter((row): row is NonNullable<typeof row> => row !== null);
 
-      if (chargeRows.length > 0) {
+      if (chargeRows.length === 0) {
+        const { error: cleanupError } = await supabase.from("accounting_dues_billing_periods").delete().eq("id", periodRow.id);
+        if (cleanupError) throw new Error(`空の請求期間を削除できませんでした: ${cleanupError.message}`);
+        periodsCreated -= 1;
+        continue;
+      }
+      {
         const { error: chargeError } = await supabase.from("accounting_dues_charges").insert(chargeRows);
         if (chargeError) {
           const { error: rollbackError } = await supabase.from("accounting_dues_billing_periods").delete().eq("id", periodRow.id);
