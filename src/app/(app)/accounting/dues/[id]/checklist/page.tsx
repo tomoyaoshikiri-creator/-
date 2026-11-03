@@ -13,7 +13,7 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
 import { duesPeriodLabel } from "@/lib/accountingDues";
-import { FISCAL_GRID_MONTHS, duesGridStatus } from "@/lib/duesGrid";
+import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
 import { loadProfilesMap } from "@/lib/profiles";
 import { fiscalYearLabel, fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
 import type { AccountingDuesBillingPeriod, AccountingDuesCharge, AccountingDuesItem, RosterPlayer } from "@/lib/database.types";
@@ -251,12 +251,7 @@ export default function AccountingDuesChecklistPage() {
               </tr>
             </thead>
             <tbody>
-              {[...roster].sort((a, b) => {
-                const ga = a.grade === null ? -1 : Number(a.grade);
-                const gb = b.grade === null ? -1 : Number(b.grade);
-                if (ga !== gb) return gb - ga;
-                return Number(a.number ?? 9999) - Number(b.number ?? 9999);
-              }).map(player => (
+              {sortDuesPlayers(roster).map(player => (
                 <tr key={player.id} className="border-b border-line last:border-b-0">
                   <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{playerFullName(player)}</th>
                   {FISCAL_GRID_MONTHS.map(month => {
