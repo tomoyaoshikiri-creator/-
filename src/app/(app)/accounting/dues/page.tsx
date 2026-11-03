@@ -120,7 +120,7 @@ export default function AccountingDuesPage() {
         toast.warning("学年帯を1件以上設定してください"); return;
       }
       if (bands.some(b => !Number.isSafeInteger(Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount)) || Number(draft.rate_basis === "yearly" ? b.yearly_amount : b.monthly_amount) <= 0 ||
-        b.grade_min > b.grade_max)) { toast.warning("学年帯の月額・範囲を確認してください"); return; }
+        b.grade_min > b.grade_max)) { toast.warning("学年帯の料金・範囲を確認してください"); return; }
       const occupied = new Set<number>();
       for (const band of bands) for (let g=band.grade_min;g<=band.grade_max;g++) {
         if (occupied.has(g)) { toast.warning("学年帯が重複しています"); return; }
@@ -191,7 +191,7 @@ export default function AccountingDuesPage() {
                 <FieldLabel>2. 料金の決め方</FieldLabel>
                 <div className="flex flex-col gap-1.5">
                   {(Object.keys(DUES_PRICING_METHOD_LABELS) as DuesPricingMethod[]).map(m => (
-                    <SegButton key={m} active={draft.pricing_method === m} onClick={() => setDraft(d => ({ ...d, pricing_method: m }))}>
+                    <SegButton key={m} active={draft.pricing_method === m} onClick={() => setDraft(d => ({ ...d, pricing_method: m, rate_basis: m === "per_player" ? "monthly" : d.rate_basis }))}>
                       {DUES_PRICING_METHOD_LABELS[m]}
                     </SegButton>
                   ))}
@@ -257,7 +257,7 @@ export default function AccountingDuesPage() {
               <section>
                 <FieldLabel>集金月・集金予定額</FieldLabel>
                 <div className="flex gap-2 mb-2">
-                  {(["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
+                  {(draft.pricing_method === "per_player" ? ["monthly"] as const : ["monthly","yearly"] as const).map(basis=><SegButton key={basis} active={draft.rate_basis===basis}
                     onClick={()=>setDraft(d=>({...d,rate_basis:basis}))}>{basis==="monthly"?"月額":"年額"}</SegButton>)}
                 </div>
                 {draft.pricing_method==="flat" && <input type="number" min={1} placeholder={draft.rate_basis==="monthly"?"月額（円）":"年額（円）"}
