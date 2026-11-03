@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -220,6 +221,10 @@ export default function AccountingDuesChecklistPage() {
 
   return (
     <PageShell header={<AppHeader title={`入金チェック: ${item.name}`} variant="detail" backHref={`/accounting/dues/${item.id}`} accessBadge="operations" />}>
+      <div className="flex justify-end gap-3 mb-2 text-[12px] font-bold">
+        <Link href={`/accounting/dues/${item.id}`} className="text-blue-600">料金・集金設定</Link>
+        <Link href="/accounting/dues?manage=1" className="text-blue-600">集金項目の管理</Link>
+      </div>
       <SectionLabel>年度</SectionLabel>
       <div className={cardClass}>
         <InlineSelect
