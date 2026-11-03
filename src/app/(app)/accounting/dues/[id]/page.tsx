@@ -73,6 +73,7 @@ export default function AccountingDuesItemPage() {
   });
   const [incomeCategories, setIncomeCategories] = useState<AccountingCategory[]>([]);
   const [bands, setBands] = useState<AccountingDuesGradeBand[]>([]);
+  const [draftBands, setDraftBands] = useState<AccountingDuesGradeBand[]>([]);
   const [playerSettings, setPlayerSettings] = useState<AccountingDuesPlayerSetting[]>([]);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +103,7 @@ export default function AccountingDuesItemPage() {
     });
     setIncomeCategories(cats ?? []);
     setBands(bandRows ?? []);
+    setDraftBands(bandRows ?? []);
     setPlayerSettings(settingRows ?? []);
     setRoster(players ?? []);
     setLoading(false);
@@ -120,6 +122,7 @@ export default function AccountingDuesItemPage() {
   function cancelEditing() {
     if (!item) return;
     setDraftItem({ ...item });
+    setDraftBands(bands.map(b => ({ ...b })));
     setScheduleDraft({
       basis: item.rate_basis ?? "monthly",
       amount: String((item.rate_basis === "yearly" ? item.flat_yearly_amount : item.flat_monthly_amount) ?? ""),
@@ -139,6 +142,31 @@ export default function AccountingDuesItemPage() {
       return;
     }
     setSaving(true);
+    const bandsChanged = JSON.stringify(draftBands) !== JSON.stringify(bands);
+    if (bandsChanged) {
+      const supabase = createClient();
+      const { count, error: historyError } = await supabase.from("accounting_dues_billing_periods")
+        .select("id", { count: "exact", head: true }).eq("dues_item_id", item.id)
+        .eq("fiscal_year", fiscalYearOf(todayDateStr()));
+      if (historyError || (count ?? 0) > 0) {
+        setSaving(false);
+        toast.warning(historyError ? "請求履歴を確認できませんでした" : "今年度に請求済みのため学年帯を変更できません");
+        return;
+      }
+      for (const oldBand of bands) {
+        if (!draftBands.some(b => b.id === oldBand.id)) {
+          const { error } = await supabase.from("accounting_dues_grade_bands").delete().eq("id", oldBand.id);
+          if (error) { setSaving(false); toast.error("学年帯の削除に失敗しました"); await load(); return; }
+        }
+      }
+      for (const band of draftBands.filter(b => b.id.startsWith("draft-"))) {
+        const { error } = await supabase.from("accounting_dues_grade_bands").insert({
+          dues_item_id: item.id, grade_min: band.grade_min, grade_max: band.grade_max,
+          monthly_amount: band.monthly_amount,
+        });
+        if (error) { setSaving(false); toast.error("学年帯の追加に失敗しました"); await load(); return; }
+      }
+    }
     const { data, error } = await createClient().from("accounting_dues_items")
       .update({
         name: draftItem.name.trim(), active: draftItem.active,
@@ -155,6 +183,7 @@ export default function AccountingDuesItemPage() {
     if (error || !data) { toast.error(`保存に失敗しました: ${error?.message ?? ""}`); return; }
     setItem(data);
     setDraftItem(data);
+    await load();
     setEditing(false);
     toast.success("設定を保存しました");
   }
@@ -185,34 +214,21 @@ export default function AccountingDuesItemPage() {
   // 学年帯の追加
   const grades = gradeOptions(category);
   const [bandDraft, setBandDraft] = useState({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "" });
-  async function handleAddBand() {
+  function handleAddBand() {
     if (!item) return;
     const amount = Number(bandDraft.monthly_amount);
     if (bandDraft.grade_min > bandDraft.grade_max || !Number.isFinite(amount) || amount <= 0) {
-      toast.warning("学年の範囲・月額を正しく入力してください");
-      return;
+      toast.warning("学年の範囲・月額を正しく入力してください"); return;
     }
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("accounting_dues_grade_bands")
-      .insert({ dues_item_id: item.id, grade_min: bandDraft.grade_min, grade_max: bandDraft.grade_max, monthly_amount: amount })
-      .select("*")
-      .single();
-    if (error || !data) {
-      toast.error(`追加に失敗しました: ${error?.message ?? ""}`);
-      return;
-    }
-    setBands((prev) => [...prev, data].sort((a, b) => a.grade_min - b.grade_min));
+    setDraftBands(prev => [...prev, {
+      id: `draft-${crypto.randomUUID()}`, dues_item_id: item.id,
+      grade_min: bandDraft.grade_min, grade_max: bandDraft.grade_max,
+      monthly_amount: amount,
+    } as AccountingDuesGradeBand].sort((x,y) => x.grade_min-y.grade_min));
     setBandDraft({ grade_min: grades[0] ?? 0, grade_max: grades[0] ?? 0, monthly_amount: "" });
   }
-  async function handleDeleteBand(id: string) {
-    const supabase = createClient();
-    const { error } = await supabase.from("accounting_dues_grade_bands").delete().eq("id", id);
-    if (error) {
-      toast.error(`削除に失敗しました: ${error.message}`);
-      return;
-    }
-    setBands((prev) => prev.filter((b) => b.id !== id));
+  function handleDeleteBand(id: string) {
+    setDraftBands(prev => prev.filter(b => b.id !== id));
   }
 
   // 選手ごとの個別設定の追加・編集
@@ -310,7 +326,7 @@ export default function AccountingDuesItemPage() {
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[12px] text-ink-soft">{editing ? "編集中" : "閲覧モード"}</span>
         {!editing && (
-          <button type="button" onClick={() => { setDraftItem({ ...item }); setEditing(true); }}
+          <button type="button" onClick={() => { setDraftItem({ ...item }); setDraftBands(bands.map(b => ({ ...b }))); setEditing(true); }}
             className="px-3 py-2 rounded-lg font-bold text-[12px] border border-orange text-orange-text bg-orange/8">
             ✏️ 編集
           </button>
