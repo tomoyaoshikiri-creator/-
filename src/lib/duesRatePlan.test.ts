@@ -39,4 +39,13 @@ describe("料金基準と集金月を分離した計算", () => {
     expect(() => annualRateTotal({ basis: "monthly", amount: 0, collectionMonths: [4] })).toThrow();
     expect(() => annualRateTotal({ basis: "monthly", amount: 2500, collectionMonths: [4, 4] })).toThrow();
   });
+  it("学年帯の年額1200円を4月に全額集金する", () => {
+    expect(calculateDuesInstallments({basis:"yearly",amount:1200,collectionMonths:[4]}))
+      .toEqual([{month:4,amount:1200,coveredMonths:[4,5,6,7,8,9,10,11,12,1,2,3]}]);
+  });
+  it("学年帯の年額1201円を3回に分けても総額が一致する", () => {
+    const rows=calculateDuesInstallments({basis:"yearly",amount:1201,collectionMonths:[1,4,10]});
+    expect(rows.map(r=>[r.month,r.amount])).toEqual([[4,401],[10,400],[1,400]]);
+    expect(rows.reduce((sum,r)=>sum+r.amount,0)).toBe(1201);
+  });
 });
