@@ -22,6 +22,19 @@ describe("料金基準と集金月を分離した計算", () => {
   it("年額5000円を3回に分けて端数を配分", () => {
     expect(calculateDuesInstallments({ basis: "yearly", amount: 5000, collectionMonths: [4, 8, 12] }).map(x => x.amount)).toEqual([1667, 1667, 1666]);
   });
+  it("4月以外が初回でも年度の12か月を漏れなく請求する", () => {
+    const rows = calculateDuesInstallments({ basis: "monthly", amount: 2500, collectionMonths: [8, 11, 2] });
+    expect(rows).toEqual([
+      { month: 8, amount: 17500, coveredMonths: [4, 5, 6, 7, 8, 9, 10] },
+      { month: 11, amount: 7500, coveredMonths: [11, 12, 1] },
+      { month: 2, amount: 5000, coveredMonths: [2, 3] },
+    ]);
+    expect(rows.flatMap(row => row.coveredMonths)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3]);
+    expect(annualRateTotal({ basis: "monthly", amount: 2500, collectionMonths: [8, 11, 2] })).toBe(30000);
+  });
+  it("集金月が1回で4月以外でも年間12か月を対象とする", () => {
+    expect(calculateDuesInstallments({ basis: "monthly", amount: 2500, collectionMonths: [10] })[0].amount).toBe(30000);
+  });
   it("月額0円、集金月の重複を拒否", () => {
     expect(() => annualRateTotal({ basis: "monthly", amount: 0, collectionMonths: [4] })).toThrow();
     expect(() => annualRateTotal({ basis: "monthly", amount: 2500, collectionMonths: [4, 4] })).toThrow();
