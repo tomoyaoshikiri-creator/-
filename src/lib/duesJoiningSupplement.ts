@@ -14,10 +14,12 @@ export function previewJoiningSupplement(params: {
   if (params.plan.basis !== "monthly") {
     throw new Error("年額料金の途中加入計算は別途確定が必要です");
   }
-  const joinMonth = Number(params.joinDate.slice(5, 7));
+  const enrolledMonths = billableFiscalMonths(params.fiscalYear, params.joinDate, null);
+  if (!enrolledMonths.length) return null;
+  const joinMonth = enrolledMonths[0];
   const fiscalMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
   const joinPosition = fiscalMonths.indexOf(joinMonth);
-  const activeMonths = new Set(billableFiscalMonths(params.fiscalYear, params.joinDate, null));
+  const activeMonths = new Set(enrolledMonths);
   const period = calculateDuesInstallments(params.plan).find(row => {
     const start = fiscalMonths.indexOf(row.month);
     return start < joinPosition && row.coveredMonths.includes(joinMonth);
