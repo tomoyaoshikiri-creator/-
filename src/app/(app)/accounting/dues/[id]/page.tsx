@@ -18,7 +18,7 @@ import { EditButton } from "@/components/ui/EditButton";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
-import { gradeLabel, playerFullName, fiscalYearOf, todayDateStr } from "@/lib/format";
+import { gradeLabel, playerFullName, fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
 import { FISCAL_MONTHS, sortedCollectionMonths } from "@/lib/duesAnnualSchedule";
 import { calculateDuesInstallments } from "@/lib/duesRatePlan";
 import {
@@ -110,7 +110,7 @@ export default function AccountingDuesItemPage() {
     setDraftBands(bandRows ?? []);
     setPlayerSettings(settingRows ?? []);
     setDraftPlayerSettings(settingRows ?? []);
-    setRoster(players ?? []);
+    setRoster(sortPlayers(players ?? []));
     setLoading(false);
   }, [params.id]);
 

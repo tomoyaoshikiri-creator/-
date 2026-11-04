@@ -16,7 +16,7 @@ import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
 import { duesPeriodLabel } from "@/lib/accountingDues";
 import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
 import { loadProfilesMap } from "@/lib/profiles";
-import { fiscalYearLabel, fiscalYearOf, playerFullName, todayDateStr } from "@/lib/format";
+import { fiscalYearLabel, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
 import type { AccountingDuesBillingPeriod, AccountingDuesCharge, AccountingDuesItem, RosterPlayer } from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
@@ -64,7 +64,7 @@ export default function AccountingDuesChecklistPage() {
     ]);
     setItem(itemRow ?? null);
     setPeriods(periodRows ?? []);
-    setRoster(players ?? []);
+    setRoster(sortPlayers(players ?? []));
     setProfiles(profileMap);
 
     const periodIds = (periodRows ?? []).map((p) => p.id);
