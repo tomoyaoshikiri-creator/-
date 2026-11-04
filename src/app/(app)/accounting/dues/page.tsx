@@ -15,7 +15,7 @@ import { ChevronRightIcon } from "@/components/icons";
 import { FISCAL_MONTHS, sortedCollectionMonths } from "@/lib/duesAnnualSchedule";
 import { calculateDuesInstallments } from "@/lib/duesRatePlan";
 import { MIN_GRADE_BY_CATEGORY, GRADUATION_GRADE_BY_CATEGORY } from "@/lib/category";
-import { gradeLabel, playerFullName } from "@/lib/format";
+import { gradeLabel, playerFullName, sortPlayers } from "@/lib/format";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import {
@@ -87,7 +87,7 @@ export default function AccountingDuesPage() {
       supabase.rpc("list_roster_players"),
     ]);
     setItems(duesItems ?? []);
-    setRoster(players ?? []);
+    setRoster(sortPlayers(players ?? []));
     setIncomeCategories(cats ?? []);
     setLoading(false);
   }, []);

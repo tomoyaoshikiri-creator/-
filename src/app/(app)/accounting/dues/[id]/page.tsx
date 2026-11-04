@@ -18,7 +18,7 @@ import { EditButton } from "@/components/ui/EditButton";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { GRADUATION_GRADE_BY_CATEGORY, MIN_GRADE_BY_CATEGORY } from "@/lib/category";
-import { gradeLabel, playerFullName, fiscalYearOf, todayDateStr } from "@/lib/format";
+import { gradeLabel, playerFullName, fiscalYearOf, sortPlayers, todayDateStr } from "@/lib/format";
 import { FISCAL_MONTHS, sortedCollectionMonths } from "@/lib/duesAnnualSchedule";
 import { calculateDuesInstallments } from "@/lib/duesRatePlan";
 import {
@@ -110,7 +110,7 @@ export default function AccountingDuesItemPage() {
     setDraftBands(bandRows ?? []);
     setPlayerSettings(settingRows ?? []);
     setDraftPlayerSettings(settingRows ?? []);
-    setRoster(players ?? []);
+    setRoster(sortPlayers(players ?? []));
     setLoading(false);
   }, [params.id]);
 
@@ -802,6 +802,14 @@ export default function AccountingDuesItemPage() {
           {saving ? "保存中…" : "保存"}
         </button>
       </div>}
+
+      {/* 編集中は上記キャンセル/保存バーがTabBarの上に浮くため、通常のpb-28
+          (PageShell.tsx、TabBar分のみを想定)だけでは足りず、保存バーが
+          画面最下部のコンテンツ(削除ボタン)に被ってしまう。保存バー自身の
+          高さ(p-2のpadding 1rem + py-2.5のボタン 1.25rem + text-[13px]の
+          行高 約1rem = 約3.25rem)と、保存バーの位置計算に含まれる2pxの
+          間隔を合わせた分だけ、編集中のみ追加の余白を確保する。 */}
+      {editing && <div style={{ height: "calc(3.25rem + 2px)" }} aria-hidden />}
 
       <SectionLabel>削除</SectionLabel>
       <div className={cardClass}>
