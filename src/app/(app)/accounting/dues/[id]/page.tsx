@@ -803,6 +803,14 @@ export default function AccountingDuesItemPage() {
         </button>
       </div>}
 
+      {/* 編集中は上記キャンセル/保存バーがTabBarの上に浮くため、通常のpb-28
+          (PageShell.tsx、TabBar分のみを想定)だけでは足りず、保存バーが
+          画面最下部のコンテンツ(削除ボタン)に被ってしまう。保存バー自身の
+          高さ(p-2のpadding 1rem + py-2.5のボタン 1.25rem + text-[13px]の
+          行高 約1rem = 約3.25rem)と、保存バーの位置計算に含まれる2pxの
+          間隔を合わせた分だけ、編集中のみ追加の余白を確保する。 */}
+      {editing && <div style={{ height: "calc(3.25rem + 2px)" }} aria-hidden />}
+
       <SectionLabel>削除</SectionLabel>
       <div className={cardClass}>
         <button
