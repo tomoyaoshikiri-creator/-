@@ -15,7 +15,14 @@ where display_year_month is null;
 
 alter table public.notices
   alter column display_year_month set not null,
-  alter column display_year_month set default to_char(now(), 'YYYY-MM');
+  -- アプリ側(NewNoticeModal.tsx等)は常にdisplay_year_monthを明示的に送るため、
+  -- このDEFAULTは万一指定漏れがあった場合の安全弁に過ぎない。ただし発動した場合に
+  -- 無意味な値にならないよう、アプリが「現在月」を判定する基準(ブラウザのローカル
+  -- 時刻、実運用上は日本時間)に合わせてAsia/Tokyoで計算する。セッションのデフォルト
+  -- タイムゾーンはUTCのため(確認済み)、明示しないとUTCの月初め9時間がずれる。
+  -- 既存行の一括移行(直後のUPDATE文)はこの変更の影響を受けない
+  -- (DEFAULTは新規INSERT/今後の省略時のみに作用し、既存データには遡って適用されない)。
+  alter column display_year_month set default to_char(now() AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM');
 
 alter table public.notices
   add constraint notices_display_year_month_format

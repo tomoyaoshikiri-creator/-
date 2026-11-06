@@ -21,12 +21,20 @@ import { sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType, Schedule } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
-// 月内のNEWSを一括取得する際の安全上限。確定仕様5(3グループのソート)は関連予定の
-// 開催日を横断して並べ替える必要があり、DB側の単純なORDER BY+カーソルページングでは
-// 表現できないため、月内は一括取得してクライアント側で並べ替える方式にした
-// (以前のNOTICE_PAGE_SIZE+loadMoreは廃止)。通常の運用でこの上限に達することは
-// 想定していない。
-const NOTICE_MONTH_FETCH_LIMIT = 300;
+// 確定仕様5(3グループのソート)は関連予定の開催日を横断して並べ替える必要があり、
+// DB側の単純なORDER BY+カーソルページングでは表現できない。そこで月内のNEWSを
+// 「関連予定あり」(related_schedule_id is not null)と「関連予定なし」
+// (is null)の2本のクエリに分けて取得する。
+//
+// 「関連予定あり」は、月単位の投稿数のうちFABから手動でひも付けた一部に限られ
+// 際限なく増える性質のものではないため、生成的な安全上限(SCHEDULED_FETCH_LIMIT)
+// のみ設けて一括取得し、クライアント側で①本日以降/③過去の2グループに振り分ける。
+// 「関連予定なし」は従来通りNOTICE_PAGE_SIZE単位のカーソルページング
+// (hasMore/loadMore、以前の投稿数無制限増加対策 docs/load-handling-todo.md)を
+// 維持し、確定仕様5の②グループを形成する。
+// 最終的な3グループの並び順はsortNoticesByRelatedSchedule()が担う。
+const NOTICE_PAGE_SIZE = 30;
+const SCHEDULED_FETCH_LIMIT = 200;
 
 export default function NoticePage() {
   const router = useRouter();
@@ -56,6 +64,8 @@ export default function NoticePage() {
   );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
+  const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   function changeMonth(v: string) {
     setMonthValue(v);
@@ -69,16 +79,26 @@ export default function NoticePage() {
     if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
-    const [{ data: n }, profMap] = await Promise.all([
+    const [{ data: scheduled }, { data: unscheduledRaw }, profMap] = await Promise.all([
       supabase
         .from("notices")
         .select("*")
         .eq("display_year_month", monthValue)
+        .not("related_schedule_id", "is", null)
         .order("created_at", { ascending: false })
-        .limit(NOTICE_MONTH_FETCH_LIMIT),
+        .limit(SCHEDULED_FETCH_LIMIT),
+      supabase
+        .from("notices")
+        .select("*")
+        .eq("display_year_month", monthValue)
+        .is("related_schedule_id", null)
+        .order("created_at", { ascending: false })
+        .limit(NOTICE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
-    const page = n ?? [];
+    const unscheduledPage = (unscheduledRaw ?? []).slice(0, NOTICE_PAGE_SIZE);
+    setHasMore((unscheduledRaw?.length ?? 0) > NOTICE_PAGE_SIZE);
+    const page = [...(scheduled ?? []), ...unscheduledPage];
     setNotices(page);
     setProfiles(profMap);
     if (page.length > 0) {
@@ -108,7 +128,56 @@ export default function NoticePage() {
       setRelatedSchedules({});
     }
     setLoading(false);
-  }, [initializing, monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setRelatedSchedules]);
+  }, [
+    initializing,
+    monthValue,
+    cacheKey,
+    setNotices,
+    setProfiles,
+    setAttachmentsByNotice,
+    setReactions,
+    setRelatedSchedules,
+    setHasMore,
+  ]);
+
+  // 「関連予定なし」グループのみを対象にしたカーソルページング(確定仕様とは独立の、
+  // 既存機能の維持)。notices状態内の「関連予定なし」サブシーケンスは常に
+  // created_at降順を保ったまま末尾に追記されるため、その最後の要素をカーソルに使える。
+  async function loadMore() {
+    if (loadingMore) return;
+    const unscheduledInState = notices.filter((n) => n.related_schedule_id === null);
+    if (unscheduledInState.length === 0) return;
+    setLoadingMore(true);
+    const supabase = createClient();
+    const cursor = unscheduledInState[unscheduledInState.length - 1].created_at;
+    const { data: n } = await supabase
+      .from("notices")
+      .select("*")
+      .eq("display_year_month", monthValue)
+      .is("related_schedule_id", null)
+      .lt("created_at", cursor)
+      .order("created_at", { ascending: false })
+      .limit(NOTICE_PAGE_SIZE + 1);
+    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
+    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
+    if (page.length > 0) {
+      setNotices((prev) => [...prev, ...page]);
+      const noticeIds = page.map((x) => x.id);
+      const [{ data: atts }, { data: r }] = await Promise.all([
+        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
+        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
+      ]);
+      setAttachmentsByNotice((prev) => {
+        const merged: Record<string, NoticeAttachment[]> = { ...prev };
+        (atts ?? []).forEach((a) => {
+          merged[a.notice_id] = [...(merged[a.notice_id] ?? []), a];
+        });
+        return merged;
+      });
+      setReactions((prev) => [...prev, ...(r ?? [])]);
+    }
+    setLoadingMore(false);
+  }
 
   useEffect(() => {
     if (monthParam !== null) {
@@ -270,7 +339,19 @@ export default function NoticePage() {
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
-        <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
+        <>
+          <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
+          {showAll && hasMore && (
+            <button
+              type="button"
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
+            >
+              {loadingMore ? "読み込み中…" : "さらに読み込む"}
+            </button>
+          )}
+        </>
       )}
     </PageShell>
   );
