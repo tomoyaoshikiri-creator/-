@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { EditButton } from "@/components/ui/EditButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canAccessTab, canWriteCoachNote } from "@/lib/permissions";
@@ -359,23 +360,10 @@ export default function CoachNoteDetailPage() {
       ) : (
         <>
           {/* 内容: 日報本体(本文・添付・投稿者・スタンプ)を1枚のカードにまとめる。
-              「編集する」(canWriteCoachNote: 指導者・管理者のみ、既存の条件のまま)は
-              見出しに添え、閲覧内容とは視覚的に区別する。 */}
-          <SectionLabel
-            action={
-              canWriteCoachNote(role) && (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  className="flex-shrink-0 whitespace-nowrap min-h-tap flex items-center text-caption font-bold text-orange-text"
-                >
-                  編集する
-                </button>
-              )
-            }
-          >
-            内容
-          </SectionLabel>
+              「編集」(canWriteCoachNote: 指導者・管理者のみ、既存の条件のまま)は
+              見出しに添え、閲覧内容とは視覚的に区別する。見た目は共通EditButton
+              (src/components/ui/EditButton.tsx)に統一した。 */}
+          <SectionLabel action={canWriteCoachNote(role) && <EditButton onClick={startEdit} />}>内容</SectionLabel>
           <div className={cardClass}>
             <div className="text-sm leading-relaxed whitespace-pre-wrap">{report.body}</div>
             {attachments.length > 0 && (
