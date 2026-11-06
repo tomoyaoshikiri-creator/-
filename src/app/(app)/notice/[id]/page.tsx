@@ -603,13 +603,13 @@ export default function NoticeDetailPage() {
         <>
           {/* LINEノートのように、タイトル→投稿情報→添付→本文を1枚の連続したカードで
               上から自然に読める構成にする(セクション見出し・カードの入れ子を減らす)。
-              「編集する」(canWriteNotice、全ロール共通)はタイトル行の右側に添え、
-              閲覧内容とは視覚的に区別する。見た目は共通EditButton
+              「編集」(canWriteNotice、全ロール共通)はタイトル行の右側に添え、
+              閲覧内容とは視覚的に区別する。見た目・文言とも共通EditButton
               (src/components/ui/EditButton.tsx、予定詳細等と同じ)に統一した。 */}
           <div className={cardClass}>
             <div className="flex items-start justify-between gap-2">
               <div className="font-bold text-base break-words flex-1 min-w-0">{notice.title}</div>
-              {canWriteNotice(role) && <EditButton onClick={startEdit} label="編集する" />}
+              {canWriteNotice(role) && <EditButton onClick={startEdit} />}
             </div>
 
             <div className="text-caption text-ink-soft mt-1">
