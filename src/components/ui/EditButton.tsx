@@ -33,8 +33,8 @@ export function EditButton({
       aria-label={ariaLabel ?? label}
       className={`min-h-tap flex-shrink-0 flex items-center justify-center ${className}`}
     >
-      <span className="h-9 inline-flex items-center gap-1 px-2.5 rounded-control border border-orange/35 bg-orange/5 text-[12px] font-bold text-orange-text whitespace-nowrap">
-        <PencilIcon className="w-3.5 h-3.5" />
+      <span className="h-8 inline-flex items-center gap-1 px-2.5 rounded-control border border-orange/35 bg-orange/5 text-[12px] font-bold text-orange-text whitespace-nowrap">
+        <PencilIcon className="w-3 h-3" />
         {label}
       </span>
     </button>

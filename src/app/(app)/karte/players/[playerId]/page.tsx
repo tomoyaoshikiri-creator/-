@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel, cardClass, tableWrapperClass } from "@/components/ui/Card";
 import { NumChip } from "@/components/ui/Pill";
+import { EditButton } from "@/components/ui/EditButton";
 import { FieldLabel, SegButton, SubmitButton, TextTab, inputClass } from "@/components/ui/SegButton";
 import { Switch } from "@/components/ui/Switch";
 import { InlineSelect } from "@/components/ui/InlineSelect";
@@ -470,22 +471,7 @@ export default function KartePlayerPage() {
         </div>
       )}
 
-      <SectionLabel
-        action={
-          isStaff &&
-          !editing && (
-            <button
-              type="button"
-              onClick={startEdit}
-              className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-            >
-              編集する
-            </button>
-          )
-        }
-      >
-        基本情報
-      </SectionLabel>
+      <SectionLabel action={isStaff && !editing && <EditButton onClick={startEdit} />}>基本情報</SectionLabel>
       {editing ? (
         <>
           <div className={cardClass}>

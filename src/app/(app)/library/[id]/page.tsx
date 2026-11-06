@@ -9,6 +9,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton, inputClass } from "@/components/ui/SegButton";
+import { EditButton } from "@/components/ui/EditButton";
 import { loadProfilesMap } from "@/lib/profiles";
 import { isImageFile, isPdfFile } from "@/lib/storagePath";
 import { formatDateLabel } from "@/lib/format";
@@ -255,7 +256,7 @@ export default function LibraryItemDetailPage() {
           <SectionLabel
             action={
               canEdit(item) && (
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setMoveOpen(true)}
@@ -263,13 +264,7 @@ export default function LibraryItemDetailPage() {
                   >
                     移動
                   </button>
-                  <button
-                    type="button"
-                    onClick={startEdit}
-                    className="flex-none text-[11px] font-bold text-orange-text border border-orange rounded-full px-2.5 py-1 bg-orange/8"
-                  >
-                    編集する
-                  </button>
+                  <EditButton onClick={startEdit} />
                 </div>
               )
             }
