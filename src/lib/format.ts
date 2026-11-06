@@ -150,6 +150,21 @@ export function scheduleMeta(s: {
   return `${dateLabel}${timeLabel}${placeLabel}`;
 }
 
+// scheduleMeta()から場所を除いた日時のみの表示(NEWS⇔予定の相互参照カード等、
+// 場所を出す余白のないコンパクトな表示で使う)。
+export function scheduleDateTimeLabel(s: {
+  date: string;
+  start_time: string | null;
+  end_time: string | null;
+  is_all_day?: boolean;
+}): string {
+  const dateLabel = formatDateLabel(s.date);
+  if (s.is_all_day) return `${dateLabel} 終日`;
+  if (s.start_time && s.end_time) return `${dateLabel} ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
+  if (s.start_time) return `${dateLabel} ${s.start_time.slice(0, 5)}〜`;
+  return dateLabel;
+}
+
 export function playerFullName(p: { sei: string; mei: string }): string {
   return `${p.sei} ${p.mei}`.trim();
 }

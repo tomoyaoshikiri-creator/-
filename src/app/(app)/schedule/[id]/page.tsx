@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
@@ -13,9 +13,9 @@ import { TypeTag } from "@/components/ui/Pill";
 import { FieldLabel, inputClass } from "@/components/ui/SegButton";
 import { EditButton } from "@/components/ui/EditButton";
 import { ChevronRightIcon } from "@/components/icons";
-import { formatDateLabel, isTargetEligible, playerFullName, sortPlayers } from "@/lib/format";
+import { formatDateLabel, isTargetEligible, playerFullName, scheduleDateTimeLabel, sortPlayers } from "@/lib/format";
 import { canWriteSchedule } from "@/lib/permissions";
-import type { Player, Schedule } from "@/lib/database.types";
+import type { Notice, Player, Schedule } from "@/lib/database.types";
 import { AttendanceEntryForm } from "../AttendanceEntryForm";
 import { AttendanceRosterModal } from "../AttendanceRosterModal";
 import { NewScheduleModal } from "../NewScheduleModal";
@@ -35,20 +35,10 @@ interface AttendanceSummary {
   noResponse: number;
 }
 
-// scheduleMeta()(@/lib/format、一覧画面等で共通利用)と同じ時刻表示ロジックだが、
-// 詳細画面では場所・当番を別行に分けて表示するため、場所を含まない日時部分だけを
-// ここで組み立てる(共通関数自体は変更しない)。
-function scheduleDateTimeLabel(s: Schedule): string {
-  const date = formatDateLabel(s.date);
-  if (s.is_all_day) return `${date} 終日`;
-  if (s.start_time && s.end_time) return `${date} ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`;
-  if (s.start_time) return `${date} ${s.start_time.slice(0, 5)}〜`;
-  return date;
-}
-
 export default function ScheduleDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { userId, role, requireUnlinkedGuardianAttendance } = useSession();
   const toast = useToast();
 
@@ -59,6 +49,10 @@ export default function ScheduleDetailPage() {
   // ヘッダーの戻る(backHref)・ハンバーガーは元々focusModeと独立しているため無変更。
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
+  // 確定仕様7「関連するNEWS」。0件ならセクション自体を非表示にする。RLS
+  // (notices_select)が監査者の閲覧権限を自動的に絞るため、ここでは追加の
+  // 権限チェックをせず素直にクエリするだけでよい。
+  const [relatedNotices, setRelatedNotices] = useState<Notice[]>([]);
   const [subjects, setSubjects] = useState<AttendanceSubject[]>([]);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [excludedLinkedCount, setExcludedLinkedCount] = useState(0);
@@ -83,6 +77,17 @@ export default function ScheduleDetailPage() {
       supabase.from("player_guardians").select("player_id").eq("profile_id", userId),
     ]);
     setSchedule(s ?? null);
+
+    if (s) {
+      const { data: relatedN } = await supabase
+        .from("notices")
+        .select("*")
+        .eq("related_schedule_id", s.id)
+        .order("created_at", { ascending: false });
+      setRelatedNotices(relatedN ?? []);
+    } else {
+      setRelatedNotices([]);
+    }
 
     if (s) {
       const [{ data: prevRows }, { data: nextRows }] = await Promise.all([
@@ -220,9 +225,13 @@ export default function ScheduleDetailPage() {
   }, [load]);
 
   const isGame = schedule?.type === "game";
+  // 確定仕様10: NEWS詳細の「関連する予定」カード経由で来た場合は、戻ると元のNEWS詳細へ
+  // 戻れるようにする(backHrefは履歴ではなく固定リンクのため、遷移元をURLで明示的に
+  // 受け取る)。通常の予定一覧からの遷移時は?backが無いため従来通り/scheduleへ戻る。
+  const backHref = searchParams.get("back") || "/schedule";
 
   return (
-    <PageShell header={<AppHeader title="スケジュール詳細" variant="detail" backHref="/schedule" />}>
+    <PageShell header={<AppHeader title="スケジュール詳細" variant="detail" backHref={backHref} />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !schedule ? (
@@ -478,6 +487,32 @@ export default function ScheduleDetailPage() {
                 )}
               </>
             )}
+
+          {/* 確定仕様7「関連するNEWS」: 0件ならセクション全体を非表示にする。 */}
+          {relatedNotices.length > 0 && (
+            <>
+              <SectionLabel>関連するNEWS</SectionLabel>
+              <div className={cardClass}>
+                {relatedNotices.map((n, i) => (
+                  <Link
+                    key={n.id}
+                    href={`/notice/${n.id}?back=${encodeURIComponent(`/schedule/${schedule.id}`)}`}
+                    className={`flex items-center justify-between gap-2 py-2 ${
+                      i > 0 ? "border-t border-line" : ""
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-bold text-[13px] truncate">{n.title}</div>
+                      <div className="text-[11px] text-ink-soft mt-0.5">
+                        {formatDateLabel(n.created_at.slice(0, 10))}登録
+                      </div>
+                    </div>
+                    <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* 5. 前後の予定: 画面下部への固定表示はせず、通常のコンテンツ最下部に横並びで配置する
               (遷移対象の判定・prevId/nextIdの取得ロジックは無変更)。 */}

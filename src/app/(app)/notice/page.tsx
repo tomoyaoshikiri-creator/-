@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -16,27 +16,31 @@ import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { computeUnseenNoticeIds } from "@/lib/itemBadges";
-import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/format";
-import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
+import { currentYearMonth, formatDateLabel, todayDateStr } from "@/lib/format";
+import { sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
+import type { Notice, NoticeAttachment, NoticeReaction, ReactionType, Schedule } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
-// 1回のDB取得件数の上限。従来は月内の全件を無制限に取得していたため、
-// 投稿数が多い月では取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
-// CollapsibleListによる「もっと見る」(読み込み済み分を5件ずつ表示)とは別に、
-// 読み込み済み分をすべて表示し終えてもまだ月内に残りがある場合はDBへ追加取得しにいく。
-const NOTICE_PAGE_SIZE = 30;
+// 月内のNEWSを一括取得する際の安全上限。確定仕様5(3グループのソート)は関連予定の
+// 開催日を横断して並べ替える必要があり、DB側の単純なORDER BY+カーソルページングでは
+// 表現できないため、月内は一括取得してクライアント側で並べ替える方式にした
+// (以前のNOTICE_PAGE_SIZE+loadMoreは廃止)。通常の運用でこの上限に達することは
+// 想定していない。
+const NOTICE_MONTH_FETCH_LIMIT = 300;
 
 export default function NoticePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { role, teamId, userId } = useSession();
   const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [monthValue, setMonthValue] = useState(currentYearMonth());
-  // 開いた直後は「今月」ではなく「直近のお知らせが投稿された月」をデフォルトで表示したいため、
-  // 最新のお知らせを1件取得してその月に合わせる。取得が終わるまでは一覧の読み込みを待つ
-  // (今月分を一瞬表示してから切り替わるチラつきを防ぐため)。
-  const [initializing, setInitializing] = useState(true);
+  const monthParam = searchParams.get("month");
+  const [monthValue, setMonthValue] = useState(monthParam ?? currentYearMonth());
+  // 開いた直後、URLに?monthが無ければ「今月」ではなく「直近のお知らせが投稿された月」を
+  // デフォルトで表示したいため、最新のお知らせを1件取得してその月に合わせる
+  // (?monthがあれば、確定仕様10によりそちらを優先しこの処理はスキップする)。
+  const [initializing, setInitializing] = useState(monthParam === null);
   const [showAll, setShowAll] = useState(false);
   const cacheKey = useCallback((field: string) => `notice:${monthValue}:${field}`, [monthValue]);
   const [notices, setNotices] = useCachedState<Notice[]>(cacheKey("notices"), []);
@@ -46,35 +50,46 @@ export default function NoticePage() {
   );
   const [reactions, setReactions] = useCachedState<NoticeReaction[]>(cacheKey("reactions"), []);
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [relatedSchedules, setRelatedSchedules] = useCachedState<Record<string, Schedule>>(
+    cacheKey("relatedSchedules"),
+    {},
+  );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
-  const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  function changeMonth(v: string) {
+    setMonthValue(v);
+    // 確定仕様10「同じ画面への往復によって履歴を不要に増やさない」ため、月の切替は
+    // pushではなくreplaceでURLに反映する(フォルダ遷移等とは異なり、月送りのたびに
+    // 戻るボタンの履歴を1件ずつ積み上げたくない)。
+    router.replace(`/notice?month=${v}`, { scroll: false });
+  }
 
   const load = useCallback(async () => {
     if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
-    const { start, end } = monthRangeBounds(monthValue);
     const [{ data: n }, profMap] = await Promise.all([
       supabase
         .from("notices")
         .select("*")
-        .gte("created_at", start)
-        .lt("created_at", end)
+        .eq("display_year_month", monthValue)
         .order("created_at", { ascending: false })
-        .limit(NOTICE_PAGE_SIZE + 1),
+        .limit(NOTICE_MONTH_FETCH_LIMIT),
       loadProfilesMap(supabase),
     ]);
-    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
-    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
+    const page = n ?? [];
     setNotices(page);
     setProfiles(profMap);
     if (page.length > 0) {
       const noticeIds = page.map((x) => x.id);
-      const [{ data: atts }, { data: r }] = await Promise.all([
+      const scheduleIds = [...new Set(page.map((x) => x.related_schedule_id).filter((x): x is string => x !== null))];
+      const [{ data: atts }, { data: r }, { data: scheds }] = await Promise.all([
         supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
         supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
+        scheduleIds.length > 0
+          ? supabase.from("schedules").select("*").in("id", scheduleIds)
+          : Promise.resolve({ data: [] as Schedule[] }),
       ]);
       const map: Record<string, NoticeAttachment[]> = {};
       (atts ?? []).forEach((a) => {
@@ -82,48 +97,24 @@ export default function NoticePage() {
       });
       setAttachmentsByNotice(map);
       setReactions(r ?? []);
+      const schedMap: Record<string, Schedule> = {};
+      (scheds ?? []).forEach((s) => {
+        schedMap[s.id] = s;
+      });
+      setRelatedSchedules(schedMap);
     } else {
       setAttachmentsByNotice({});
       setReactions([]);
+      setRelatedSchedules({});
     }
     setLoading(false);
-  }, [initializing, monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setHasMore]);
-
-  async function loadMore() {
-    if (notices.length === 0 || loadingMore) return;
-    setLoadingMore(true);
-    const supabase = createClient();
-    const { start } = monthRangeBounds(monthValue);
-    const cursor = notices[notices.length - 1].created_at;
-    const { data: n } = await supabase
-      .from("notices")
-      .select("*")
-      .gte("created_at", start)
-      .lt("created_at", cursor)
-      .order("created_at", { ascending: false })
-      .limit(NOTICE_PAGE_SIZE + 1);
-    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
-    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
-    if (page.length > 0) {
-      setNotices((prev) => [...prev, ...page]);
-      const noticeIds = page.map((x) => x.id);
-      const [{ data: atts }, { data: r }] = await Promise.all([
-        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
-        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
-      ]);
-      setAttachmentsByNotice((prev) => {
-        const merged: Record<string, NoticeAttachment[]> = { ...prev };
-        (atts ?? []).forEach((a) => {
-          merged[a.notice_id] = [...(merged[a.notice_id] ?? []), a];
-        });
-        return merged;
-      });
-      setReactions((prev) => [...prev, ...(r ?? [])]);
-    }
-    setLoadingMore(false);
-  }
+  }, [initializing, monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setRelatedSchedules]);
 
   useEffect(() => {
+    if (monthParam !== null) {
+      setInitializing(false);
+      return;
+    }
     (async () => {
       const supabase = createClient();
       const { data } = await supabase
@@ -135,6 +126,9 @@ export default function NoticePage() {
       if (data) setMonthValue(data.created_at.slice(0, 7));
       setInitializing(false);
     })();
+    // マウント時に一度だけ判定する(monthParamは初回値のみ見ればよく、以後のURL変更に
+    // 反応して再実行する必要はない)。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -158,7 +152,9 @@ export default function NoticePage() {
       next.delete(noticeId);
       return next;
     });
-    router.push(`/notice/${noticeId}`);
+    // 確定仕様10: NEWS一覧に戻った際に表示中の月を復元できるよう、詳細画面のURLに
+    // 現在の表示対象月を渡しておく(notice/[id]/page.tsxのbackHrefがこれを読む)。
+    router.push(`/notice/${noticeId}?month=${monthValue}`);
   }
 
   async function loadReactions() {
@@ -195,7 +191,9 @@ export default function NoticePage() {
     loadReactions();
   }
 
-  const filteredNotices = notices.filter((n) => n.title.includes(query.trim()));
+  // 確定仕様5: 3グループの並び替え(詳細はsrc/lib/noticeScheduleLink.ts参照)。
+  const sortedNotices = sortNoticesByRelatedSchedule(notices, relatedSchedules, todayDateStr());
+  const filteredNotices = sortedNotices.filter((n) => n.title.includes(query.trim()));
 
   function renderNoticeCard(n: Notice) {
     return (
@@ -266,25 +264,13 @@ export default function NoticePage() {
       }
     >
       <SectionLabel>お知らせ</SectionLabel>
-      <MonthPicker value={monthValue} onChange={setMonthValue} />
+      <MonthPicker value={monthValue} onChange={changeMonth} />
       {initializing || loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
-        <>
-          <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
-          {showAll && hasMore && (
-            <button
-              type="button"
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
-            >
-              {loadingMore ? "読み込み中…" : "さらに読み込む"}
-            </button>
-          )}
-        </>
+        <CollapsibleList items={filteredNotices} showAll={showAll} onShowAll={() => setShowAll(true)} renderItem={renderNoticeCard} />
       )}
     </PageShell>
   );
