@@ -65,3 +65,35 @@ export function sortNoticesByRelatedSchedule<T extends Pick<Notice, "id" | "rela
     return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
   });
 }
+
+// NEWS一覧のカーソルページング(関連予定あり/なしの両方)が使う、
+// created_at降順・id昇順の安定順序における「cursor行より後ろ」を表す
+// PostgRESTのor()条件文字列。created_atだけをカーソルにすると、同じcreated_at
+// (完全に同時刻)のNEWSが複数ある場合にページ境界でその行群を丸ごと
+// 取りこぼす恐れがあるため、idを複合キーとして使う(確定仕様の最終タイブレークと
+// 同じ並び)。
+export function afterNoticeCursor(createdAt: string, id: string): string {
+  return `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.gt.${id})`;
+}
+
+export type NoticeCursor = { createdAt: string; id: string };
+
+// created_at降順・id昇順でページングされたデータを、複合カーソルを使って
+// 尽きるまで取得する汎用ループ。fetchPageの実際のクエリ構築(PostgREST/Supabase)
+// は呼び出し側に委ね、ここでは「ページが尽きるまでカーソルを進める」という
+// 取りこぼし・重複のないページング手順そのものをテスト可能な形で切り出す。
+export async function fetchAllPagesByCursor<T extends { created_at: string; id: string }>(
+  fetchPage: (cursor: NoticeCursor | null) => Promise<T[]>,
+  batchSize: number,
+): Promise<T[]> {
+  const all: T[] = [];
+  let cursor: NoticeCursor | null = null;
+  for (;;) {
+    const batch = await fetchPage(cursor);
+    all.push(...batch);
+    if (batch.length < batchSize) break;
+    const last = batch[batch.length - 1];
+    cursor = { createdAt: last.created_at, id: last.id };
+  }
+  return all;
+}

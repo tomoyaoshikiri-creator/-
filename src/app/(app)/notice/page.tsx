@@ -17,7 +17,7 @@ import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { computeUnseenNoticeIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatDateLabel, todayDateStr } from "@/lib/format";
-import { sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
+import { afterNoticeCursor, fetchAllPagesByCursor, sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType, Schedule } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
@@ -26,15 +26,40 @@ import { NewNoticeModal } from "./NewNoticeModal";
 // 「関連予定あり」(related_schedule_id is not null)と「関連予定なし」
 // (is null)の2本のクエリに分けて取得する。
 //
-// 「関連予定あり」は、月単位の投稿数のうちFABから手動でひも付けた一部に限られ
-// 際限なく増える性質のものではないため、生成的な安全上限(SCHEDULED_FETCH_LIMIT)
-// のみ設けて一括取得し、クライアント側で①本日以降/③過去の2グループに振り分ける。
+// 「関連予定あり」は、①本日以降/③過去のどちらに属すかが関連予定の開催日
+// (別テーブル)次第で、クライアント側で全件を見てから振り分ける必要があるため、
+// 件数の上限で打ち切らず、SCHEDULED_FETCH_BATCH_SIZE件ずつカーソルページングで
+// 尽きるまで取得する(1回の問い合わせを小さく保ちつつ、取りこぼしなく全件取得する。
+// 取りこぼし・重複のないページング手順そのものはsrc/lib/noticeScheduleLink.tsの
+// fetchAllPagesByCursor()に切り出し、単体テストしている)。
 // 「関連予定なし」は従来通りNOTICE_PAGE_SIZE単位のカーソルページング
 // (hasMore/loadMore、以前の投稿数無制限増加対策 docs/load-handling-todo.md)を
 // 維持し、確定仕様5の②グループを形成する。
 // 最終的な3グループの並び順はsortNoticesByRelatedSchedule()が担う。
+//
+// どちらのカーソルも created_at だけでなく id を複合キーとして使う(詳細は
+// noticeScheduleLink.tsのafterNoticeCursor()参照)。
 const NOTICE_PAGE_SIZE = 30;
-const SCHEDULED_FETCH_LIMIT = 200;
+const SCHEDULED_FETCH_BATCH_SIZE = 100;
+
+// 「関連予定あり」の全件を、取りこぼしなく尽きるまで取得する。通常は手動で
+// 紐づけた少数のNEWSのみのため1回で終わるが、件数が多い月でも
+// SCHEDULED_FETCH_BATCH_SIZE件ずつに分けて取得するため、1回の問い合わせが
+// 肥大化しない。
+async function fetchAllScheduledNotices(supabase: ReturnType<typeof createClient>, monthValue: string): Promise<Notice[]> {
+  return fetchAllPagesByCursor<Notice>(async (cursor) => {
+    const base = supabase
+      .from("notices")
+      .select("*")
+      .eq("display_year_month", monthValue)
+      .not("related_schedule_id", "is", null)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(SCHEDULED_FETCH_BATCH_SIZE);
+    const { data } = cursor ? await base.or(afterNoticeCursor(cursor.createdAt, cursor.id)) : await base;
+    return data ?? [];
+  }, SCHEDULED_FETCH_BATCH_SIZE);
+}
 
 export default function NoticePage() {
   const router = useRouter();
@@ -79,26 +104,21 @@ export default function NoticePage() {
     if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
-    const [{ data: scheduled }, { data: unscheduledRaw }, profMap] = await Promise.all([
-      supabase
-        .from("notices")
-        .select("*")
-        .eq("display_year_month", monthValue)
-        .not("related_schedule_id", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(SCHEDULED_FETCH_LIMIT),
+    const [scheduled, { data: unscheduledRaw }, profMap] = await Promise.all([
+      fetchAllScheduledNotices(supabase, monthValue),
       supabase
         .from("notices")
         .select("*")
         .eq("display_year_month", monthValue)
         .is("related_schedule_id", null)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .limit(NOTICE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
     const unscheduledPage = (unscheduledRaw ?? []).slice(0, NOTICE_PAGE_SIZE);
     setHasMore((unscheduledRaw?.length ?? 0) > NOTICE_PAGE_SIZE);
-    const page = [...(scheduled ?? []), ...unscheduledPage];
+    const page = [...scheduled, ...unscheduledPage];
     setNotices(page);
     setProfiles(profMap);
     if (page.length > 0) {
@@ -142,21 +162,23 @@ export default function NoticePage() {
 
   // 「関連予定なし」グループのみを対象にしたカーソルページング(確定仕様とは独立の、
   // 既存機能の維持)。notices状態内の「関連予定なし」サブシーケンスは常に
-  // created_at降順を保ったまま末尾に追記されるため、その最後の要素をカーソルに使える。
+  // created_at降順(かつ同時刻内はid昇順)を保ったまま末尾に追記されるため、
+  // その最後の要素を複合カーソル(created_at, id)に使える。
   async function loadMore() {
     if (loadingMore) return;
     const unscheduledInState = notices.filter((n) => n.related_schedule_id === null);
     if (unscheduledInState.length === 0) return;
     setLoadingMore(true);
     const supabase = createClient();
-    const cursor = unscheduledInState[unscheduledInState.length - 1].created_at;
+    const cursor = unscheduledInState[unscheduledInState.length - 1];
     const { data: n } = await supabase
       .from("notices")
       .select("*")
       .eq("display_year_month", monthValue)
       .is("related_schedule_id", null)
-      .lt("created_at", cursor)
+      .or(afterNoticeCursor(cursor.created_at, cursor.id))
       .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
       .limit(NOTICE_PAGE_SIZE + 1);
     const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
     setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
