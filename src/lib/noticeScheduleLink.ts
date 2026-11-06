@@ -78,22 +78,48 @@ export function afterNoticeCursor(createdAt: string, id: string): string {
 
 export type NoticeCursor = { createdAt: string; id: string };
 
+// SupabaseクエリのPostgrestResponseと同じ形(成功ならdataに配列・errorはnull、
+// 失敗ならdataはnull・errorに値)の判別可能なUnion。fetchAllPagesByCursorは
+// これを見て「正常な0件」と「取得失敗」を区別する(data ?? []で丸めてしまうと、
+// 取得失敗が0件として扱われてしまう)。
+export type PageFetchResult<T> = { data: T[]; error: null } | { data: null; error: unknown };
+
 // created_at降順・id昇順でページングされたデータを、複合カーソルを使って
 // 尽きるまで取得する汎用ループ。fetchPageの実際のクエリ構築(PostgREST/Supabase)
 // は呼び出し側に委ね、ここでは「ページが尽きるまでカーソルを進める」という
 // 取りこぼし・重複のないページング手順そのものをテスト可能な形で切り出す。
+//
+// いずれかのページ取得でerrorが返った場合、その時点で直ちに打ち切り
+// { data: null, error } を返す(それまでに取得できていた分も正常終了や0件とは
+// 扱わない。3グループソートは全件が揃っている前提のため、一部だけのデータで
+// 「取得できた分」として表示すると、並び順自体が不正確になりかねないため)。
 export async function fetchAllPagesByCursor<T extends { created_at: string; id: string }>(
-  fetchPage: (cursor: NoticeCursor | null) => Promise<T[]>,
+  fetchPage: (cursor: NoticeCursor | null) => Promise<PageFetchResult<T>>,
   batchSize: number,
-): Promise<T[]> {
+): Promise<PageFetchResult<T>> {
   const all: T[] = [];
   let cursor: NoticeCursor | null = null;
   for (;;) {
-    const batch = await fetchPage(cursor);
+    const { data, error } = await fetchPage(cursor);
+    if (error) return { data: null, error };
+    const batch = data ?? [];
     all.push(...batch);
     if (batch.length < batchSize) break;
     const last = batch[batch.length - 1];
     cursor = { createdAt: last.created_at, id: last.id };
   }
-  return all;
+  return { data: all, error: null };
+}
+
+// 添付・リアクション・関連予定など、NEWSのID一覧に対するin()問い合わせ用に
+// IDをchunkSizeずつの配列へ分割する。1回のクエリに含めるID数を抑えることで、
+// 大量取得時(本修正で関連予定ありNEWSの件数上限を撤廃したため、紐づく
+// 添付・リアクション等の対象ID数も比例して増えうる)でもURL長やレスポンス
+// サイズが際限なく膨らまないようにする。
+export function chunkIds(ids: string[], chunkSize: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+  return chunks;
 }

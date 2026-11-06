@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   afterNoticeCursor,
+  chunkIds,
   fetchAllPagesByCursor,
   isRelatedScheduleError,
   resolveAutoFillMonth,
   sortNoticesByRelatedSchedule,
 } from "./noticeScheduleLink";
+import type { PageFetchResult } from "./noticeScheduleLink";
 import type { Schedule } from "./database.types";
 
 function schedule(date: string): Pick<Schedule, "date"> {
@@ -164,12 +166,13 @@ describe("fetchAllPagesByCursor", () => {
   // created_at降順・id昇順のdataset全体から、カーソル以降の行だけをbatchSize件
   // 切り出す、本物のDBクエリ(created_at.lt. OR (created_at.eq. AND id.gt.))を
   // 模したモック。afterNoticeCursor()と同じ条件をJS側で再現している。
+  // PostgrestResponseと同じ{data, error}形を返す(data??[]では丸めない)。
   function makeFetchPage(dataset: Row[], batchSize: number) {
-    return async (cursor: { createdAt: string; id: string } | null): Promise<Row[]> => {
+    return async (cursor: { createdAt: string; id: string } | null): Promise<PageFetchResult<Row>> => {
       const filtered = cursor
         ? dataset.filter((r) => r.created_at < cursor.createdAt || (r.created_at === cursor.createdAt && r.id > cursor.id))
         : dataset;
-      return filtered.slice(0, batchSize);
+      return { data: filtered.slice(0, batchSize), error: null };
     };
   }
 
@@ -181,9 +184,10 @@ describe("fetchAllPagesByCursor", () => {
     })).sort((a, b) => (a.created_at === b.created_at ? (a.id < b.id ? -1 : 1) : a.created_at > b.created_at ? -1 : 1));
     const batchSize = 20;
     const result = await fetchAllPagesByCursor(makeFetchPage(dataset, batchSize), batchSize);
-    expect(result).toHaveLength(201);
-    expect(new Set(result.map((r) => r.id)).size).toBe(201);
-    expect(result.map((r) => r.id)).toEqual(dataset.map((r) => r.id));
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(201);
+    expect(new Set(result.data?.map((r) => r.id)).size).toBe(201);
+    expect(result.data?.map((r) => r.id)).toEqual(dataset.map((r) => r.id));
   });
 
   it("does not drop or duplicate rows that share the exact same created_at at a page boundary", async () => {
@@ -199,7 +203,7 @@ describe("fetchAllPagesByCursor", () => {
     ];
     const batchSize = 2;
     const result = await fetchAllPagesByCursor(makeFetchPage(dataset, batchSize), batchSize);
-    expect(result.map((r) => r.id)).toEqual(["0001", "0002", "0003", "0004", "0005"]);
+    expect(result.data?.map((r) => r.id)).toEqual(["0001", "0002", "0003", "0004", "0005"]);
   });
 
   it("makes a single call when the first page is already short (common case: few or no linked schedules)", async () => {
@@ -210,11 +214,61 @@ describe("fetchAllPagesByCursor", () => {
       return makeFetchPage(dataset, 100)(cursor);
     }, 100);
     expect(calls).toBe(1);
-    expect(result).toHaveLength(1);
+    expect(result.data).toHaveLength(1);
   });
 
-  it("returns an empty array without error when there is nothing to fetch", async () => {
+  it("returns an empty array (not an error) when there is legitimately nothing to fetch", async () => {
     const result = await fetchAllPagesByCursor(makeFetchPage([], 100), 100);
-    expect(result).toEqual([]);
+    expect(result.error).toBeNull();
+    expect(result.data).toEqual([]);
+  });
+
+  it("surfaces an error on the very first page without disguising it as zero rows", async () => {
+    const dbError = { message: "connection reset", code: "08006" };
+    let calls = 0;
+    const result = await fetchAllPagesByCursor<Row>(async () => {
+      calls += 1;
+      return { data: null, error: dbError };
+    }, 100);
+    expect(calls).toBe(1);
+    expect(result.error).toBe(dbError);
+    expect(result.data).toBeNull();
+  });
+
+  it("surfaces an error on a later page and discards the data accumulated so far, rather than returning a silent partial success", async () => {
+    const dbError = { message: "statement timeout", code: "57014" };
+    let calls = 0;
+    const result = await fetchAllPagesByCursor<Row>(async (cursor) => {
+      calls += 1;
+      if (cursor === null) {
+        // First page succeeds with a full batch, so the loop continues.
+        return { data: [{ id: "0001", created_at: "2026-11-05T00:00:00Z" }], error: null };
+      }
+      // Second page fails.
+      return { data: null, error: dbError };
+    }, 1);
+    expect(calls).toBe(2);
+    expect(result.error).toBe(dbError);
+    // Not [] (a silent "no more related notices"), and not the 1 row from page one
+    // presented as if it were the complete, correctly-ordered set.
+    expect(result.data).toBeNull();
+  });
+});
+
+describe("chunkIds", () => {
+  it("splits evenly when the length is a multiple of the chunk size", () => {
+    expect(chunkIds(["a", "b", "c", "d"], 2)).toEqual([["a", "b"], ["c", "d"]]);
+  });
+
+  it("puts the remainder in a final shorter chunk", () => {
+    expect(chunkIds(["a", "b", "c"], 2)).toEqual([["a", "b"], ["c"]]);
+  });
+
+  it("returns a single chunk when everything fits", () => {
+    expect(chunkIds(["a", "b"], 100)).toEqual([["a", "b"]]);
+  });
+
+  it("returns no chunks for an empty list", () => {
+    expect(chunkIds([], 100)).toEqual([]);
   });
 });

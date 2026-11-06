@@ -17,7 +17,7 @@ import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { computeUnseenNoticeIds } from "@/lib/itemBadges";
 import { currentYearMonth, formatDateLabel, todayDateStr } from "@/lib/format";
-import { afterNoticeCursor, fetchAllPagesByCursor, sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
+import { afterNoticeCursor, chunkIds, fetchAllPagesByCursor, sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
 import type { Notice, NoticeAttachment, NoticeReaction, ReactionType, Schedule } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
@@ -41,12 +41,18 @@ import { NewNoticeModal } from "./NewNoticeModal";
 // noticeScheduleLink.tsのafterNoticeCursor()参照)。
 const NOTICE_PAGE_SIZE = 30;
 const SCHEDULED_FETCH_BATCH_SIZE = 100;
+// notice_attachments/notice_reactions/schedulesへのin()問い合わせを分割する単位。
+// 関連予定ありNEWSの件数上限を撤廃したことで対象ID数も比例して増えうるため、
+// 1回のクエリのURL長・レスポンス量を抑える。
+const RELATED_DATA_CHUNK_SIZE = 100;
 
 // 「関連予定あり」の全件を、取りこぼしなく尽きるまで取得する。通常は手動で
 // 紐づけた少数のNEWSのみのため1回で終わるが、件数が多い月でも
 // SCHEDULED_FETCH_BATCH_SIZE件ずつに分けて取得するため、1回の問い合わせが
-// 肥大化しない。
-async function fetchAllScheduledNotices(supabase: ReturnType<typeof createClient>, monthValue: string): Promise<Notice[]> {
+// 肥大化しない。いずれかのページでDBエラーが起きた場合は、取得できていた分を
+// 「正常」として扱わずerrorを呼び出し元へそのまま伝える
+// (fetchAllPagesByCursorの契約、data ?? []で丸めない)。
+async function fetchAllScheduledNotices(supabase: ReturnType<typeof createClient>, monthValue: string) {
   return fetchAllPagesByCursor<Notice>(async (cursor) => {
     const base = supabase
       .from("notices")
@@ -56,9 +62,46 @@ async function fetchAllScheduledNotices(supabase: ReturnType<typeof createClient
       .order("created_at", { ascending: false })
       .order("id", { ascending: true })
       .limit(SCHEDULED_FETCH_BATCH_SIZE);
-    const { data } = cursor ? await base.or(afterNoticeCursor(cursor.createdAt, cursor.id)) : await base;
-    return data ?? [];
+    const { data, error } = cursor ? await base.or(afterNoticeCursor(cursor.createdAt, cursor.id)) : await base;
+    return error ? { data: null, error } : { data: data ?? [], error: null };
   }, SCHEDULED_FETCH_BATCH_SIZE);
+}
+
+// 添付・リアクション・関連予定(スケジュール)をNEWSのID一覧からまとめて取得する。
+// これらは一覧表示を補強する付随データであり、1件でも取得に失敗したからといって
+// NEWS本体の一覧表示自体を止めるほどではないと判断し(本体の取得失敗はload/
+// loadMore側で別途loadErrorとして扱い一覧を表示しない)、失敗したchunkはhadError
+// として報告しつつ、取得できた分だけを返す(呼び出し元が1回だけtoastで知らせる)。
+async function fetchRelatedData(
+  supabase: ReturnType<typeof createClient>,
+  noticeIds: string[],
+  scheduleIds: string[],
+): Promise<{ attachments: NoticeAttachment[]; reactions: NoticeReaction[]; schedules: Schedule[]; hadError: boolean }> {
+  let hadError = false;
+  const attachments: NoticeAttachment[] = [];
+  const reactionsAll: NoticeReaction[] = [];
+  for (const idsChunk of chunkIds(noticeIds, RELATED_DATA_CHUNK_SIZE)) {
+    const [{ data: atts, error: attsErr }, { data: r, error: rErr }] = await Promise.all([
+      supabase.from("notice_attachments").select("*").in("notice_id", idsChunk),
+      supabase.from("notice_reactions").select("*").in("notice_id", idsChunk),
+    ]);
+    if (attsErr || rErr) {
+      hadError = true;
+      continue;
+    }
+    attachments.push(...(atts ?? []));
+    reactionsAll.push(...(r ?? []));
+  }
+  const schedulesAll: Schedule[] = [];
+  for (const idsChunk of chunkIds(scheduleIds, RELATED_DATA_CHUNK_SIZE)) {
+    const { data: scheds, error: schedErr } = await supabase.from("schedules").select("*").in("id", idsChunk);
+    if (schedErr) {
+      hadError = true;
+      continue;
+    }
+    schedulesAll.push(...(scheds ?? []));
+  }
+  return { attachments, reactions: reactionsAll, schedules: schedulesAll, hadError };
 }
 
 export default function NoticePage() {
@@ -91,6 +134,9 @@ export default function NoticePage() {
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
   const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // NEWS本体(関連予定あり/なしどちらか)の取得そのものに失敗した場合のフラグ。
+  // 「この月のお知らせはありません」と誤認させないよう、0件とは別の表示に分岐する。
+  const [loadError, setLoadError] = useState(false);
 
   function changeMonth(v: string) {
     setMonthValue(v);
@@ -104,7 +150,7 @@ export default function NoticePage() {
     if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
-    const [scheduled, { data: unscheduledRaw }, profMap] = await Promise.all([
+    const [scheduledResult, unscheduledResult, profMap] = await Promise.all([
       fetchAllScheduledNotices(supabase, monthValue),
       supabase
         .from("notices")
@@ -116,6 +162,27 @@ export default function NoticePage() {
         .limit(NOTICE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
+    // NEWS本体の取得に失敗した場合は、取得できていた分だけで「正常」や「0件」を
+    // 装わない。既存のnotices/attachments等のstateには触れず(前回表示を消さない)、
+    // loadErrorだけを立てて呼び出し元(JSX)に一覧非表示を委ねる。
+    // (TypeScriptの判別可能Union絞り込みのため、scheduledResult/unscheduledResultは
+    // それぞれ個別にerrorチェックする。)
+    if (scheduledResult.error !== null) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    if (unscheduledResult.error) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    setLoadError(false);
+    // 上のチェックでscheduledResult.error===null/unscheduledResult.errorが偽である
+    // ことは確認済みのため、ここでの ?? [] は実際には発動しない(TypeScriptの
+    // Promise.allタプル経由での判別可能Union絞り込みを素直に通すための記述)。
+    const scheduled = scheduledResult.data ?? [];
+    const unscheduledRaw = unscheduledResult.data;
     const unscheduledPage = (unscheduledRaw ?? []).slice(0, NOTICE_PAGE_SIZE);
     setHasMore((unscheduledRaw?.length ?? 0) > NOTICE_PAGE_SIZE);
     const page = [...scheduled, ...unscheduledPage];
@@ -124,21 +191,18 @@ export default function NoticePage() {
     if (page.length > 0) {
       const noticeIds = page.map((x) => x.id);
       const scheduleIds = [...new Set(page.map((x) => x.related_schedule_id).filter((x): x is string => x !== null))];
-      const [{ data: atts }, { data: r }, { data: scheds }] = await Promise.all([
-        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
-        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
-        scheduleIds.length > 0
-          ? supabase.from("schedules").select("*").in("id", scheduleIds)
-          : Promise.resolve({ data: [] as Schedule[] }),
-      ]);
+      const related = await fetchRelatedData(supabase, noticeIds, scheduleIds);
+      if (related.hadError) {
+        toast.error("添付・リアクション・関連予定の一部の取得に失敗しました。表示が一部欠けている可能性があります。");
+      }
       const map: Record<string, NoticeAttachment[]> = {};
-      (atts ?? []).forEach((a) => {
+      related.attachments.forEach((a) => {
         (map[a.notice_id] ??= []).push(a);
       });
       setAttachmentsByNotice(map);
-      setReactions(r ?? []);
+      setReactions(related.reactions);
       const schedMap: Record<string, Schedule> = {};
-      (scheds ?? []).forEach((s) => {
+      related.schedules.forEach((s) => {
         schedMap[s.id] = s;
       });
       setRelatedSchedules(schedMap);
@@ -158,6 +222,7 @@ export default function NoticePage() {
     setReactions,
     setRelatedSchedules,
     setHasMore,
+    toast,
   ]);
 
   // 「関連予定なし」グループのみを対象にしたカーソルページング(確定仕様とは独立の、
@@ -171,7 +236,7 @@ export default function NoticePage() {
     setLoadingMore(true);
     const supabase = createClient();
     const cursor = unscheduledInState[unscheduledInState.length - 1];
-    const { data: n } = await supabase
+    const { data: n, error } = await supabase
       .from("notices")
       .select("*")
       .eq("display_year_month", monthValue)
@@ -180,23 +245,30 @@ export default function NoticePage() {
       .order("created_at", { ascending: false })
       .order("id", { ascending: true })
       .limit(NOTICE_PAGE_SIZE + 1);
+    if (error) {
+      // 取得失敗を「これ以上は無い」(hasMore=false)や0件とは扱わない。既に読み込み
+      // 済みの一覧はそのまま残し、再度「さらに読み込む」を押せるようにする。
+      setLoadingMore(false);
+      toast.error("追加の読み込みに失敗しました。もう一度お試しください。");
+      return;
+    }
     const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
     setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
     if (page.length > 0) {
       setNotices((prev) => [...prev, ...page]);
       const noticeIds = page.map((x) => x.id);
-      const [{ data: atts }, { data: r }] = await Promise.all([
-        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
-        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
-      ]);
+      const related = await fetchRelatedData(supabase, noticeIds, []);
+      if (related.hadError) {
+        toast.error("添付・リアクションの一部の取得に失敗しました。表示が一部欠けている可能性があります。");
+      }
       setAttachmentsByNotice((prev) => {
         const merged: Record<string, NoticeAttachment[]> = { ...prev };
-        (atts ?? []).forEach((a) => {
+        related.attachments.forEach((a) => {
           merged[a.notice_id] = [...(merged[a.notice_id] ?? []), a];
         });
         return merged;
       });
-      setReactions((prev) => [...prev, ...(r ?? [])]);
+      setReactions((prev) => [...prev, ...related.reactions]);
     }
     setLoadingMore(false);
   }
@@ -358,6 +430,17 @@ export default function NoticePage() {
       <MonthPicker value={monthValue} onChange={changeMonth} />
       {initializing || loading ? (
         <EmptyState>読み込み中…</EmptyState>
+      ) : loadError ? (
+        <>
+          <EmptyState>読み込みに失敗しました。お知らせが存在しない訳ではありません。</EmptyState>
+          <button
+            type="button"
+            onClick={load}
+            className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
+          >
+            もう一度読み込む
+          </button>
+        </>
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
