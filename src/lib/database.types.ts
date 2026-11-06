@@ -506,6 +506,11 @@ export interface Database {
           updated_at: string;
           audience: NoticeAudience;
           target_grade_min: string | null;
+          // "YYYY-MM"。NEWSの分類用の表示対象年月(公開予約・表示開始日時ではない)。
+          display_year_month: string;
+          // 任意。同一チーム内の既存予定への紐づけ(最大1件)。予定削除時はnullに戻る
+          // (on delete set null、NEWS本体は削除されない)。
+          related_schedule_id: string | null;
         };
         Insert: {
           id?: string;
@@ -515,6 +520,8 @@ export interface Database {
           sender_id?: string | null;
           audience?: NoticeAudience;
           target_grade_min?: string | null;
+          display_year_month: string;
+          related_schedule_id?: string | null;
         };
         Update: Partial<{
           title: string;
@@ -522,6 +529,8 @@ export interface Database {
           audience: NoticeAudience;
           target_grade_min: string | null;
           updated_at: string;
+          display_year_month: string;
+          related_schedule_id: string | null;
         }>;
         Relationships: [];
       };

@@ -13,9 +13,12 @@ import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice } from "@/lib/permissions";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
-import { gradeLabel } from "@/lib/format";
+import { currentYearMonth, gradeLabel, scheduleMeta } from "@/lib/format";
+import { MonthPicker } from "@/components/MonthPicker";
 import { sendPushNotification } from "@/lib/pushNotify";
-import type { AttachmentKind, NoticeAudience } from "@/lib/database.types";
+import { SelectRelatedScheduleModal } from "./SelectRelatedScheduleModal";
+import { isRelatedScheduleError, resolveAutoFillMonth } from "@/lib/noticeScheduleLink";
+import type { AttachmentKind, NoticeAudience, Schedule } from "@/lib/database.types";
 
 const KINDS: { kind: AttachmentKind; emoji: string }[] = [
   { kind: "対戦表", emoji: "📋" },
@@ -51,12 +54,21 @@ export function NewNoticeModal({
   const [files, setFiles] = useState<Partial<Record<AttachmentKind, File[]>>>({});
   const [saving, setSaving] = useState(false);
 
+  // 表示対象年月(確定仕様3): 初期値は作成月。初めて予定を選択した際、ユーザーが
+  // まだ手動変更していなければ予定の開催月を反映する(manuallyChangedMonthで判定)。
+  const [displayYearMonth, setDisplayYearMonth] = useState(currentYearMonth());
+  const [manuallyChangedMonth, setManuallyChangedMonth] = useState(false);
+  const [relatedSchedule, setRelatedSchedule] = useState<Schedule | null>(null);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+
   useUnsavedChangesGuard(
     open &&
       (title.trim() !== "" ||
         body.trim() !== "" ||
         audience !== "全員" ||
         targetGradeMin !== "" ||
+        manuallyChangedMonth ||
+        relatedSchedule !== null ||
         Object.values(files).some((list) => (list?.length ?? 0) > 0)),
   );
 
@@ -66,6 +78,19 @@ export function NewNoticeModal({
     setAudience("全員");
     setTargetGradeMin("");
     setFiles({});
+    setDisplayYearMonth(currentYearMonth());
+    setManuallyChangedMonth(false);
+    setRelatedSchedule(null);
+  }
+
+  function handleSelectSchedule(s: Schedule | null) {
+    const autoMonth = resolveAutoFillMonth({
+      prevRelatedScheduleId: relatedSchedule?.id ?? null,
+      manuallyChangedMonth,
+      newSchedule: s,
+    });
+    setRelatedSchedule(s);
+    if (autoMonth) setDisplayYearMonth(autoMonth);
   }
 
   function addFiles(kind: AttachmentKind, fileList: FileList | null) {
@@ -156,6 +181,8 @@ export function NewNoticeModal({
         sender_id: userId,
         audience,
         target_grade_min: audience === "学年指定" ? targetGradeMin : null,
+        display_year_month: displayYearMonth,
+        related_schedule_id: relatedSchedule?.id ?? null,
       })
       .select()
       .single();
@@ -163,10 +190,20 @@ export function NewNoticeModal({
     if (error || !notice) {
       const cleanupOk = await cleanupUploadedObjects(supabase, toObjectRefs(uploaded));
       setSaving(false);
-      toast.error(
-        `登録に失敗しました: ${error?.message ?? ""}` +
-          (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
-      );
+      // 関連予定が保存直前に削除された/他チームの予定に変わっていた場合は、確定仕様4の
+      // 「保存時の検証」に従い、入力内容は保持したまま再選択・紐づけ解除を促す専用の
+      // 文言にする(タイトル・本文等のstateはここでは何もリセットしていない)。
+      if (isRelatedScheduleError(error)) {
+        toast.error(
+          "選択した関連予定が見つかりません(削除された可能性があります)。予定を選び直すか、紐づけを解除してください。" +
+            (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+      } else {
+        toast.error(
+          `登録に失敗しました: ${error?.message ?? ""}` +
+            (cleanupOk ? "" : "(後片付けにも失敗しました。管理者にご確認ください)"),
+        );
+      }
       return;
     }
 
@@ -249,6 +286,44 @@ export function NewNoticeModal({
             ))}
           </select>
         )}
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>表示対象年月</FieldLabel>
+        <MonthPicker
+          value={displayYearMonth}
+          onChange={(v) => {
+            setDisplayYearMonth(v);
+            setManuallyChangedMonth(true);
+          }}
+        />
+      </div>
+
+      <div className="mt-3">
+        <FieldLabel>関連予定</FieldLabel>
+        <button
+          type="button"
+          onClick={() => setScheduleModalOpen(true)}
+          className="w-full min-h-tap flex items-center justify-between px-3 rounded-control border border-line bg-white text-left"
+        >
+          <span className="text-[13px] truncate">
+            {relatedSchedule ? (
+              <>
+                <span className="font-bold">{relatedSchedule.title}</span>
+                <span className="text-ink-soft"> · {scheduleMeta(relatedSchedule)}</span>
+              </>
+            ) : (
+              <span className="text-ink-soft">紐づけなし(タップして選択)</span>
+            )}
+          </span>
+        </button>
+        <SelectRelatedScheduleModal
+          open={scheduleModalOpen}
+          onClose={() => setScheduleModalOpen(false)}
+          initialMonth={displayYearMonth}
+          selectedScheduleId={relatedSchedule?.id ?? null}
+          onSelect={handleSelectSchedule}
+        />
       </div>
 
       <div className="mt-3">

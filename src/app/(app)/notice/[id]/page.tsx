@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -10,17 +11,21 @@ import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { FieldLabel, SegButton, SubmitButton, inputClass } from "@/components/ui/SegButton";
 import { ReactionButtons } from "@/components/ReactionButtons";
+import { MonthPicker } from "@/components/MonthPicker";
+import { ChevronRightIcon } from "@/components/icons";
 import { markItemSeen } from "@/lib/itemBadges";
 import { sendPushNotification } from "@/lib/pushNotify";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { canPostTeacherOnlyNotice, canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
-import { formatDateLabel, gradeLabel } from "@/lib/format";
+import { formatDateLabel, gradeLabel, scheduleDateTimeLabel, scheduleMeta } from "@/lib/format";
 import { GRADES_BY_CATEGORY } from "@/lib/playerOptions";
 import { attachmentKindSlug, isImageFile, isPdfFile, safeExt } from "@/lib/storagePath";
 import { cleanupUploadedObjects } from "@/lib/storageCleanup";
 import { resizeImageFile } from "@/lib/resizeImage";
 import { generatePdfThumbnail } from "@/lib/pdfThumbnail";
+import { SelectRelatedScheduleModal } from "../SelectRelatedScheduleModal";
+import { isRelatedScheduleError, resolveAutoFillMonth } from "@/lib/noticeScheduleLink";
 import type {
   AttachmentKind,
   Notice,
@@ -28,6 +33,7 @@ import type {
   NoticeAudience,
   NoticeReaction,
   ReactionType,
+  Schedule,
 } from "@/lib/database.types";
 
 type AttachmentWithUrl = NoticeAttachment & { url: string | null; thumbUrl: string | null };
@@ -43,6 +49,7 @@ const AUDIENCES: NoticeAudience[] = ["全員", "指導者のみ", "運営以上"
 export default function NoticeDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { teamId, role, userId, category } = useSession();
   const toast = useToast();
   const audiences = (canPostTeacherOnlyNotice(role) ? AUDIENCES : AUDIENCES.filter((a) => a !== "指導者のみ")).filter(
@@ -66,6 +73,19 @@ export default function NoticeDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // 閲覧表示用(確定仕様6): notice.related_schedule_idが指すスケジュールを都度取得する
+  // (最新の予定情報をそのまま表示するため、ローカルにコピーして持たない)。
+  const [relatedScheduleData, setRelatedScheduleData] = useState<Schedule | null>(null);
+
+  // 編集フォーム用(確定仕様3・4)。displayYearMonth/manuallyChangedMonthの関係は
+  // NewNoticeModal.tsxと同じ(編集開始時のmanuallyChangedMonthは必ずfalseから始まる。
+  // 「初めて予定を選択した際」の判定は、このNEWSにとって初めてかどうかであり、
+  // 編集を開始した回数とは無関係なため)。
+  const [displayYearMonth, setDisplayYearMonth] = useState("");
+  const [manuallyChangedMonth, setManuallyChangedMonth] = useState(false);
+  const [relatedSchedule, setRelatedSchedule] = useState<Schedule | null>(null);
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+
   useUnsavedChangesGuard(
     editing &&
       notice !== null &&
@@ -73,8 +93,20 @@ export default function NoticeDetailPage() {
         body !== (notice.body ?? "") ||
         audience !== notice.audience ||
         targetGradeMin !== (notice.target_grade_min ?? "") ||
+        displayYearMonth !== notice.display_year_month ||
+        (relatedSchedule?.id ?? null) !== notice.related_schedule_id ||
         Object.values(newFiles).some((list) => (list?.length ?? 0) > 0)),
   );
+
+  function handleSelectSchedule(s: Schedule | null) {
+    const autoMonth = resolveAutoFillMonth({
+      prevRelatedScheduleId: relatedSchedule?.id ?? null,
+      manuallyChangedMonth,
+      newSchedule: s,
+    });
+    setRelatedSchedule(s);
+    if (autoMonth) setDisplayYearMonth(autoMonth);
+  }
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -103,6 +135,15 @@ export default function NoticeDetailPage() {
       setAttachments(withUrls);
       const { data: r } = await supabase.from("notice_reactions").select("*").eq("notice_id", n.id);
       setReactions(r ?? []);
+      if (n.related_schedule_id) {
+        const { data: s } = await supabase.from("schedules").select("*").eq("id", n.related_schedule_id).maybeSingle();
+        // sがnull(予定が削除済み、または閲覧権限なし)の場合はカード自体を表示しない
+        // (確定仕様6: 「関連予定がない場合はカードを表示しない」「閲覧する権限がない
+        // 場合もカードを表示しない」)。
+        setRelatedScheduleData(s ?? null);
+      } else {
+        setRelatedScheduleData(null);
+      }
     }
     setLoading(false);
   }, [params.id, userId]);
@@ -153,6 +194,10 @@ export default function NoticeDetailPage() {
     setAudience(notice.audience);
     setTargetGradeMin(notice.target_grade_min ?? "");
     setNewFiles({});
+    // 確定仕様3「NEWS再編集時は保存済みの表示対象年月を維持する」。
+    setDisplayYearMonth(notice.display_year_month);
+    setManuallyChangedMonth(false);
+    setRelatedSchedule(relatedScheduleData);
     setEditing(true);
   }
 
@@ -215,11 +260,22 @@ export default function NoticeDetailPage() {
         body: body.trim() || null,
         audience,
         target_grade_min: audience === "学年指定" ? targetGradeMin : null,
+        display_year_month: displayYearMonth,
+        related_schedule_id: relatedSchedule?.id ?? null,
       })
       .eq("id", notice.id);
     if (error) {
       setSaving(false);
-      toast.error(`更新に失敗しました: ${error.message}`);
+      // 確定仕様4「保存時の検証」: 関連予定が保存直前に削除された/他チームの予定に
+      // 変わっていた場合は、入力内容を保持したまま再選択・紐づけ解除を促す
+      // (editingをfalseに戻さない。他のstateも一切リセットしない)。
+      if (isRelatedScheduleError(error)) {
+        toast.error(
+          "選択した関連予定が見つかりません(削除された可能性があります)。予定を選び直すか、紐づけを解除してください。",
+        );
+      } else {
+        toast.error(`更新に失敗しました: ${error.message}`);
+      }
       return;
     }
 
@@ -341,8 +397,16 @@ export default function NoticeDetailPage() {
     router.push("/notice");
   }
 
+  // 確定仕様10「NEWS詳細と予定詳細の双方向遷移」「戻る操作では直前の画面へ戻る」。
+  // backHref(AppHeader)は履歴ではなく固定リンクのため、予定詳細の「関連するNEWS」
+  // 経由で来た場合は?backで明示的に渡された遷移元へ、NEWS一覧から来た場合は
+  // ?monthで表示中だった月を復元する(どちらも無ければ素のNEWS一覧へ)。
+  const backParam = searchParams.get("back");
+  const monthParam = searchParams.get("month");
+  const backHref = backParam || (monthParam ? `/notice?month=${monthParam}` : "/notice");
+
   return (
-    <PageShell header={<AppHeader title="お知らせ詳細" variant="detail" backHref="/notice" />}>
+    <PageShell header={<AppHeader title="お知らせ詳細" variant="detail" backHref={backHref} />}>
       {loading ? (
         <EmptyState>読み込み中…</EmptyState>
       ) : !notice ? (
@@ -394,6 +458,44 @@ export default function NoticeDetailPage() {
                   ))}
                 </select>
               )}
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>表示対象年月</FieldLabel>
+              <MonthPicker
+                value={displayYearMonth}
+                onChange={(v) => {
+                  setDisplayYearMonth(v);
+                  setManuallyChangedMonth(true);
+                }}
+              />
+            </div>
+
+            <div className="mt-3">
+              <FieldLabel>関連予定</FieldLabel>
+              <button
+                type="button"
+                onClick={() => setScheduleModalOpen(true)}
+                className="w-full min-h-tap flex items-center justify-between px-3 rounded-control border border-line bg-white text-left"
+              >
+                <span className="text-[13px] truncate">
+                  {relatedSchedule ? (
+                    <>
+                      <span className="font-bold">{relatedSchedule.title}</span>
+                      <span className="text-ink-soft"> · {scheduleMeta(relatedSchedule)}</span>
+                    </>
+                  ) : (
+                    <span className="text-ink-soft">紐づけなし(タップして選択)</span>
+                  )}
+                </span>
+              </button>
+              <SelectRelatedScheduleModal
+                open={scheduleModalOpen}
+                onClose={() => setScheduleModalOpen(false)}
+                initialMonth={displayYearMonth}
+                selectedScheduleId={relatedSchedule?.id ?? null}
+                onSelect={handleSelectSchedule}
+              />
             </div>
 
             <div className="mt-3">
@@ -558,6 +660,22 @@ export default function NoticeDetailPage() {
 
             <div className="mt-3 text-sm leading-relaxed whitespace-pre-wrap">{notice.body || "(本文なし)"}</div>
           </div>
+
+          {/* 確定仕様6: 関連予定がある場合のみカードを表示する(予定が削除済み/閲覧権限
+              なしでrelatedScheduleDataがnullの場合は何も表示しない)。 */}
+          {relatedScheduleData && (
+            <Link
+              href={`/schedule/${relatedScheduleData.id}?back=${encodeURIComponent(`/notice/${notice.id}`)}`}
+              className={`${cardClass} flex items-center justify-between gap-2`}
+            >
+              <div className="min-w-0">
+                <div className="text-[11px] font-bold text-ink-soft">関連する予定</div>
+                <div className="font-bold text-sm truncate mt-0.5">{relatedScheduleData.title}</div>
+                <div className="text-caption text-ink-soft mt-0.5">{scheduleDateTimeLabel(relatedScheduleData)}</div>
+              </div>
+              <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
+            </Link>
+          )}
 
           <ReactionButtons reactions={reactions} onToggle={toggleReaction} profiles={profiles} />
         </>

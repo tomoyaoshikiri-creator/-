@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -16,27 +16,107 @@ import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canWriteNotice } from "@/lib/permissions";
 import { loadProfilesMap } from "@/lib/profiles";
 import { computeUnseenNoticeIds } from "@/lib/itemBadges";
-import { currentYearMonth, formatDateLabel, monthRangeBounds } from "@/lib/format";
-import type { Notice, NoticeAttachment, NoticeReaction, ReactionType } from "@/lib/database.types";
+import { currentYearMonth, formatDateLabel, todayDateStr } from "@/lib/format";
+import { afterNoticeCursor, chunkIds, fetchAllPagesByCursor, sortNoticesByRelatedSchedule } from "@/lib/noticeScheduleLink";
+import type { Notice, NoticeAttachment, NoticeReaction, ReactionType, Schedule } from "@/lib/database.types";
 import { NewNoticeModal } from "./NewNoticeModal";
 
-// 1回のDB取得件数の上限。従来は月内の全件を無制限に取得していたため、
-// 投稿数が多い月では取得件数が際限なく伸びる問題があった(docs/load-handling-todo.md)。
-// CollapsibleListによる「もっと見る」(読み込み済み分を5件ずつ表示)とは別に、
-// 読み込み済み分をすべて表示し終えてもまだ月内に残りがある場合はDBへ追加取得しにいく。
+// 確定仕様5(3グループのソート)は関連予定の開催日を横断して並べ替える必要があり、
+// DB側の単純なORDER BY+カーソルページングでは表現できない。そこで月内のNEWSを
+// 「関連予定あり」(related_schedule_id is not null)と「関連予定なし」
+// (is null)の2本のクエリに分けて取得する。
+//
+// 「関連予定あり」は、①本日以降/③過去のどちらに属すかが関連予定の開催日
+// (別テーブル)次第で、クライアント側で全件を見てから振り分ける必要があるため、
+// 件数の上限で打ち切らず、SCHEDULED_FETCH_BATCH_SIZE件ずつカーソルページングで
+// 尽きるまで取得する(1回の問い合わせを小さく保ちつつ、取りこぼしなく全件取得する。
+// 取りこぼし・重複のないページング手順そのものはsrc/lib/noticeScheduleLink.tsの
+// fetchAllPagesByCursor()に切り出し、単体テストしている)。
+// 「関連予定なし」は従来通りNOTICE_PAGE_SIZE単位のカーソルページング
+// (hasMore/loadMore、以前の投稿数無制限増加対策 docs/load-handling-todo.md)を
+// 維持し、確定仕様5の②グループを形成する。
+// 最終的な3グループの並び順はsortNoticesByRelatedSchedule()が担う。
+//
+// どちらのカーソルも created_at だけでなく id を複合キーとして使う(詳細は
+// noticeScheduleLink.tsのafterNoticeCursor()参照)。
 const NOTICE_PAGE_SIZE = 30;
+const SCHEDULED_FETCH_BATCH_SIZE = 100;
+// notice_attachments/notice_reactions/schedulesへのin()問い合わせを分割する単位。
+// 関連予定ありNEWSの件数上限を撤廃したことで対象ID数も比例して増えうるため、
+// 1回のクエリのURL長・レスポンス量を抑える。
+const RELATED_DATA_CHUNK_SIZE = 100;
+
+// 「関連予定あり」の全件を、取りこぼしなく尽きるまで取得する。通常は手動で
+// 紐づけた少数のNEWSのみのため1回で終わるが、件数が多い月でも
+// SCHEDULED_FETCH_BATCH_SIZE件ずつに分けて取得するため、1回の問い合わせが
+// 肥大化しない。いずれかのページでDBエラーが起きた場合は、取得できていた分を
+// 「正常」として扱わずerrorを呼び出し元へそのまま伝える
+// (fetchAllPagesByCursorの契約、data ?? []で丸めない)。
+async function fetchAllScheduledNotices(supabase: ReturnType<typeof createClient>, monthValue: string) {
+  return fetchAllPagesByCursor<Notice>(async (cursor) => {
+    const base = supabase
+      .from("notices")
+      .select("*")
+      .eq("display_year_month", monthValue)
+      .not("related_schedule_id", "is", null)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .limit(SCHEDULED_FETCH_BATCH_SIZE);
+    const { data, error } = cursor ? await base.or(afterNoticeCursor(cursor.createdAt, cursor.id)) : await base;
+    return error ? { data: null, error } : { data: data ?? [], error: null };
+  }, SCHEDULED_FETCH_BATCH_SIZE);
+}
+
+// 添付・リアクション・関連予定(スケジュール)をNEWSのID一覧からまとめて取得する。
+// これらは一覧表示を補強する付随データであり、1件でも取得に失敗したからといって
+// NEWS本体の一覧表示自体を止めるほどではないと判断し(本体の取得失敗はload/
+// loadMore側で別途loadErrorとして扱い一覧を表示しない)、失敗したchunkはhadError
+// として報告しつつ、取得できた分だけを返す(呼び出し元が1回だけtoastで知らせる)。
+async function fetchRelatedData(
+  supabase: ReturnType<typeof createClient>,
+  noticeIds: string[],
+  scheduleIds: string[],
+): Promise<{ attachments: NoticeAttachment[]; reactions: NoticeReaction[]; schedules: Schedule[]; hadError: boolean }> {
+  let hadError = false;
+  const attachments: NoticeAttachment[] = [];
+  const reactionsAll: NoticeReaction[] = [];
+  for (const idsChunk of chunkIds(noticeIds, RELATED_DATA_CHUNK_SIZE)) {
+    const [{ data: atts, error: attsErr }, { data: r, error: rErr }] = await Promise.all([
+      supabase.from("notice_attachments").select("*").in("notice_id", idsChunk),
+      supabase.from("notice_reactions").select("*").in("notice_id", idsChunk),
+    ]);
+    if (attsErr || rErr) {
+      hadError = true;
+      continue;
+    }
+    attachments.push(...(atts ?? []));
+    reactionsAll.push(...(r ?? []));
+  }
+  const schedulesAll: Schedule[] = [];
+  for (const idsChunk of chunkIds(scheduleIds, RELATED_DATA_CHUNK_SIZE)) {
+    const { data: scheds, error: schedErr } = await supabase.from("schedules").select("*").in("id", idsChunk);
+    if (schedErr) {
+      hadError = true;
+      continue;
+    }
+    schedulesAll.push(...(scheds ?? []));
+  }
+  return { attachments, reactions: reactionsAll, schedules: schedulesAll, hadError };
+}
 
 export default function NoticePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { role, teamId, userId } = useSession();
   const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [monthValue, setMonthValue] = useState(currentYearMonth());
-  // 開いた直後は「今月」ではなく「直近のお知らせが投稿された月」をデフォルトで表示したいため、
-  // 最新のお知らせを1件取得してその月に合わせる。取得が終わるまでは一覧の読み込みを待つ
-  // (今月分を一瞬表示してから切り替わるチラつきを防ぐため)。
-  const [initializing, setInitializing] = useState(true);
+  const monthParam = searchParams.get("month");
+  const [monthValue, setMonthValue] = useState(monthParam ?? currentYearMonth());
+  // 開いた直後、URLに?monthが無ければ「今月」ではなく「直近のお知らせが投稿された月」を
+  // デフォルトで表示したいため、最新のお知らせを1件取得してその月に合わせる
+  // (?monthがあれば、確定仕様10によりそちらを優先しこの処理はスキップする)。
+  const [initializing, setInitializing] = useState(monthParam === null);
   const [showAll, setShowAll] = useState(false);
   const cacheKey = useCallback((field: string) => `notice:${monthValue}:${field}`, [monthValue]);
   const [notices, setNotices] = useCachedState<Notice[]>(cacheKey("notices"), []);
@@ -46,84 +126,158 @@ export default function NoticePage() {
   );
   const [reactions, setReactions] = useCachedState<NoticeReaction[]>(cacheKey("reactions"), []);
   const [profiles, setProfiles] = useCachedState<Record<string, string>>(cacheKey("profiles"), {});
+  const [relatedSchedules, setRelatedSchedules] = useCachedState<Record<string, Schedule>>(
+    cacheKey("relatedSchedules"),
+    {},
+  );
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("notices")));
   const [unseenIds, setUnseenIds] = useCachedState<Set<string>>("notice:unseenIds", new Set());
   const [hasMore, setHasMore] = useCachedState<boolean>(cacheKey("hasMore"), false);
   const [loadingMore, setLoadingMore] = useState(false);
+  // NEWS本体(関連予定あり/なしどちらか)の取得そのものに失敗した場合のフラグ。
+  // 「この月のお知らせはありません」と誤認させないよう、0件とは別の表示に分岐する。
+  const [loadError, setLoadError] = useState(false);
+
+  function changeMonth(v: string) {
+    setMonthValue(v);
+    // 確定仕様10「同じ画面への往復によって履歴を不要に増やさない」ため、月の切替は
+    // pushではなくreplaceでURLに反映する(フォルダ遷移等とは異なり、月送りのたびに
+    // 戻るボタンの履歴を1件ずつ積み上げたくない)。
+    router.replace(`/notice?month=${v}`, { scroll: false });
+  }
 
   const load = useCallback(async () => {
     if (initializing) return;
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("notices"))) setLoading(true);
-    const { start, end } = monthRangeBounds(monthValue);
-    const [{ data: n }, profMap] = await Promise.all([
+    const [scheduledResult, unscheduledResult, profMap] = await Promise.all([
+      fetchAllScheduledNotices(supabase, monthValue),
       supabase
         .from("notices")
         .select("*")
-        .gte("created_at", start)
-        .lt("created_at", end)
+        .eq("display_year_month", monthValue)
+        .is("related_schedule_id", null)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
         .limit(NOTICE_PAGE_SIZE + 1),
       loadProfilesMap(supabase),
     ]);
-    const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
-    setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
+    // NEWS本体の取得に失敗した場合は、取得できていた分だけで「正常」や「0件」を
+    // 装わない。既存のnotices/attachments等のstateには触れず(前回表示を消さない)、
+    // loadErrorだけを立てて呼び出し元(JSX)に一覧非表示を委ねる。
+    // (TypeScriptの判別可能Union絞り込みのため、scheduledResult/unscheduledResultは
+    // それぞれ個別にerrorチェックする。)
+    if (scheduledResult.error !== null) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    if (unscheduledResult.error) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    setLoadError(false);
+    // 上のチェックでscheduledResult.error===null/unscheduledResult.errorが偽である
+    // ことは確認済みのため、ここでの ?? [] は実際には発動しない(TypeScriptの
+    // Promise.allタプル経由での判別可能Union絞り込みを素直に通すための記述)。
+    const scheduled = scheduledResult.data ?? [];
+    const unscheduledRaw = unscheduledResult.data;
+    const unscheduledPage = (unscheduledRaw ?? []).slice(0, NOTICE_PAGE_SIZE);
+    setHasMore((unscheduledRaw?.length ?? 0) > NOTICE_PAGE_SIZE);
+    const page = [...scheduled, ...unscheduledPage];
     setNotices(page);
     setProfiles(profMap);
     if (page.length > 0) {
       const noticeIds = page.map((x) => x.id);
-      const [{ data: atts }, { data: r }] = await Promise.all([
-        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
-        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
-      ]);
+      const scheduleIds = [...new Set(page.map((x) => x.related_schedule_id).filter((x): x is string => x !== null))];
+      const related = await fetchRelatedData(supabase, noticeIds, scheduleIds);
+      if (related.hadError) {
+        toast.error("添付・リアクション・関連予定の一部の取得に失敗しました。表示が一部欠けている可能性があります。");
+      }
       const map: Record<string, NoticeAttachment[]> = {};
-      (atts ?? []).forEach((a) => {
+      related.attachments.forEach((a) => {
         (map[a.notice_id] ??= []).push(a);
       });
       setAttachmentsByNotice(map);
-      setReactions(r ?? []);
+      setReactions(related.reactions);
+      const schedMap: Record<string, Schedule> = {};
+      related.schedules.forEach((s) => {
+        schedMap[s.id] = s;
+      });
+      setRelatedSchedules(schedMap);
     } else {
       setAttachmentsByNotice({});
       setReactions([]);
+      setRelatedSchedules({});
     }
     setLoading(false);
-  }, [initializing, monthValue, cacheKey, setNotices, setProfiles, setAttachmentsByNotice, setReactions, setHasMore]);
+  }, [
+    initializing,
+    monthValue,
+    cacheKey,
+    setNotices,
+    setProfiles,
+    setAttachmentsByNotice,
+    setReactions,
+    setRelatedSchedules,
+    setHasMore,
+    toast,
+  ]);
 
+  // 「関連予定なし」グループのみを対象にしたカーソルページング(確定仕様とは独立の、
+  // 既存機能の維持)。notices状態内の「関連予定なし」サブシーケンスは常に
+  // created_at降順(かつ同時刻内はid昇順)を保ったまま末尾に追記されるため、
+  // その最後の要素を複合カーソル(created_at, id)に使える。
   async function loadMore() {
-    if (notices.length === 0 || loadingMore) return;
+    if (loadingMore) return;
+    const unscheduledInState = notices.filter((n) => n.related_schedule_id === null);
+    if (unscheduledInState.length === 0) return;
     setLoadingMore(true);
     const supabase = createClient();
-    const { start } = monthRangeBounds(monthValue);
-    const cursor = notices[notices.length - 1].created_at;
-    const { data: n } = await supabase
+    const cursor = unscheduledInState[unscheduledInState.length - 1];
+    const { data: n, error } = await supabase
       .from("notices")
       .select("*")
-      .gte("created_at", start)
-      .lt("created_at", cursor)
+      .eq("display_year_month", monthValue)
+      .is("related_schedule_id", null)
+      .or(afterNoticeCursor(cursor.created_at, cursor.id))
       .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
       .limit(NOTICE_PAGE_SIZE + 1);
+    if (error) {
+      // 取得失敗を「これ以上は無い」(hasMore=false)や0件とは扱わない。既に読み込み
+      // 済みの一覧はそのまま残し、再度「さらに読み込む」を押せるようにする。
+      setLoadingMore(false);
+      toast.error("追加の読み込みに失敗しました。もう一度お試しください。");
+      return;
+    }
     const page = (n ?? []).slice(0, NOTICE_PAGE_SIZE);
     setHasMore((n?.length ?? 0) > NOTICE_PAGE_SIZE);
     if (page.length > 0) {
       setNotices((prev) => [...prev, ...page]);
       const noticeIds = page.map((x) => x.id);
-      const [{ data: atts }, { data: r }] = await Promise.all([
-        supabase.from("notice_attachments").select("*").in("notice_id", noticeIds),
-        supabase.from("notice_reactions").select("*").in("notice_id", noticeIds),
-      ]);
+      const related = await fetchRelatedData(supabase, noticeIds, []);
+      if (related.hadError) {
+        toast.error("添付・リアクションの一部の取得に失敗しました。表示が一部欠けている可能性があります。");
+      }
       setAttachmentsByNotice((prev) => {
         const merged: Record<string, NoticeAttachment[]> = { ...prev };
-        (atts ?? []).forEach((a) => {
+        related.attachments.forEach((a) => {
           merged[a.notice_id] = [...(merged[a.notice_id] ?? []), a];
         });
         return merged;
       });
-      setReactions((prev) => [...prev, ...(r ?? [])]);
+      setReactions((prev) => [...prev, ...related.reactions]);
     }
     setLoadingMore(false);
   }
 
   useEffect(() => {
+    if (monthParam !== null) {
+      setInitializing(false);
+      return;
+    }
     (async () => {
       const supabase = createClient();
       const { data } = await supabase
@@ -135,6 +289,9 @@ export default function NoticePage() {
       if (data) setMonthValue(data.created_at.slice(0, 7));
       setInitializing(false);
     })();
+    // マウント時に一度だけ判定する(monthParamは初回値のみ見ればよく、以後のURL変更に
+    // 反応して再実行する必要はない)。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -158,7 +315,9 @@ export default function NoticePage() {
       next.delete(noticeId);
       return next;
     });
-    router.push(`/notice/${noticeId}`);
+    // 確定仕様10: NEWS一覧に戻った際に表示中の月を復元できるよう、詳細画面のURLに
+    // 現在の表示対象月を渡しておく(notice/[id]/page.tsxのbackHrefがこれを読む)。
+    router.push(`/notice/${noticeId}?month=${monthValue}`);
   }
 
   async function loadReactions() {
@@ -195,7 +354,9 @@ export default function NoticePage() {
     loadReactions();
   }
 
-  const filteredNotices = notices.filter((n) => n.title.includes(query.trim()));
+  // 確定仕様5: 3グループの並び替え(詳細はsrc/lib/noticeScheduleLink.ts参照)。
+  const sortedNotices = sortNoticesByRelatedSchedule(notices, relatedSchedules, todayDateStr());
+  const filteredNotices = sortedNotices.filter((n) => n.title.includes(query.trim()));
 
   function renderNoticeCard(n: Notice) {
     return (
@@ -266,9 +427,20 @@ export default function NoticePage() {
       }
     >
       <SectionLabel>お知らせ</SectionLabel>
-      <MonthPicker value={monthValue} onChange={setMonthValue} />
+      <MonthPicker value={monthValue} onChange={changeMonth} />
       {initializing || loading ? (
         <EmptyState>読み込み中…</EmptyState>
+      ) : loadError ? (
+        <>
+          <EmptyState>読み込みに失敗しました。お知らせが存在しない訳ではありません。</EmptyState>
+          <button
+            type="button"
+            onClick={load}
+            className="flex min-h-tap w-full mt-1 mb-2.5 items-center justify-center rounded-lg font-bold text-caption border border-line text-ink-soft bg-paper"
+          >
+            もう一度読み込む
+          </button>
+        </>
       ) : filteredNotices.length === 0 ? (
         <EmptyState>{query ? "該当するお知らせがありません" : "この月のお知らせはありません"}</EmptyState>
       ) : (
