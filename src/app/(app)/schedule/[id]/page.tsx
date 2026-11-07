@@ -267,15 +267,19 @@ export default function ScheduleDetailPage() {
             )}
             {canWriteSchedule(role) && (
               // 「予定を編集」を見出し側のEditButtonへ移動したため、ここには独立した操作
-              // 「コピーして登録」のみ残る。高さ(min-h-tap=44px)・コンパクトな横幅の
-              // 見た目は変更していない。onClick等の機能は無変更。
+              // 「コピーして登録」のみ残る。EditButton(src/components/ui/EditButton.tsx)と
+              // 同じ構造(外側min-h-tapでタップ領域44pxを確保、内側spanが実際に見える
+              // 32pxの見た目を描く)にして、見た目の大きさを32pxに統一した。onClick等の
+              // 機能は無変更。
               <div className="flex gap-2 mt-3 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setCopyOpen(true)}
-                  className="min-h-tap flex items-center justify-center px-4 rounded-control border border-line text-xs font-bold text-ink-soft bg-paper"
+                  className="min-h-tap flex-shrink-0 flex items-center justify-center"
                 >
-                  コピーして登録
+                  <span className="h-8 inline-flex items-center justify-center px-4 rounded-control border border-line text-[11px] font-bold text-ink-soft bg-paper whitespace-nowrap">
+                    コピーして登録
+                  </span>
                 </button>
               </div>
             )}
