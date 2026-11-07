@@ -21,7 +21,7 @@ export function Pill({
           : tone === "watch"
             ? "bg-ink-soft/10 text-ink-soft"
             : "bg-orange/10 text-orange-text";
-  const sizeCls = size === "lg" ? "text-[15px] px-3.5 py-2" : "text-[11px] px-2.5 py-1";
+  const sizeCls = size === "lg" ? "text-[15px] px-3.5 py-2" : "h-7 inline-flex items-center px-2.5 text-[12px]";
   return (
     <span className={`font-mono font-bold rounded-lg ${sizeCls} ${cls}`}>
       {children}
