@@ -344,24 +344,29 @@ export default function ScheduleDetailPage() {
                 )}
 
                 {attendanceSummary && (
+                  // チップのサイズ(28px固定・12px文字)はPillコンポーネントのsm(デフォルト)
+                  // 変種(src/components/ui/Pill.tsx)と完全に揃えている。この集計行は
+                  // tone="pending"に当たる色がないお知らせ色分け等とは別の独自配色
+                  // (遅刻早退=sky・見学=ink-soft)のため、Pillコンポーネント自体の再利用はせず
+                  // クラス名を直接合わせる形にしている。
                   <div className="flex flex-wrap gap-1.5 mb-2.5">
-                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-green/10 text-green-text">
+                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-green/10 text-green-text">
                       出席 {attendanceSummary.attending}
                     </span>
-                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-danger/10 text-danger-text">
+                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-danger/10 text-danger-text">
                       欠席 {attendanceSummary.absent}
                     </span>
                     {attendanceSummary.late > 0 && (
-                      <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-sky/10 text-sky">
+                      <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-sky/10 text-sky">
                         遅刻早退 {attendanceSummary.late}
                       </span>
                     )}
                     {attendanceSummary.watch > 0 && (
-                      <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-ink-soft/10 text-ink-soft">
+                      <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-ink-soft/10 text-ink-soft">
                         見学 {attendanceSummary.watch}
                       </span>
                     )}
-                    <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-orange/10 text-orange-text">
+                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-orange/10 text-orange-text">
                       未回答 {attendanceSummary.noResponse}
                     </span>
                   </div>
