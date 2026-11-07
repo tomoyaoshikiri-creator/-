@@ -374,7 +374,7 @@ export function AttendanceEntryForm({
                 </div>
                 {car === "可" && (
                   <div className="mt-3">
-                    <FieldLabel>乗車可能人数</FieldLabel>
+                    <FieldLabel>最大乗車可能人数</FieldLabel>
                     <select
                       className={inputClass()}
                       value={seats}
