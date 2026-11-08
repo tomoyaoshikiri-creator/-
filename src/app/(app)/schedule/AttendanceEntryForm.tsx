@@ -172,30 +172,35 @@ export function AttendanceEntryForm({
             {/* 共通EditButton(src/components/ui/EditButton.tsx)に置き換え。出欠状態の
                 Pillとの左右の関係(justify-between)は維持。出欠状況カードの集計バッジ
                 (出席18等、Pillのデフォルトsize="sm")とサイズを揃えるため、ここだけ
-                size="lg"にしていた指定を外した。setEditing等の権限・回答処理自体は
+                size="lg"にしていた指定を外した。帯同/会場設営/車出しの短い1行情報は、
+                Pillと編集ボタンの間に空いていた余白を使ってこの行内に詰める(ユーザー
+                指示)。複数条件が同時に成立する場合(本人以外の出欠で、帯同と会場設営/
+                車出しが両方表示されるケース)は「・」区切りで並べる。備考は長文になり
+                得るため、従来通り次行に分けたまま。setEditing等の権限・回答処理自体は
                 変更していない。 */}
-            <div className="flex items-center justify-between gap-2">
-              <div>{status && <Pill tone={statusTone(status)}>{status}</Pill>}</div>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                {status && <Pill tone={statusTone(status)}>{status}</Pill>}
+                {(() => {
+                  const parts: string[] = [];
+                  if (isGame && !isSelf && accompany) {
+                    parts.push(`保護者の帯同: ${accompany}${accompany === "あり" ? `(${accompanyCount}人)` : ""}`);
+                  }
+                  if (isGame && isHome && setupAvailable) {
+                    parts.push(
+                      `会場設営: ${setupAvailable === "あり" ? "可能" : "不可"}${setupAvailable === "あり" ? `(${setupCount}人)` : ""}`,
+                    );
+                  }
+                  if (showCarSection && car) {
+                    parts.push(`車出し: ${car}${car === "可" ? `(${seats}人乗車可)` : ""}`);
+                  }
+                  return parts.length > 0 ? (
+                    <div className="text-[12.5px] text-ink-soft truncate">{parts.join(" ・ ")}</div>
+                  ) : null;
+                })()}
+              </div>
               <EditButton onClick={() => setEditing(true)} ariaLabel={`${label}の出欠を編集`} />
             </div>
-            {isGame && !isSelf && accompany && (
-              <div className="text-[12.5px] text-ink-soft mt-1">
-                保護者の帯同: {accompany}
-                {accompany === "あり" && `(${accompanyCount}人)`}
-              </div>
-            )}
-            {isGame && isHome && setupAvailable && (
-              <div className="text-[12.5px] text-ink-soft mt-1">
-                会場設営: {setupAvailable === "あり" ? "可能" : "不可"}
-                {setupAvailable === "あり" && `(${setupCount}人)`}
-              </div>
-            )}
-            {showCarSection && car && (
-              <div className="text-[12.5px] text-ink-soft mt-1">
-                車出し: {car}
-                {car === "可" && `(${seats}人乗車可)`}
-              </div>
-            )}
             {note && <div className="text-[12.5px] text-ink-soft mt-1">備考: {note}</div>}
           </>
         ) : (
