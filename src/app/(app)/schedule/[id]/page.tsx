@@ -27,12 +27,63 @@ interface AttendanceSubject {
   label: string;
 }
 
-interface AttendanceSummary {
+interface AttendanceGroupSummary {
   attending: number;
   absent: number;
   late: number;
   watch: number;
   noResponse: number;
+}
+
+// 選手と指導者を合算せず別集計にする(ユーザー指示)。未紐付けの保護者
+// (出欠一覧の「未紐付けの保護者」グループと同じ対象)は通常ごく少数のため、
+// 件数が1件以上ある場合のみ3つ目の集計行として表示する。
+interface AttendanceSummary {
+  players: AttendanceGroupSummary;
+  staff: AttendanceGroupSummary;
+  others: AttendanceGroupSummary;
+}
+
+function summarizeStatuses(statuses: (string | null)[]): AttendanceGroupSummary {
+  const attending = statuses.filter((st) => st === "出席").length;
+  const absent = statuses.filter((st) => st === "欠席").length;
+  const late = statuses.filter((st) => st === "遅刻早退").length;
+  const watch = statuses.filter((st) => st === "見学").length;
+  const noResponse = statuses.length - attending - absent - late - watch;
+  return { attending, absent, late, watch, noResponse };
+}
+
+// チップのサイズ(28px固定・12px文字)はPillコンポーネントのsm(デフォルト)変種
+// (src/components/ui/Pill.tsx)と完全に揃えている。この集計行はtone="pending"に
+// 当たる色がないお知らせ色分け等とは別の独自配色(遅刻早退=sky・見学=ink-soft)
+// のため、Pillコンポーネント自体の再利用はせずクラス名を直接合わせる形にしている。
+function AttendanceSummaryRow({ label, summary }: { label: string; summary: AttendanceGroupSummary }) {
+  return (
+    <div>
+      <div className="font-mono text-[10.5px] tracking-widest uppercase text-ink-soft mb-1">{label}</div>
+      <div className="flex flex-wrap gap-1.5">
+        <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-green/10 text-green-text">
+          出席 {summary.attending}
+        </span>
+        <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-danger/10 text-danger-text">
+          欠席 {summary.absent}
+        </span>
+        {summary.late > 0 && (
+          <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-sky/10 text-sky">
+            遅刻早退 {summary.late}
+          </span>
+        )}
+        {summary.watch > 0 && (
+          <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-ink-soft/10 text-ink-soft">
+            見学 {summary.watch}
+          </span>
+        )}
+        <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-orange/10 text-orange-text">
+          未回答 {summary.noResponse}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function ScheduleDetailPage() {
@@ -174,17 +225,11 @@ export default function ScheduleDetailPage() {
       );
       const attByUser = new Map((summaryAttendanceRows ?? []).filter((a) => !a.player_id).map((a) => [a.user_id, a]));
       const otherIds = (members ?? []).filter((m) => !staffIds.has(m.id) && attByUser.has(m.id)).map((m) => m.id);
-      const statuses = [
-        ...eligiblePlayerIds.map((id) => attByPlayer.get(id)?.status ?? null),
-        ...[...staffIds].map((id) => attByUser.get(id)?.status ?? null),
-        ...otherIds.map((id) => attByUser.get(id)?.status ?? null),
-      ];
-      const attending = statuses.filter((st) => st === "出席").length;
-      const absent = statuses.filter((st) => st === "欠席").length;
-      const late = statuses.filter((st) => st === "遅刻早退").length;
-      const watch = statuses.filter((st) => st === "見学").length;
-      const noResponse = statuses.length - attending - absent - late - watch;
-      setAttendanceSummary({ attending, absent, late, watch, noResponse });
+      setAttendanceSummary({
+        players: summarizeStatuses(eligiblePlayerIds.map((id) => attByPlayer.get(id)?.status ?? null)),
+        staff: summarizeStatuses([...staffIds].map((id) => attByUser.get(id)?.status ?? null)),
+        others: summarizeStatuses(otherIds.map((id) => attByUser.get(id)?.status ?? null)),
+      });
     } else {
       setAttendanceSummary(null);
     }
@@ -344,31 +389,17 @@ export default function ScheduleDetailPage() {
                 )}
 
                 {attendanceSummary && (
-                  // チップのサイズ(28px固定・12px文字)はPillコンポーネントのsm(デフォルト)
-                  // 変種(src/components/ui/Pill.tsx)と完全に揃えている。この集計行は
-                  // tone="pending"に当たる色がないお知らせ色分け等とは別の独自配色
-                  // (遅刻早退=sky・見学=ink-soft)のため、Pillコンポーネント自体の再利用はせず
-                  // クラス名を直接合わせる形にしている。
-                  <div className="flex flex-wrap gap-1.5 mb-2.5">
-                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-green/10 text-green-text">
-                      出席 {attendanceSummary.attending}
-                    </span>
-                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-danger/10 text-danger-text">
-                      欠席 {attendanceSummary.absent}
-                    </span>
-                    {attendanceSummary.late > 0 && (
-                      <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-sky/10 text-sky">
-                        遅刻早退 {attendanceSummary.late}
-                      </span>
-                    )}
-                    {attendanceSummary.watch > 0 && (
-                      <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-ink-soft/10 text-ink-soft">
-                        見学 {attendanceSummary.watch}
-                      </span>
-                    )}
-                    <span className="font-mono text-[12px] font-bold h-7 inline-flex items-center px-2.5 rounded-lg bg-orange/10 text-orange-text">
-                      未回答 {attendanceSummary.noResponse}
-                    </span>
+                  // 選手と指導者を合算せず別集計で表示する(ユーザー指示)。未紐付けの
+                  // 保護者は出欠一覧の対応するグループと同じく対象者がいる場合のみ表示。
+                  <div className="flex flex-col gap-2.5 mb-2.5">
+                    <AttendanceSummaryRow label="選手" summary={attendanceSummary.players} />
+                    <AttendanceSummaryRow label="指導者" summary={attendanceSummary.staff} />
+                    {attendanceSummary.others.attending +
+                      attendanceSummary.others.absent +
+                      attendanceSummary.others.late +
+                      attendanceSummary.others.watch +
+                      attendanceSummary.others.noResponse >
+                      0 && <AttendanceSummaryRow label="未紐付けの保護者" summary={attendanceSummary.others} />}
                   </div>
                 )}
 
