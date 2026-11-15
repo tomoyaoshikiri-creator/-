@@ -32,12 +32,33 @@ export async function generateDuesCharges(
       supabase.from("accounting_dues_grade_bands").select("*").eq("dues_item_id", item.id),
       supabase.from("accounting_dues_player_settings").select("*").eq("dues_item_id", item.id),
       supabase.from("players").select("id, grade").eq("team_id", teamId).eq("status", "在籍"),
-      supabase.from("accounting_dues_billing_periods").select("period_start").eq("dues_item_id", item.id),
+      supabase.from("accounting_dues_billing_periods").select("id, period_start").eq("dues_item_id", item.id),
     ]);
     if (!players || players.length === 0) continue;
 
     const settingByPlayerId = new Map((settings ?? []).map((s) => [s.player_id, s]));
-    const existingStarts = new Set((existingPeriods ?? []).map((p) => p.period_start));
+
+    // 期間(accounting_dues_billing_periods)だけ作成されて、対象の学年帯/個別設定が
+    // まだ無かった等の理由で請求(accounting_dues_charges)が1件も作れなかった期間は、
+    // 通常のdedup(period_startの既存チェック)から除外し、次回生成時に同じ期間行を
+    // 再利用して請求を作り直せるようにする(period_startはdues_item_idとのunique制約が
+    // あるため、新規insertではなく既存行のidを使い回す)。
+    const existingPeriodRows = existingPeriods ?? [];
+    const existingPeriodIds = existingPeriodRows.map((p) => p.id);
+    let chargedPeriodIds = new Set<string>();
+    if (existingPeriodIds.length > 0) {
+      const { data: chargedRows } = await supabase
+        .from("accounting_dues_charges")
+        .select("billing_period_id")
+        .in("billing_period_id", existingPeriodIds);
+      chargedPeriodIds = new Set((chargedRows ?? []).map((c) => c.billing_period_id));
+    }
+    const emptyPeriodIdByStart = new Map(
+      existingPeriodRows.filter((p) => !chargedPeriodIds.has(p.id)).map((p) => [p.period_start, p.id]),
+    );
+    const existingStarts = new Set(
+      existingPeriodRows.filter((p) => chargedPeriodIds.has(p.id)).map((p) => p.period_start),
+    );
 
     let guardianByPlayerId = new Map<string, string>();
     if ((item.billing_unit as DuesBillingUnit) === "household") {
@@ -75,13 +96,20 @@ export async function generateDuesCharges(
     const periods = scheduledPeriods.filter((p) => !existingStarts.has(p.periodStart));
 
     for (const period of periods) {
-      const { data: periodRow, error: periodError } = await supabase
-        .from("accounting_dues_billing_periods")
-        .insert({ dues_item_id: item.id, fiscal_year: fiscalYear, period_start: period.periodStart, period_end: period.periodEnd })
-        .select("id")
-        .single();
-      if (periodError || !periodRow) continue;
-      periodsCreated += 1;
+      const reusedPeriodId = emptyPeriodIdByStart.get(period.periodStart);
+      let periodRow: { id: string } | null;
+      if (reusedPeriodId) {
+        periodRow = { id: reusedPeriodId };
+      } else {
+        const { data, error: periodError } = await supabase
+          .from("accounting_dues_billing_periods")
+          .insert({ dues_item_id: item.id, fiscal_year: fiscalYear, period_start: period.periodStart, period_end: period.periodEnd })
+          .select("id")
+          .single();
+        if (periodError || !data) continue;
+        periodRow = data;
+        periodsCreated += 1;
+      }
 
       const chargeRows = players
         .map((p) => {
@@ -155,7 +183,7 @@ export async function generateDuesCharges(
       if (chargeRows.length === 0) {
         const { error: cleanupError } = await supabase.from("accounting_dues_billing_periods").delete().eq("id", periodRow.id);
         if (cleanupError) throw new Error(`空の請求期間を削除できませんでした: ${cleanupError.message}`);
-        periodsCreated -= 1;
+        if (!reusedPeriodId) periodsCreated -= 1;
         continue;
       }
       {
@@ -163,7 +191,7 @@ export async function generateDuesCharges(
         if (chargeError) {
           const { error: rollbackError } = await supabase.from("accounting_dues_billing_periods").delete().eq("id", periodRow.id);
           if (rollbackError) throw new Error(`請求作成に失敗し、期間の復旧にも失敗しました: ${rollbackError.message}`);
-          periodsCreated -= 1;
+          if (!reusedPeriodId) periodsCreated -= 1;
           throw new Error(`請求作成に失敗しました: ${chargeError.message}`);
         }
         chargesCreated += chargeRows.length;

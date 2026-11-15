@@ -71,6 +71,28 @@ export const DUES_CYCLE_MONTHS_LABELS: Record<DuesCycleMonths, string> = {
 };
 export const DUES_CYCLE_MONTHS_OPTIONS: DuesCycleMonths[] = [1, 2, 3, 6, 12];
 
+// 集金項目一覧に出す「集金の周期」の表示ラベル。schedule_mode="configured"の項目
+// (集金項目の追加画面から作る現行の全項目)はcycle_monthsを設定するUIが無く、
+// 実際の周期は集金月(collection_months)の選択だけで決まる。cycle_monthsはDB上
+// 残っているだけの値のため、configured項目はcollection_monthsの件数から実態の
+// 周期を計算して表示し、cycle_monthsが実際の周期を決めるschedule_mode="legacy"の
+// 項目(collection_monthsがnull)のみ従来通りcycle_monthsのラベルを使う。
+export function duesScheduleLabel(item: {
+  schedule_mode: string;
+  cycle_months: number;
+  collection_months: number[] | null;
+}): string {
+  if (item.schedule_mode === "configured" && item.collection_months && item.collection_months.length > 0) {
+    const count = item.collection_months.length;
+    if (12 % count === 0) {
+      const cycle = (12 / count) as DuesCycleMonths;
+      if (cycle in DUES_CYCLE_MONTHS_LABELS) return DUES_CYCLE_MONTHS_LABELS[cycle];
+    }
+    return `年${count}回`;
+  }
+  return DUES_CYCLE_MONTHS_LABELS[item.cycle_months as DuesCycleMonths] ?? `${item.cycle_months}か月ごと`;
+}
+
 export const DUES_PAYMENT_METHOD_LABELS: Record<DuesPaymentMethod, string> = {
   cash: "現金手渡し",
   bank_transfer: "振込",
