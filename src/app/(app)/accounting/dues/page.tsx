@@ -20,11 +20,11 @@ import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import {
   DUES_BILLING_UNIT_LABELS,
-  DUES_CYCLE_MONTHS_LABELS,
   DUES_CYCLE_MONTHS_OPTIONS,
   DUES_PRICING_METHOD_LABELS,
   DUES_PAYMENT_METHOD_OPTIONS,
   DUES_PAYMENT_METHOD_LABELS,
+  duesScheduleLabel,
   formatYen,
   type DuesPaymentMethod,
   type DuesBillingUnit,
@@ -349,7 +349,7 @@ export default function AccountingDuesPage() {
                   </div>
                   <div className="text-[11.5px] text-ink-soft mt-1">
                     {DUES_PRICING_METHOD_LABELS[item.pricing_method as DuesPricingMethod]} ・{" "}
-                    {DUES_CYCLE_MONTHS_LABELS[item.cycle_months as DuesCycleMonths]}
+                    {duesScheduleLabel(item)}
                   </div>
                 </div>
                 <ChevronRightIcon className="w-3.5 h-3.5 text-ink-soft flex-shrink-0" />
