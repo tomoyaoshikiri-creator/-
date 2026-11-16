@@ -17,7 +17,13 @@ import { duesPeriodLabel } from "@/lib/accountingDues";
 import { FISCAL_GRID_MONTHS, duesGridStatus, sortDuesPlayers } from "@/lib/duesGrid";
 import { loadProfilesMap } from "@/lib/profiles";
 import { fiscalYearLabel, fiscalYearOf, playerFullName, sortPlayers, todayDateStr } from "@/lib/format";
-import type { AccountingDuesBillingPeriod, AccountingDuesCharge, AccountingDuesItem, RosterPlayer } from "@/lib/database.types";
+import type {
+  AccountingDuesBillingPeriod,
+  AccountingDuesCharge,
+  AccountingDuesItem,
+  AccountingDuesPlayerSetting,
+  RosterPlayer,
+} from "@/lib/database.types";
 
 const CURRENT_FISCAL_YEAR = fiscalYearOf(todayDateStr());
 const FISCAL_YEAR_OPTIONS = Array.from({ length: 3 }, (_, i) => CURRENT_FISCAL_YEAR - 1 + i);
@@ -46,12 +52,13 @@ export default function AccountingDuesChecklistPage() {
   const [charges, setCharges] = useState<AccountingDuesCharge[]>([]);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [playerSettings, setPlayerSettings] = useState<AccountingDuesPlayerSetting[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const [{ data: itemRow }, { data: periodRows }, { data: players }, profileMap] = await Promise.all([
+    const [{ data: itemRow }, { data: periodRows }, { data: players }, profileMap, { data: settingRows }] = await Promise.all([
       supabase.from("accounting_dues_items").select("*").eq("id", params.id).maybeSingle(),
       supabase
         .from("accounting_dues_billing_periods")
@@ -61,11 +68,13 @@ export default function AccountingDuesChecklistPage() {
         .order("period_start", { ascending: true }),
       supabase.rpc("list_roster_players"),
       loadProfilesMap(supabase),
+      supabase.from("accounting_dues_player_settings").select("*").eq("dues_item_id", params.id),
     ]);
     setItem(itemRow ?? null);
     setPeriods(periodRows ?? []);
     setRoster(sortPlayers(players ?? []));
     setProfiles(profileMap);
+    setPlayerSettings(settingRows ?? []);
 
     const periodIds = (periodRows ?? []).map((p) => p.id);
     if (periodIds.length > 0) {
@@ -125,6 +134,47 @@ export default function AccountingDuesChecklistPage() {
   function nameOfPlayer(playerId: string): string {
     const p = roster.find((r) => r.id === playerId);
     return p ? playerFullName(p) : "(卒団済みなどの選手)";
+  }
+
+  // 対象外(exempt)はこの集金項目に対する選手単位の設定(選手ごとの個別設定と同じ
+  // accounting_dues_player_settings)で、月ごとではなく項目全体にかかる。学年帯の対象外
+  // (このJBA登録のように、特定の学年に学年帯そのものが設定されていない場合)は請求が
+  // 作られないだけで「対象外」と確定しているわけではないため、ここで明示的に設定できる
+  // ようにする(入金チェック画面からここだけを素早く切り替えられるよう、料金・備考等の
+  // 個別設定とは別に単独で保存する)。
+  function settingForPlayer(playerId: string): AccountingDuesPlayerSetting | null {
+    return playerSettings.find((s) => s.player_id === playerId) ?? null;
+  }
+
+  const [exemptToggling, setExemptToggling] = useState<string | null>(null);
+  async function handleToggleExempt(playerId: string) {
+    if (!item) return;
+    const existing = settingForPlayer(playerId);
+    const nextExempt = !(existing?.exempt ?? false);
+    setExemptToggling(playerId);
+    const supabase = createClient();
+    if (existing) {
+      const { error } = await supabase.from("accounting_dues_player_settings").update({ exempt: nextExempt }).eq("id", existing.id);
+      setExemptToggling(null);
+      if (error) {
+        toast.error(`更新に失敗しました: ${error.message}`);
+        return;
+      }
+      setPlayerSettings((prev) => prev.map((s) => (s.id === existing.id ? { ...s, exempt: nextExempt } : s)));
+    } else {
+      const { data, error } = await supabase
+        .from("accounting_dues_player_settings")
+        .insert({ dues_item_id: item.id, player_id: playerId, exempt: nextExempt })
+        .select("*")
+        .single();
+      setExemptToggling(null);
+      if (error || !data) {
+        toast.error(`更新に失敗しました: ${error?.message ?? ""}`);
+        return;
+      }
+      setPlayerSettings((prev) => [...prev, data]);
+    }
+    toast.success(nextExempt ? "対象外に設定しました" : "対象外を解除しました");
   }
 
   function groupsForPeriod(periodId: string): ChargeGroup[] {
@@ -303,13 +353,33 @@ export default function AccountingDuesChecklistPage() {
               </tr>
             </thead>
             <tbody>
-              {sortDuesPlayers(roster).map(player => (
-                <tr key={player.id} className="border-b border-line last:border-b-0">
-                  <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{playerFullName(player)}</th>
+              {sortDuesPlayers(roster).map(player => {
+                const exempt = settingForPlayer(player.id)?.exempt ?? false;
+                return (
+                <tr key={player.id} className={`border-b border-line last:border-b-0 ${exempt ? "opacity-60" : ""}`}>
+                  <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <span>{playerFullName(player)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleExempt(player.id)}
+                        disabled={exemptToggling !== null}
+                        aria-label={`${playerFullName(player)}をこの集金項目の対象外${exempt ? "から解除" : "に設定"}`}
+                        className={`flex-none font-bold px-1.5 py-0.5 rounded-full border disabled:opacity-50 ${
+                          exempt ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
+                        }`}
+                        style={{ fontSize: "9.5px" }}
+                      >
+                        対象外
+                      </button>
+                    </div>
+                  </th>
                   {FISCAL_GRID_MONTHS.map(month => {
                     const status = duesGridStatus(player.id, month, periods, charges);
                     return <td key={month} className="text-center px-1 py-2 font-bold">
-                      {status === "none" ? <span className="text-ink-soft">－</span> : (
+                      {status === "none" ? (
+                        <span className="text-ink-soft">{exempt ? "対象外" : "－"}</span>
+                      ) : (
                         <button type="button" aria-label={`${playerFullName(player)} ${month}月 ${status === "paid" ? "入金済み" : "未入金"}。タップして変更`}
                           onClick={() => handleGridToggle(player.id, month)}
                           disabled={gridUpdating !== null}
@@ -320,11 +390,15 @@ export default function AccountingDuesChecklistPage() {
                     </td>;
                   })}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-ink-soft mt-2">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。</p>
+        <p className="text-[11px] text-ink-soft mt-2">
+          「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。
+          選手名の横の「対象外」をタップすると、この集金項目自体を対象外に設定・解除できます(学年帯等で元々請求が作られない選手でも、対象外であることを明示できます)。
+        </p>
       </div>
 
       {periods.length === 0 ? (
