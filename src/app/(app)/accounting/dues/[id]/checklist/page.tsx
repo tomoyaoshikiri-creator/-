@@ -254,6 +254,32 @@ export default function AccountingDuesChecklistPage() {
       : c));
   }
 
+  // 一括生成で在籍していなかった期間にも請求が作られてしまった選手を、期間単位で
+  // 個別に取り消せるようにする(ユーザー指示: 項目全体を対象外にする既存のトグルとは
+  // 別に、特定の選手の特定の期間分だけを「－」に戻したい)。削除は取り消せないため、
+  // 他の削除ボタンと同じ二度タップ確定の形にする。
+  const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
+  const [deletingCharge, setDeletingCharge] = useState<string | null>(null);
+  async function handleDeleteCharge(periodId: string, group: ChargeGroup) {
+    const key = `${periodId}:${group.groupKey}`;
+    if (deleteConfirmKey !== key) {
+      setDeleteConfirmKey(key);
+      setTimeout(() => setDeleteConfirmKey((cur) => (cur === key ? null : cur)), 3000);
+      return;
+    }
+    setDeleteConfirmKey(null);
+    setDeletingCharge(key);
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_dues_charges").delete().in("id", group.chargeIds);
+    setDeletingCharge(null);
+    if (error) {
+      toast.error(`取り消しに失敗しました: ${error.message}`);
+      return;
+    }
+    setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
+    toast.success("この請求を取り消しました");
+  }
+
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
   async function handleBulkCheck(periodId: string) {
     setBulkChecking(periodId);
@@ -418,24 +444,39 @@ export default function AccountingDuesChecklistPage() {
                 ) : (
                   <>
                     <ul>
-                      {groups.map((g) => (
-                        <li key={g.groupKey} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
+                      {groups.map((g) => {
+                        const deleteKey = `${period.id}:${g.groupKey}`;
+                        return (
+                        <li key={g.groupKey} className="flex items-center justify-between gap-2 py-2 border-b border-line last:border-b-0">
                           <div className="min-w-0">
                             <div className="text-[13px] font-bold truncate">{g.label}</div>
                             <div className="text-[11px] text-ink-soft">{formatYen(g.amount)}</div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleGroup(g)}
-                            disabled={toggling === g.groupKey}
-                            className={`flex-none px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
-                              g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
-                            }`}
-                          >
-                            {g.allPaid ? "入金済み" : "未納"}
-                          </button>
+                          <div className="flex-none flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleGroup(g)}
+                              disabled={toggling === g.groupKey}
+                              className={`px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
+                                g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
+                              }`}
+                            >
+                              {g.allPaid ? "入金済み" : "未納"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCharge(period.id, g)}
+                              disabled={deletingCharge === deleteKey}
+                              aria-label={`${g.label}の${duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}の請求を取り消す`}
+                              className="px-2 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
+                              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                            >
+                              {deletingCharge === deleteKey ? "取消中…" : deleteConfirmKey === deleteKey ? "もう一度タップで取消確定" : "取消"}
+                            </button>
+                          </div>
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                     {unpaidCount > 1 && (
                       <button
@@ -447,6 +488,9 @@ export default function AccountingDuesChecklistPage() {
                         未納分をまとめて入金済みにする({unpaidCount}件)
                       </button>
                     )}
+                    <p className="text-[10.5px] text-ink-soft mt-2">
+                      「取消」はこの選手・この期間分の請求のみを取り消して「－」に戻します(一括生成等で在籍していなかった期間に誤って請求が作られた場合の修正用)。項目全体を対象外にしたい場合は上の一覧の「対象外」を使ってください。
+                    </p>
                   </>
                 )}
               </div>
