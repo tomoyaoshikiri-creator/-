@@ -256,28 +256,41 @@ export default function AccountingDuesChecklistPage() {
 
   // 一括生成で在籍していなかった期間にも請求が作られてしまった選手を、期間単位で
   // 個別に取り消せるようにする(ユーザー指示: 項目全体を対象外にする既存のトグルとは
-  // 別に、特定の選手の特定の期間分だけを「－」に戻したい)。削除は取り消せないため、
-  // 他の削除ボタンと同じ二度タップ確定の形にする。
-  const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
-  const [deletingCharge, setDeletingCharge] = useState<string | null>(null);
-  async function handleDeleteCharge(periodId: string, group: ChargeGroup) {
-    const key = `${periodId}:${group.groupKey}`;
-    if (deleteConfirmKey !== key) {
-      setDeleteConfirmKey(key);
-      setTimeout(() => setDeleteConfirmKey((cur) => (cur === key ? null : cur)), 3000);
+  // 別に、特定の選手の特定の期間分だけを「－」に戻したい)。ただし全員分の行に
+  // 常時ボタンを並べると誤タップの危険が大きく一覧も見づらいため、期間ごとに
+  // 1つだけ用意する控えめな「請求を個別に修正」リンクを開いたときだけ、対象の選手を
+  // 選んで取り消す小さなフォームを表示する(普段は何も出さない)。
+  const [correctingPeriodId, setCorrectingPeriodId] = useState<string | null>(null);
+  const [correctionGroupKey, setCorrectionGroupKey] = useState("");
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
+  const [deletingCharge, setDeletingCharge] = useState(false);
+  function openCorrection(periodId: string) {
+    setCorrectingPeriodId(periodId);
+    setCorrectionGroupKey("");
+    setDeleteConfirming(false);
+  }
+  function closeCorrection() {
+    setCorrectingPeriodId(null);
+    setCorrectionGroupKey("");
+    setDeleteConfirming(false);
+  }
+  async function handleDeleteCharge(group: ChargeGroup) {
+    if (!deleteConfirming) {
+      setDeleteConfirming(true);
+      setTimeout(() => setDeleteConfirming((cur) => (cur ? false : cur)), 3000);
       return;
     }
-    setDeleteConfirmKey(null);
-    setDeletingCharge(key);
+    setDeletingCharge(true);
     const supabase = createClient();
     const { error } = await supabase.from("accounting_dues_charges").delete().in("id", group.chargeIds);
-    setDeletingCharge(null);
+    setDeletingCharge(false);
     if (error) {
       toast.error(`取り消しに失敗しました: ${error.message}`);
       return;
     }
     setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
     toast.success("この請求を取り消しました");
+    closeCorrection();
   }
 
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
@@ -444,39 +457,24 @@ export default function AccountingDuesChecklistPage() {
                 ) : (
                   <>
                     <ul>
-                      {groups.map((g) => {
-                        const deleteKey = `${period.id}:${g.groupKey}`;
-                        return (
-                        <li key={g.groupKey} className="flex items-center justify-between gap-2 py-2 border-b border-line last:border-b-0">
+                      {groups.map((g) => (
+                        <li key={g.groupKey} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
                           <div className="min-w-0">
                             <div className="text-[13px] font-bold truncate">{g.label}</div>
                             <div className="text-[11px] text-ink-soft">{formatYen(g.amount)}</div>
                           </div>
-                          <div className="flex-none flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleGroup(g)}
-                              disabled={toggling === g.groupKey}
-                              className={`px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
-                                g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
-                              }`}
-                            >
-                              {g.allPaid ? "入金済み" : "未納"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCharge(period.id, g)}
-                              disabled={deletingCharge === deleteKey}
-                              aria-label={`${g.label}の${duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}の請求を取り消す`}
-                              className="px-2 py-1.5 rounded-lg text-[11px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
-                              style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
-                            >
-                              {deletingCharge === deleteKey ? "取消中…" : deleteConfirmKey === deleteKey ? "もう一度タップで取消確定" : "取消"}
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleGroup(g)}
+                            disabled={toggling === g.groupKey}
+                            className={`flex-none px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
+                              g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
+                            }`}
+                          >
+                            {g.allPaid ? "入金済み" : "未納"}
+                          </button>
                         </li>
-                        );
-                      })}
+                      ))}
                     </ul>
                     {unpaidCount > 1 && (
                       <button
@@ -488,9 +486,55 @@ export default function AccountingDuesChecklistPage() {
                         未納分をまとめて入金済みにする({unpaidCount}件)
                       </button>
                     )}
-                    <p className="text-[10.5px] text-ink-soft mt-2">
-                      「取消」はこの選手・この期間分の請求のみを取り消して「－」に戻します(一括生成等で在籍していなかった期間に誤って請求が作られた場合の修正用)。項目全体を対象外にしたい場合は上の一覧の「対象外」を使ってください。
-                    </p>
+                    {/* 一括生成等で在籍していなかった期間にも誤って請求が作られた場合の修正用。
+                        全員分に常時ボタンを出すと誤タップの危険・見た目の煩雑さが大きいため、
+                        普段は控えめなリンクのみ表示し、開いたときだけ対象の選手を選んで
+                        取り消す小さなフォームを出す(ユーザー指示で、前回の各行常時表示案は
+                        却下された)。 */}
+                    {correctingPeriodId === period.id ? (
+                      <div className="mt-2.5 border border-line rounded-lg p-2.5">
+                        <div className="text-[11px] text-ink-soft mb-2">
+                          在籍していなかった期間など、誤って作られたこの期間の請求だけを選んで取り消します。
+                        </div>
+                        <select
+                          className="w-full border border-line rounded-lg p-2 text-[12px] bg-paper mb-2"
+                          value={correctionGroupKey}
+                          onChange={(e) => {
+                            setCorrectionGroupKey(e.target.value);
+                            setDeleteConfirming(false);
+                          }}
+                        >
+                          <option value="">選手を選択</option>
+                          {groups.map((g) => (
+                            <option key={g.groupKey} value={g.groupKey}>
+                              {g.label}({formatYen(g.amount)})
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={closeCorrection}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
+                          >
+                            キャンセル
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!correctionGroupKey || deletingCharge}
+                            onClick={() => handleDeleteCharge(groups.find((g) => g.groupKey === correctionGroupKey)!)}
+                            className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
+                            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                          >
+                            {deletingCharge ? "取消中…" : deleteConfirming ? "もう一度タップで取消確定" : "この請求を取り消す"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => openCorrection(period.id)} className="mt-2 text-[11px] text-ink-soft underline">
+                        請求を個別に修正
+                      </button>
+                    )}
                   </>
                 )}
               </div>
