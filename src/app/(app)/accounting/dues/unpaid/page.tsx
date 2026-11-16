@@ -120,33 +120,34 @@ export default function AccountingDuesPaymentStatusPage() {
           <SectionLabel>{playerFullName(player)} の年間入金状況</SectionLabel>
           <div className={cardClass}>
             <div className="overflow-x-auto overscroll-x-contain">
-              <table className="w-full border-collapse text-[11px]">
+              <table className="w-full text-[11px] border-collapse">
                 <thead><tr className="border-b border-line">
-                  <th className="sticky left-0 z-10 bg-paper text-left min-w-[110px] px-2 py-3">集金項目</th>
-                  {FISCAL_GRID_MONTHS.map(month => <th key={month} className="min-w-[42px] px-1 py-3 text-center">{month}月</th>)}
+                  <th className="sticky left-0 bg-paper text-left px-2 py-2 min-w-[110px]">集金項目</th>
+                  {FISCAL_GRID_MONTHS.map(month => <th key={month} className="text-center px-1 py-2 min-w-[35px]">{month}月</th>)}
                 </tr></thead>
                 <tbody>{items.map(item => {
                   const itemPeriods = periods.filter(p => p.dues_item_id === item.id);
                   const itemPeriodIds = new Set(itemPeriods.map(p => p.id));
                   const itemCharges = charges.filter(c => itemPeriodIds.has(c.billing_period_id));
                   return <tr key={item.id} className="border-b border-line last:border-b-0">
-                    <th className="sticky left-0 z-10 bg-paper text-left px-2 py-3 font-bold whitespace-nowrap">{item.name}</th>
+                    <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">{item.name}</th>
                     {FISCAL_GRID_MONTHS.map(month => {
                       const status = duesGridStatus(player.id, month, itemPeriods, itemCharges);
-                      return <td key={month} className="text-center px-1 py-2">
-                        <button type="button" disabled={status === "none" || updating !== null} onClick={() => void toggle(item.id, month)}
-                          aria-label={item.name + " " + month + "月 " + (status === "paid" ? "入金済み" : status === "unpaid" ? "未入金" : "請求なし")}
-                          className={"min-w-[32px] rounded-md px-1 py-1.5 font-bold disabled:opacity-50 " +
-                            (status === "paid" ? "text-green-text bg-green/8" : status === "unpaid" ? "text-orange-text bg-orange/8" : "text-ink-soft")}>
-                          {updating === item.id + ":" + month ? "…" : status === "paid" ? "済" : status === "unpaid" ? "未" : "－"}
-                        </button>
+                      return <td key={month} className="text-center px-1 py-2 font-bold">
+                        {status === "none" ? <span className="text-ink-soft">－</span> : (
+                          <button type="button" disabled={updating !== null} onClick={() => void toggle(item.id, month)}
+                            aria-label={`${item.name} ${month}月 ${status === "paid" ? "入金済み" : "未入金"}。タップして変更`}
+                            className={`min-w-[28px] py-1 rounded-md border disabled:opacity-50 ${status === "paid" ? "border-green text-green-text bg-green/8" : "border-orange text-orange-text bg-orange/8"}`}>
+                            {updating === item.id + ":" + month ? "…" : status === "paid" ? "済" : "未"}
+                          </button>
+                        )}
                       </td>;
                     })}
                   </tr>;
                 })}</tbody>
               </table>
             </div>
-            <p className="mt-3 text-[11px] text-ink-soft">「済」入金済み／「未」未入金／「－」請求なし。左右にスクロールできます。</p>
+            <p className="mt-3 text-[11px] text-ink-soft">「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。</p>
           </div>
         </>
       )}
