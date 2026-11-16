@@ -199,33 +199,6 @@ export default function AccountingDuesChecklistPage() {
     });
   }
 
-  const [toggling, setToggling] = useState<string | null>(null);
-  async function handleToggleGroup(group: ChargeGroup) {
-    setToggling(group.groupKey);
-    const supabase = createClient();
-    const nextStatus = group.allPaid ? "unpaid" : "paid";
-    const { error } = await supabase
-      .from("accounting_dues_charges")
-      .update({
-        status: nextStatus,
-        paid_at: nextStatus === "paid" ? new Date().toISOString() : null,
-        paid_by: nextStatus === "paid" ? userId : null,
-      })
-      .in("id", group.chargeIds);
-    setToggling(null);
-    if (error) {
-      toast.error(`更新に失敗しました: ${error.message}`);
-      return;
-    }
-    setCharges((prev) =>
-      prev.map((c) =>
-        group.chargeIds.includes(c.id)
-          ? { ...c, status: nextStatus, paid_at: nextStatus === "paid" ? new Date().toISOString() : null, paid_by: nextStatus === "paid" ? userId : null }
-          : c,
-      ),
-    );
-  }
-
   const [gridUpdating, setGridUpdating] = useState<string | null>(null);
   async function handleGridToggle(playerId: string, month: number) {
     const ids = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
@@ -254,26 +227,15 @@ export default function AccountingDuesChecklistPage() {
       : c));
   }
 
-  // 一括生成で在籍していなかった期間にも請求が作られてしまった選手を、期間単位で
-  // 個別に取り消せるようにする(ユーザー指示: 項目全体を対象外にする既存のトグルとは
-  // 別に、特定の選手の特定の期間分だけを「－」に戻したい)。ただし全員分の行に
-  // 常時ボタンを並べると誤タップの危険が大きく一覧も見づらいため、期間ごとに
-  // 1つだけ用意する控えめな「請求を個別に修正」リンクを開いたときだけ、対象の選手を
-  // 選んで取り消す小さなフォームを表示する(普段は何も出さない)。
-  const [correctingPeriodId, setCorrectingPeriodId] = useState<string | null>(null);
+  // 選手×12ヶ月の表の下に、期間ごとに同じ選手一覧を繰り返して並べると
+  // ページが無駄に長くなる(例: 3か月ごとの項目で3期×20名=60行)ため、
+  // 一覧の重複表示はやめ、未納の一括チェックと個別取消は「期間を選んで使う」
+  // 1つのコンパクトな操作欄にまとめる(ユーザー指示)。選手ごとの入金済み/未納の
+  // 切り替えそのものは上の表のセルで行える。
+  const [selectedPeriodId, setSelectedPeriodId] = useState("");
   const [correctionGroupKey, setCorrectionGroupKey] = useState("");
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deletingCharge, setDeletingCharge] = useState(false);
-  function openCorrection(periodId: string) {
-    setCorrectingPeriodId(periodId);
-    setCorrectionGroupKey("");
-    setDeleteConfirming(false);
-  }
-  function closeCorrection() {
-    setCorrectingPeriodId(null);
-    setCorrectionGroupKey("");
-    setDeleteConfirming(false);
-  }
   async function handleDeleteCharge(group: ChargeGroup) {
     if (!deleteConfirming) {
       setDeleteConfirming(true);
@@ -290,7 +252,8 @@ export default function AccountingDuesChecklistPage() {
     }
     setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
     toast.success("この請求を取り消しました");
-    closeCorrection();
+    setCorrectionGroupKey("");
+    setDeleteConfirming(false);
   }
 
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
@@ -445,102 +408,82 @@ export default function AccountingDuesChecklistPage() {
           <EmptyState>まだ請求がありません</EmptyState>
         </div>
       ) : (
-        periods.map((period) => {
-          const groups = groupsForPeriod(period.id);
-          const unpaidCount = groups.filter((g) => !g.allPaid).length;
-          return (
-            <div key={period.id} className="mb-3">
-              <SectionLabel>{duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}</SectionLabel>
-              <div className={cardClass}>
-                {groups.length === 0 ? (
-                  <EmptyState>対象者がいません</EmptyState>
-                ) : (
+        <>
+          <SectionLabel>入金状況の一括操作・修正</SectionLabel>
+          <div className={cardClass}>
+            <div className="text-[11px] text-ink-soft mb-2">
+              期間を選ぶと、その期間の未納分をまとめてチェックしたり、特定の選手の請求だけを取り消したりできます(選手ごとの入金済み/未納の切り替えは上の表のセルで行えます)。
+            </div>
+            <select
+              className="w-full border border-line rounded-lg p-2 text-[13px] bg-paper"
+              value={selectedPeriodId}
+              onChange={(e) => {
+                setSelectedPeriodId(e.target.value);
+                setCorrectionGroupKey("");
+                setDeleteConfirming(false);
+              }}
+            >
+              <option value="">期間を選択</option>
+              {periods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {duesPeriodLabel({ periodStart: p.period_start, periodEnd: p.period_end })}
+                </option>
+              ))}
+            </select>
+            {selectedPeriodId &&
+              (() => {
+                const groups = groupsForPeriod(selectedPeriodId);
+                const unpaidCount = groups.filter((g) => !g.allPaid).length;
+                if (groups.length === 0) {
+                  return <div className="text-[12px] text-ink-soft mt-3">この期間は対象者がいません。</div>;
+                }
+                return (
                   <>
-                    <ul>
-                      {groups.map((g) => (
-                        <li key={g.groupKey} className="flex items-center justify-between py-2 border-b border-line last:border-b-0">
-                          <div className="min-w-0">
-                            <div className="text-[13px] font-bold truncate">{g.label}</div>
-                            <div className="text-[11px] text-ink-soft">{formatYen(g.amount)}</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleGroup(g)}
-                            disabled={toggling === g.groupKey}
-                            className={`flex-none px-3 py-1.5 rounded-lg text-[11.5px] font-bold border disabled:opacity-50 ${
-                              g.allPaid ? "border-green text-green-text bg-green/8" : "border-line text-ink-soft bg-paper"
-                            }`}
-                          >
-                            {g.allPaid ? "入金済み" : "未納"}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
                     {unpaidCount > 1 && (
                       <button
                         type="button"
-                        onClick={() => handleBulkCheck(period.id)}
-                        disabled={bulkChecking === period.id}
-                        className="w-full mt-2.5 text-center py-1.5 rounded-lg font-bold text-[11.5px] border border-line bg-paper text-ink-soft disabled:opacity-50"
+                        onClick={() => handleBulkCheck(selectedPeriodId)}
+                        disabled={bulkChecking === selectedPeriodId}
+                        className="w-full mt-3 text-center py-1.5 rounded-lg font-bold text-[11.5px] border border-line bg-paper text-ink-soft disabled:opacity-50"
                       >
                         未納分をまとめて入金済みにする({unpaidCount}件)
                       </button>
                     )}
-                    {/* 一括生成等で在籍していなかった期間にも誤って請求が作られた場合の修正用。
-                        全員分に常時ボタンを出すと誤タップの危険・見た目の煩雑さが大きいため、
-                        普段は控えめなリンクのみ表示し、開いたときだけ対象の選手を選んで
-                        取り消す小さなフォームを出す(ユーザー指示で、前回の各行常時表示案は
-                        却下された)。 */}
-                    {correctingPeriodId === period.id ? (
-                      <div className="mt-2.5 border border-line rounded-lg p-2.5">
-                        <div className="text-[11px] text-ink-soft mb-2">
-                          在籍していなかった期間など、誤って作られたこの期間の請求だけを選んで取り消します。
-                        </div>
-                        <select
-                          className="w-full border border-line rounded-lg p-2 text-[12px] bg-paper mb-2"
-                          value={correctionGroupKey}
-                          onChange={(e) => {
-                            setCorrectionGroupKey(e.target.value);
-                            setDeleteConfirming(false);
-                          }}
-                        >
-                          <option value="">選手を選択</option>
-                          {groups.map((g) => (
-                            <option key={g.groupKey} value={g.groupKey}>
-                              {g.label}({formatYen(g.amount)})
-                            </option>
-                          ))}
-                        </select>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={closeCorrection}
-                            className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border border-line bg-paper text-ink-soft"
-                          >
-                            キャンセル
-                          </button>
-                          <button
-                            type="button"
-                            disabled={!correctionGroupKey || deletingCharge}
-                            onClick={() => handleDeleteCharge(groups.find((g) => g.groupKey === correctionGroupKey)!)}
-                            className="flex-1 px-3 py-1.5 rounded-lg text-[11.5px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
-                            style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
-                          >
-                            {deletingCharge ? "取消中…" : deleteConfirming ? "もう一度タップで取消確定" : "この請求を取り消す"}
-                          </button>
-                        </div>
+                    {/* 一括生成等で在籍していなかった期間にも誤って請求が作られた場合の修正用。 */}
+                    <div className="mt-3 border-t border-line pt-3">
+                      <div className="text-[11px] text-ink-soft mb-2">
+                        在籍していなかった期間など、誤って作られたこの期間の請求だけを選んで取り消します。
                       </div>
-                    ) : (
-                      <button type="button" onClick={() => openCorrection(period.id)} className="mt-2 text-[11px] text-ink-soft underline">
-                        請求を個別に修正
+                      <select
+                        className="w-full border border-line rounded-lg p-2 text-[12px] bg-paper mb-2"
+                        value={correctionGroupKey}
+                        onChange={(e) => {
+                          setCorrectionGroupKey(e.target.value);
+                          setDeleteConfirming(false);
+                        }}
+                      >
+                        <option value="">選手を選択</option>
+                        {groups.map((g) => (
+                          <option key={g.groupKey} value={g.groupKey}>
+                            {g.label}({formatYen(g.amount)})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!correctionGroupKey || deletingCharge}
+                        onClick={() => handleDeleteCharge(groups.find((g) => g.groupKey === correctionGroupKey)!)}
+                        className="w-full px-3 py-1.5 rounded-lg text-[11.5px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
+                        style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                      >
+                        {deletingCharge ? "取消中…" : deleteConfirming ? "もう一度タップで取消確定" : "この請求を取り消す"}
                       </button>
-                    )}
+                    </div>
                   </>
-                )}
-              </div>
-            </div>
-          );
-        })
+                );
+              })()}
+          </div>
+        </>
       )}
     </PageShell>
   );
