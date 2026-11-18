@@ -178,8 +178,9 @@ export default function AccountingDuesChecklistPage() {
     toast.success(nextExempt ? "対象外に設定しました" : "対象外を解除しました");
   }
 
-  function groupsForPeriod(periodId: string): ChargeGroup[] {
-    const periodCharges = charges.filter((c) => c.billing_period_id === periodId);
+  function groupsForPeriod(periodId: string, opts: { cancelled?: boolean } = {}): ChargeGroup[] {
+    const wantCancelled = opts.cancelled ?? false;
+    const periodCharges = charges.filter((c) => c.billing_period_id === periodId && Boolean(c.cancelled_at) === wantCancelled);
     const byGroup = new Map<string, AccountingDuesCharge[]>();
     periodCharges.forEach((c) => {
       const arr = byGroup.get(c.group_key) ?? [];
@@ -203,9 +204,9 @@ export default function AccountingDuesChecklistPage() {
   const [gridUpdating, setGridUpdating] = useState<string | null>(null);
   async function handleGridToggle(playerId: string, month: number) {
     const ids = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
-    const selected = charges.filter(c => c.player_id === playerId && ids.has(c.billing_period_id));
+    const selected = charges.filter(c => c.player_id === playerId && ids.has(c.billing_period_id) && !c.cancelled_at);
     if (selected.length === 0) return;
-    const targets = charges.filter(c => selected.some(s => s.billing_period_id === c.billing_period_id && s.group_key === c.group_key));
+    const targets = charges.filter(c => !c.cancelled_at && selected.some(s => s.billing_period_id === c.billing_period_id && s.group_key === c.group_key));
     const key = `${playerId}:${month}`;
     setGridUpdating(key);
     const nextStatus = selected.every(c => c.status === "paid") ? "unpaid" : "paid";
@@ -237,6 +238,28 @@ export default function AccountingDuesChecklistPage() {
   const [correctionGroupKey, setCorrectionGroupKey] = useState("");
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deletingCharge, setDeletingCharge] = useState(false);
+
+  // 請求の「取消」はDELETEではなくcancelled_at/cancelled_byによるソフトキャンセルで行う
+  // (accounting_dues_chargesにはDELETEのRLSポリシーが無く、クライアントからのDELETEは
+  // エラーにならないまま0件削除になっていたため、UPDATEで届く形に変更。併せて復元もできる)。
+  async function softCancelCharges(chargeIds: string[]): Promise<string | null> {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("accounting_dues_charges")
+      .update({ cancelled_at: now, cancelled_by: userId }).in("id", chargeIds);
+    if (error) return error.message;
+    setCharges((prev) => prev.map((c) => chargeIds.includes(c.id) ? { ...c, cancelled_at: now, cancelled_by: userId } : c));
+    return null;
+  }
+  async function restoreCharges(chargeIds: string[]): Promise<string | null> {
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_dues_charges")
+      .update({ cancelled_at: null, cancelled_by: null }).in("id", chargeIds);
+    if (error) return error.message;
+    setCharges((prev) => prev.map((c) => chargeIds.includes(c.id) ? { ...c, cancelled_at: null, cancelled_by: null } : c));
+    return null;
+  }
+
   async function handleDeleteCharge(group: ChargeGroup) {
     if (!deleteConfirming) {
       setDeleteConfirming(true);
@@ -244,62 +267,80 @@ export default function AccountingDuesChecklistPage() {
       return;
     }
     setDeletingCharge(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("accounting_dues_charges").delete().in("id", group.chargeIds);
+    const error = await softCancelCharges(group.chargeIds);
     setDeletingCharge(false);
     if (error) {
-      toast.error(`取り消しに失敗しました: ${error.message}`);
+      toast.error(`取り消しに失敗しました: ${error}`);
       return;
     }
-    setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
     toast.success("この請求を取り消しました");
     setCorrectionGroupKey("");
     setDeleteConfirming(false);
   }
 
-  // 対象外の設定・請求の個別取消は、表の選手名をタップして開く操作画面にまとめる
+  // 対象外の設定・請求の個別取消/復元は、表の選手名をタップして開く操作画面にまとめる
   // (常時表示のボタンは全選手に並んで邪魔な上、既存の請求が残ったままだと「対象外」表示と
   // 「未」表示が同時に出て紛らわしいため、該当選手の請求一覧と一緒に操作できるようにする)。
   const [operationPlayerId, setOperationPlayerId] = useState<string | null>(null);
-  const [modalDeleteConfirmId, setModalDeleteConfirmId] = useState<string | null>(null);
-  const [modalDeletingId, setModalDeletingId] = useState<string | null>(null);
+  const [modalConfirmKey, setModalConfirmKey] = useState<string | null>(null);
+  const [modalBusyKey, setModalBusyKey] = useState<string | null>(null);
 
-  function chargeGroupsForPlayer(playerId: string): { period: AccountingDuesBillingPeriod; group: ChargeGroup }[] {
+  function chargeGroupsForPlayer(
+    playerId: string,
+    opts: { cancelled?: boolean } = {},
+  ): { period: AccountingDuesBillingPeriod; group: ChargeGroup }[] {
+    const wantCancelled = opts.cancelled ?? false;
     return periods
       .map((period) => {
-        const charge = charges.find((c) => c.player_id === playerId && c.billing_period_id === period.id);
+        const charge = charges.find((c) => c.player_id === playerId && c.billing_period_id === period.id && Boolean(c.cancelled_at) === wantCancelled);
         if (!charge) return null;
-        const group = groupsForPeriod(period.id).find((g) => g.groupKey === charge.group_key);
+        const group = groupsForPeriod(period.id, { cancelled: wantCancelled }).find((g) => g.groupKey === charge.group_key);
         return group ? { period, group } : null;
       })
       .filter((x): x is { period: AccountingDuesBillingPeriod; group: ChargeGroup } => x !== null);
   }
 
-  async function handleDeleteChargeInModal(periodId: string, group: ChargeGroup) {
-    const key = `${periodId}:${group.groupKey}`;
-    if (modalDeleteConfirmId !== key) {
-      setModalDeleteConfirmId(key);
-      setTimeout(() => setModalDeleteConfirmId((cur) => (cur === key ? null : cur)), 3000);
+  async function handleCancelChargeInModal(periodId: string, group: ChargeGroup) {
+    const key = `cancel:${periodId}:${group.groupKey}`;
+    if (modalConfirmKey !== key) {
+      setModalConfirmKey(key);
+      setTimeout(() => setModalConfirmKey((cur) => (cur === key ? null : cur)), 3000);
       return;
     }
-    setModalDeletingId(key);
-    const supabase = createClient();
-    const { error } = await supabase.from("accounting_dues_charges").delete().in("id", group.chargeIds);
-    setModalDeletingId(null);
+    setModalBusyKey(key);
+    const error = await softCancelCharges(group.chargeIds);
+    setModalBusyKey(null);
     if (error) {
-      toast.error(`取り消しに失敗しました: ${error.message}`);
+      toast.error(`取り消しに失敗しました: ${error}`);
       return;
     }
-    setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
     toast.success("この請求を取り消しました");
-    setModalDeleteConfirmId(null);
+    setModalConfirmKey(null);
+  }
+
+  async function handleRestoreChargeInModal(periodId: string, group: ChargeGroup) {
+    const key = `restore:${periodId}:${group.groupKey}`;
+    if (modalConfirmKey !== key) {
+      setModalConfirmKey(key);
+      setTimeout(() => setModalConfirmKey((cur) => (cur === key ? null : cur)), 3000);
+      return;
+    }
+    setModalBusyKey(key);
+    const error = await restoreCharges(group.chargeIds);
+    setModalBusyKey(null);
+    if (error) {
+      toast.error(`復元に失敗しました: ${error}`);
+      return;
+    }
+    toast.success("この請求を復元しました");
+    setModalConfirmKey(null);
   }
 
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
   async function handleBulkCheck(periodId: string) {
     setBulkChecking(periodId);
     const supabase = createClient();
-    const unpaidIds = charges.filter((c) => c.billing_period_id === periodId && c.status === "unpaid").map((c) => c.id);
+    const unpaidIds = charges.filter((c) => c.billing_period_id === periodId && c.status === "unpaid" && !c.cancelled_at).map((c) => c.id);
     if (unpaidIds.length === 0) {
       setBulkChecking(null);
       return;
@@ -440,10 +481,11 @@ export default function AccountingDuesChecklistPage() {
         if (!player) return null;
         const exempt = settingForPlayer(player.id)?.exempt ?? false;
         const rows = chargeGroupsForPlayer(player.id);
+        const cancelledRows = chargeGroupsForPlayer(player.id, { cancelled: true });
         return (
           <Modal
             open={operationPlayerId !== null}
-            onClose={() => { setOperationPlayerId(null); setModalDeleteConfirmId(null); }}
+            onClose={() => { setOperationPlayerId(null); setModalConfirmKey(null); }}
             title={`${playerFullName(player)}の操作`}
           >
             <div>
@@ -459,7 +501,7 @@ export default function AccountingDuesChecklistPage() {
               </button>
               <p className="text-[10.5px] text-ink-soft mt-1.5">
                 今後の請求作成に反映されます(学年帯等で元々請求が作られない選手でも、対象外であることを明示できます)。
-                既に作成済みの請求は自動的には変わりません。取り消したい場合は下の一覧から個別に取り消してください。
+                既に作成済みの請求は自動的には変わりません。誤って作成された請求は下の一覧から個別に取り消せます(取り消した請求は後からいつでも復元できます)。
               </p>
             </div>
             <div className="border-t border-line mt-4 pt-3">
@@ -469,7 +511,7 @@ export default function AccountingDuesChecklistPage() {
               ) : (
                 <ul className="flex flex-col gap-2">
                   {rows.map(({ period, group }) => {
-                    const key = `${period.id}:${group.groupKey}`;
+                    const key = `cancel:${period.id}:${group.groupKey}`;
                     return (
                       <li key={key} className="flex items-center justify-between gap-2 text-[12px]">
                         <span>
@@ -481,12 +523,12 @@ export default function AccountingDuesChecklistPage() {
                         </span>
                         <button
                           type="button"
-                          disabled={modalDeletingId === key}
-                          onClick={() => handleDeleteChargeInModal(period.id, group)}
+                          disabled={modalBusyKey === key}
+                          onClick={() => handleCancelChargeInModal(period.id, group)}
                           className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
                           style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
                         >
-                          {modalDeletingId === key ? "取消中…" : modalDeleteConfirmId === key ? "もう一度タップで取消確定" : "この請求を取り消す"}
+                          {modalBusyKey === key ? "取消中…" : modalConfirmKey === key ? "もう一度タップで取消確定" : "この請求を取り消す"}
                         </button>
                       </li>
                     );
@@ -494,6 +536,33 @@ export default function AccountingDuesChecklistPage() {
                 </ul>
               )}
             </div>
+            {cancelledRows.length > 0 && (
+              <div className="border-t border-line mt-4 pt-3">
+                <div className="text-[11px] font-bold text-ink-soft mb-2">取り消した請求</div>
+                <ul className="flex flex-col gap-2">
+                  {cancelledRows.map(({ period, group }) => {
+                    const key = `restore:${period.id}:${group.groupKey}`;
+                    return (
+                      <li key={key} className="flex items-center justify-between gap-2 text-[12px]">
+                        <span>
+                          {duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}
+                          <span className="ml-2 font-bold text-ink-soft">取消済み</span>
+                          <span className="text-ink-soft ml-1">({formatYen(group.amount)})</span>
+                        </span>
+                        <button
+                          type="button"
+                          disabled={modalBusyKey === key}
+                          onClick={() => handleRestoreChargeInModal(period.id, group)}
+                          className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border border-line whitespace-nowrap disabled:opacity-50 bg-white text-ink-soft"
+                        >
+                          {modalBusyKey === key ? "復元中…" : modalConfirmKey === key ? "もう一度タップで復元確定" : "復元する"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </Modal>
         );
       })()}

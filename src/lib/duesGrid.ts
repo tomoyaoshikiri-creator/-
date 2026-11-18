@@ -10,11 +10,12 @@ export interface DuesGridCharge {
   billing_period_id: string;
   player_id: string;
   status: string;
+  cancelled_at?: string | null;
 }
 
 export const FISCAL_GRID_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
 
-/** 請求が存在しない月は「－」。未納が一件でもあれば「未」。 */
+/** 請求が存在しない月・取り消し済みの請求のみの月は「－」。未納が一件でもあれば「未」。 */
 export function duesGridStatus(
   playerId: string,
   month: number,
@@ -22,7 +23,7 @@ export function duesGridStatus(
   charges: DuesGridCharge[],
 ): DuesMonthStatus {
   const periodIds = new Set(periods.filter(p => Number(p.period_start.slice(5, 7)) === month).map(p => p.id));
-  const relevant = charges.filter(c => c.player_id === playerId && periodIds.has(c.billing_period_id));
+  const relevant = charges.filter(c => c.player_id === playerId && periodIds.has(c.billing_period_id) && !c.cancelled_at);
   if (relevant.length === 0) return "none";
   return relevant.every(c => c.status === "paid") ? "paid" : "unpaid";
 }

@@ -69,7 +69,8 @@ export default function PlayerDuesPage() {
     const { data: chargeRows } = await supabase
       .from("accounting_dues_charges")
       .select("*")
-      .eq("player_id", params.id);
+      .eq("player_id", params.id)
+      .is("cancelled_at", null);
     const charges = chargeRows ?? [];
 
     const periodIds = [...new Set(charges.map((c) => c.billing_period_id))];
