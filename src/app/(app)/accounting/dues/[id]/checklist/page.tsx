@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { EmptyState, SectionLabel, cardClass } from "@/components/ui/Card";
 import { InlineSelect } from "@/components/ui/InlineSelect";
+import { Modal } from "@/components/ui/Modal";
 import { canManageAccounting } from "@/lib/permissions";
 import { hasAccountingAccess } from "@/lib/plan";
 import { formatYen, type DuesBillingUnit } from "@/lib/accounting";
@@ -256,6 +257,44 @@ export default function AccountingDuesChecklistPage() {
     setDeleteConfirming(false);
   }
 
+  // 対象外の設定・請求の個別取消は、表の選手名をタップして開く操作画面にまとめる
+  // (常時表示のボタンは全選手に並んで邪魔な上、既存の請求が残ったままだと「対象外」表示と
+  // 「未」表示が同時に出て紛らわしいため、該当選手の請求一覧と一緒に操作できるようにする)。
+  const [operationPlayerId, setOperationPlayerId] = useState<string | null>(null);
+  const [modalDeleteConfirmId, setModalDeleteConfirmId] = useState<string | null>(null);
+  const [modalDeletingId, setModalDeletingId] = useState<string | null>(null);
+
+  function chargeGroupsForPlayer(playerId: string): { period: AccountingDuesBillingPeriod; group: ChargeGroup }[] {
+    return periods
+      .map((period) => {
+        const charge = charges.find((c) => c.player_id === playerId && c.billing_period_id === period.id);
+        if (!charge) return null;
+        const group = groupsForPeriod(period.id).find((g) => g.groupKey === charge.group_key);
+        return group ? { period, group } : null;
+      })
+      .filter((x): x is { period: AccountingDuesBillingPeriod; group: ChargeGroup } => x !== null);
+  }
+
+  async function handleDeleteChargeInModal(periodId: string, group: ChargeGroup) {
+    const key = `${periodId}:${group.groupKey}`;
+    if (modalDeleteConfirmId !== key) {
+      setModalDeleteConfirmId(key);
+      setTimeout(() => setModalDeleteConfirmId((cur) => (cur === key ? null : cur)), 3000);
+      return;
+    }
+    setModalDeletingId(key);
+    const supabase = createClient();
+    const { error } = await supabase.from("accounting_dues_charges").delete().in("id", group.chargeIds);
+    setModalDeletingId(null);
+    if (error) {
+      toast.error(`取り消しに失敗しました: ${error.message}`);
+      return;
+    }
+    setCharges((prev) => prev.filter((c) => !group.chargeIds.includes(c.id)));
+    toast.success("この請求を取り消しました");
+    setModalDeleteConfirmId(null);
+  }
+
   const [bulkChecking, setBulkChecking] = useState<string | null>(null);
   async function handleBulkCheck(periodId: string) {
     setBulkChecking(periodId);
@@ -360,21 +399,14 @@ export default function AccountingDuesChecklistPage() {
                 return (
                 <tr key={player.id} className={`border-b border-line last:border-b-0 ${exempt ? "opacity-60" : ""}`}>
                   <th className="sticky left-0 bg-paper text-left px-2 py-2 font-semibold whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <span>{playerFullName(player)}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleExempt(player.id)}
-                        disabled={exemptToggling !== null}
-                        aria-label={`${playerFullName(player)}をこの集金項目の対象外${exempt ? "から解除" : "に設定"}`}
-                        className={`flex-none font-bold px-1.5 py-0.5 rounded-full border disabled:opacity-50 ${
-                          exempt ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
-                        }`}
-                        style={{ fontSize: "9.5px" }}
-                      >
-                        対象外
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOperationPlayerId(player.id)}
+                      aria-label={`${playerFullName(player)}の対象外設定・請求の取消を操作`}
+                      className="text-left underline decoration-dotted decoration-ink-soft underline-offset-2"
+                    >
+                      {playerFullName(player)}
+                    </button>
                   </th>
                   {FISCAL_GRID_MONTHS.map(month => {
                     const status = duesGridStatus(player.id, month, periods, charges);
@@ -398,10 +430,73 @@ export default function AccountingDuesChecklistPage() {
           </table>
         </div>
         <p className="text-[11px] text-ink-soft mt-2">
-          「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし。「済」「未」をタップすると入金状態を変更できます。
-          選手名の横の「対象外」をタップすると、この集金項目自体を対象外に設定・解除できます(学年帯等で元々請求が作られない選手でも、対象外であることを明示できます)。
+          「済」は入金済み、「未」は請求済み・未入金、「－」は請求なし(対象外の選手は「対象外」と表示)。「済」「未」をタップすると入金状態を変更できます。
+          選手名をタップすると、対象外の設定やこの項目の請求の個別取消ができます。
         </p>
       </div>
+
+      {operationPlayerId && (() => {
+        const player = roster.find((p) => p.id === operationPlayerId);
+        if (!player) return null;
+        const exempt = settingForPlayer(player.id)?.exempt ?? false;
+        const rows = chargeGroupsForPlayer(player.id);
+        return (
+          <Modal
+            open={operationPlayerId !== null}
+            onClose={() => { setOperationPlayerId(null); setModalDeleteConfirmId(null); }}
+            title={`${playerFullName(player)}の操作`}
+          >
+            <div>
+              <button
+                type="button"
+                onClick={() => handleToggleExempt(player.id)}
+                disabled={exemptToggling !== null}
+                className={`w-full text-center py-2 rounded-lg font-bold text-[12.5px] border disabled:opacity-50 ${
+                  exempt ? "border-orange text-orange-text bg-orange/8" : "border-line text-ink-soft bg-paper"
+                }`}
+              >
+                {exemptToggling === player.id ? "更新中…" : exempt ? "対象外を解除する" : "この集金項目を対象外に設定する"}
+              </button>
+              <p className="text-[10.5px] text-ink-soft mt-1.5">
+                今後の請求作成に反映されます(学年帯等で元々請求が作られない選手でも、対象外であることを明示できます)。
+                既に作成済みの請求は自動的には変わりません。取り消したい場合は下の一覧から個別に取り消してください。
+              </p>
+            </div>
+            <div className="border-t border-line mt-4 pt-3">
+              <div className="text-[11px] font-bold text-ink-soft mb-2">この集金項目の請求一覧</div>
+              {rows.length === 0 ? (
+                <p className="text-[12px] text-ink-soft">請求はありません。</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {rows.map(({ period, group }) => {
+                    const key = `${period.id}:${group.groupKey}`;
+                    return (
+                      <li key={key} className="flex items-center justify-between gap-2 text-[12px]">
+                        <span>
+                          {duesPeriodLabel({ periodStart: period.period_start, periodEnd: period.period_end })}
+                          <span className={`ml-2 font-bold ${group.allPaid ? "text-green-text" : "text-orange-text"}`}>
+                            {group.allPaid ? "済" : "未"}
+                          </span>
+                          <span className="text-ink-soft ml-1">({formatYen(group.amount)})</span>
+                        </span>
+                        <button
+                          type="button"
+                          disabled={modalDeletingId === key}
+                          onClick={() => handleDeleteChargeInModal(period.id, group)}
+                          className="flex-none px-2.5 py-1 rounded-lg text-[11px] font-bold border whitespace-nowrap disabled:opacity-50 bg-white"
+                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+                        >
+                          {modalDeletingId === key ? "取消中…" : modalDeleteConfirmId === key ? "もう一度タップで取消確定" : "この請求を取り消す"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
 
       {periods.length === 0 ? (
         <div className={cardClass}>
