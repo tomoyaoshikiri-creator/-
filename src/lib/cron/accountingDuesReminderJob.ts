@@ -51,7 +51,8 @@ export async function runDuesReminders(
       .select("id, billing_period_id, player_id, group_key, amount")
       .in("billing_period_id", periodIds)
       .eq("status", "unpaid")
-      .is("reminder_sent_at", null);
+      .is("reminder_sent_at", null)
+      .is("cancelled_at", null);
     if (!charges || charges.length === 0) continue;
 
     const byGroup = new Map<string, typeof charges>();

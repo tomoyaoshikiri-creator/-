@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   if (periodLookupError) return NextResponse.json({ error: "既存請求を確認できません" }, { status: 500 });
   const overlapping = (existingPeriods ?? []).filter(p => p.period_start <= end && p.period_end >= start);
   if (overlapping.length) {
-    const { data: existingCharges, error } = await db.from("accounting_dues_charges").select("id").eq("player_id", playerId).in("billing_period_id", overlapping.map(p => p.id));
+    const { data: existingCharges, error } = await db.from("accounting_dues_charges").select("id").eq("player_id", playerId).is("cancelled_at", null).in("billing_period_id", overlapping.map(p => p.id));
     if (error) return NextResponse.json({ error: "既存請求を確認できません" }, { status: 500 });
     if ((existingCharges ?? []).length) return NextResponse.json({ error: "対象期間に既存請求があります。重複を避けるため追加できません" }, { status: 409 });
   }

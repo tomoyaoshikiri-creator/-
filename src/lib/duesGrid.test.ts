@@ -15,6 +15,17 @@ describe("duesGridStatus", () => {
   it("returns none without charges", () => {
     expect(duesGridStatus("p1", 5, periods, [])).toBe("none");
   });
+  it("treats a cancelled charge as if it doesn't exist", () => {
+    expect(duesGridStatus("p1", 4, periods, [
+      { billing_period_id: "april", player_id: "p1", status: "unpaid", cancelled_at: "2026-11-18T00:00:00Z" },
+    ])).toBe("none");
+  });
+  it("still counts an unpaid charge when a cancelled one shares the period", () => {
+    expect(duesGridStatus("p1", 4, periods, [
+      { billing_period_id: "april", player_id: "p1", status: "unpaid" },
+      { billing_period_id: "april", player_id: "p1", status: "paid", cancelled_at: "2026-11-18T00:00:00Z" },
+    ])).toBe("unpaid");
+  });
 });
 
 describe("sortDuesPlayers", () => {

@@ -2190,6 +2190,8 @@ export interface Database {
           paid_at: string | null;
           paid_by: string | null;
           reminder_sent_at: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -2205,6 +2207,8 @@ export interface Database {
           paid_at: string | null;
           paid_by: string | null;
           reminder_sent_at: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
           updated_at: string;
         }>;
         Relationships: [];
