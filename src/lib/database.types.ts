@@ -2233,7 +2233,7 @@ export interface Database {
       };
       get_invite_players: {
         Args: { invite_token: string };
-        Returns: { id: string; sei: string; mei: string; grade: string | null; number: string | null }[];
+        Returns: { id: string; sei: string; mei: string; grade: string | null; number: string | null; status: PlayerStatus }[];
       };
       accept_invite: {
         Args: {
