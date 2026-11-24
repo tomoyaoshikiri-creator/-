@@ -31,6 +31,11 @@ export default function UsersPage() {
     cacheKey("guardianLinks"),
     {},
   );
+  // 卒業済み(OB・OG)選手にしか紐付いていない保護者アカウントを、メンバー一覧とは
+  // 別の「卒業生の保護者」セクションにまとめるために、OB・OGの選手idだけ別途持っておく
+  // (紐付ける選手の選択肢自体は従来通り在籍選手のみ)。
+  const [obogPlayerIds, setObogPlayerIds] = useCachedState<string[]>(cacheKey("obogPlayerIds"), []);
+  const [showObog, setShowObog] = useState(false);
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites")));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -48,11 +53,12 @@ export default function UsersPage() {
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites"))) setLoading(true);
     if (isAdmin) {
-      const [{ data: p }, { data: inv }, { data: pl }, { data: links }] = await Promise.all([
+      const [{ data: p }, { data: inv }, { data: pl }, { data: links }, { data: obog }] = await Promise.all([
         supabase.rpc("list_team_members"),
         supabase.from("invites").select("*").order("created_at", { ascending: false }),
         supabase.from("players").select("*").eq("status", "在籍"),
         supabase.from("player_guardians").select("player_id, profile_id"),
+        supabase.from("players").select("id").eq("status", "OB・OG"),
       ]);
       setProfiles(p ?? []);
       setInvites(inv ?? []);
@@ -62,13 +68,14 @@ export default function UsersPage() {
         (linkMap[l.profile_id] ??= []).push(l.player_id);
       });
       setGuardianLinks(linkMap);
+      setObogPlayerIds((obog ?? []).map((p2) => p2.id));
     } else {
       // 運営は保護者用(role='一般')の招待リンクしか見えない(RLSでも絞っている)。
       const { data: inv } = await supabase.from("invites").select("*").order("created_at", { ascending: false });
       setInvites(inv ?? []);
     }
     setLoading(false);
-  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks]);
+  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks, setObogPlayerIds]);
 
   useEffect(() => {
     load();
@@ -241,6 +248,17 @@ export default function UsersPage() {
   // 権限(管理者→指導者→運営→一般)でグループ分けして表示する。同じ権限内では登録順(RPCの並び)を保つ。
   const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
 
+  // 紐付いている選手が1人以上いて、かつ全員がOB・OG(卒業済み)な保護者アカウントは
+  // 「卒業生の保護者」として別枠にまとめる(進級時の年度更新で選手がOB・OGになっても
+  // 保護者アカウント自体は自動では整理されないため、ここで一覧上は分けて見えるようにする)。
+  const obogPlayerIdSet = new Set(obogPlayerIds);
+  function isObogOnlyMember(member: TeamMember): boolean {
+    const linked = guardianLinks[member.id] ?? [];
+    return linked.length > 0 && linked.every((id) => obogPlayerIdSet.has(id));
+  }
+  const activeProfiles = sortedProfiles.filter((u) => !isObogOnlyMember(u));
+  const obogProfiles = sortedProfiles.filter(isObogOnlyMember);
+
   // 招待関連の2カード(発行・一覧)。一覧が存在しない場合は1カードのみのため、
   // 常に2カラム化すると空の片カラムができてしまう。表示するカードが2つ揃った
   // 場合だけ2カラムにする(hasVisibleInvitesで判定)。
@@ -329,6 +347,116 @@ export default function UsersPage() {
     </div>
   );
 
+  function renderMemberRow(u: TeamMember) {
+    return (
+      <div key={u.id} className="border-b border-line last:border-b-0">
+        <div
+          className="flex min-h-tap items-center gap-2.5 py-2 cursor-pointer"
+          onClick={() => setExpandedId(expandedId === u.id ? null : u.id)}
+        >
+          <div className="flex-1">
+            <div className="font-bold text-sm">
+              {u.name}
+              {u.id === userId ? "(自分)" : ""}
+            </div>
+            <div className="text-xs text-ink-soft mt-0.5">
+              {u.status}
+              {u.last_active_at && ` ・最終操作 ${formatDateTimeLabel(u.last_active_at)}`}
+            </div>
+          </div>
+          <select
+            className="w-auto px-2 py-1.5 text-xs border border-line rounded-control bg-white"
+            value={u.role}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => handleRoleChange(u.id, e.target.value as Role)}
+          >
+            {ROLE_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {expandedId === u.id && (
+          <div className="pb-3.5">
+            <div className="text-xs text-ink-soft mb-2.5">
+              表示名は本人が「設定」から変更できます。管理者による変更はできません。
+            </div>
+
+            <div className="@container">
+              <div className={u.email ? "grid grid-cols-1 gap-x-3 @[480px]:grid-cols-2" : ""}>
+                {u.email && (
+                  <div>
+                    <FieldLabel>メールアドレス</FieldLabel>
+                    <div className="text-[12.5px] text-ink mb-2.5">{u.email}</div>
+                  </div>
+                )}
+                <div>
+                  <FieldLabel>ステータス</FieldLabel>
+                  <select
+                    className={inputClass("mb-2.5")}
+                    value={u.status}
+                    onChange={(e) => handleStatusChange(u.id, e.target.value as UserStatus)}
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <FieldLabel>紐付ける選手</FieldLabel>
+            {players.length === 0 ? (
+              <div className="text-xs text-ink-soft mb-2.5">在籍中の選手がいません</div>
+            ) : (
+              <div className="flex gap-1 flex-wrap mb-2.5">
+                {players.map((p) => {
+                  const linked = (guardianLinks[u.id] ?? []).includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleGuardian(u.id, p.id);
+                      }}
+                      className={`flex-none min-h-tap px-3 py-1 rounded-control text-[11px] font-bold border ${
+                        linked ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
+                      }`}
+                    >
+                      {playerFullName(p)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {u.id === userId ? (
+              <div className="text-xs text-ink-soft">自分自身は削除できません。</div>
+            ) : u.role === "管理者" ? (
+              <div className="text-xs text-ink-soft">
+                管理者ユーザーは削除できません。削除するには先に権限を変更してください。
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleDelete(u.id)}
+                className="w-full min-h-tap text-center py-2 rounded-control font-bold text-[12.5px] border bg-white"
+                style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
+              >
+                {deleteConfirmId === u.id ? "もう一度タップで削除確定" : "このユーザーを削除する"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <PageShell header={<AppHeader title={isAdmin ? "ユーザー管理" : "メンバーを招待"} variant="detail" backHref="/home" />}>
       {isAdmin && (
@@ -338,118 +466,26 @@ export default function UsersPage() {
             ※新規登録者は自動的に「一般」権限で登録されます。ここで権限を変更してください。
           </div>
           <div className={cardClass}>
-            {loading ? (
-              <EmptyState>読み込み中…</EmptyState>
-            ) : (
-              sortedProfiles.map((u) => (
-                <div key={u.id} className="border-b border-line last:border-b-0">
-                  <div
-                    className="flex min-h-tap items-center gap-2.5 py-2 cursor-pointer"
-                    onClick={() => setExpandedId(expandedId === u.id ? null : u.id)}
-                  >
-                    <div className="flex-1">
-                      <div className="font-bold text-sm">
-                        {u.name}
-                        {u.id === userId ? "(自分)" : ""}
-                      </div>
-                      <div className="text-xs text-ink-soft mt-0.5">
-                        {u.status}
-                        {u.last_active_at && ` ・最終操作 ${formatDateTimeLabel(u.last_active_at)}`}
-                      </div>
-                    </div>
-                    <select
-                      className="w-auto px-2 py-1.5 text-xs border border-line rounded-control bg-white"
-                      value={u.role}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => handleRoleChange(u.id, e.target.value as Role)}
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {expandedId === u.id && (
-                    <div className="pb-3.5">
-                      <div className="text-xs text-ink-soft mb-2.5">
-                        表示名は本人が「設定」から変更できます。管理者による変更はできません。
-                      </div>
-
-                      <div className="@container">
-                        <div className={u.email ? "grid grid-cols-1 gap-x-3 @[480px]:grid-cols-2" : ""}>
-                          {u.email && (
-                            <div>
-                              <FieldLabel>メールアドレス</FieldLabel>
-                              <div className="text-[12.5px] text-ink mb-2.5">{u.email}</div>
-                            </div>
-                          )}
-                          <div>
-                            <FieldLabel>ステータス</FieldLabel>
-                            <select
-                              className={inputClass("mb-2.5")}
-                              value={u.status}
-                              onChange={(e) => handleStatusChange(u.id, e.target.value as UserStatus)}
-                            >
-                              {STATUS_OPTIONS.map((s) => (
-                                <option key={s} value={s}>
-                                  {s}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-
-                      <FieldLabel>紐付ける選手</FieldLabel>
-                      {players.length === 0 ? (
-                        <div className="text-xs text-ink-soft mb-2.5">在籍中の選手がいません</div>
-                      ) : (
-                        <div className="flex gap-1 flex-wrap mb-2.5">
-                          {players.map((p) => {
-                            const linked = (guardianLinks[u.id] ?? []).includes(p.id);
-                            return (
-                              <button
-                                key={p.id}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleGuardian(u.id, p.id);
-                                }}
-                                className={`flex-none min-h-tap px-3 py-1 rounded-control text-[11px] font-bold border ${
-                                  linked ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
-                                }`}
-                              >
-                                {playerFullName(p)}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {u.id === userId ? (
-                        <div className="text-xs text-ink-soft">自分自身は削除できません。</div>
-                      ) : u.role === "管理者" ? (
-                        <div className="text-xs text-ink-soft">
-                          管理者ユーザーは削除できません。削除するには先に権限を変更してください。
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(u.id)}
-                          className="w-full min-h-tap text-center py-2 rounded-control font-bold text-[12.5px] border bg-white"
-                          style={{ color: "var(--danger-text)", borderColor: "var(--danger)" }}
-                        >
-                          {deleteConfirmId === u.id ? "もう一度タップで削除確定" : "このユーザーを削除する"}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+            {loading ? <EmptyState>読み込み中…</EmptyState> : activeProfiles.map(renderMemberRow)}
           </div>
+
+          {!loading && obogProfiles.length > 0 && (
+            <>
+              <SectionLabel
+                action={
+                  <button type="button" onClick={() => setShowObog((v) => !v)} className="text-blue-600 font-bold text-xs">
+                    {showObog ? "隠す" : `表示する(${obogProfiles.length}件)`}
+                  </button>
+                }
+              >
+                卒業生の保護者
+              </SectionLabel>
+              <div className="text-xs text-ink-soft mb-2.5">
+                お子さんが卒業済み(OB・OG)の保護者アカウントです。年度更新では自動的に整理されないため、ここでまとめて確認・削除できます。
+              </div>
+              {showObog && <div className={cardClass}>{obogProfiles.map(renderMemberRow)}</div>}
+            </>
+          )}
         </>
       )}
 
