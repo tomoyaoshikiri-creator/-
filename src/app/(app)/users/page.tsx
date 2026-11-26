@@ -489,7 +489,7 @@ export default function UsersPage() {
                 : "表示名は本人も「設定」から変更できます。"}
             </div>
 
-            <FieldLabel>紐付ける選手</FieldLabel>
+            <FieldLabel>紐付ける選手を選んでください</FieldLabel>
             {players.length === 0 ? (
               <div className="text-xs text-ink-soft mb-2.5">在籍中の選手がいません</div>
             ) : (
