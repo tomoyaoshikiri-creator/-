@@ -32,8 +32,9 @@ export default function UsersPage() {
     cacheKey("guardianLinks"),
     {},
   );
-  // 卒業済み(OB・OG)選手。メンバー一覧とは別の「卒業生の保護者」セクションに
-  // まとめる判定と、「紐付ける選手」でOB・OGも選べるようにするための選択肢の両方に使う。
+  // 卒業済み(OB・OG)選手。メンバー一覧とは別の「卒業生(OB・OG)に紐づくアカウント」
+  // セクションにまとめる判定と、「紐付ける選手」でOB・OGも選べるようにするための
+  // 選択肢の両方に使う(紐づく側は保護者とは限らない。選手本人のアカウントもあり得る)。
   const [obogPlayers, setObogPlayers] = useCachedState<Player[]>(cacheKey("obogPlayers"), []);
   const [showObog, setShowObog] = useState(false);
   const [showObogPlayerPicker, setShowObogPlayerPicker] = useState(false);
@@ -303,9 +304,10 @@ export default function UsersPage() {
   // 権限(管理者→指導者→運営→一般)でグループ分けして表示する。同じ権限内では登録順(RPCの並び)を保つ。
   const sortedProfiles = [...profiles].sort((a, b) => ROLE_SORT_ORDER[a.role] - ROLE_SORT_ORDER[b.role]);
 
-  // 紐付いている選手が1人以上いて、かつ全員がOB・OG(卒業済み)な保護者アカウントは
-  // 「卒業生の保護者」として別枠にまとめる(進級時の年度更新で選手がOB・OGになっても
-  // 保護者アカウント自体は自動では整理されないため、ここで一覧上は分けて見えるようにする)。
+  // 紐付いている選手が1人以上いて、かつ全員がOB・OG(卒業済み)なアカウントは
+  // 「卒業生(OB・OG)に紐づくアカウント」として別枠にまとめる(進級時の年度更新で
+  // 選手がOB・OGになってもアカウント自体は自動では整理されないため、ここで一覧上は
+  // 分けて見えるようにする。紐づく側は保護者とは限らず、選手本人のアカウントもあり得る)。
   const obogPlayerIdSet = new Set(obogPlayers.map((p) => p.id));
   function isObogOnlyMember(member: TeamMember): boolean {
     const linked = guardianLinks[member.id] ?? [];
@@ -592,10 +594,10 @@ export default function UsersPage() {
                   </button>
                 }
               >
-                卒業生の保護者
+                卒業生(OB・OG)に紐づくアカウント
               </SectionLabel>
               <div className="text-xs text-ink-soft mb-2.5">
-                お子さんが卒業済み(OB・OG)の保護者アカウントです。年度更新では自動的に整理されないため、ここでまとめて確認・削除できます。
+                紐づく選手が全員卒業済み(OB・OG)のアカウントです。年度更新では自動的に整理されないため、ここでまとめて確認・削除できます。
               </div>
               {showObog && <div className={cardClass}>{obogProfiles.map(renderMemberRow)}</div>}
             </>
