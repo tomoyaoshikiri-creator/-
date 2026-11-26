@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/lib/session-context";
 import { useToast } from "@/components/ui/Toast";
@@ -12,16 +13,29 @@ import { SegButton } from "@/components/ui/SegButton";
 import { Fab } from "@/components/ui/Modal";
 import { canWriteSchedule } from "@/lib/permissions";
 import { playerFullName, todayDateStr } from "@/lib/format";
-import type { Attendance, Schedule } from "@/lib/database.types";
+import type { Attendance, Schedule, ScheduleType } from "@/lib/database.types";
 import type { Birthday } from "./CalendarView";
 import { ScheduleCard } from "./ScheduleCard";
 import { NewScheduleModal } from "./NewScheduleModal";
 import { CalendarView } from "./CalendarView";
 
+const TYPE_FILTER_OPTIONS: { value: ScheduleType | "all"; label: string }[] = [
+  { value: "all", label: "すべて" },
+  { value: "practice", label: "練習" },
+  { value: "game", label: "試合" },
+  { value: "event", label: "イベント" },
+  { value: "other", label: "その他" },
+];
+
 export default function SchedulePage() {
   const { userId, role } = useSession();
   const toast = useToast();
+  const searchParams = useSearchParams();
+  // 「予定をコピーして登録」した直後、常に当日の月に戻るのではなく登録した予定の
+  // 月に戻れるようにするための初期表示日(src/app/(app)/schedule/[id]/page.tsx参照)。
+  const focusDate = searchParams.get("focus") || undefined;
   const [view, setView] = useState<"list" | "calendar">("calendar");
+  const [typeFilter, setTypeFilter] = useState<ScheduleType | "all">("all");
   const [schedules, setSchedules] = useCachedState<Schedule[]>(`schedule:${userId}:schedules`, []);
   const [attendances, setAttendances] = useCachedState<Record<string, Attendance>>(
     `schedule:${userId}:attendances`,
@@ -68,9 +82,12 @@ export default function SchedulePage() {
 
   const filtered = useMemo(() => {
     const q = query.trim();
-    if (!q) return upcoming;
-    return upcoming.filter((s) => s.title.includes(q) || (s.place ?? "").includes(q));
-  }, [upcoming, query]);
+    return upcoming.filter(
+      (s) =>
+        (typeFilter === "all" || s.type === typeFilter) &&
+        (!q || s.title.includes(q) || (s.place ?? "").includes(q)),
+    );
+  }, [upcoming, query, typeFilter]);
 
   return (
     <PageShell
@@ -113,21 +130,31 @@ export default function SchedulePage() {
 
       {view === "list" ? (
         <div>
+          <div className="flex gap-2 mb-3.5 flex-wrap">
+            {TYPE_FILTER_OPTIONS.map((opt) => (
+              <SegButton key={opt.value} variant="small" active={typeFilter === opt.value} onClick={() => setTypeFilter(opt.value)}>
+                {opt.label}
+              </SegButton>
+            ))}
+          </div>
           <SectionLabel>予定 &amp; 出欠</SectionLabel>
           {loading ? (
             <EmptyState>読み込み中…</EmptyState>
           ) : filtered.length === 0 ? (
-            <EmptyState>{query ? "該当する予定がありません" : "予定がありません"}</EmptyState>
+            <EmptyState>{query || typeFilter !== "all" ? "該当する予定がありません" : "予定がありません"}</EmptyState>
           ) : (
             filtered.map((s) => <ScheduleCard key={s.id} schedule={s} attendance={attendances[s.id]} />)
           )}
-          {!loading && !query && hasPast && <CardFooterLink href="/schedule/history">過去の予定を見る</CardFooterLink>}
+          {!loading && !query && typeFilter === "all" && hasPast && (
+            <CardFooterLink href="/schedule/history">過去の予定を見る</CardFooterLink>
+          )}
         </div>
       ) : (
         <CalendarView
           schedules={schedules}
           attendances={attendances}
           birthdays={birthdays}
+          initialFocusDate={focusDate}
           onSelectDate={setCalendarSelectedDate}
         />
       )}

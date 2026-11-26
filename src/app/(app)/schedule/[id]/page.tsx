@@ -349,10 +349,12 @@ export default function ScheduleDetailPage() {
                 open={copyOpen}
                 onClose={() => setCopyOpen(false)}
                 copySource={schedule}
-                onCreated={() => {
+                onCreated={(dates) => {
                   setCopyOpen(false);
                   toast.success("予定をコピーして登録しました");
-                  router.push("/schedule");
+                  // 登録した予定の月に戻れるよう、常に当日ではなくその日付を
+                  // カレンダー表示の初期表示日として渡す(CalendarView参照)。
+                  router.push(`/schedule?focus=${dates[0]}`);
                 }}
               />
             </>

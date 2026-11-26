@@ -45,6 +45,7 @@ export function CalendarView({
   attendances = {},
   birthdays = [],
   onSelectDate,
+  initialFocusDate,
 }: {
   schedules: Schedule[];
   // 選択した日の予定カード(下記)をScheduleCard.tsxと共通化するために必要。
@@ -54,16 +55,20 @@ export function CalendarView({
   birthdays?: Birthday[];
   // 選択中の日付が変わるたびに呼ばれる。「予定を追加」で選択日を初期値として渡すのに使う。
   onSelectDate?: (date: string | null) => void;
+  // 初期表示月・選択日をこの日付に合わせる(例: 予定をコピーして登録した直後、
+  // 常に当日の月に戻るのではなく、登録した予定の月に戻れるようにするため)。
+  // 省略時は従来通り当日。
+  initialFocusDate?: string;
 }) {
-  const now = useMemo(() => new Date(), []);
+  const now = useMemo(() => (initialFocusDate ? new Date(initialFocusDate + "T00:00:00") : new Date()), [initialFocusDate]);
   const todayStr = useMemo(() => todayDateStr(), []);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialFocusDate ?? todayStr);
 
-  // 初期表示は当日の予定を選択済みの状態にしておく。
+  // 初期表示は当日(initialFocusDate指定時はその日)の予定を選択済みの状態にしておく。
   useEffect(() => {
-    onSelectDate?.(todayStr);
+    onSelectDate?.(initialFocusDate ?? todayStr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

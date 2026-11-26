@@ -29,7 +29,9 @@ export function NewScheduleModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  // 登録・更新した予定の日付(複数登録時は全件)。呼び出し側が、保存後にどの月へ
+  // 戻るか(カレンダー表示の初期表示月)を決めるのに使う。
+  onCreated: (dates: string[]) => void;
   onDeleted?: () => void;
   editSchedule?: Schedule;
   copySource?: Schedule;
@@ -234,7 +236,7 @@ export function NewScheduleModal({
       return;
     }
     if (!isEdit) reset();
-    onCreated();
+    onCreated(editSchedule ? [dates[0]] : dates);
   }
 
   async function handleDelete() {
