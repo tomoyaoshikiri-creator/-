@@ -335,6 +335,8 @@ export interface Database {
           role: Role;
           status: UserStatus;
           email: string | null;
+          // 月日のみ使う(年はダミー)。選手のbirthdayと同じ扱い。
+          birthday: string | null;
           created_at: string;
           agreed_terms_version: string | null;
           agreed_terms_at: string | null;
@@ -346,6 +348,7 @@ export interface Database {
           role?: Role;
           status?: UserStatus;
           email?: string | null;
+          birthday?: string | null;
           created_at?: string;
           agreed_terms_version?: string | null;
           agreed_terms_at?: string | null;
@@ -354,6 +357,7 @@ export interface Database {
           name: string;
           role: Role;
           status: UserStatus;
+          birthday: string | null;
         }>;
         Relationships: [];
       };
@@ -2369,6 +2373,10 @@ export interface Database {
           created_at: string;
           last_active_at: string | null;
         }[];
+      };
+      list_team_member_birthdays: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; birthday: string | null }[];
       };
       list_roster_players: {
         Args: Record<string, never>;

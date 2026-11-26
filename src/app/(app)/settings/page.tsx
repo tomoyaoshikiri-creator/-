@@ -45,6 +45,7 @@ export default function SettingsPage() {
               <SectionLabel>アカウント</SectionLabel>
               <div className={cardClass}>
                 <SettingsRow href="/settings/name" label="表示名の変更" />
+                <SettingsRow href="/settings/birthday" label="誕生日を登録" />
                 <SettingsRow href="/settings/password" label="パスワードを変更" />
                 <PushNotificationToggle />
               </div>
