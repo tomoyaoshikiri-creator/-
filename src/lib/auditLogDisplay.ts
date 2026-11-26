@@ -16,6 +16,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   data_export: "データをエクスポート",
   players_bulk_imported: "選手をCSV一括登録",
   poll_voter_identity_viewed: "投票者名を特例で閲覧",
+  member_profile_edited: "メンバー情報を編集",
 };
 
 export function describeAuditDetail(action: AuditAction, detail: unknown): string | null {
@@ -28,6 +29,11 @@ export function describeAuditDetail(action: AuditAction, detail: unknown): strin
       return typeof d.role === "string" ? `${d.role}向け招待` : null;
     case "member_removed":
       return typeof d.target_name === "string" ? d.target_name : null;
+    case "member_profile_edited": {
+      const name = typeof d.target_name === "string" ? d.target_name : null;
+      const fields = Array.isArray(d.fields) ? d.fields.join("・") : null;
+      return name && fields ? `${name}(${fields})` : name;
+    }
     case "ai_analysis_generated":
       return d.scope === "player" ? "選手分析" : d.scope === "team" ? "チーム分析" : null;
     case "billing_plan_changed":

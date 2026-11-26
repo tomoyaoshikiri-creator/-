@@ -59,7 +59,8 @@ export type AuditAction =
   | "billing_subscription_canceled"
   | "data_export"
   | "players_bulk_imported"
-  | "poll_voter_identity_viewed";
+  | "poll_voter_identity_viewed"
+  | "member_profile_edited";
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 // 選手登録時に選べる学年(在籍中の選手のみ)。絶対値の17段階スケール
 // (0=未就学,1-6=小学1-6年,7-9=中学1-3年,10-12=高校1-3年,13-16=大学1-4年、
@@ -2283,6 +2284,15 @@ export interface Database {
       };
       update_team_member: {
         Args: { target_user_id: string; new_role?: Role | null; new_status?: UserStatus | null };
+        Returns: void;
+      };
+      admin_update_member_profile: {
+        Args: {
+          target_user_id: string;
+          new_name?: string | null;
+          new_birthday?: string | null;
+          clear_birthday?: boolean;
+        };
         Returns: void;
       };
       remove_team_member: {

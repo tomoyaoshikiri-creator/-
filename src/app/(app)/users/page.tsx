@@ -8,7 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { PageShell } from "@/components/PageShell";
 import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
-import { SegButton, FieldLabel, inputClass } from "@/components/ui/SegButton";
+import { SegButton, FieldLabel, inputClass, SubmitButton } from "@/components/ui/SegButton";
+import { MonthDaySelect } from "@/components/ui/MonthDaySelect";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
 import { canAccessTab, canManageUsers } from "@/lib/permissions";
 import { formatDateLabel, formatDateTimeLabel, playerFullName } from "@/lib/format";
@@ -36,6 +37,16 @@ export default function UsersPage() {
   // (紐付ける選手の選択肢自体は従来通り在籍選手のみ)。
   const [obogPlayerIds, setObogPlayerIds] = useCachedState<string[]>(cacheKey("obogPlayerIds"), []);
   const [showObog, setShowObog] = useState(false);
+  // 管理者が表示名・誕生日を編集できるようにするための、メンバーごとの誕生日
+  // (月日のみ。list_team_member_birthdays()参照。team_membershipsはRLSで直接
+  // SELECTできないため読み取り専用RPC経由)。
+  const [birthdaysByUserId, setBirthdaysByUserId] = useCachedState<Record<string, string | null>>(
+    cacheKey("birthdaysByUserId"),
+    {},
+  );
+  const [nameDraft, setNameDraft] = useState("");
+  const [monthDayDraft, setMonthDayDraft] = useState("");
+  const [savingProfileId, setSavingProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(() => !hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites")));
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -53,13 +64,15 @@ export default function UsersPage() {
     const supabase = createClient();
     if (!hasCachedValue(cacheKey("profiles")) && !hasCachedValue(cacheKey("invites"))) setLoading(true);
     if (isAdmin) {
-      const [{ data: p }, { data: inv }, { data: pl }, { data: links }, { data: obog }] = await Promise.all([
-        supabase.rpc("list_team_members"),
-        supabase.from("invites").select("*").order("created_at", { ascending: false }),
-        supabase.from("players").select("*").eq("status", "在籍"),
-        supabase.from("player_guardians").select("player_id, profile_id"),
-        supabase.from("players").select("id").eq("status", "OB・OG"),
-      ]);
+      const [{ data: p }, { data: inv }, { data: pl }, { data: links }, { data: obog }, { data: birthdays }] =
+        await Promise.all([
+          supabase.rpc("list_team_members"),
+          supabase.from("invites").select("*").order("created_at", { ascending: false }),
+          supabase.from("players").select("*").eq("status", "在籍"),
+          supabase.from("player_guardians").select("player_id, profile_id"),
+          supabase.from("players").select("id").eq("status", "OB・OG"),
+          supabase.rpc("list_team_member_birthdays"),
+        ]);
       setProfiles(p ?? []);
       setInvites(inv ?? []);
       setPlayers(pl ?? []);
@@ -69,13 +82,18 @@ export default function UsersPage() {
       });
       setGuardianLinks(linkMap);
       setObogPlayerIds((obog ?? []).map((p2) => p2.id));
+      const birthdayMap: Record<string, string | null> = {};
+      (birthdays ?? []).forEach((b) => {
+        birthdayMap[b.id] = b.birthday;
+      });
+      setBirthdaysByUserId(birthdayMap);
     } else {
       // 運営は保護者用(role='一般')の招待リンクしか見えない(RLSでも絞っている)。
       const { data: inv } = await supabase.from("invites").select("*").order("created_at", { ascending: false });
       setInvites(inv ?? []);
     }
     setLoading(false);
-  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks, setObogPlayerIds]);
+  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks, setObogPlayerIds, setBirthdaysByUserId]);
 
   useEffect(() => {
     load();
@@ -126,6 +144,39 @@ export default function UsersPage() {
       return;
     }
     toast.success("ステータスを更新しました");
+    load();
+  }
+
+  // 行を開いた時点の表示名・誕生日を編集欄の初期値にする(別の行を開けばリセットされる)。
+  useEffect(() => {
+    if (!expandedId) return;
+    const u = profiles.find((m) => m.id === expandedId);
+    setNameDraft(u?.name ?? "");
+    setMonthDayDraft(birthdaysByUserId[expandedId] ? birthdaysByUserId[expandedId]!.slice(5, 10) : "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedId]);
+
+  async function handleSaveProfile(u: TeamMember) {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      toast.warning("表示名を入力してください");
+      return;
+    }
+    setSavingProfileId(u.id);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("admin_update_member_profile", {
+      target_user_id: u.id,
+      new_name: trimmed,
+      new_birthday: monthDayDraft ? `2000-${monthDayDraft}` : null,
+      clear_birthday: !monthDayDraft,
+    });
+    setSavingProfileId(null);
+    if (error) {
+      toast.error(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+    toast.success("メンバー情報を更新しました");
+    setBirthdaysByUserId((m) => ({ ...m, [u.id]: monthDayDraft ? `2000-${monthDayDraft}` : null }));
     load();
   }
 
@@ -380,18 +431,28 @@ export default function UsersPage() {
 
         {expandedId === u.id && (
           <div className="pb-3.5">
-            <div className="text-xs text-ink-soft mb-2.5">
-              表示名は本人が「設定」から変更できます。管理者による変更はできません。
-            </div>
-
             <div className="@container">
               <div className={u.email ? "grid grid-cols-1 gap-x-3 @[480px]:grid-cols-2" : ""}>
+                <div>
+                  <FieldLabel>表示名</FieldLabel>
+                  <input
+                    className={inputClass("mb-2.5")}
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                  />
+                </div>
                 {u.email && (
                   <div>
                     <FieldLabel>メールアドレス</FieldLabel>
                     <div className="text-[12.5px] text-ink mb-2.5">{u.email}</div>
                   </div>
                 )}
+                <div>
+                  <FieldLabel>誕生日(月日のみ)</FieldLabel>
+                  <div className="mb-2.5">
+                    <MonthDaySelect value={monthDayDraft} onChange={setMonthDayDraft} />
+                  </div>
+                </div>
                 <div>
                   <FieldLabel>ステータス</FieldLabel>
                   <select
@@ -407,6 +468,13 @@ export default function UsersPage() {
                   </select>
                 </div>
               </div>
+            </div>
+
+            <SubmitButton onClick={() => handleSaveProfile(u)} disabled={savingProfileId === u.id}>
+              {savingProfileId === u.id ? "保存中…" : "表示名・誕生日を保存する"}
+            </SubmitButton>
+            <div className="text-xs text-ink-soft mt-1.5 mb-2.5">
+              表示名・誕生日は本人も「設定」から変更できます。
             </div>
 
             <FieldLabel>紐付ける選手</FieldLabel>
