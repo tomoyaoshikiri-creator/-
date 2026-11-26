@@ -10,7 +10,7 @@ import { PageShell } from "@/components/PageShell";
 import { SectionLabel, cardClass, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
-import { MonthDaySelect } from "./MonthDaySelect";
+import { MonthDaySelect } from "@/components/ui/MonthDaySelect";
 
 // 選手以外(指導者等)のメンバーも、自分の誕生日を登録できるようにする画面。年は
 // 登録せず月日のみ(DB上は固定のうるう年を仮の年として保存し、表示側では常にMM-DD
