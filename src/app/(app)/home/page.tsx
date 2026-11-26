@@ -399,15 +399,27 @@ export default function HomePage() {
     setStaffBirthdaysStatus("loading");
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("players")
-        .select("id, sei, mei, birthday")
-        .eq("team_id", teamId)
-        .eq("status", "在籍")
-        .eq("birthday_visible", true);
+      const [{ data, error }, { data: memberBirthdays, error: memberError }] = await Promise.all([
+        supabase
+          .from("players")
+          .select("id, sei, mei, birthday")
+          .eq("team_id", teamId)
+          .eq("status", "在籍")
+          .eq("birthday_visible", true),
+        // 選手以外(指導者等)が自己登録した誕生日。team_membershipsはRLSで直接
+        // SELECTできないため読み取り専用RPC経由(src/app/(app)/users/page.tsx等と同じ方針)。
+        supabase.rpc("list_team_member_birthdays"),
+      ]);
       if (error) throw error;
+      if (memberError) throw memberError;
       setStaffBirthdays(
-        computeTodayBirthdays((data ?? []).map((p) => ({ id: p.id, name: playerFullName(p), birthday: p.birthday })), todayStr),
+        computeTodayBirthdays(
+          [
+            ...(data ?? []).map((p) => ({ id: p.id, name: playerFullName(p), birthday: p.birthday })),
+            ...(memberBirthdays ?? []),
+          ],
+          todayStr,
+        ),
       );
       setStaffBirthdaysStatus("success");
     } catch {

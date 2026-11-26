@@ -49,7 +49,7 @@ export default function SchedulePage() {
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const [{ data: sch }, { data: att }, { data: roster }] = await Promise.all([
+    const [{ data: sch }, { data: att }, { data: roster }, { data: memberBirthdays }] = await Promise.all([
       supabase
         .from("schedules")
         .select("*")
@@ -57,6 +57,8 @@ export default function SchedulePage() {
         .order("start_time", { ascending: true, nullsFirst: false }),
       supabase.from("attendances").select("*").eq("user_id", userId),
       supabase.rpc("list_roster_players"),
+      // 選手以外(指導者等)が自己登録した誕生日もカレンダーの🎂表示に含める。
+      supabase.rpc("list_team_member_birthdays"),
     ]);
     setSchedules(sch ?? []);
     const map: Record<string, Attendance> = {};
@@ -64,11 +66,14 @@ export default function SchedulePage() {
       map[a.schedule_id] = a;
     });
     setAttendances(map);
-    setBirthdays(
-      (roster ?? [])
+    setBirthdays([
+      ...(roster ?? [])
         .filter((p) => p.birthday)
         .map((p) => ({ name: playerFullName(p), birthday: p.birthday as string })),
-    );
+      ...(memberBirthdays ?? [])
+        .filter((m) => m.birthday)
+        .map((m) => ({ name: m.name, birthday: m.birthday as string })),
+    ]);
     setLoading(false);
   }, [userId, setSchedules, setAttendances, setBirthdays]);
 
