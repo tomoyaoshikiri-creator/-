@@ -11,18 +11,24 @@ import { SectionLabel, cardClass, EmptyState } from "@/components/ui/Card";
 import { FieldLabel, SubmitButton } from "@/components/ui/SegButton";
 import { useUnsavedChangesGuard } from "@/lib/navigationGuard";
 import { MonthDaySelect } from "@/components/ui/MonthDaySelect";
+import { canSetBirthday } from "@/lib/permissions";
 
 // 選手以外(指導者等)のメンバーも、自分の誕生日を登録できるようにする画面。年は
 // 登録せず月日のみ(DB上は固定のうるう年を仮の年として保存し、表示側では常にMM-DD
-// 部分だけを使う。選手のbirthdayと同じ扱い)。
+// 部分だけを使う。選手のbirthdayと同じ扱い)。誕生日の登録は指導者・管理者のみ
+// (ユーザー指示)のため、それ以外のロールは/settingsへ戻す。
 export default function SettingsBirthdayPage() {
   const router = useRouter();
-  const { userId } = useSession();
+  const { userId, role } = useSession();
   const toast = useToast();
   const [monthDay, setMonthDay] = useState("");
   const [initial, setInitial] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!canSetBirthday(role)) router.replace("/settings");
+  }, [role, router]);
 
   useEffect(() => {
     (async () => {

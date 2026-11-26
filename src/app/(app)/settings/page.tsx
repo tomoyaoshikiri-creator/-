@@ -8,7 +8,7 @@ import { SectionLabel, cardClass } from "@/components/ui/Card";
 import { SettingsRow } from "@/components/SettingsRow";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { PlusIcon, SwitchIcon } from "@/components/icons";
-import { canManageSettings } from "@/lib/permissions";
+import { canManageSettings, canSetBirthday } from "@/lib/permissions";
 
 // 設定一覧画面のデザイン刷新(2026-10-29、UI/UX刷新・設定画面範囲のみ)。
 // 既存の表示条件・権限判定・遷移先・退会画面の処理は一切変更していない。
@@ -45,7 +45,7 @@ export default function SettingsPage() {
               <SectionLabel>アカウント</SectionLabel>
               <div className={cardClass}>
                 <SettingsRow href="/settings/name" label="表示名の変更" />
-                <SettingsRow href="/settings/birthday" label="誕生日を登録" />
+                {canSetBirthday(role) && <SettingsRow href="/settings/birthday" label="誕生日を登録" />}
                 <SettingsRow href="/settings/password" label="パスワードを変更" />
                 <PushNotificationToggle />
               </div>

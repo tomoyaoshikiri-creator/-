@@ -207,3 +207,9 @@ export function canViewAttendanceReport(role: Role): boolean {
 export function canManageAccounting(role: Role): boolean {
   return role === "運営" || role === "指導者" || role === "管理者";
 }
+
+// 誕生日の登録ができるロール(指導者・管理者のみ、ユーザー指示)。選手の誕生日とは別枠で、
+// スタッフの誕生日のみを対象とする想定のため、一般・運営は対象外。
+export function canSetBirthday(role: Role): boolean {
+  return role === "指導者" || role === "管理者";
+}
