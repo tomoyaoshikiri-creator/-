@@ -32,11 +32,11 @@ export default function UsersPage() {
     cacheKey("guardianLinks"),
     {},
   );
-  // 卒業済み(OB・OG)選手にしか紐付いていない保護者アカウントを、メンバー一覧とは
-  // 別の「卒業生の保護者」セクションにまとめるために、OB・OGの選手idだけ別途持っておく
-  // (紐付ける選手の選択肢自体は従来通り在籍選手のみ)。
-  const [obogPlayerIds, setObogPlayerIds] = useCachedState<string[]>(cacheKey("obogPlayerIds"), []);
+  // 卒業済み(OB・OG)選手。メンバー一覧とは別の「卒業生の保護者」セクションに
+  // まとめる判定と、「紐付ける選手」でOB・OGも選べるようにするための選択肢の両方に使う。
+  const [obogPlayers, setObogPlayers] = useCachedState<Player[]>(cacheKey("obogPlayers"), []);
   const [showObog, setShowObog] = useState(false);
+  const [showObogPlayerPicker, setShowObogPlayerPicker] = useState(false);
   // 管理者が表示名・誕生日を編集できるようにするための、メンバーごとの誕生日
   // (月日のみ。list_team_member_birthdays()参照。team_membershipsはRLSで直接
   // SELECTできないため読み取り専用RPC経由)。
@@ -70,7 +70,7 @@ export default function UsersPage() {
           supabase.from("invites").select("*").order("created_at", { ascending: false }),
           supabase.from("players").select("*").eq("status", "在籍"),
           supabase.from("player_guardians").select("player_id, profile_id"),
-          supabase.from("players").select("id").eq("status", "OB・OG"),
+          supabase.from("players").select("*").eq("status", "OB・OG"),
           supabase.rpc("list_team_member_birthdays"),
         ]);
       setProfiles(p ?? []);
@@ -81,7 +81,7 @@ export default function UsersPage() {
         (linkMap[l.profile_id] ??= []).push(l.player_id);
       });
       setGuardianLinks(linkMap);
-      setObogPlayerIds((obog ?? []).map((p2) => p2.id));
+      setObogPlayers(obog ?? []);
       const birthdayMap: Record<string, string | null> = {};
       (birthdays ?? []).forEach((b) => {
         birthdayMap[b.id] = b.birthday;
@@ -93,7 +93,7 @@ export default function UsersPage() {
       setInvites(inv ?? []);
     }
     setLoading(false);
-  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks, setObogPlayerIds, setBirthdaysByUserId]);
+  }, [isAdmin, cacheKey, setProfiles, setInvites, setPlayers, setGuardianLinks, setObogPlayers, setBirthdaysByUserId]);
 
   useEffect(() => {
     load();
@@ -153,6 +153,7 @@ export default function UsersPage() {
     const u = profiles.find((m) => m.id === expandedId);
     setNameDraft(u?.name ?? "");
     setMonthDayDraft(birthdaysByUserId[expandedId] ? birthdaysByUserId[expandedId]!.slice(5, 10) : "");
+    setShowObogPlayerPicker(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedId]);
 
@@ -305,7 +306,7 @@ export default function UsersPage() {
   // 紐付いている選手が1人以上いて、かつ全員がOB・OG(卒業済み)な保護者アカウントは
   // 「卒業生の保護者」として別枠にまとめる(進級時の年度更新で選手がOB・OGになっても
   // 保護者アカウント自体は自動では整理されないため、ここで一覧上は分けて見えるようにする)。
-  const obogPlayerIdSet = new Set(obogPlayerIds);
+  const obogPlayerIdSet = new Set(obogPlayers.map((p) => p.id));
   function isObogOnlyMember(member: TeamMember): boolean {
     const linked = guardianLinks[member.id] ?? [];
     return linked.length > 0 && linked.every((id) => obogPlayerIdSet.has(id));
@@ -492,7 +493,7 @@ export default function UsersPage() {
             {players.length === 0 ? (
               <div className="text-xs text-ink-soft mb-2.5">在籍中の選手がいません</div>
             ) : (
-              <div className="flex gap-1 flex-wrap mb-2.5">
+              <div className="flex gap-1 flex-wrap mb-1.5">
                 {players.map((p) => {
                   const linked = (guardianLinks[u.id] ?? []).includes(p.id);
                   return (
@@ -512,6 +513,40 @@ export default function UsersPage() {
                   );
                 })}
               </div>
+            )}
+            {showObogPlayerPicker && obogPlayers.length > 0 && (
+              <div className="flex gap-1 flex-wrap mb-1.5">
+                {obogPlayers.map((p) => {
+                  const linked = (guardianLinks[u.id] ?? []).includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleGuardian(u.id, p.id);
+                      }}
+                      className={`flex-none min-h-tap px-3 py-1 rounded-control text-[11px] font-bold border ${
+                        linked ? "bg-orange text-white border-orange" : "bg-paper text-ink-soft border-line"
+                      }`}
+                    >
+                      {playerFullName(p)}(OB・OG)
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {obogPlayers.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowObogPlayerPicker((v) => !v);
+                }}
+                className="mb-2.5 text-[12px] font-bold text-blue-600"
+              >
+                {showObogPlayerPicker ? "OB・OGを隠す" : "OB・OGを表示する"}
+              </button>
             )}
 
             {u.id === userId ? (
