@@ -11,7 +11,7 @@ import { cardClass, EmptyState, SectionLabel } from "@/components/ui/Card";
 import { SegButton, FieldLabel, inputClass, SubmitButton } from "@/components/ui/SegButton";
 import { MonthDaySelect } from "@/components/ui/MonthDaySelect";
 import { hasCachedValue, useCachedState } from "@/lib/pageCache";
-import { canAccessTab, canManageUsers } from "@/lib/permissions";
+import { canAccessTab, canManageUsers, canSetBirthday } from "@/lib/permissions";
 import { formatDateLabel, formatDateTimeLabel, playerFullName } from "@/lib/format";
 import type { Invite, Player, Role, TeamMember, UserStatus } from "@/lib/database.types";
 
@@ -162,13 +162,14 @@ export default function UsersPage() {
       toast.warning("表示名を入力してください");
       return;
     }
+    const editableBirthday = canSetBirthday(u.role);
     setSavingProfileId(u.id);
     const supabase = createClient();
     const { error } = await supabase.rpc("admin_update_member_profile", {
       target_user_id: u.id,
       new_name: trimmed,
-      new_birthday: monthDayDraft ? `2000-${monthDayDraft}` : null,
-      clear_birthday: !monthDayDraft,
+      new_birthday: editableBirthday && monthDayDraft ? `2000-${monthDayDraft}` : null,
+      clear_birthday: editableBirthday ? !monthDayDraft : false,
     });
     setSavingProfileId(null);
     if (error) {
@@ -176,7 +177,9 @@ export default function UsersPage() {
       return;
     }
     toast.success("メンバー情報を更新しました");
-    setBirthdaysByUserId((m) => ({ ...m, [u.id]: monthDayDraft ? `2000-${monthDayDraft}` : null }));
+    if (editableBirthday) {
+      setBirthdaysByUserId((m) => ({ ...m, [u.id]: monthDayDraft ? `2000-${monthDayDraft}` : null }));
+    }
     load();
   }
 
@@ -447,12 +450,14 @@ export default function UsersPage() {
                     <div className="text-[12.5px] text-ink mb-2.5">{u.email}</div>
                   </div>
                 )}
-                <div>
-                  <FieldLabel>誕生日(月日のみ)</FieldLabel>
-                  <div className="mb-2.5">
-                    <MonthDaySelect value={monthDayDraft} onChange={setMonthDayDraft} />
+                {canSetBirthday(u.role) && (
+                  <div>
+                    <FieldLabel>誕生日(月日のみ)</FieldLabel>
+                    <div className="mb-2.5">
+                      <MonthDaySelect value={monthDayDraft} onChange={setMonthDayDraft} />
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <FieldLabel>ステータス</FieldLabel>
                   <select
@@ -471,10 +476,16 @@ export default function UsersPage() {
             </div>
 
             <SubmitButton onClick={() => handleSaveProfile(u)} disabled={savingProfileId === u.id}>
-              {savingProfileId === u.id ? "保存中…" : "表示名・誕生日を保存する"}
+              {savingProfileId === u.id
+                ? "保存中…"
+                : canSetBirthday(u.role)
+                  ? "表示名・誕生日を保存する"
+                  : "表示名を保存する"}
             </SubmitButton>
             <div className="text-xs text-ink-soft mt-1.5 mb-2.5">
-              表示名・誕生日は本人も「設定」から変更できます。
+              {canSetBirthday(u.role)
+                ? "表示名・誕生日は本人も「設定」から変更できます。"
+                : "表示名は本人も「設定」から変更できます。"}
             </div>
 
             <FieldLabel>紐付ける選手</FieldLabel>
